@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  type Result = { id:number; text:string; summary?:string; tags?:string[]; embedding_task?: string | null; distance:number; created_at?:number; updated_at?:number };
+  type Result = { id:number; text:string; summary?:string; tags?:string[]; embedding_task?: string | null; url?: string | null; distance:number; created_at?:number; updated_at?:number };
   let query = '';
   let results: Result[] = [];
   let loading = false;
@@ -85,7 +85,7 @@
   let resummarizeLoading: Record<number, boolean> = {};
   let stats: any = null;
   // Listing state
-  interface ListedDoc { id:number; text:string; summary?:string|null; tags?:string[]|null; embedding_task?: string | null; created_at:number; updated_at:number }
+  interface ListedDoc { id:number; text:string; summary?:string|null; tags?:string[]|null; embedding_task?: string | null; url?: string | null; created_at:number; updated_at:number }
   let allDocs: ListedDoc[] = [];
   let listLoading = false;
   let listOrder: 'id' | 'recent' = 'recent';
@@ -93,6 +93,23 @@
   let listOffset = 0;
   let deleting: Record<number, boolean> = {};
   let error: string | null = null;
+  // Web page ingestion state
+  let webUrl = '';
+  let webLoading = false;
+  let webResult: { id:number; url:string; summary?:string; tags?:string[]; embedding_task?: string|null } | null = null;
+
+  async function addWebPage() {
+    if (!webUrl.trim()) return;
+    webLoading = true; error = null; webResult = null;
+    try {
+      const body = { url: webUrl.trim(), task_type: taskType, auto_summarize: autoSummarize, summary_tokens: summaryTokens, auto_tag: autoTag, max_tags: maxTags };
+      const r = await fetch('/api/add-web', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'add web failed');
+      webResult = data; webUrl='';
+      fetchStats(); loadDocs();
+    } catch(e:any) { error = e.message; } finally { webLoading=false; }
+  }
 
   async function fetchStats() {
     try { const r = await fetch('/api/stats'); stats = await r.json(); } catch {}
@@ -265,9 +282,10 @@
               <th class="px-3 py-2">Task</th>
               <th class="px-3 py-2">Dist</th>
               <th class="px-3 py-2">Updated</th>
-              <th class="px-3 py-2 w-[28%]">Text</th>
-              <th class="px-3 py-2 w-[24%]">Summary</th>
-              <th class="px-3 py-2 w-[14%]">Tags</th>
+              <th class="px-3 py-2">URL</th>
+              <th class="px-3 py-2 w-[24%]">Text</th>
+              <th class="px-3 py-2 w-[22%]">Summary</th>
+              <th class="px-3 py-2 w-[12%]">Tags</th>
               <th class="px-3 py-2"></th>
             </tr>
           </thead>
@@ -278,6 +296,7 @@
                 <td class="px-3 py-2 text-[10px] font-mono max-w-[90px] truncate" title={r.embedding_task || ''}>{r.embedding_task || '—'}</td>
                 <td class="px-3 py-2 text-[11px] tabular-nums">{r.distance.toFixed(4)}</td>
                 <td class="px-3 py-2 text-[11px]">{formatTs(r.updated_at) || formatTs(r.created_at)}</td>
+                <td class="px-3 py-2 text-[10px] max-w-[120px] truncate" title={r.url || ''}>{r.url ? r.url.replace(/^https?:\/\//,'').slice(0,60) : '—'}</td>
                 <td class="px-3 py-2 text-xs whitespace-pre-wrap">{r.text}</td>
                 <td class="px-3 py-2 text-[11px] whitespace-pre-wrap">{r.summary || '—'}</td>
                 <td class="px-3 py-2">
@@ -374,6 +393,23 @@
           </div>
         {/if}
       </div>
+      <div class="mt-6 border-t border-slate-200 pt-4 flex flex-col gap-3">
+        <h3 class="text-sm font-semibold tracking-wide text-slate-700 uppercase">Add Web Page</h3>
+        <div class="flex flex-col gap-2">
+          <input class="input w-full" placeholder="https://example.com/article" bind:value={webUrl} on:keydown={(e)=> e.key==='Enter' && addWebPage()} />
+          <div class="flex gap-2 items-center">
+            <button class="btn" disabled={webLoading || !webUrl.trim()} on:click={addWebPage}>{webLoading ? 'Fetching...' : 'Fetch & Embed'}</button>
+            {#if webResult}
+              <div class="text-[11px] text-green-600 flex flex-wrap items-center gap-1">
+                <span>ID {webResult.id}</span>
+                {#if webResult.embedding_task}<span class="text-slate-400">•</span><span class="font-mono text-[10px] px-1 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700">{webResult.embedding_task}</span>{/if}
+                <span class="text-slate-400">•</span><span class="truncate max-w-[220px]" title={webResult.url}>{webResult.url}</span>
+              </div>
+            {/if}
+          </div>
+          <div class="text-[10px] text-slate-500 leading-snug">Page HTML is cleaned (scripts/styles removed) and truncated if very large. Auto summarize/tag options above apply.</div>
+        </div>
+      </div>
       {#if stats}
         <div class="grid grid-cols-3 gap-2 text-[11px] mt-2 text-slate-600">
           <div><span class="font-semibold text-slate-700">Docs</span> {stats.documents}</div>
@@ -409,15 +445,16 @@
       <div class="text-slate-400 text-sm mt-3">No documents.</div>
     {:else}
       <div class="overflow-auto max-h-[420px] mt-4 border border-slate-200 rounded-lg">
-        <table class="data min-w-[1180px]">
+  <table class="data min-w-[1280px]">
           <thead>
             <tr>
               <th class="px-3 py-2">ID</th>
               <th class="px-3 py-2">Task</th>
               <th class="px-3 py-2">Updated</th>
-              <th class="px-3 py-2 w-[22%]">Text</th>
-              <th class="px-3 py-2 w-[18%]">Summary</th>
-              <th class="px-3 py-2 w-[14%]">Tags</th>
+              <th class="px-3 py-2 w-[16%]">URL</th>
+              <th class="px-3 py-2 w-[20%]">Text</th>
+              <th class="px-3 py-2 w-[16%]">Summary</th>
+              <th class="px-3 py-2 w-[12%]">Tags</th>
               <th class="px-3 py-2 w-[6%]">Len</th>
               <th class="px-3 py-2"></th>
             </tr>
@@ -428,7 +465,8 @@
                 <td class="px-3 py-2"><span class="badge">{d.id}</span></td>
                 <td class="px-3 py-2 text-[10px] font-mono max-w-[90px] truncate" title={d.embedding_task || ''}>{d.embedding_task || '—'}</td>
                 <td class="px-3 py-2 text-[11px]">{formatTs(d.updated_at) || formatTs(d.created_at)}</td>
-                <td class="px-3 py-2 text-[11px] whitespace-pre-wrap">{d.text.slice(0,240)}{d.text.length>240?'…':''}</td>
+                <td class="px-3 py-2 text-[10px] whitespace-pre-wrap max-w-[200px]">{d.url ? d.url : '—'}</td>
+                <td class="px-3 py-2 text-[11px] whitespace-pre-wrap">{d.text.slice(0,200)}{d.text.length>200?'…':''}</td>
                 <td class="px-3 py-2 text-[11px] whitespace-pre-wrap">{d.summary || '—'}</td>
                 <td class="px-3 py-2">
                   {#if d.tags && d.tags.length}

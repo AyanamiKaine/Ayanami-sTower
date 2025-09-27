@@ -24,6 +24,7 @@ export const POST: APIRoute = async ({ request }) => {
     summary: r.summary,
     tags: r.tags,
     embedding_task: r.embedding_task,
+    url: r.url,
     distance: r.distance,
     created_at: r.created_at,
     updated_at: r.updated_at,
