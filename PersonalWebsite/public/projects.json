@@ -138,7 +138,7 @@
   {
     "title": "Email Status Service",
     "status": "Completed",
-    "description": "A simple .NET utility class designed to send server status updates and deployment notifications via email. It's configured using environment variables and sends color-coded, formatted HTML emails to report successes, warnings, or errors from any C# application.",
+    "description": "A simple .NET utility class designed to send server status updates and deployment notifications via email. It's configured using environment variables and sends color-coded, formatted HTML emails to report successes, warnings, or errors from any C# application. I created this to be used in my personal website deployment pipeline to notify me of the status of each deployment.",
     "technologies": [
       "C#",
       ".NET"
