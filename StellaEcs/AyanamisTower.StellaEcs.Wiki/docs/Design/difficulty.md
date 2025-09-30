@@ -17,7 +17,7 @@ The overall puzzle didn't change, so your solution does not need to change. At s
 
 # Solution?
 
-Games should have a way to shuffle the pieces, it should minimize the elements of the solution that can be memorized. How you would do that is an intellectual task for the reader. If the solution is way too random the player will think his result in determined by luck or just chance. The bad solution would result in the player losing control.
+Games should have a way to shuffle the pieces, it should minimize the elements of the solution that can be memorized. How you would do that is an intellectual task for the reader. If the solution is way too random the player will think his result is determined by luck or just chance. The bad solution would result in the player losing control.
 
 I can't offer a direct solution, just a different perspective on how to think about difficulty.
 

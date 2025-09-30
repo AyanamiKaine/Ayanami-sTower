@@ -23,7 +23,8 @@
     "description": "The main problem I wanted to solve is reactivity with changing dynamic contexts. We could rephrase this as branching trees. Imagine a dialog tree that includes many different flags and acknowledges many different variables like how many birds you saw. Conceptually this is nothing more than various deeply nested if else conditions and statements. When those are simple they are simple, when they are complex we have a problem. To solved this I developed a fuzzy pattern matcher that works on a list of rules with various conditions. Both conditions and rules can be changed at runtime.",
     "technologies": [
       "C#",
-      "JavaScript"
+      "JavaScript",
+      "C++"
     ],
     "links": [
       {
@@ -37,6 +38,10 @@
       {
         "name": "npm",
         "url": "https://www.npmjs.com/package/sfpm-js"
+      },
+      {
+        "name": "GitHub C++",
+        "url": "https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/stella_fuzzy_pattern_matcher/SFPM-CPP"
       },
       {
         "name": "Blog Post",
@@ -138,7 +143,7 @@
   {
     "title": "Email Status Service",
     "status": "Completed",
-    "description": "A simple .NET utility class designed to send server status updates and deployment notifications via email. It's configured using environment variables and sends color-coded, formatted HTML emails to report successes, warnings, or errors from any C# application.",
+    "description": "A simple .NET utility class designed to send server status updates and deployment notifications via email. It's configured using environment variables and sends color-coded, formatted HTML emails to report successes, warnings, or errors from any C# application. I created this to be used in my personal website deployment pipeline to notify me of the status of each deployment.",
     "technologies": [
       "C#",
       ".NET"
