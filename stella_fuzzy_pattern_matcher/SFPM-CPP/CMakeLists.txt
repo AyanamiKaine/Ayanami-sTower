@@ -22,9 +22,13 @@ target_link_libraries(sfpm_example PRIVATE sfpm)
 
 if(SFPM_BUILD_TESTS)
     enable_testing()
-    add_executable(sfpm_tests tests/test_basic.cpp)
-    target_link_libraries(sfpm_tests PRIVATE sfpm)
-    add_test(NAME sfpm_basic COMMAND sfpm_tests)
+    add_executable(sfpm_test_basic tests/test_basic.cpp)
+    target_link_libraries(sfpm_test_basic PRIVATE sfpm)
+    add_test(NAME sfpm_basic COMMAND sfpm_test_basic)
+
+    add_executable(sfpm_test_ported tests/test_ported.cpp)
+    target_link_libraries(sfpm_test_ported PRIVATE sfpm)
+    add_test(NAME sfpm_ported COMMAND sfpm_test_ported)
 endif()
 
 message(STATUS "SFPM-CPP configured. Build tests: ${SFPM_BUILD_TESTS}")
