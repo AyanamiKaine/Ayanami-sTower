@@ -4,6 +4,12 @@ import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
 import "../styles/global.css";
 const { frontmatter } = Astro.props;
+
+// Generate GitHub edit URL based on the current file path
+const filePath = Astro.url.pathname
+    .replace(/^\/posts\//, "")
+    .replace(/\/$/, "");
+const githubEditUrl = `https://github.com/AyanamiKaine/Ayanami-sTower/blob/main/PersonalWebsite/src/pages/posts/${filePath}.mdx`;
 ---
 
 <!doctype html>
@@ -46,7 +52,7 @@ const { frontmatter } = Astro.props;
                                         year: "numeric",
                                         month: "long",
                                         day: "numeric",
-                                    }
+                                    },
                                 )
                             }
                         </span>
@@ -63,6 +69,36 @@ const { frontmatter } = Astro.props;
                 </div>
 
                 <slot />
+
+                <div class="edit-section">
+                    <a
+                        href={githubEditUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="edit-link"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="edit-icon"
+                        >
+                            <path
+                                d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                            ></path>
+                            <path
+                                d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                            ></path>
+                        </svg>
+                        Edit this page on GitHub
+                    </a>
+                </div>
             </main>
             <Footer />
         </Container>
@@ -127,5 +163,47 @@ const { frontmatter } = Astro.props;
         max-width: 720px; /* Typical width for readable text */
         margin: 0 auto;
         line-height: 1.7;
+    }
+
+    /* Edit this page section */
+    .edit-section {
+        max-width: 720px;
+        margin: 3rem auto 0;
+        padding-top: 2rem;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .edit-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #6b7280;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: color 0.2s ease;
+        padding: 0.5rem 0;
+    }
+
+    .edit-link:hover {
+        color: #111827;
+    }
+
+    .edit-icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .edit-section {
+            border-top-color: #374151;
+        }
+
+        .edit-link {
+            color: #9ca3af;
+        }
+
+        .edit-link:hover {
+            color: #212121;
+        }
     }
 </style>
