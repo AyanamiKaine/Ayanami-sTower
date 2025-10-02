@@ -1,0 +1,49 @@
+---
+title: "I Quite Like Unreal Engine For Developing Games"
+date: 2025-10-1
+author: "Ayanami Kaine"
+tags: ["Game Dev", "Games"]
+layout: ../../layouts/PostLayout.astro
+summary: "Programming games is far from easy. You have so many different domains to care for. From AI to shaders. Its all complex, but I think UE has one of the most iterative loop there is."
+published: true
+---
+
+# Fast Iteration
+
+If you ever created something in Unity you know that hot reloading is a mess. Because Unity is still using Mono instead of the .Net runtime everything that has to do with C# is just not as good as you would expect it to be. 
+
+Hot-Reload takes too long, it breaks often, scripting compiling in general can take ages or just crash Unity.
+
+When talking about iteration speed in Unreal Engine 5 there is no going around to mention [Angel Script](https://angelscript.hazelight.se/). Its a scripting engine to replace blueprints and C++ and developed by Hazelight, creators of Split Fiction and It Takes Two. Games by other developers also use it like ARC Raiders or THE FINALS.
+
+And wow, it just works. Adding or changing a new function for an actor at runtime? Yep works without a hitch. Adding a new field without breaking my entire editor? Of course it works, this is not Unity! 
+
+In Unreal I had the feeling that implementing my idea can be implemented so fast. In other engines I often encounter the situation of OH, I need to directly listen for all input events and have check explicitly on which event I want something to happen. In Unreal I can just listen for the event of the specifc input action. This is all I just wanted. Attaching a function on an input event everywhere I want. I dont want to write a switch statement.
+
+## Blueprints
+
+Of course when talking about iteration speed we also need to address the Blueprints. Blueprints is the visual node editor to write code. Lets not talk about performance of them because its just not a problem. The main problem with Blueprints happens when they become just a bit too big. Too many indirections. Too many branches. Its not good looking at it and gets hard to understand it with a first glance.
+
+In these cases writing C++ would be a choice to consider. But when you use Angel Script you would just use this all the time.
+
+With that said I really like Blueprints when I just have to quickly prototype something. They can be easy translated to Angel Script. So what I mostly do is deleting the blueprints after a while. In this case having too many Blueprints instead of Angel Script would be a smell.
+
+## Materials and Shaders
+
+The visual editor to create materials and shaders in general is so nice. It reminds me of using Blender. Its fast gets to the point.
+
+# Graphics
+
+Unreal Engine gives you really easy options for nice looking graphics where you want them. You have every feature available and tweak them as desired. If the developer not chooses to do so the game gets the Unreal default look you often see.
+
+In Unity you get bombared by the question of what render pipeline you want to choose. You want the best looking graphics? High-Definition-Render-Pipeline it is. Oh you want to use more advanced shaders? Choose the Universal-Render-Pipeline instead. And no you cannot mix and match. 
+
+There are really cool features in the HDRP I wish I could use with URP. HDRP feels a bit like the attempt to say: "No,No Unity does have incredible graphics!"  
+
+# Open Source
+
+I really really like that Unreal Engine 5 can be [built from source](https://dev.epicgames.com/documentation/en-us/unreal-engine/building-unreal-engine-from-source) and it just works. I can look at the code and actually understand it. Godot also can be [built from source](https://docs.godotengine.org/en/latest/engine_details/development/compiling/) but my personal experience with modifying Godot is far from good. Sadly much of the Godot is read only. Its hard to understand and more harder to extend.
+
+What I really hate in Godot is that most of the UI gets procedurally drawn. Take a look at the example of [how the code editor gets drawn](https://github.com/godotengine/godot/blob/abbe792575e905a5d5b9a0d2f3ccf993d16b7d70/scene/gui/code_edit.cpp).
+
+I wrote my own UE5 plugin in mere hours without good prior knowledge of the engine. I dont think I could do the same so fast for Godot.
