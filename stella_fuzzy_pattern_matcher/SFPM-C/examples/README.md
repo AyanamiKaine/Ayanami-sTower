@@ -478,6 +478,115 @@ This example series demonstrates:
 
 ---
 
+---
+
+## 🔥 Hot-Reload Examples
+
+### interpreter_hot_reload.c - Memory Snapshot Hot Reload
+
+**Interactive VM with snapshot support** - persist runtime modifications across restarts.
+
+```bash
+.\Release\sfpm_hot_reload.exe
+```
+
+**Demo script:**
+
+```powershell
+.\demo_hot_patch.ps1
+```
+
+**Features:**
+
+-   Save/load VM state to disk
+-   Patch bytecode at runtime
+-   Resume from previous session
+-   Image-based persistence
+
+**Use case:** Live development, debugging sessions, REPL environments
+
+---
+
+### hot_patch_tool.c - Non-Interactive Patcher
+
+**Programmatic patching and snapshot generation** - automation friendly.
+
+```bash
+.\Release\hot_patch_tool.exe
+```
+
+**Features:**
+
+-   Automated patching
+-   Snapshot generation
+-   No user interaction
+-   CI/CD ready
+
+**Use case:** Build automation, testing pipelines
+
+---
+
+### interpreter_native_reload.c - Native Function Hot Reload ⚡
+
+**Load and hot-reload C functions from DLLs** - ultimate flexibility!
+
+**Files:**
+
+-   `interpreter_native_reload.c` - VM with native call support
+-   `math_ops.c` - Example shared library
+-   `NATIVE_HOT_RELOAD.md` - Full documentation
+
+```bash
+# Build
+cmake --build build --config Release --target math_ops
+cmake --build build --config Release --target sfpm_native_reload
+
+# Run
+.\Release\sfpm_native_reload.exe
+```
+
+**Quick demo:**
+
+```powershell
+.\demo_native_simple.ps1
+```
+
+**What it does:**
+
+1. Loads `math_ops.dll` with `math_add(a, b)` function
+2. Runs VM: calls native function (returns 15 from 10 + 5)
+3. **While VM is running:**
+    - Edit `math_ops.c` to multiply instead
+    - Recompile the DLL
+    - Hot-reload in the VM
+4. Runs again: same bytecode now returns 50 (10 \* 5)!
+
+**No VM restart needed!**
+
+**Features:**
+
+-   Dynamic library loading (`LoadLibrary`/`dlopen`)
+-   Multiple function slots (up to 8)
+-   Hot-reload without restart
+-   `OP_CALL_NATIVE` opcode
+-   Cross-platform (Windows/Linux)
+
+**Use case:** Plugin systems, live algorithm development, A/B testing, modding
+
+**See `NATIVE_HOT_RELOAD.md` for complete walkthrough.**
+
+---
+
+## 🎯 Quick Comparison
+
+| Example                     | Interactive | Snapshots | Native Code | Hot Reload Type |
+| --------------------------- | ----------- | --------- | ----------- | --------------- |
+| `interpreter_hot_reload`    | ✅          | ✅        | ❌          | Bytecode        |
+| `hot_patch_tool`            | ❌          | ✅        | ❌          | Bytecode        |
+| `interpreter_native_reload` | ✅          | ❌        | ✅          | C Functions     |
+
+---
+
 ## 📝 License
 
 All example code is provided as-is for educational and commercial use.

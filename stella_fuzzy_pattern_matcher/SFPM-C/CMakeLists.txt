@@ -68,6 +68,23 @@ if(SFPM_BUILD_EXAMPLES)
     
     add_executable(hot_patch_tool examples/hot_patch_tool.c)
     target_link_libraries(hot_patch_tool PRIVATE sfpm)
+    
+    # Math ops shared library for native hot-reload demo
+    add_library(math_ops SHARED examples/math_ops.c)
+    set_target_properties(math_ops PROPERTIES
+        PREFIX ""  # No 'lib' prefix on Windows
+        OUTPUT_NAME "math_ops"
+    )
+    
+    # Native hot-reload interpreter example
+    add_executable(sfpm_native_reload examples/interpreter_native_reload.c)
+    target_link_libraries(sfpm_native_reload PRIVATE sfpm)
+    if(WIN32)
+        # No additional libraries needed on Windows
+    else()
+        target_link_libraries(sfpm_native_reload PRIVATE dl)
+    endif()
+    add_dependencies(sfpm_native_reload math_ops)
 endif()
 
 # Tests
