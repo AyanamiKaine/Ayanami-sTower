@@ -1,0 +1,322 @@
+# SFPM-C (Stella Fuzzy Pattern Matcher - C Port)
+
+A lightweight, portable C11 implementation of the Stella Fuzzy Pattern Matcher for rule-based pattern matching with priority selection.
+
+## Features
+
+-   **Rule-based pattern matching** over dynamic fact sources
+-   **Type-safe fact system** with support for int, float, double, string, and bool
+-   **Flexible criteria** with comparison operators and custom predicates
+-   **Priority-based selection** with random tie-breaking
+-   **Optimized matching** by sorting rules by specificity
+-   **Portable C11** with no external dependencies
+-   **CMake build system** for easy integration
+
+## Building
+
+### Basic Build
+
+```bash
+cmake -S . -B build
+cmake --build build --config Release
+```
+
+### Running Tests
+
+```bash
+ctest --test-dir build -C Release --output-on-failure
+```
+
+### Running Examples
+
+```bash
+./build/sfpm_example
+```
+
+## Quick Start
+
+```c
+#include <sfpm/sfpm.h>
+
+/* Define payload functions */
+void handle_critical(void *user_data) {
+    printf("Critical situation detected!\n");
+}
+
+int main(void) {
+    /* Create fact source */
+    sfpm_fact_source_t *facts = sfpm_dict_fact_source_create(10);
+    sfpm_dict_fact_source_add(facts, "health", sfpm_value_from_int(30));
+    sfpm_dict_fact_source_add(facts, "inCombat", sfpm_value_from_bool(true));
+
+    /* Create criteria */
+    sfpm_criteria_t *low_health = sfpm_criteria_create(
+        "health", SFPM_OP_LESS_THAN, sfpm_value_from_int(50));
+    sfpm_criteria_t *in_combat = sfpm_criteria_create(
+        "inCombat", SFPM_OP_EQUAL, sfpm_value_from_bool(true));
+
+    /* Create rule */
+    sfpm_criteria_t *criterias[] = {low_health, in_combat};
+    sfpm_rule_t *rule = sfpm_rule_create(
+        criterias, 2, handle_critical, NULL, "critical");
+
+    /* Match and execute */
+    sfpm_rule_t *rules[] = {rule};
+    sfpm_match(rules, 1, facts, true);
+
+    /* Cleanup */
+    sfpm_rule_destroy(rule);
+    sfpm_fact_source_destroy(facts);
+    return 0;
+}
+```
+
+## API Overview
+
+### Fact Sources
+
+Facts are stored in a type-safe container with tagged unions:
+
+```c
+/* Create fact source */
+sfpm_fact_source_t *facts = sfpm_dict_fact_source_create(capacity);
+
+/* Add facts */
+sfpm_dict_fact_source_add(facts, "health", sfpm_value_from_int(100));
+sfpm_dict_fact_source_add(facts, "name", sfpm_value_from_string("Player"));
+sfpm_dict_fact_source_add(facts, "active", sfpm_value_from_bool(true));
+sfpm_dict_fact_source_add(facts, "temperature", sfpm_value_from_float(98.6f));
+
+/* Cleanup */
+sfpm_fact_source_destroy(facts);
+```
+
+### Criteria
+
+Create matching criteria with operators or custom predicates:
+
+```c
+/* Comparison-based criteria */
+sfpm_criteria_t *health_check = sfpm_criteria_create(
+    "health",
+    SFPM_OP_GREATER_THAN,
+    sfpm_value_from_int(50)
+);
+
+/* Custom predicate */
+bool is_low_health(const sfpm_value_t *value, void *user_data) {
+    return value->type == SFPM_TYPE_INT && value->data.int_value < 50;
+}
+
+sfpm_criteria_t *custom_check = sfpm_criteria_create_predicate(
+    "health",
+    is_low_health,
+    NULL,
+    "health < 50"
+);
+```
+
+### Rules
+
+Combine criteria into rules with payloads:
+
+```c
+void my_action(void *user_data) {
+    printf("Rule matched!\n");
+}
+
+sfpm_criteria_t *criterias[] = {criteria1, criteria2};
+sfpm_rule_t *rule = sfpm_rule_create(
+    criterias,          /* Array of criteria (takes ownership) */
+    2,                  /* Criteria count */
+    my_action,          /* Payload function */
+    NULL,               /* User data for payload */
+    "my_rule"           /* Optional name for debugging */
+);
+
+/* Set priority (higher = preferred) */
+sfpm_rule_set_priority(rule, 10);
+
+/* Cleanup */
+sfpm_rule_destroy(rule); /* Also destroys owned criteria */
+```
+
+### Matching
+
+Match rules against facts and execute the best match:
+
+```c
+sfpm_rule_t *rules[] = {rule1, rule2, rule3};
+
+/* Match with optimization (sorts by criteria count) */
+sfpm_match(rules, 3, facts, true);
+
+/* Helper functions */
+sfpm_optimize_rules(rules, 3);
+sfpm_rule_t *most = sfpm_most_specific_rule(rules, 3);
+sfpm_rule_t *least = sfpm_least_specific_rule(rules, 3);
+```
+
+## Matching Algorithm
+
+The matcher follows this selection logic:
+
+1. **Evaluate all rules** against the fact source
+2. **Select by specificity**: Rules with the most matching criteria win
+3. **Break ties by priority**: Among equal specificity, highest priority wins
+4. **Random selection**: If still tied, randomly pick one
+5. **Execute payload**: Run the selected rule's action
+
+## Supported Operators
+
+-   `SFPM_OP_EQUAL` - Equality comparison
+-   `SFPM_OP_NOT_EQUAL` - Inequality comparison
+-   `SFPM_OP_GREATER_THAN` - Greater than
+-   `SFPM_OP_LESS_THAN` - Less than
+-   `SFPM_OP_GREATER_THAN_OR_EQUAL` - Greater than or equal
+-   `SFPM_OP_LESS_THAN_OR_EQUAL` - Less than or equal
+-   `SFPM_OP_PREDICATE` - Custom predicate function
+
+## Supported Types
+
+-   `SFPM_TYPE_INT` - Integer values
+-   `SFPM_TYPE_FLOAT` - Single-precision floating point
+-   `SFPM_TYPE_DOUBLE` - Double-precision floating point
+-   `SFPM_TYPE_STRING` - Null-terminated strings (not owned)
+-   `SFPM_TYPE_BOOL` - Boolean values
+
+## Integration
+
+### CMake Subdirectory
+
+```cmake
+add_subdirectory(path/to/SFPM-C)
+target_link_libraries(MyProject PRIVATE sfpm)
+```
+
+### CMake FetchContent
+
+```cmake
+include(FetchContent)
+FetchContent_Declare(sfpm
+    GIT_REPOSITORY <repo-url>
+    GIT_TAG main
+)
+FetchContent_MakeAvailable(sfpm)
+target_link_libraries(MyProject PRIVATE sfpm)
+```
+
+### Manual Integration
+
+Copy the `include/` and `src/` directories to your project and add to your build system.
+
+## Memory Management
+
+-   **Fact sources**: Call `sfpm_fact_source_destroy()` when done
+-   **Rules**: Call `sfpm_rule_destroy()` - automatically destroys owned criteria
+-   **Standalone criteria**: Only destroy if not owned by a rule
+-   **String values**: SFPM does not take ownership of string pointers
+
+## Design Differences from C#/C++ Versions
+
+| Concept     | C#            | C++            | C                        |
+| ----------- | ------------- | -------------- | ------------------------ |
+| Type system | Generics      | Templates      | Tagged unions            |
+| Fact source | Interface     | Abstract class | Function pointers        |
+| Memory      | GC            | Smart pointers | Manual (ownership rules) |
+| Criteria    | Generic class | Template class | Opaque struct            |
+| Collections | List<T>       | std::vector    | Raw arrays               |
+
+## Examples
+
+See the `examples/` directory for complete examples:
+
+-   **basic_example.c** - Simple game AI scenario with health and combat
+
+## Testing
+
+The test suite covers:
+
+-   Value constructors and type safety
+-   Dictionary fact source operations
+-   All comparison operators
+-   Custom predicates
+-   Rule evaluation and execution
+-   Specificity-based matching
+-   Priority-based selection
+-   Complex multi-criteria scenarios
+
+Run tests with: `ctest --test-dir build -V`
+
+## Best Practices
+
+1. **Always check return values** - Functions return NULL or false on failure
+2. **Destroy in reverse order** - Rules before facts, as rules don't own facts
+3. **Use optimization** - Call `sfpm_match()` with `optimize=true` for sorted rules
+4. **Name your rules** - Helps with debugging and understanding matching
+5. **Manage string lifetimes** - Ensure fact strings outlive the fact source
+6. **Avoid circular references** - Don't store fact sources in rule user data
+
+## Performance Considerations
+
+-   **Optimization**: Pre-sort rules by criteria count for early exit
+-   **Fact lookup**: Dictionary implementation is O(n) linear search
+-   **Memory allocation**: Minimal allocations during matching
+-   **Custom fact sources**: Implement for optimal lookup in your domain
+
+## Custom Fact Sources
+
+You can implement custom fact sources for domain-specific optimizations:
+
+```c
+bool my_try_get(const sfpm_fact_source_t *source,
+                const char *fact_name,
+                sfpm_value_t *out_value) {
+    /* Your custom lookup logic */
+    return true;
+}
+
+void my_destroy(sfpm_fact_source_t *source) {
+    /* Your cleanup logic */
+}
+
+sfpm_fact_source_t *create_custom_source(void) {
+    sfpm_fact_source_t *source = malloc(sizeof(sfpm_fact_source_t));
+    source->user_data = /* your data */;
+    source->try_get_fact = my_try_get;
+    source->destroy = my_destroy;
+    return source;
+}
+```
+
+## License
+
+MIT (same as the original C# implementation)
+
+## Parity with Other Versions
+
+This C port maintains conceptual parity with the C# and C++ versions while adapting to C idioms:
+
+-   ✅ Rule-based matching with criteria
+-   ✅ Specificity and priority selection
+-   ✅ Custom predicates
+-   ✅ Optimization by sorting
+-   ✅ Type-safe fact storage
+-   ✅ All comparison operators
+-   ✅ Random tie-breaking
+
+## Contributing
+
+Contributions welcome! Please:
+
+-   Follow C11 standard
+-   Match existing code style
+-   Add tests for new features
+-   Update documentation
+-   Ensure all tests pass
+
+## Related Projects
+
+-   **SFPM (C#)** - Original implementation
+-   **SFPM-CPP** - C++20 header-only port
+-   **SFPM-Kotlin** - Kotlin/JVM port
