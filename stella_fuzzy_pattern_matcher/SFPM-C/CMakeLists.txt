@@ -14,6 +14,7 @@ set(SFPM_SOURCES
     src/criteria.c
     src/rule.c
     src/matcher.c
+    src/snapshot.c
 )
 
 set(SFPM_HEADERS
@@ -21,6 +22,7 @@ set(SFPM_HEADERS
     include/sfpm/criteria.h
     include/sfpm/rule.h
     include/sfpm/matcher.h
+    include/sfpm/snapshot.h
     include/sfpm/sfpm.h
 )
 
@@ -60,6 +62,9 @@ if(SFPM_BUILD_EXAMPLES)
     
     add_executable(sfpm_hook_chaining examples/interpreter_hook_chaining.c)
     target_link_libraries(sfpm_hook_chaining PRIVATE sfpm)
+    
+    add_executable(sfpm_hot_reload examples/interpreter_hot_reload.c)
+    target_link_libraries(sfpm_hot_reload PRIVATE sfpm)
 endif()
 
 # Tests
@@ -76,6 +81,10 @@ if(SFPM_BUILD_TESTS)
     add_executable(sfpm_test_hook_chaining tests/test_hook_chaining.c)
     target_link_libraries(sfpm_test_hook_chaining PRIVATE sfpm)
     add_test(NAME sfpm_hook_chaining COMMAND sfpm_test_hook_chaining)
+    
+    add_executable(sfpm_test_snapshot tests/test_snapshot.c)
+    target_link_libraries(sfpm_test_snapshot PRIVATE sfpm)
+    add_test(NAME sfpm_snapshot COMMAND sfpm_test_snapshot)
 endif()
 
 # Installation

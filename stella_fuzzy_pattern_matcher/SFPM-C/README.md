@@ -12,6 +12,8 @@ A lightweight, portable C11 implementation of the Stella Fuzzy Pattern Matcher f
 -   **Before/after hooks** for aspect-oriented programming (logging, security, metrics)
 -   **Hook chaining** for composable pipelines (auth → validation → execution → audit)
 -   **Middleware hooks** for wrapping behavior (transactions, timing, monitoring)
+-   **Image-based hot reload** for persisting runtime modifications (Smalltalk/Lisp-style) ✨
+-   **Memory snapshots** for instant save/restore of complete interpreter state
 -   **Portable C11** with no external dependencies
 -   **CMake build system** for easy integration
 
@@ -61,6 +63,9 @@ See `TEST_COVERAGE_REPORT.md` for detailed test coverage information.
 
 # Hook chaining for security pipelines and observability
 ./build/Release/sfpm_hook_chaining.exe
+
+# Image-based hot reload with memory snapshots ✨
+./build/Release/sfpm_hot_reload.exe
 ```
 
 See `README_INTERPRETER.md` for details on using SFPM to build runtime-modifiable interpreters.  
@@ -68,7 +73,8 @@ See `README_CACHING.md` for caching optimizations that reduce overhead from ~470
 See `README_TIERED.md` for automatic tier system with mode switching.  
 See `README_GAME_AI.md` for practical game AI examples.  
 See `README_HOOKS.md` for aspect-oriented programming with before/after hooks.  
-See `README_HOOK_CHAINING.md` for multiple hook chains and middleware patterns.
+See `README_HOOK_CHAINING.md` for multiple hook chains and middleware patterns.  
+See `README_HOT_RELOAD.md` for image-based persistence and hot code reloading. ✨
 
 ## Quick Start
 
@@ -272,18 +278,31 @@ See the `examples/` directory for complete examples:
 
 ## Testing
 
-The test suite covers:
+The test suite includes 4 comprehensive suites with 59 total tests:
 
--   Value constructors and type safety
--   Dictionary fact source operations
--   All comparison operators
--   Custom predicates
--   Rule evaluation and execution
--   Specificity-based matching
--   Priority-based selection
--   Complex multi-criteria scenarios
+### Core Functionality Tests
 
-Run tests with: `ctest --test-dir build -V`
+-   **test_basic.c** (8 tests) - Value constructors, fact sources, operators
+-   **test_advanced.c** (10 tests) - Custom predicates, specificity, priorities
+
+### Advanced Feature Tests
+
+-   **test_hook_chaining.c** (15 tests) - Hook chains, execution order, abortion
+-   **test_snapshot.c** (26 tests) - Memory snapshots, save/restore, data integrity
+
+**Total Coverage:**
+
+-   59 tests, 100% pass rate
+-   All public APIs tested
+-   NULL safety, edge cases, error paths
+-   Data integrity verification
+
+Run all tests: `ctest --test-dir build -C Release --output-on-failure`
+
+**Detailed Reports:**
+
+-   [Hook Chaining Tests](TEST_COVERAGE_REPORT.md)
+-   [Snapshot System Tests](SNAPSHOT_TEST_REPORT.md)
 
 ## Best Practices
 
