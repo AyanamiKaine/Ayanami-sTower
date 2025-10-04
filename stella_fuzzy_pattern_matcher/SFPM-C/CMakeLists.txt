@@ -65,6 +65,9 @@ if(SFPM_BUILD_EXAMPLES)
     
     add_executable(sfpm_hot_reload examples/interpreter_hot_reload.c)
     target_link_libraries(sfpm_hot_reload PRIVATE sfpm)
+    
+    add_executable(hot_patch_tool examples/hot_patch_tool.c)
+    target_link_libraries(hot_patch_tool PRIVATE sfpm)
 endif()
 
 # Tests
