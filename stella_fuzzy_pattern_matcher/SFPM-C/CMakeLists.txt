@@ -48,6 +48,15 @@ if(SFPM_BUILD_EXAMPLES)
     
     add_executable(sfpm_cached examples/interpreter_cached.c)
     target_link_libraries(sfpm_cached PRIVATE sfpm)
+    
+    add_executable(sfpm_tiered examples/interpreter_tiered.c)
+    target_link_libraries(sfpm_tiered PRIVATE sfpm)
+    
+    add_executable(sfpm_game_ai examples/interpreter_game_ai.c)
+    target_link_libraries(sfpm_game_ai PRIVATE sfpm)
+    
+    add_executable(sfpm_hooks examples/interpreter_hooks.c)
+    target_link_libraries(sfpm_hooks PRIVATE sfpm)
 endif()
 
 # Tests

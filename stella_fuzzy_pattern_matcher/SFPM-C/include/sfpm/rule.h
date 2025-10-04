@@ -30,6 +30,18 @@ typedef struct sfpm_rule sfpm_rule_t;
 typedef void (*sfpm_payload_fn)(void *user_data);
 
 /**
+ * @brief Hook function type for before/after payload execution
+ * 
+ * Called before or after the main payload execution.
+ * Can be used for logging, validation, transformation, etc.
+ * 
+ * @param user_data User-defined context data
+ * @param payload_user_data The user data that will be/was passed to the payload
+ * @return true to continue execution, false to abort (for before hooks)
+ */
+typedef bool (*sfpm_hook_fn)(void *user_data, void *payload_user_data);
+
+/**
  * @brief Result of rule evaluation
  */
 typedef struct {
@@ -76,6 +88,34 @@ sfpm_eval_result_t sfpm_rule_evaluate(const sfpm_rule_t *rule,
  * @param rule The rule whose payload to execute
  */
 void sfpm_rule_execute_payload(const sfpm_rule_t *rule);
+
+/**
+ * @brief Set a before-execution hook for a rule
+ * 
+ * The hook is called before the payload executes.
+ * If the hook returns false, payload execution is aborted.
+ * 
+ * @param rule The rule
+ * @param hook The hook function (NULL to remove)
+ * @param user_data User data to pass to the hook
+ */
+void sfpm_rule_set_before_hook(sfpm_rule_t *rule,
+                                sfpm_hook_fn hook,
+                                void *user_data);
+
+/**
+ * @brief Set an after-execution hook for a rule
+ * 
+ * The hook is called after the payload executes.
+ * The return value is currently ignored but reserved for future use.
+ * 
+ * @param rule The rule
+ * @param hook The hook function (NULL to remove)
+ * @param user_data User data to pass to the hook
+ */
+void sfpm_rule_set_after_hook(sfpm_rule_t *rule,
+                               sfpm_hook_fn hook,
+                               void *user_data);
 
 /**
  * @brief Get the number of criteria in a rule

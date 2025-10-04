@@ -10,6 +10,12 @@ struct sfpm_rule {
     void *payload_user_data;
     char *name;
     int priority;
+    
+    /* Hooks */
+    sfpm_hook_fn before_hook;
+    void *before_hook_user_data;
+    sfpm_hook_fn after_hook;
+    void *after_hook_user_data;
 };
 
 sfpm_rule_t *sfpm_rule_create(sfpm_criteria_t **criterias,
@@ -31,6 +37,12 @@ sfpm_rule_t *sfpm_rule_create(sfpm_criteria_t **criterias,
     rule->payload = payload;
     rule->payload_user_data = payload_user_data;
     rule->priority = 0;
+    
+    /* Initialize hooks to NULL */
+    rule->before_hook = NULL;
+    rule->before_hook_user_data = NULL;
+    rule->after_hook = NULL;
+    rule->after_hook_user_data = NULL;
 
     if (name) {
         rule->name = (char *)malloc(strlen(name) + 1);
@@ -91,8 +103,24 @@ void sfpm_rule_execute_payload(const sfpm_rule_t *rule) {
     if (!rule || !rule->payload) {
         return;
     }
+    
+    /* Execute before hook if present */
+    if (rule->before_hook) {
+        bool should_continue = rule->before_hook(rule->before_hook_user_data,
+                                                  rule->payload_user_data);
+        if (!should_continue) {
+            return;  /* Abort execution if before hook returns false */
+        }
+    }
 
+    /* Execute main payload */
     rule->payload(rule->payload_user_data);
+    
+    /* Execute after hook if present */
+    if (rule->after_hook) {
+        rule->after_hook(rule->after_hook_user_data,
+                         rule->payload_user_data);
+    }
 }
 
 int sfpm_rule_get_criteria_count(const sfpm_rule_t *rule) {
@@ -111,4 +139,24 @@ void sfpm_rule_set_priority(sfpm_rule_t *rule, int priority) {
 
 const char *sfpm_rule_get_name(const sfpm_rule_t *rule) {
     return rule ? rule->name : NULL;
+}
+
+void sfpm_rule_set_before_hook(sfpm_rule_t *rule,
+                                sfpm_hook_fn hook,
+                                void *user_data) {
+    if (!rule) {
+        return;
+    }
+    rule->before_hook = hook;
+    rule->before_hook_user_data = user_data;
+}
+
+void sfpm_rule_set_after_hook(sfpm_rule_t *rule,
+                               sfpm_hook_fn hook,
+                               void *user_data) {
+    if (!rule) {
+        return;
+    }
+    rule->after_hook = hook;
+    rule->after_hook_user_data = user_data;
 }

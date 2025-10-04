@@ -9,6 +9,7 @@ A lightweight, portable C11 implementation of the Stella Fuzzy Pattern Matcher f
 -   **Flexible criteria** with comparison operators and custom predicates
 -   **Priority-based selection** with random tie-breaking
 -   **Optimized matching** by sorting rules by specificity
+-   **Before/after hooks** for aspect-oriented programming (logging, security, metrics)
 -   **Portable C11** with no external dependencies
 -   **CMake build system** for easy integration
 
@@ -38,10 +39,22 @@ ctest --test-dir build -C Release --output-on-failure
 
 # Optimized interpreter with caching strategies
 ./build/Release/sfpm_cached.exe
+
+# Tiered interpreter with automatic mode switching
+./build/Release/sfpm_tiered.exe
+
+# Practical game AI examples
+./build/Release/sfpm_game_ai.exe
+
+# Aspect-oriented programming with hooks
+./build/Release/sfpm_hooks.exe
 ```
 
-See `examples/README_INTERPRETER.md` for details on using SFPM to build runtime-modifiable interpreters.  
-See `examples/README_CACHING.md` for caching optimizations that reduce overhead from ~470x to ~3.5x.
+See `README_INTERPRETER.md` for details on using SFPM to build runtime-modifiable interpreters.  
+See `README_CACHING.md` for caching optimizations that reduce overhead from ~470x to ~3.5x.  
+See `README_TIERED.md` for automatic tier system with mode switching.  
+See `README_GAME_AI.md` for practical game AI examples.  
+See `README_HOOKS.md` for aspect-oriented programming with before/after hooks.
 
 ## Quick Start
 
