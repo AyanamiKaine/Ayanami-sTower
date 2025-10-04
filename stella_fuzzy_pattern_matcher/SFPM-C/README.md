@@ -30,8 +30,18 @@ ctest --test-dir build -C Release --output-on-failure
 ### Running Examples
 
 ```bash
-./build/sfpm_example
+# Basic pattern matching example
+./build/Release/sfpm_example.exe
+
+# Interpreter comparison: Switch vs SFPM
+./build/Release/sfpm_comparison.exe
+
+# Optimized interpreter with caching strategies
+./build/Release/sfpm_cached.exe
 ```
+
+See `examples/README_INTERPRETER.md` for details on using SFPM to build runtime-modifiable interpreters.  
+See `examples/README_CACHING.md` for caching optimizations that reduce overhead from ~470x to ~3.5x.
 
 ## Quick Start
 
@@ -256,6 +266,49 @@ Run tests with: `ctest --test-dir build -V`
 4. **Name your rules** - Helps with debugging and understanding matching
 5. **Manage string lifetimes** - Ensure fact strings outlive the fact source
 6. **Avoid circular references** - Don't store fact sources in rule user data
+
+## Use Cases
+
+### Replacing Switch Statements in Interpreters
+
+SFPM can replace traditional switch statements in virtual machine interpreters, enabling:
+
+-   **Runtime extensibility** - Add new opcodes without recompilation
+-   **Hot swapping** - Replace buggy implementations while running
+-   **Isolated testing** - Test opcode handlers independently
+-   **Plugin architecture** - Load opcodes from shared libraries
+-   **Fail-safe security** - Unregistered opcodes physically cannot execute
+
+**Performance:**
+
+-   Naive SFPM: ~481x overhead compared to switch statements
+-   **With caching: ~3.5x overhead** (135x faster than naive!)
+
+Acceptable for:
+
+-   ✅ Game scripting engines (non-critical path)
+-   ✅ Configuration languages
+-   ✅ AI behavior trees / decision systems
+-   ❌ NOT for hot-path game loops or real-time processing
+
+**Caching Strategies:**
+
+1. **Direct function pointer cache** - 2.8x overhead, loses pattern matching
+2. **SFPM + rule cache** - 3.5x overhead, retains all SFPM benefits ⭐ **Recommended**
+3. **SFPM + fact reuse** - 138x overhead, for complex multi-criteria rules
+
+See `examples/interpreter_comparison.c`, `examples/interpreter_cached.c`, and `examples/README_CACHING.md` for comprehensive demonstrations.
+
+### Game AI Decision Systems
+
+```c
+// Runtime-modifiable NPC behavior
+sfpm_criteria_t *see_enemy = sfpm_criteria_create("enemyVisible", SFPM_OP_EQUAL, sfpm_value_from_bool(true));
+sfpm_criteria_t *low_ammo = sfpm_criteria_create("ammo", SFPM_OP_LESS_THAN, sfpm_value_from_int(10));
+
+sfpm_rule_t *retreat_rule = sfpm_rule_create(..., retreat_behavior, ...);
+// Modify behavior at runtime based on difficulty, player feedback, etc.
+```
 
 ## Performance Considerations
 

@@ -42,6 +42,12 @@ endif()
 if(SFPM_BUILD_EXAMPLES)
     add_executable(sfpm_example examples/basic_example.c)
     target_link_libraries(sfpm_example PRIVATE sfpm)
+    
+    add_executable(sfpm_comparison examples/interpreter_comparison.c)
+    target_link_libraries(sfpm_comparison PRIVATE sfpm)
+    
+    add_executable(sfpm_cached examples/interpreter_cached.c)
+    target_link_libraries(sfpm_cached PRIVATE sfpm)
 endif()
 
 # Tests
