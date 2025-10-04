@@ -10,6 +10,8 @@ A lightweight, portable C11 implementation of the Stella Fuzzy Pattern Matcher f
 -   **Priority-based selection** with random tie-breaking
 -   **Optimized matching** by sorting rules by specificity
 -   **Before/after hooks** for aspect-oriented programming (logging, security, metrics)
+-   **Hook chaining** for composable pipelines (auth → validation → execution → audit)
+-   **Middleware hooks** for wrapping behavior (transactions, timing, monitoring)
 -   **Portable C11** with no external dependencies
 -   **CMake build system** for easy integration
 
@@ -27,6 +29,14 @@ cmake --build build --config Release
 ```bash
 ctest --test-dir build -C Release --output-on-failure
 ```
+
+**Test Suites:**
+
+-   `sfpm_basic` - Core SFPM functionality (values, criteria, rules)
+-   `sfpm_advanced` - Advanced pattern matching features
+-   `sfpm_hook_chaining` - Hook chaining with 15 comprehensive tests ✨
+
+See `TEST_COVERAGE_REPORT.md` for detailed test coverage information.
 
 ### Running Examples
 
@@ -48,13 +58,17 @@ ctest --test-dir build -C Release --output-on-failure
 
 # Aspect-oriented programming with hooks
 ./build/Release/sfpm_hooks.exe
+
+# Hook chaining for security pipelines and observability
+./build/Release/sfpm_hook_chaining.exe
 ```
 
 See `README_INTERPRETER.md` for details on using SFPM to build runtime-modifiable interpreters.  
 See `README_CACHING.md` for caching optimizations that reduce overhead from ~470x to ~3.5x.  
 See `README_TIERED.md` for automatic tier system with mode switching.  
 See `README_GAME_AI.md` for practical game AI examples.  
-See `README_HOOKS.md` for aspect-oriented programming with before/after hooks.
+See `README_HOOKS.md` for aspect-oriented programming with before/after hooks.  
+See `README_HOOK_CHAINING.md` for multiple hook chains and middleware patterns.
 
 ## Quick Start
 

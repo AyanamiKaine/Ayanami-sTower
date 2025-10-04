@@ -330,10 +330,10 @@ static void interpreter_set_hooks(interpreter_t *interp,
     for (int i = 0; i < interp->rule_count; i++) {
         if (interp->rules[i]) {
             if (before_hook) {
-                sfpm_rule_set_before_hook(interp->rules[i], before_hook, before_data);
+                sfpm_rule_add_before_hook(interp->rules[i], before_hook, before_data);
             }
             if (after_hook) {
-                sfpm_rule_set_after_hook(interp->rules[i], after_hook, after_data);
+                sfpm_rule_add_after_hook(interp->rules[i], after_hook, after_data);
             }
         }
     }

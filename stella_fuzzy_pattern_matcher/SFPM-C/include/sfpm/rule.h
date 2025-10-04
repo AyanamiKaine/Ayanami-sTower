@@ -42,6 +42,13 @@ typedef void (*sfpm_payload_fn)(void *user_data);
 typedef bool (*sfpm_hook_fn)(void *user_data, void *payload_user_data);
 
 /**
+ * @brief Hook chain node (opaque type)
+ * 
+ * Allows chaining multiple hooks together.
+ */
+typedef struct sfpm_hook_node sfpm_hook_node_t;
+
+/**
  * @brief Result of rule evaluation
  */
 typedef struct {
@@ -90,32 +97,82 @@ sfpm_eval_result_t sfpm_rule_evaluate(const sfpm_rule_t *rule,
 void sfpm_rule_execute_payload(const sfpm_rule_t *rule);
 
 /**
- * @brief Set a before-execution hook for a rule
+ * @brief Add a before-execution hook to the chain
  * 
- * The hook is called before the payload executes.
- * If the hook returns false, payload execution is aborted.
+ * Hooks are executed in the order they are added.
+ * Each hook can abort execution by returning false.
  * 
  * @param rule The rule
- * @param hook The hook function (NULL to remove)
+ * @param hook The hook function to add
  * @param user_data User data to pass to the hook
+ * @return true on success, false on failure
  */
-void sfpm_rule_set_before_hook(sfpm_rule_t *rule,
+bool sfpm_rule_add_before_hook(sfpm_rule_t *rule,
                                 sfpm_hook_fn hook,
                                 void *user_data);
 
 /**
- * @brief Set an after-execution hook for a rule
+ * @brief Add an after-execution hook to the chain
  * 
- * The hook is called after the payload executes.
- * The return value is currently ignored but reserved for future use.
+ * Hooks are executed in the order they are added.
  * 
  * @param rule The rule
- * @param hook The hook function (NULL to remove)
+ * @param hook The hook function to add
  * @param user_data User data to pass to the hook
+ * @return true on success, false on failure
  */
-void sfpm_rule_set_after_hook(sfpm_rule_t *rule,
+bool sfpm_rule_add_after_hook(sfpm_rule_t *rule,
                                sfpm_hook_fn hook,
                                void *user_data);
+
+/**
+ * @brief Add a middleware hook to the chain
+ * 
+ * Middleware hooks execute between before hooks and after hooks.
+ * They wrap the payload execution and can abort by returning false.
+ * Execution order: before hooks -> middleware hooks -> payload -> after hooks
+ * 
+ * @param rule The rule
+ * @param hook The hook function to add
+ * @param user_data User data to pass to the hook
+ * @return true on success, false on failure
+ */
+bool sfpm_rule_add_middleware_hook(sfpm_rule_t *rule,
+                                    sfpm_hook_fn hook,
+                                    void *user_data);
+
+/**
+ * @brief Clear all hooks from a rule
+ * 
+ * Removes all before, after, and middleware hooks.
+ * 
+ * @param rule The rule
+ */
+void sfpm_rule_clear_hooks(sfpm_rule_t *rule);
+
+/**
+ * @brief Get the number of before hooks
+ * 
+ * @param rule The rule
+ * @return Number of before hooks in the chain
+ */
+int sfpm_rule_get_before_hook_count(const sfpm_rule_t *rule);
+
+/**
+ * @brief Get the number of after hooks
+ * 
+ * @param rule The rule
+ * @return Number of after hooks in the chain
+ */
+int sfpm_rule_get_after_hook_count(const sfpm_rule_t *rule);
+
+/**
+ * @brief Get the number of middleware hooks
+ * 
+ * @param rule The rule
+ * @return Number of middleware hooks in the chain
+ */
+int sfpm_rule_get_middleware_hook_count(const sfpm_rule_t *rule);
 
 /**
  * @brief Get the number of criteria in a rule

@@ -57,6 +57,9 @@ if(SFPM_BUILD_EXAMPLES)
     
     add_executable(sfpm_hooks examples/interpreter_hooks.c)
     target_link_libraries(sfpm_hooks PRIVATE sfpm)
+    
+    add_executable(sfpm_hook_chaining examples/interpreter_hook_chaining.c)
+    target_link_libraries(sfpm_hook_chaining PRIVATE sfpm)
 endif()
 
 # Tests
@@ -69,6 +72,10 @@ if(SFPM_BUILD_TESTS)
     add_executable(sfpm_test_advanced tests/test_advanced.c)
     target_link_libraries(sfpm_test_advanced PRIVATE sfpm)
     add_test(NAME sfpm_advanced COMMAND sfpm_test_advanced)
+    
+    add_executable(sfpm_test_hook_chaining tests/test_hook_chaining.c)
+    target_link_libraries(sfpm_test_hook_chaining PRIVATE sfpm)
+    add_test(NAME sfpm_hook_chaining COMMAND sfpm_test_hook_chaining)
 endif()
 
 # Installation
