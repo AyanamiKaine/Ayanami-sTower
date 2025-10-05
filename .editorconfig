@@ -64,3 +64,9 @@ csharp_style_allow_embedded_statements_on_same_line = false
 # This is a common one for long lines.
 # Example: new List<int>().Where(x => x > 5).Select(x => x * 2).ToList();
 csharp_style_wrap_chained_method_calls = wrap_if_long
+
+# IDE0058: Expression value is never used
+csharp_style_unused_value_expression_statement_preference = unused_local_variable
+
+# ASP0012: Suggest using builder.Services over Host.ConfigureServices or WebHost.ConfigureServices
+dotnet_diagnostic.ASP0012.severity = none

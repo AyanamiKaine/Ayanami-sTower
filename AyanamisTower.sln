@@ -243,6 +243,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StellaInvicta", "Exploratio
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlanetTextureGenerator", "Explorations\StellaEcs\PlanetTextureGenerator\PlanetTextureGenerator.csproj", "{A1DC7CB4-46CE-4246-A4F6-4437456289D8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunTimeMetaInformation", "Explorations\RunTimeMetaInformation\RunTimeMetaInformation.csproj", "{5B41EFD9-432F-45C9-AC53-C79BED327D28}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1285,6 +1287,18 @@ Global
 		{A1DC7CB4-46CE-4246-A4F6-4437456289D8}.Release|x64.Build.0 = Release|Any CPU
 		{A1DC7CB4-46CE-4246-A4F6-4437456289D8}.Release|x86.ActiveCfg = Release|Any CPU
 		{A1DC7CB4-46CE-4246-A4F6-4437456289D8}.Release|x86.Build.0 = Release|Any CPU
+		{5B41EFD9-432F-45C9-AC53-C79BED327D28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B41EFD9-432F-45C9-AC53-C79BED327D28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B41EFD9-432F-45C9-AC53-C79BED327D28}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5B41EFD9-432F-45C9-AC53-C79BED327D28}.Debug|x64.Build.0 = Debug|Any CPU
+		{5B41EFD9-432F-45C9-AC53-C79BED327D28}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5B41EFD9-432F-45C9-AC53-C79BED327D28}.Debug|x86.Build.0 = Debug|Any CPU
+		{5B41EFD9-432F-45C9-AC53-C79BED327D28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B41EFD9-432F-45C9-AC53-C79BED327D28}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B41EFD9-432F-45C9-AC53-C79BED327D28}.Release|x64.ActiveCfg = Release|Any CPU
+		{5B41EFD9-432F-45C9-AC53-C79BED327D28}.Release|x64.Build.0 = Release|Any CPU
+		{5B41EFD9-432F-45C9-AC53-C79BED327D28}.Release|x86.ActiveCfg = Release|Any CPU
+		{5B41EFD9-432F-45C9-AC53-C79BED327D28}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1384,5 +1398,6 @@ Global
 		{68D1A234-C82D-CE76-AFBA-4D848B48D636} = {414F7F9A-9529-155F-05A8-050F3A5AAD36}
 		{0EE55101-F20B-49D1-A868-9A3A0F5F680F} = {68D1A234-C82D-CE76-AFBA-4D848B48D636}
 		{A1DC7CB4-46CE-4246-A4F6-4437456289D8} = {68D1A234-C82D-CE76-AFBA-4D848B48D636}
+		{5B41EFD9-432F-45C9-AC53-C79BED327D28} = {414F7F9A-9529-155F-05A8-050F3A5AAD36}
 	EndGlobalSection
 EndGlobal
