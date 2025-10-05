@@ -1,0 +1,71 @@
+{
+  "question": "Explain cellular respiration",
+  "top_k": 3,
+  "query_at_origin": true,
+  "distance_definition": {
+    "original_distance": "L2 distance in original embedding space (vector - query)",
+    "reduced_distance": "Euclidean distance after PCA reduction to 3D (not distance preserving)"
+  },
+  "items": [
+    {
+      "doc_id": 1,
+      "text": "The capital of France is Paris.",
+      "x": 0.589591920375824,
+      "y": 0.11077376455068588,
+      "z": -0.11698798835277557,
+      "original_distance": 1.376911997795105,
+      "reduced_distance": 0.6112083792686462,
+      "retrieved_rank": null
+    },
+    {
+      "doc_id": 2,
+      "text": "Mitochondria are the powerhouse of the cell.",
+      "x": -0.4757954180240631,
+      "y": -0.33186763525009155,
+      "z": -0.421663761138916,
+      "original_distance": 1.072495937347412,
+      "reduced_distance": 0.7171595096588135,
+      "retrieved_rank": 2
+    },
+    {
+      "doc_id": 3,
+      "text": "The 2024 Summer Olympics were held in the French capital.",
+      "x": 0.5976659059524536,
+      "y": 0.42578503489494324,
+      "z": -0.04583045467734337,
+      "original_distance": 1.3843203783035278,
+      "reduced_distance": 0.7352535724639893,
+      "retrieved_rank": null
+    },
+    {
+      "doc_id": 4,
+      "text": "Photosynthesis is the process used by plants to convert light energy into chemical energy.",
+      "x": -0.5696641206741333,
+      "y": 0.1703658550977707,
+      "z": 0.6073454022407532,
+      "original_distance": 1.172513484954834,
+      "reduced_distance": 0.8499471545219421,
+      "retrieved_rank": 3
+    },
+    {
+      "doc_id": 5,
+      "text": "The Louvre Museum, located in Paris, is the world's largest art museum.",
+      "x": 0.4057075083255768,
+      "y": -0.6147462129592896,
+      "z": 0.24045604467391968,
+      "original_distance": 1.4205904006958008,
+      "reduced_distance": 0.7748100161552429,
+      "retrieved_rank": null
+    },
+    {
+      "doc_id": 6,
+      "text": "Cellular respiration releases energy from glucose.",
+      "x": -0.5475057363510132,
+      "y": 0.23968906700611115,
+      "z": -0.2633194625377655,
+      "original_distance": 0.6417251229286194,
+      "reduced_distance": 0.6531083583831787,
+      "retrieved_rank": 1
+    }
+  ]
+}

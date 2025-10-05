@@ -1,4 +1,6 @@
+google-genai  # modern Gemini SDK (replaces google-generativeai)
 numpy
 sentence-transformers
 sqlite-vec
-google-generativeai
+fastapi
+uvicorn[standard]
