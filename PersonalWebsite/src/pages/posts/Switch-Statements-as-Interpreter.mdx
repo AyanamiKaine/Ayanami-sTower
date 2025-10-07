@@ -1,0 +1,15 @@
+---
+title: "Rambles About Interpreter"
+date: 2025-10-5
+author: "Ayanami Kaine"
+tags: ["Programming", "Interpreter", "Switch Statements"]
+layout: ../../layouts/PostLayout.astro
+summary: "I ramble about what it can mean when we think of interpreter as just a switch statement."
+published: false
+---
+
+# Rambles
+
+When I developed my own fuzzy pattern matcher to make it easier and more dynamic to replace switch statements where we need more dynamic behavior it got me thinking. When we can break down an interpreter as just being a big switch statements executing byte code. Couldnt the fuzzy pattern matcher be used as an interpreter? 
+
+A rule would define what OP-Code condition needs to be met and its payload defines what happens when the OP-Code is executed. In essence this would mean we can modify what OP-Codes can be executed and how. Or in other words we can simply change the switch statement at runtime.
