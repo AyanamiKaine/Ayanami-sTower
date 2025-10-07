@@ -1,0 +1,96 @@
+---
+title: "Blast From The Past: Smalltalk-72"
+date: 2025-10-07
+author: "Ayanami Kaine"
+tags: ["Smalltalk", "Object Oriented Programming", "Interpreter"]
+layout: ../../layouts/PostLayout.astro
+summary: "Smalltalk-72 had an incredible idea, not only is everything an object but every object is a self contained interpreter."
+published: true
+---
+
+Smalltalk-72 had an incredible idea. What if every object is truly encapsulated and has its own interpreter?. So messages are bytecodes send to the interpreter. Conceptually this would look like any other classic interpreter, a switch statement.
+
+In Smalltalk-72 we could modify the interpreter at runtime. Changing how bytecode gets executed. What bytecode could be executed. Essentially it was possible to send whole new programs to objects, changing the interpreter in ways it became the program.
+
+(In a real example you would use an instruction table that stores the name of the instruction and how to handle it. So you can add, edit, remove instructions at runtime.)
+
+## The Interpreter Approach
+
+```python
+match vm.GetNextInstruction():
+    case ["OP_PUSH"]:
+        ...
+    case ["OP_POP"]:
+        ...
+    case ["OP_ADD"]:
+        ...
+    case ["OP_SUB"]:
+        ...
+```
+
+The idea never left the lab and instead was scrapped in Smalltalk-80 in favor of a complete unified Virtual Machine. Now Smalltalk had only one VM instead of every object being one. But this got me thinking.
+
+I quite like Elixir and Erlang. It also just has one unified VM but we can define [processes](https://hexdocs.pm/elixir/Process.html) (I know good naming isn't it?) that can handle messages.
+
+```elixir
+def server do
+  receive do
+    {:OP_PUSH} -> ...
+    {:OP_POP}  -> ...
+    {:OP_ADD}  -> ...
+    {:OP_SUB}  -> ...
+  end
+end
+```
+
+By default it looks more similar. Elixir/Erlang also provide quite the nice syntax abstraction when working with this idea more. What if messages send should invoke method calls? Wouldnt it be nice if the method interface defines what messages the server/object/process can accept?
+
+```elixir
+defmodule Stack do
+  use GenServer
+
+  @impl true
+  def init() do
+    ...
+  end
+
+  @impl true
+  def handle_call(:OP_POP, state) do
+    ...
+  end
+
+  @impl true
+  def handle_call({:OP_PUSH, element}, state) do
+    ...
+  end
+
+  @impl true
+  def handle_call(:OP_ADD, state) do
+    ...
+  end
+
+    @impl true
+  def handle_call(:OP_SUB, state) do
+    ...
+  end
+
+end
+```
+
+It all looks so similar. I wonder what if we had sticked with the idea of every object being its own interpreter? There are some reason given why they didnt. Performance and understanding where reasons given.
+
+The last part I can understand especially to reason about an interpreter that can self modify itself. Either from the inside or the outside is far from easy to understand. Just imagine having over 1000 concurrently running of these. These are just like our cells, and they took many decades to understand (Still we have so much to learn about them).
+
+In general Smalltalk-72 seems to be much more alligned to the idea of objects being cells than later versions.
+
+## No Classes
+
+Smalltalk-72 didnt use any classes. It was more similar to the first prototype languages. New objects where created by cloning existing ones. There where no chains between existing and new objects. I.e. there was no automatic way to forward messages if the object didnt understand it.
+
+In later versions a formal way for delegation was introduced. 
+
+## End
+
+In the end many language got inspired by Smalltalk. Many languages we know where made because Smalltalk existed. From advancements in virtual machines. To C++ ohhh god maybe we took the wrong turn here. Ohhh and C++ took many of the NOT powerful ideas of Smalltalk like compile time hierarchies of types. This cant be real.
+
+I wonder what would have happened when the idea was now implemented. Would performance still be an issue? Wasn't this idea made for a world of multiple cores? A world of interconnected computers? Maybe Smalltalk and Alan Kay in general where 50 years ahead. **The computer revolution hasnt happend yet**.
