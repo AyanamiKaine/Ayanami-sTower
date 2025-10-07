@@ -24,31 +24,70 @@ class VMActor:
         self.ip = 0
         self.bytecode = []
         
+        # Call stack for function calls and returns
+        self.call_stack = []
+        
         # Actor state
         self.running = False
         self._lock = threading.Lock()
 
         self.instruction_table = {
+            # Arithmetic operations
             "OP_NEGATE":        self.handle_negate,
-            "OP_CONSTANT":      self.handle_constant,
             "OP_ADD" :          self.handle_add,
             "OP_SUBTRACT" :     self.handle_subtract,
             "OP_MULTIPLY" :     self.handle_multiply,
             "OP_DIVIDE" :       self.handle_divide,
+            "OP_MODULO":        self.handle_modulo,
+            "OP_POWER":         self.handle_power,
+            
+            # Comparison operations
             "OP_GREATER" :      self.handle_greater,
             "OP_LESS" :         self.handle_less,
+            "OP_GREATER_EQUAL": self.handle_greater_equal,
+            "OP_LESS_EQUAL":    self.handle_less_equal,
             "OP_EQUAL":         self.handle_equal,
+            "OP_NOT_EQUAL":     self.handle_not_equal,
+            
+            # Logical operations
+            "OP_NOT":           self.handle_not,
+            "OP_AND":           self.handle_and,
+            "OP_OR":            self.handle_or,
+            
+            # Constants and literals
+            "OP_CONSTANT":      self.handle_constant,
             "OP_FALSE":         self.handle_false,
             "OP_TRUE":          self.handle_true,
+            "OP_NIL":           self.handle_nil,
+            
+            # Stack operations
             "OP_POP":           self.handle_pop,
+            "OP_PUSH":          self.handle_push,
+            "OP_DUP":           self.handle_dup,
+            "OP_SWAP":          self.handle_swap,
+            
+            # Variable operations
             "OP_DEFINE_VARIABLE": self.handle_define_variable,
             "OP_GET_VARIABLE":    self.handle_get_variable,
             "OP_SET_VARIABLE":    self.handle_set_variable,
-            "OP_JUMP" : None,
-            "OP_JUMP_IF_FALSE": None,
-            "OP_LOOP": None,
-            "OP_CALL": None,
+            
+            # Control flow
+            "OP_JUMP" :         self.handle_jump,
+            "OP_JUMP_IF_FALSE": self.handle_jump_if_false,
+            "OP_LOOP":          self.handle_loop,
+            "OP_CALL":          self.handle_call,
             "OP_RETURN":        self.handle_return,
+            
+            # Type checking/conversion
+            "OP_IS_NUMBER":     self.handle_is_number,
+            "OP_IS_STRING":     self.handle_is_string,
+            "OP_IS_BOOL":       self.handle_is_bool,
+            "OP_TO_STRING":     self.handle_to_string,
+            "OP_TO_NUMBER":     self.handle_to_number,
+            
+            # I/O operations
+            "OP_PRINT":         self.handle_print,
+            "OP_PRINT_STACK":   self.handle_print_stack,
         }
 
     def s_expression_to_bytecode(self, sexpr):
@@ -217,9 +256,21 @@ class VMActor:
             '-': 'OP_SUBTRACT',
             '*': 'OP_MULTIPLY',
             '/': 'OP_DIVIDE',
+            '%': 'OP_MODULO',
+            '**': 'OP_POWER',
             '>': 'OP_GREATER',
             '<': 'OP_LESS',
+            '>=': 'OP_GREATER_EQUAL',
+            '<=': 'OP_LESS_EQUAL',
             '=': 'OP_EQUAL',
+            '!=': 'OP_NOT_EQUAL',
+            'and': 'OP_AND',
+            'or': 'OP_OR',
+        }
+        
+        # Unary operators
+        unary_ops = {
+            'not': 'OP_NOT',
         }
         
         if operator in binary_ops:
@@ -228,6 +279,13 @@ class VMActor:
             left_bytecode = self._compile_expr(expr[1])
             right_bytecode = self._compile_expr(expr[2])
             return left_bytecode + right_bytecode + [binary_ops[operator]]
+        
+        # Unary operators
+        if operator in unary_ops:
+            if len(expr) != 2:
+                raise SyntaxError(f"Unary operator {operator} requires exactly 1 argument, got {len(expr) - 1}")
+            operand_bytecode = self._compile_expr(expr[1])
+            return operand_bytecode + [unary_ops[operator]]
         
         # User-defined function call: (func arg1 arg2 ...)
         # Check if this is a known instruction/function
@@ -419,7 +477,18 @@ class VMActor:
         raise IndexError("No constant available at ip={}".format(self.ip))
 
     def handle_return(self):
-        self.stack.pop()
+        """Return from a function call, restoring previous context"""
+        if self.call_stack:
+            # Restore previous context
+            context = self.call_stack.pop()
+            self.ip = context['return_address']
+            # Optionally restore variables (or keep current scope - design choice)
+            # For now, we'll keep the modified variables (allows closures/side effects)
+        else:
+            # No call stack, just pop return value or end execution
+            # This allows OP_RETURN to also work as a simple stack pop
+            if self.stack:
+                self.stack.pop()
 
     def handle_negate(self):
         self.stack.push(- self.stack.pop())
@@ -492,4 +561,148 @@ class VMActor:
         name = self.read_constant()
         value = self.stack.pop()
         self.variables[name] = value
+
+    # Additional arithmetic operations
+    def handle_modulo(self):
+        b = self.stack.pop()
+        a = self.stack.pop()
+        result = a % b
+        self.stack.push(result)
+
+    def handle_power(self):
+        b = self.stack.pop()
+        a = self.stack.pop()
+        result = a ** b
+        self.stack.push(result)
+
+    # Additional comparison operations
+    def handle_greater_equal(self):
+        b = self.stack.pop()
+        a = self.stack.pop()
+        result = a >= b
+        self.stack.push(result)
+
+    def handle_less_equal(self):
+        b = self.stack.pop()
+        a = self.stack.pop()
+        result = a <= b
+        self.stack.push(result)
+
+    def handle_not_equal(self):
+        b = self.stack.pop()
+        a = self.stack.pop()
+        result = a != b
+        self.stack.push(result)
+
+    # Logical operations
+    def handle_not(self):
+        value = self.stack.pop()
+        self.stack.push(not value)
+
+    def handle_and(self):
+        b = self.stack.pop()
+        a = self.stack.pop()
+        self.stack.push(a and b)
+
+    def handle_or(self):
+        b = self.stack.pop()
+        a = self.stack.pop()
+        self.stack.push(a or b)
+
+    # Nil/None value
+    def handle_nil(self):
+        self.stack.push(None)
+
+    # Stack manipulation
+    def handle_dup(self):
+        """Duplicate the top stack value"""
+        value = self.stack[-1]
+        self.stack.push(value)
+
+    def handle_swap(self):
+        """Swap the top two stack values"""
+        b = self.stack.pop()
+        a = self.stack.pop()
+        self.stack.push(b)
+        self.stack.push(a)
+
+    # Type checking
+    def handle_is_number(self):
+        value = self.stack.pop()
+        self.stack.push(isinstance(value, (int, float)))
+
+    def handle_is_string(self):
+        value = self.stack.pop()
+        self.stack.push(isinstance(value, str))
+
+    def handle_is_bool(self):
+        value = self.stack.pop()
+        self.stack.push(isinstance(value, bool))
+
+    # Type conversion
+    def handle_to_string(self):
+        value = self.stack.pop()
+        self.stack.push(str(value))
+
+    def handle_to_number(self):
+        value = self.stack.pop()
+        try:
+            # Try int first, then float
+            if isinstance(value, str):
+                if '.' in value:
+                    self.stack.push(float(value))
+                else:
+                    self.stack.push(int(value))
+            else:
+                self.stack.push(float(value))
+        except (ValueError, TypeError):
+            self.stack.push(None)
+
+    # I/O operations
+    def handle_print(self):
+        """Print the top stack value without popping it"""
+        value = self.stack[-1] if self.stack else None
+        print(value)
+
+    def handle_print_stack(self):
+        """Print the entire stack for debugging"""
+        print("Stack:", self.stack)
+
+    # Control flow operations
+    def handle_jump(self):
+        """Unconditional jump to a bytecode offset"""
+        offset = self.read_constant()
+        self.ip = offset
+
+    def handle_jump_if_false(self):
+        """Jump to offset if top of stack is falsy, pops the condition"""
+        offset = self.read_constant()
+        condition = self.stack.pop()
+        if not condition:
+            self.ip = offset
+
+    def handle_loop(self):
+        """Jump backwards by offset (for implementing loops)"""
+        offset = self.read_constant()
+        self.ip -= offset
+
+    def handle_call(self):
+        """Call a function at a given address with arity (number of arguments)"""
+        # Read function address and arity
+        address = self.read_constant()
+        arity = self.read_constant()
+        
+        # Save return address and local variable context
+        self.call_stack.append({
+            'return_address': self.ip,
+            'variables': self.variables.copy()
+        })
+        
+        # Jump to function address
+        self.ip = address
+
+    def handle_push(self):
+        """Push a value directly onto the stack (reads next instruction as value)"""
+        value = self.read_constant()
+        self.stack.push(value)
     

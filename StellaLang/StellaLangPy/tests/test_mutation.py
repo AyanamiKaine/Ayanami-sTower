@@ -277,12 +277,6 @@ def test_chain_instruction_mutations():
             result *= i
         vm.stack.push(result)
     
-    # Add modulo instruction
-    def modulo(vm):
-        b = vm.stack.pop()
-        a = vm.stack.pop()
-        vm.stack.push(a % b)
-    
     # Add max instruction
     def max_two(vm):
         b = vm.stack.pop()
@@ -290,12 +284,11 @@ def test_chain_instruction_mutations():
         vm.stack.push(max(a, b))
     
     actor.define_new_instruction("OP_FACTORIAL", factorial)
-    actor.define_new_instruction("OP_MOD", modulo)
     actor.define_new_instruction("OP_MAX", max_two)
     
     # 5! = 120, then 120 % 7 = 1, then max(1, 10) = 10
     actor.send("OP_CONSTANT", 5, "OP_FACTORIAL")
-    actor.send("OP_CONSTANT", 7, "OP_MOD")
+    actor.send("OP_CONSTANT", 7, "OP_MODULO")  # Use existing OP_MODULO instead of OP_MOD
     actor.send("OP_CONSTANT", 10, "OP_MAX")
     
     while actor.handle_message():
@@ -426,15 +419,15 @@ def test_specialization_pattern():
     """Test specializing actors for different roles."""
     # Create specialized calculator actors
     
-    # Arithmetic actor
+    # Arithmetic actor - use a custom name since OP_POWER now exists
     arithmetic_actor = VMActor()
     
-    def power(vm):
+    def custom_power(vm):
         exp = vm.stack.pop()
         base = vm.stack.pop()
         vm.stack.push(base ** exp)
     
-    arithmetic_actor.define_new_instruction("OP_POWER", power)
+    arithmetic_actor.define_new_instruction("OP_CUSTOM_POWER", custom_power)
     
     # String actor (using numbers as char codes)
     string_actor = VMActor()
@@ -449,7 +442,7 @@ def test_specialization_pattern():
     string_actor.define_new_instruction("OP_CONCAT", concat)
     
     # Each actor specialized for its domain
-    arithmetic_actor.send("OP_CONSTANT", 2, "OP_CONSTANT", 8, "OP_POWER")
+    arithmetic_actor.send("OP_CONSTANT", 2, "OP_CONSTANT", 8, "OP_CUSTOM_POWER")
     while arithmetic_actor.handle_message():
         pass
     assert arithmetic_actor.top() == 256

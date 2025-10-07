@@ -512,3 +512,463 @@ def test_s_expression_comparison_chain():
     
     assert (vm.top() == True)
 
+# Tests for new arithmetic operations
+def test_OP_MODULO_instruction():
+    bytecode = ["OP_CONSTANT", 10, "OP_CONSTANT", 3, "OP_MODULO"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == 1)
+
+def test_OP_POWER_instruction():
+    bytecode = ["OP_CONSTANT", 2, "OP_CONSTANT", 8, "OP_POWER"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == 256)
+
+def test_s_expression_modulo():
+    sexpr = "(% 17 5)"
+    expected_bytecode = ["OP_CONSTANT", 17, "OP_CONSTANT", 5, "OP_MODULO"]
+
+    vm = VMActor()
+    bytecode = vm.s_expression_to_bytecode(sexpr)
+
+    assert (bytecode == expected_bytecode)
+
+def test_s_expression_power():
+    sexpr = "(** 3 4)"
+    expected_bytecode = ["OP_CONSTANT", 3, "OP_CONSTANT", 4, "OP_POWER"]
+
+    vm = VMActor()
+    bytecode = vm.s_expression_to_bytecode(sexpr)
+
+    assert (bytecode == expected_bytecode)
+
+def test_s_expression_modulo_execution():
+    sexpr = "(% 23 7)"
+    
+    vm = VMActor()
+    bytecode = vm.s_expression_to_bytecode(sexpr)
+    vm.load_bytecode(bytecode)
+    vm.execute()
+    
+    assert (vm.top() == 2)
+
+def test_s_expression_power_execution():
+    sexpr = "(** 5 3)"
+    
+    vm = VMActor()
+    bytecode = vm.s_expression_to_bytecode(sexpr)
+    vm.load_bytecode(bytecode)
+    vm.execute()
+    
+    assert (vm.top() == 125)
+
+# Tests for new comparison operations
+def test_OP_GREATER_EQUAL_instruction():
+    bytecode = ["OP_CONSTANT", 10, "OP_CONSTANT", 10, "OP_GREATER_EQUAL"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == True)
+
+def test_OP_LESS_EQUAL_instruction():
+    bytecode = ["OP_CONSTANT", 5, "OP_CONSTANT", 10, "OP_LESS_EQUAL"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == True)
+
+def test_OP_NOT_EQUAL_instruction():
+    bytecode = ["OP_CONSTANT", 5, "OP_CONSTANT", 10, "OP_NOT_EQUAL"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == True)
+
+def test_s_expression_greater_equal():
+    sexpr = "(>= 10 5)"
+    expected_bytecode = ["OP_CONSTANT", 10, "OP_CONSTANT", 5, "OP_GREATER_EQUAL"]
+
+    vm = VMActor()
+    bytecode = vm.s_expression_to_bytecode(sexpr)
+
+    assert (bytecode == expected_bytecode)
+
+def test_s_expression_less_equal():
+    sexpr = "(<= 5 10)"
+    expected_bytecode = ["OP_CONSTANT", 5, "OP_CONSTANT", 10, "OP_LESS_EQUAL"]
+
+    vm = VMActor()
+    bytecode = vm.s_expression_to_bytecode(sexpr)
+
+    assert (bytecode == expected_bytecode)
+
+def test_s_expression_not_equal():
+    sexpr = "(!= 5 10)"
+    expected_bytecode = ["OP_CONSTANT", 5, "OP_CONSTANT", 10, "OP_NOT_EQUAL"]
+
+    vm = VMActor()
+    bytecode = vm.s_expression_to_bytecode(sexpr)
+
+    assert (bytecode == expected_bytecode)
+
+# Tests for logical operations
+def test_OP_NOT_instruction():
+    bytecode = ["OP_TRUE", "OP_NOT"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == False)
+
+def test_OP_AND_instruction():
+    bytecode = ["OP_TRUE", "OP_FALSE", "OP_AND"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == False)
+
+def test_OP_AND_instruction_both_true():
+    bytecode = ["OP_TRUE", "OP_TRUE", "OP_AND"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == True)
+
+def test_OP_OR_instruction():
+    bytecode = ["OP_TRUE", "OP_FALSE", "OP_OR"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == True)
+
+def test_OP_OR_instruction_both_false():
+    bytecode = ["OP_FALSE", "OP_FALSE", "OP_OR"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == False)
+
+def test_s_expression_not():
+    sexpr = "(not true)"
+    expected_bytecode = ["OP_TRUE", "OP_NOT"]
+
+    vm = VMActor()
+    bytecode = vm.s_expression_to_bytecode(sexpr)
+
+    assert (bytecode == expected_bytecode)
+
+def test_s_expression_and():
+    sexpr = "(and true false)"
+    expected_bytecode = ["OP_TRUE", "OP_FALSE", "OP_AND"]
+
+    vm = VMActor()
+    bytecode = vm.s_expression_to_bytecode(sexpr)
+
+    assert (bytecode == expected_bytecode)
+
+def test_s_expression_or():
+    sexpr = "(or false true)"
+    expected_bytecode = ["OP_FALSE", "OP_TRUE", "OP_OR"]
+
+    vm = VMActor()
+    bytecode = vm.s_expression_to_bytecode(sexpr)
+
+    assert (bytecode == expected_bytecode)
+
+def test_s_expression_complex_logical():
+    # (and (> 10 5) (< 3 7)) should be true
+    sexpr = "(and (> 10 5) (< 3 7))"
+    
+    vm = VMActor()
+    bytecode = vm.s_expression_to_bytecode(sexpr)
+    vm.load_bytecode(bytecode)
+    vm.execute()
+    
+    assert (vm.top() == True)
+
+def test_s_expression_not_execution():
+    sexpr = "(not (= 5 10))"
+    
+    vm = VMActor()
+    bytecode = vm.s_expression_to_bytecode(sexpr)
+    vm.load_bytecode(bytecode)
+    vm.execute()
+    
+    assert (vm.top() == True)
+
+# Tests for nil/None
+def test_OP_NIL_instruction():
+    bytecode = ["OP_NIL"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == None)
+
+# Tests for stack operations
+def test_OP_DUP_instruction():
+    bytecode = ["OP_CONSTANT", 42, "OP_DUP"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (len(vm.stack) == 2)
+    assert (vm.stack[-1] == 42)
+    assert (vm.stack[-2] == 42)
+
+def test_OP_SWAP_instruction():
+    bytecode = ["OP_CONSTANT", 10, "OP_CONSTANT", 20, "OP_SWAP"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.stack[-1] == 10)
+    assert (vm.stack[-2] == 20)
+
+def test_OP_PUSH_instruction():
+    bytecode = ["OP_PUSH", 99]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == 99)
+
+# Tests for type checking
+def test_OP_IS_NUMBER_instruction_true():
+    bytecode = ["OP_CONSTANT", 42, "OP_IS_NUMBER"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == True)
+
+def test_OP_IS_NUMBER_instruction_false():
+    bytecode = ["OP_CONSTANT", "hello", "OP_IS_NUMBER"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == False)
+
+def test_OP_IS_STRING_instruction_true():
+    bytecode = ["OP_CONSTANT", "hello", "OP_IS_STRING"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == True)
+
+def test_OP_IS_STRING_instruction_false():
+    bytecode = ["OP_CONSTANT", 42, "OP_IS_STRING"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == False)
+
+def test_OP_IS_BOOL_instruction_true():
+    bytecode = ["OP_TRUE", "OP_IS_BOOL"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == True)
+
+def test_OP_IS_BOOL_instruction_false():
+    bytecode = ["OP_CONSTANT", 42, "OP_IS_BOOL"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == False)
+
+# Tests for type conversion
+def test_OP_TO_STRING_instruction():
+    bytecode = ["OP_CONSTANT", 42, "OP_TO_STRING"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == "42")
+    assert (isinstance(vm.top(), str))
+
+def test_OP_TO_NUMBER_instruction_int():
+    bytecode = ["OP_CONSTANT", "123", "OP_TO_NUMBER"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == 123)
+
+def test_OP_TO_NUMBER_instruction_float():
+    bytecode = ["OP_CONSTANT", "12.5", "OP_TO_NUMBER"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == 12.5)
+
+def test_OP_TO_NUMBER_instruction_invalid():
+    bytecode = ["OP_CONSTANT", "not a number", "OP_TO_NUMBER"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == None)
+
+# Tests for control flow
+def test_OP_JUMP_instruction():
+    # Jump over the OP_CONSTANT 999, should only push 42
+    bytecode = ["OP_JUMP", 4, "OP_CONSTANT", 999, "OP_CONSTANT", 42]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == 42)
+    assert (len(vm.stack) == 1)
+
+def test_OP_JUMP_IF_FALSE_instruction_true_condition():
+    # Condition is true, should NOT jump, execute both constants
+    bytecode = ["OP_TRUE", "OP_JUMP_IF_FALSE", 5, "OP_CONSTANT", 42, "OP_CONSTANT", 100]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == 100)
+    assert (len(vm.stack) == 2)
+
+def test_OP_JUMP_IF_FALSE_instruction_false_condition():
+    # Condition is false, should jump over OP_CONSTANT 42
+    bytecode = ["OP_FALSE", "OP_JUMP_IF_FALSE", 5, "OP_CONSTANT", 42, "OP_CONSTANT", 100]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    assert (vm.top() == 100)
+    assert (len(vm.stack) == 1)
+
+def test_OP_LOOP_instruction():
+    # Simpler test: just verify LOOP changes IP correctly
+    vm = VMActor()
+    
+    # Set up a simple bytecode and manually test loop behavior
+    bytecode = [
+        "OP_CONSTANT", 1,    # 0-1: push 1
+        "OP_CONSTANT", 2,    # 2-3: push 2  
+        "OP_ADD",            # 4: add -> 3
+        "OP_LOOP", 3,        # 5-6: loop back 3 positions
+    ]
+    
+    vm.load_bytecode(bytecode)
+    
+    # Execute instructions properly (step() handles each instruction)
+    vm.step()  # OP_CONSTANT at 0, reads 1 from position 1, ip becomes 2
+    vm.step()  # OP_CONSTANT at 2, reads 2 from position 3, ip becomes 4
+    vm.step()  # OP_ADD at 4, ip becomes 5
+    
+    # Stack should have 3 now
+    assert vm.top() == 3
+    
+    # Now at position 5, execute OP_LOOP
+    ip_before_loop = vm.ip  # Should be 5
+    vm.step()  # OP_LOOP instruction reads offset (3) and jumps back
+    
+    # IP should have moved backwards by 3
+    # After reading LOOP instruction (ip=6), then reading offset (ip=7), then jumping back by 3
+    # So: 7 - 3 = 4
+    assert vm.ip == 4  # Should be back at OP_ADD position
+
+def test_OP_CALL_and_RETURN_instruction():
+    # Simplified test: manually manage call/return without actual function definition
+    # We'll test that call stack is created and return works
+    bytecode = [
+        "OP_CONSTANT", 5,       # 0: push 5
+        "OP_CONSTANT", 10,      # 2: push 10
+        "OP_ADD",               # 4: add them
+    ]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    # Manually test call stack mechanism
+    vm.call_stack.append({
+        'return_address': 99,
+        'variables': {}
+    })
+    
+    vm.execute()
+    
+    # Should have 15 on stack
+    assert (vm.top() == 15)
+    
+    # Test return pops call stack
+    vm.load_bytecode(["OP_RETURN"])
+    vm.ip = 0
+    vm.step()
+    
+    # Call stack should be empty now
+    assert (len(vm.call_stack) == 0)
+
+# Tests for I/O operations (basic smoke tests)
+def test_OP_PRINT_instruction(capsys):
+    bytecode = ["OP_CONSTANT", 42, "OP_PRINT"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    captured = capsys.readouterr()
+    assert ("42" in captured.out)
+    # Value should still be on stack
+    assert (vm.top() == 42)
+
+def test_OP_PRINT_STACK_instruction(capsys):
+    bytecode = ["OP_CONSTANT", 1, "OP_CONSTANT", 2, "OP_PRINT_STACK"]
+    vm = VMActor()
+    vm.load_bytecode(bytecode)
+    
+    vm.execute()
+    
+    captured = capsys.readouterr()
+    assert ("Stack:" in captured.out)
+    assert ("1" in captured.out)
+    assert ("2" in captured.out)
+
