@@ -7,7 +7,8 @@ public class DocsWordsTests
     {
         var bytes = System.Text.Encoding.UTF8.GetBytes(s);
         int addr = vm.Allocate(bytes.Length);
-        bytes.AsSpan().CopyTo(UnsafeSpan(vm, addr, bytes.Length));
+        for (int i = 0; i < bytes.Length; i++)
+            vm.Write8(addr + i, bytes[i]);
         return (addr, bytes.Length);
     }
 
@@ -82,6 +83,11 @@ public class DocsWordsTests
 
         // Set docs using DOCS!-W without name addr/len
         var (dAddr, dLen) = StoreUtf8(vm, "A bar word");
+
+        // Debug: verify the bytes are written
+        var testRead = System.Text.Encoding.UTF8.GetString(UnsafeSpan(vm, dAddr, dLen));
+        Assert.Equal("A bar word", testRead);
+
         new ProgramBuilder().Push(dAddr).Push(dLen).Word("DOCS!-W").Word("BAR").RunOn(vm);
 
         // Lookup using DOCS-W without name addr/len

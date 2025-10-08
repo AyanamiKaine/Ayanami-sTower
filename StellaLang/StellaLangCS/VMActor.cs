@@ -459,10 +459,11 @@ public class VMActor
             _docsSetPending = false;
             if (_dataStack.Count < 2)
                 throw new InvalidOperationException("DOCS!-W requires doc-address and doc-length on the stack before the name.");
+            // Stack has: addr len (top)
             int docLen = (int)_dataStack.Pop().AsInteger();
             int docAddr = _dataStack.Pop().AsPointer();
-            if (docLen < 0 || docAddr < 0 || docAddr + docLen > Here)
-                throw new IndexOutOfRangeException("Doc read is out of allotted bounds.");
+            if (docLen < 0 || docAddr < 0 || docAddr + docLen > Capacity)
+                throw new IndexOutOfRangeException($"Doc read is out of allotted bounds: addr={docAddr}, len={docLen}, capacity={Capacity}");
             string text = Encoding.UTF8.GetString(_dictionary, docAddr, docLen);
             var canonical = _aliases.TryGetValue(name, out var alias2) ? alias2 : name;
             _docs[canonical] = text;
@@ -1139,10 +1140,10 @@ public class VMActor
         });
 
         // DOCS-W: ( -- doc-addr doc-len | 0 0 ) for the NEXT word called
-        DefineNative("DOCS-W", () => _docsGetPending = true);
+        DefineNative("DOCS-W", () => { _docsGetPending = true; });
 
         // DOCS!-W: ( doc-addr doc-len -- ) sets docs for the NEXT word called
-        DefineNative("DOCS!-W", () => _docsSetPending = true);
+        DefineNative("DOCS!-W", () => { _docsSetPending = true; });
 
         // Seed default docs
         PrepopulateDocs();
