@@ -185,7 +185,7 @@ public class PowerExampleTests
             .Build());
 
         // Set docs using the by-word helper - allocate doc string first
-        var docText = "Squares a number. ( n -- n² )";
+        const string docText = "Squares a number. ( n -- n² )";
         var docBytes = System.Text.Encoding.UTF8.GetBytes(docText);
 
         // Allocate space and write the doc bytes
@@ -201,7 +201,7 @@ public class PowerExampleTests
         var addr = vm.DataStack.Skip(1).First().AsPointer();
         var retrieved = System.Text.Encoding.UTF8.GetString(GetDictSpan(vm, addr, len));
 
-        Assert.Contains("Squares a number", retrieved);
+        Assert.Equal(docText, retrieved);
     }
 
     [Fact]
