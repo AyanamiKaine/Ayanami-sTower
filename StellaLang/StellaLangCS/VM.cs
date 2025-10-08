@@ -217,6 +217,9 @@ enum OPCodes
     /// Stops the VM execution entirely
     /// </summary>
     HALT,
+    /// <summary>
+    /// (No Operation) Does nothing. Sometimes used for padding or debugging.
+    /// </summary>
     NOP
 }
 
