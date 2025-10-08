@@ -236,4 +236,9 @@ public class VM
     /// Current position of our virtual machines execution point. 
     /// </summary>
     public int InstructionPointer;
+
+    /// <summary>
+    /// Current memory of the VM
+    /// </summary>
+    List<byte> Memory = [];
 }
