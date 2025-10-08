@@ -132,14 +132,11 @@ public class ProgramExamplesTests
             .Build();
         vm.DefineWord("INC-ACC", incAcc);
 
-        // Add 5 then 10
-        vm.LoadBytecode(new BytecodeBuilder().Push(5).Build());
-        vm.Run();
-        vm.ExecuteWord("INC-ACC");
-
-        vm.LoadBytecode(new BytecodeBuilder().Push(10).Build());
-        vm.Run();
-        vm.ExecuteWord("INC-ACC");
+        // Add 5 then 10 using a program builder (mixing pushes and word calls)
+        new ProgramBuilder()
+            .Push(5).Word("INC-ACC")
+            .Push(10).Word("INC-ACC")
+            .RunOn(vm);
 
         // Read accumulator
         vm.LoadBytecode(new BytecodeBuilder().Push(0).Op(OpCode.FETCH).Op(OpCode.HALT).Build());
