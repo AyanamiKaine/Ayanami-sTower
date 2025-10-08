@@ -1,0 +1,802 @@
+﻿namespace StellaLang;
+
+/// <summary>
+/// Opcode enumeration for bytecode instructions.
+/// Using bytes provides efficient dispatch and compact bytecode representation.
+/// </summary>
+public enum OpCode : byte
+{
+    /// <summary>Push immediate value onto stack.</summary>
+    PUSH = 0x01,
+    /// <summary>Print top of stack.</summary>
+    PRINT = 0x02,
+    /// <summary>Discard top of stack.</summary>
+    POP = 0x03,
+    /// <summary>Duplicate top of stack.</summary>
+    DUP = 0x04,
+
+    /// <summary>Addition operation.</summary>
+    ADD = 0x10,
+    /// <summary>Subtraction operation.</summary>
+    SUB = 0x11,
+    /// <summary>Multiplication operation.</summary>
+    MUL = 0x12,
+    /// <summary>Division operation.</summary>
+    DIV = 0x13,
+
+    /// <summary>Store value to dictionary memory.</summary>
+    STORE = 0x20,
+    /// <summary>Fetch value from dictionary memory.</summary>
+    FETCH = 0x21,
+
+    /// <summary>Call a word by index.</summary>
+    CALL = 0x30,
+    /// <summary>Return from a word call.</summary>
+    RETURN = 0x31,
+    /// <summary>Define a new word.</summary>
+    DEFINE = 0x32,
+    /// <summary>Redefine an existing word.</summary>
+    REDEFINE = 0x33,
+
+    /// <summary>Stop execution.</summary>
+    HALT = 0xFF,
+}
+
+/// <summary>
+/// Represents a word in the Forth-like dictionary.
+/// A word can be either a native (built-in) operation or a user-defined sequence of bytecode.
+/// This unifies Forth's concept of "words" with VM instructions.
+/// </summary>
+public class Word
+{
+    /// <summary>
+    /// The name of the word (e.g., "DUP", "ADD", or user-defined names).
+    /// </summary>
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The opcode for this word (for native words).
+    /// </summary>
+    public byte OpCode { get; init; }
+
+    /// <summary>
+    /// Whether this is a native (built-in) word or user-defined.
+    /// </summary>
+    public bool IsNative { get; init; }
+
+    /// <summary>
+    /// For native words: the C# action to execute.
+    /// </summary>
+    public Action? NativeHandler { get; init; }
+
+    /// <summary>
+    /// For user-defined words: the bytecode to execute.
+    /// </summary>
+    public byte[] Bytecode { get; init; } = [];
+
+    /// <summary>
+    /// Creates a native word that executes C# code.
+    /// </summary>
+    public static Word Native(string name, byte opcode, Action handler) => new()
+    {
+        Name = name,
+        OpCode = opcode,
+        IsNative = true,
+        NativeHandler = handler
+    };
+
+    /// <summary>
+    /// Creates a user-defined word from bytecode.
+    /// </summary>
+    public static Word UserDefined(string name, byte[] bytecode) => new()
+    {
+        Name = name,
+        OpCode = 0,
+        IsNative = false,
+        Bytecode = bytecode
+    };
+}
+
+/// <summary>
+/// Value type for the VM's data stack.
+/// Uses a discriminated union approach to efficiently represent different types
+/// while avoiding boxing overhead of object-based stacks.
+/// </summary>
+public readonly struct Value
+{
+    /// <summary>
+    /// Type tag for the value.
+    /// </summary>
+    public enum ValueType : byte
+    {
+        /// <summary>Integer value.</summary>
+        Integer,
+        /// <summary>Floating-point value.</summary>
+        Float,
+        /// <summary>Boolean value.</summary>
+        Boolean,
+        /// <summary>Memory pointer/address.</summary>
+        Pointer,
+    }
+
+    /// <summary>
+    /// The type of this value.
+    /// </summary>
+    public readonly ValueType Type;
+
+    // Raw storage - we use the largest type needed
+    private readonly long _intValue;
+    private readonly double _floatValue;
+
+    private Value(ValueType type, long intValue, double floatValue)
+    {
+        Type = type;
+        _intValue = intValue;
+        _floatValue = floatValue;
+    }
+
+    /// <summary>
+    /// Creates an integer value.
+    /// </summary>
+    public static Value Integer(long value) => new(ValueType.Integer, value, 0);
+
+    /// <summary>
+    /// Creates a float value.
+    /// </summary>
+    public static Value Float(double value) => new(ValueType.Float, 0, value);
+
+    /// <summary>
+    /// Creates a boolean value.
+    /// </summary>
+    public static Value Boolean(bool value) => new(ValueType.Boolean, value ? 1 : 0, 0);
+
+    /// <summary>
+    /// Creates a pointer/address value.
+    /// </summary>
+    public static Value Pointer(int address) => new(ValueType.Pointer, address, 0);
+
+    /// <summary>
+    /// Gets the value as an integer, converting if necessary.
+    /// </summary>
+    public long AsInteger() => Type switch
+    {
+        ValueType.Integer => _intValue,
+        ValueType.Float => (long)_floatValue,
+        ValueType.Boolean => _intValue,
+        ValueType.Pointer => _intValue,
+        _ => throw new InvalidOperationException($"Cannot convert {Type} to integer.")
+    };
+
+    /// <summary>
+    /// Gets the value as a float, converting if necessary.
+    /// </summary>
+    public double AsFloat() => Type switch
+    {
+        ValueType.Integer => _intValue,
+        ValueType.Float => _floatValue,
+        ValueType.Boolean => _intValue,
+        _ => throw new InvalidOperationException($"Cannot convert {Type} to float.")
+    };
+
+    /// <summary>
+    /// Gets the value as a boolean.
+    /// </summary>
+    public bool AsBoolean() => Type switch
+    {
+        ValueType.Boolean => _intValue != 0,
+        ValueType.Integer => _intValue != 0,
+        _ => throw new InvalidOperationException($"Cannot convert {Type} to boolean.")
+    };
+
+    /// <summary>
+    /// Gets the value as a pointer/address.
+    /// </summary>
+    public int AsPointer() => Type switch
+    {
+        ValueType.Pointer => (int)_intValue,
+        ValueType.Integer => (int)_intValue,
+        _ => throw new InvalidOperationException($"Cannot convert {Type} to pointer.")
+    };
+
+    /// <summary>
+    /// Converts this value to its string representation.
+    /// </summary>
+    public override string ToString() => Type switch
+    {
+        ValueType.Integer => _intValue.ToString(),
+        ValueType.Float => _floatValue.ToString("F"),
+        ValueType.Boolean => (_intValue != 0).ToString(),
+        ValueType.Pointer => $"0x{_intValue:X}",
+        _ => "Unknown"
+    };
+}
+
+/// <summary>
+/// Stacked Based Bytecode Virtual Machine (Similar to Forth) Actor (Similar to Smalltalk-72), 
+/// here the bytecode that gets executed is just like a message. To make it more clear that we 
+/// see bytecode as messages, we call this class an Actor. The internal heap is its stack based memory. 
+/// Efficiency will be sacrificed for simplicity, clarity and dynamism. The main goal is to have a VM 
+/// that is highly dynamic.
+/// </summary>
+/// <remarks>
+/// Uses byte-based opcodes for efficient instruction dispatch and a typed Value struct for the data stack
+/// to avoid boxing overhead while maintaining type safety and flexibility.
+/// Implements Forth-like word dictionary where instructions and user-defined words are unified.
+/// </remarks>
+public class VMActor
+{
+    /// <summary>
+    /// Our VM has a Forth-style memory dictionary. Memory is just a continous array of bytes.
+    /// </summary>
+    private byte[] _dictionary;
+
+    /// <summary>
+    /// The bytecode program being executed.
+    /// </summary>
+    private byte[] _bytecode = [];
+
+    /// <summary>
+    /// Instruction pointer - current position in bytecode.
+    /// </summary>
+    private int _ip = 0;
+
+    /// <summary>
+    /// Return stack for word calls (Forth-style return stack).
+    /// </summary>
+    private readonly Stack<int> _returnStack = new();
+
+    /// <summary>
+    /// The temporary workspace for calculations. Most operations work with this stack.
+    /// Uses typed Values instead of objects to avoid boxing/unboxing overhead.
+    /// </summary>
+    private readonly Stack<Value> _dataStack = new();
+
+    /// <summary>
+    /// Tracks nesting depth while executing a redefined word. When greater than zero,
+    /// opcode dispatch will ignore redefinitions and call original/native words.
+    /// This prevents infinite recursion when two words are redefined in terms of each other
+    /// (e.g., redefining ADD to use MUL and MUL to use ADD).
+    /// </summary>
+    private int _redefinitionNesting = 0;
+
+    /// <summary>
+    /// The "HERE" pointer. This is the address where the next byte will be written.
+    /// </summary>
+    public int Here { get; set; } = 0;
+
+    /// <summary>
+    /// The capacity of the underlying array. This shows the "physical block size".
+    /// We will manage its growth manually.
+    /// </summary>
+    public int Capacity => _dictionary.Length;
+
+    /// <summary>
+    /// Unified word table. Opcodes are just indices into this table.
+    /// This holds the ORIGINAL native implementations that never change.
+    /// </summary>
+    private readonly List<Word> _words = [];
+
+    /// <summary>
+    /// Word name lookup. Maps word names to their index in _words.
+    /// </summary>
+    private readonly Dictionary<string, int> _wordNames = [];
+
+    /// <summary>
+    /// Redefinitions table. When a word is redefined, the new definition goes here.
+    /// This allows redefined words to use original opcodes in their bytecode safely.
+    /// Checked first during word lookup; falls back to _words if not found.
+    /// </summary>
+    private readonly Dictionary<string, Word> _redefinitions = [];
+
+    /// <summary>
+    /// Alias table. Maps alias names to their canonical word names.
+    /// e.g., "!" → "STORE", "@" → "FETCH"
+    /// </summary>
+    private readonly Dictionary<string, string> _aliases = [];
+
+    /// <summary>
+    /// Initializes a new instance of the VMActor with specified initial dictionary capacity.
+    /// </summary>
+    /// <param name="initialCapacity">Initial capacity of the dictionary memory in bytes.</param>
+    public VMActor(int initialCapacity = 1024)
+    {
+        _dictionary = new byte[initialCapacity];
+        PopulateWords();
+    }
+
+    /// <summary>
+    /// Defines a new word in the dictionary.
+    /// This allows user code to create new operations from existing ones.
+    /// </summary>
+    /// <param name="name">The name of the new word.</param>
+    /// <param name="bytecode">The bytecode that implements this word.</param>
+    public void DefineWord(string name, byte[] bytecode)
+    {
+        // Resolve alias to canonical name for storage
+        var canonicalName = _aliases.TryGetValue(name, out var alias) ? alias : name;
+
+        var word = Word.UserDefined(canonicalName, bytecode);
+
+        // User-defined words go into redefinitions table
+        _redefinitions[canonicalName] = word;
+    }
+
+    /// <summary>
+    /// Redefines an existing word in the dictionary.
+    /// Can redefine both user-defined words and built-in instructions.
+    /// </summary>
+    /// <param name="name">The name of the word to redefine.</param>
+    /// <param name="bytecode">The new bytecode implementation.</param>
+    /// <returns>True if word was redefined, false if it didn't exist.</returns>
+    public bool RedefineWord(string name, byte[] bytecode)
+    {
+        // Resolve alias to canonical name
+        var canonicalName = _aliases.TryGetValue(name, out var alias) ? alias : name;
+
+        // Check if word exists (either in redefinitions or original words)
+        if (!_redefinitions.ContainsKey(canonicalName) && !_wordNames.ContainsKey(canonicalName))
+            return false;
+
+        var newWord = Word.UserDefined(canonicalName, bytecode);
+        _redefinitions[canonicalName] = newWord;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Redefines a word, throwing an exception if it doesn't exist.
+    /// </summary>
+    /// <param name="name">The name of the word to redefine.</param>
+    /// <param name="bytecode">The new bytecode implementation.</param>
+    public void RedefineWordOrThrow(string name, byte[] bytecode)
+    {
+        if (!RedefineWord(name, bytecode))
+            throw new InvalidOperationException($"Cannot redefine word '{name}' - it does not exist in the dictionary.");
+    }
+
+    /// <summary>
+    /// Gets a word by name from the dictionary.
+    /// Resolves aliases, then checks redefinitions, then falls back to original words.
+    /// </summary>
+    /// <param name="name">The word name to look up.</param>
+    /// <returns>The word if found, null otherwise.</returns>
+    public Word? GetWord(string name)
+    {
+        // Resolve alias to canonical name
+        var canonicalName = _aliases.TryGetValue(name, out var alias) ? alias : name;
+        bool isAlias = canonicalName != name;
+
+        // Check redefinitions first (using canonical name)
+        if (_redefinitions.TryGetValue(canonicalName, out var redefinedWord))
+        {
+            // If queried by alias, return a copy with the alias name
+            if (isAlias)
+            {
+                return redefinedWord.IsNative
+                    ? Word.Native(name, redefinedWord.OpCode, redefinedWord.NativeHandler!)
+                    : Word.UserDefined(name, redefinedWord.Bytecode);
+            }
+            return redefinedWord;
+        }
+
+        // Fall back to original words (using canonical name)
+        if (_wordNames.TryGetValue(canonicalName, out int index))
+        {
+            var originalWord = _words[index];
+            // If queried by alias, return a copy with the alias name
+            if (isAlias)
+            {
+                return originalWord.IsNative
+                    ? Word.Native(name, originalWord.OpCode, originalWord.NativeHandler!)
+                    : Word.UserDefined(name, originalWord.Bytecode);
+            }
+            return originalWord;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Executes a word by name.
+    /// </summary>
+    /// <param name="name">The name of the word to execute.</param>
+    public void ExecuteWord(string name)
+    {
+        var word = GetWord(name) ?? throw new InvalidOperationException($"Word '{name}' not found in dictionary.");
+        ExecuteWord(word);
+    }
+
+    /// <summary>
+    /// Executes a word definition.
+    /// </summary>
+    private void ExecuteWord(Word word)
+    {
+        if (word.IsNative)
+        {
+            word.NativeHandler?.Invoke();
+            return;
+        }
+
+        // Determine if this is the active redefinition entry for this name.
+        // If so, suppress redefinition mapping while executing its bytecode
+        // so that opcodes inside refer to original semantics.
+        bool suppressRedefinitions = false;
+        if (_redefinitions.TryGetValue(word.Name, out var redef) && ReferenceEquals(redef, word))
+        {
+            // Only suppress when this name originally refers to a built-in/native instruction.
+            // For purely user-defined words, keep redefinitions visible inside their bodies.
+            if (_wordNames.TryGetValue(word.Name, out var idx))
+            {
+                var original = _words[idx];
+                if (original.IsNative)
+                {
+                    suppressRedefinitions = true;
+                }
+            }
+        }
+
+        // Save current instruction pointer and switch to word's bytecode
+        _returnStack.Push(_ip);
+        var savedBytecode = _bytecode;
+
+        _bytecode = word.Bytecode;
+        _ip = 0;
+
+        if (suppressRedefinitions)
+            _redefinitionNesting++;
+
+        try
+        {
+            // Execute word's bytecode
+            while (_ip < _bytecode.Length)
+            {
+                byte opcode = _bytecode[_ip++];
+
+                if (opcode == (byte)OpCode.RETURN)
+                    break;
+
+                ExecuteOpcode(opcode);
+            }
+        }
+        finally
+        {
+            // Restore previous bytecode and instruction pointer
+            _bytecode = savedBytecode;
+            _ip = _returnStack.Pop();
+
+            if (suppressRedefinitions)
+                _redefinitionNesting--;
+        }
+    }
+
+    /// <summary>
+    /// Executes an opcode. Opcodes are just indices into the word table.
+    /// Checks for redefinitions first before executing the original word.
+    /// </summary>
+    private void ExecuteOpcode(byte opcode)
+    {
+        if (opcode >= _words.Count)
+            throw new InvalidOperationException($"Invalid opcode/word index: 0x{opcode:X2}");
+
+        var originalWord = _words[opcode];
+
+        // If this is a placeholder/invalid entry, report unknown opcode consistently.
+        if (originalWord.Name == "_INVALID")
+            throw new InvalidOperationException($"Unknown opcode 0x{opcode:X2}");
+
+        // Check if this word has been redefined. If currently executing inside a
+        // redefinition, we intentionally ignore redefinitions to avoid recursive loops
+        // and to ensure redefinition bodies use original semantics.
+        if (_redefinitionNesting == 0 && _redefinitions.TryGetValue(originalWord.Name, out var redefinedWord))
+        {
+            ExecuteWord(redefinedWord);
+            return;
+        }
+
+        ExecuteWord(originalWord);
+    }
+
+    /// <summary>
+    /// Loads bytecode into the VM for execution.
+    /// </summary>
+    /// <param name="bytecode">The bytecode to execute.</param>
+    public void LoadBytecode(byte[] bytecode)
+    {
+        _bytecode = bytecode;
+        _ip = 0;
+    }
+
+    /// <summary>
+    /// Executes the loaded bytecode until completion or HALT instruction.
+    /// </summary>
+    public void Run()
+    {
+        while (_ip < _bytecode.Length)
+        {
+            byte opcode = _bytecode[_ip++];
+
+            if (opcode == (byte)OpCode.HALT)
+                break;
+
+            ExecuteOpcode(opcode);
+        }
+    }
+
+    /// <summary>
+    /// Gets the current data stack for inspection (useful for testing/debugging).
+    /// </summary>
+    public IEnumerable<Value> DataStack => _dataStack;
+
+    /// <summary>
+    /// Populates the instruction table with opcode handlers.
+    /// This is where the VM's core functionality is defined.
+    /// </summary>
+    /// <summary>
+    /// Populates the unified word table with all built-in words.
+    /// Opcodes are just indices into this table.
+    /// </summary>
+    private void PopulateWords()
+    {
+        // Ensure the list can hold all possible opcodes
+        while (_words.Count <= 0xFF)
+            _words.Add(Word.Native("_INVALID", 0x00, () => throw new InvalidOperationException($"Invalid opcode at index {_words.Count}")));
+
+        // Index 0x01 = OpCode.PUSH
+        _words[(byte)OpCode.PUSH] = Word.Native("PUSH", (byte)OpCode.PUSH, HandlePush);
+        _wordNames["PUSH"] = (byte)OpCode.PUSH;
+
+        // Index 0x02 = OpCode.PRINT
+        _words[(byte)OpCode.PRINT] = Word.Native("PRINT", (byte)OpCode.PRINT, HandlePrint);
+        _wordNames["PRINT"] = (byte)OpCode.PRINT;
+
+        // Index 0x03 = OpCode.POP
+        _words[(byte)OpCode.POP] = Word.Native("POP", (byte)OpCode.POP, () => _dataStack.Pop());
+        _wordNames["POP"] = (byte)OpCode.POP;
+
+        // Index 0x04 = OpCode.DUP
+        _words[(byte)OpCode.DUP] = Word.Native("DUP", (byte)OpCode.DUP, () => _dataStack.Push(_dataStack.Peek()));
+        _wordNames["DUP"] = (byte)OpCode.DUP;
+
+        // Index 0x10 = OpCode.ADD
+        _words[(byte)OpCode.ADD] = Word.Native("ADD", (byte)OpCode.ADD, () => HandleBinaryOp((a, b) =>
+        {
+            if (a.Type == Value.ValueType.Float || b.Type == Value.ValueType.Float)
+                return Value.Float(a.AsFloat() + b.AsFloat());
+            return Value.Integer(a.AsInteger() + b.AsInteger());
+        }));
+        _wordNames["ADD"] = (byte)OpCode.ADD;
+
+        // Index 0x11 = OpCode.SUB
+        _words[(byte)OpCode.SUB] = Word.Native("SUB", (byte)OpCode.SUB, () => HandleBinaryOp((a, b) =>
+        {
+            if (a.Type == Value.ValueType.Float || b.Type == Value.ValueType.Float)
+                return Value.Float(a.AsFloat() - b.AsFloat());
+            return Value.Integer(a.AsInteger() - b.AsInteger());
+        }));
+        _wordNames["SUB"] = (byte)OpCode.SUB;
+
+        // Index 0x12 = OpCode.MUL
+        _words[(byte)OpCode.MUL] = Word.Native("MUL", (byte)OpCode.MUL, () => HandleBinaryOp((a, b) =>
+        {
+            if (a.Type == Value.ValueType.Float || b.Type == Value.ValueType.Float)
+                return Value.Float(a.AsFloat() * b.AsFloat());
+            return Value.Integer(a.AsInteger() * b.AsInteger());
+        }));
+        _wordNames["MUL"] = (byte)OpCode.MUL;
+
+        // Index 0x13 = OpCode.DIV
+        _words[(byte)OpCode.DIV] = Word.Native("DIV", (byte)OpCode.DIV, () => HandleBinaryOp((a, b) =>
+        {
+            if (a.Type == Value.ValueType.Float || b.Type == Value.ValueType.Float)
+                return Value.Float(a.AsFloat() / b.AsFloat());
+            return Value.Integer(a.AsInteger() / b.AsInteger());
+        }));
+        _wordNames["DIV"] = (byte)OpCode.DIV;
+
+        // Index 0x20 = OpCode.STORE
+        _words[(byte)OpCode.STORE] = Word.Native("STORE", (byte)OpCode.STORE, HandleStore);
+        _wordNames["STORE"] = (byte)OpCode.STORE;
+
+        // Index 0x21 = OpCode.FETCH
+        _words[(byte)OpCode.FETCH] = Word.Native("FETCH", (byte)OpCode.FETCH, HandleFetch);
+        _wordNames["FETCH"] = (byte)OpCode.FETCH;
+
+        // Index 0x30 = OpCode.CALL
+        _words[(byte)OpCode.CALL] = Word.Native("CALL", (byte)OpCode.CALL, HandleCall);
+        _wordNames["CALL"] = (byte)OpCode.CALL;
+
+        // Index 0x31 = OpCode.RETURN - handled specially in ExecuteWord
+        _words[(byte)OpCode.RETURN] = Word.Native("RETURN", (byte)OpCode.RETURN, () => { });
+        _wordNames["RETURN"] = (byte)OpCode.RETURN;
+
+        // Index 0x32 = OpCode.DEFINE
+        _words[(byte)OpCode.DEFINE] = Word.Native("DEFINE", (byte)OpCode.DEFINE, HandleDefine);
+        _wordNames["DEFINE"] = (byte)OpCode.DEFINE;
+
+        // Index 0x33 = OpCode.REDEFINE
+        _words[(byte)OpCode.REDEFINE] = Word.Native("REDEFINE", (byte)OpCode.REDEFINE, HandleRedefine);
+        _wordNames["REDEFINE"] = (byte)OpCode.REDEFINE;
+
+        // Index 0xFF = OpCode.HALT - handled specially in Run/Step
+        _words[(byte)OpCode.HALT] = Word.Native("HALT", (byte)OpCode.HALT, () => { });
+        _wordNames["HALT"] = (byte)OpCode.HALT;
+
+        // Add Forth aliases using the alias table
+        _aliases["!"] = "STORE";
+        _aliases["@"] = "FETCH";
+    }
+
+    /// <summary>
+    /// Forth's "ALLOT". Reserves a given number of bytes.
+    /// </summary>
+    public void Allot(int byteCount)
+    {
+        EnsureCapacity(byteCount);
+        Here += byteCount;
+    }
+
+    private void EnsureCapacity(int requiredBytes)
+    {
+        if (Here + requiredBytes > Capacity)
+        {
+            // The dictionary needs to grow. The common strategy is to double the size,
+            // or grow to at least the required size if that's even larger.
+            int newCapacity = Math.Max(Capacity * 2, Here + requiredBytes);
+
+            // This is the C# equivalent of C's `realloc`. It creates a new, larger
+            // array and copies the old data over automatically.
+            Array.Resize(ref _dictionary, newCapacity);
+        }
+    }
+
+    /// <summary>
+    /// Execute a single instruction step.
+    /// </summary>
+    public void Step()
+    {
+        byte opcode = _bytecode[_ip++];
+
+        if (opcode == (byte)OpCode.HALT)
+            return;
+
+        ExecuteOpcode(opcode);
+    }
+
+    private void HandlePush()
+    {
+        if (_ip < _bytecode.Length)
+        {
+            // Read the next 8 bytes as a long integer value
+            if (_ip + 8 > _bytecode.Length)
+                throw new InvalidOperationException("PUSH instruction requires 8 bytes for operand.");
+
+            long value = BitConverter.ToInt64(_bytecode, _ip);
+            _ip += 8;
+            _dataStack.Push(Value.Integer(value));
+        }
+        else
+        {
+            throw new InvalidOperationException("PUSH instruction requires an operand.");
+        }
+    }
+
+    private void HandleCall()
+    {
+        // Read word index from bytecode
+        if (_ip + 2 > _bytecode.Length)
+            throw new InvalidOperationException("CALL instruction requires 2 bytes for word index.");
+
+        ushort wordIndex = BitConverter.ToUInt16(_bytecode, _ip);
+        _ip += 2;
+
+        if (wordIndex >= _words.Count)
+            throw new InvalidOperationException($"Invalid word index: {wordIndex}");
+
+        ExecuteWord(_words[wordIndex]);
+    }
+
+    private void HandleDefine()
+    {
+        // DEFINE expects on stack: ( bytecode-length bytecode-address name-length name-address -- )
+        // This allows defining words from bytecode stored in the dictionary
+
+        if (_dataStack.Count < 4)
+            throw new InvalidOperationException("DEFINE requires 4 values on stack: name-address, name-length, bytecode-address, bytecode-length");
+
+        int bytecodeLength = (int)_dataStack.Pop().AsInteger();
+        int bytecodeAddress = _dataStack.Pop().AsPointer();
+        int nameLength = (int)_dataStack.Pop().AsInteger();
+        int nameAddress = _dataStack.Pop().AsPointer();
+
+        // Read name from dictionary memory
+        if (nameAddress + nameLength > Here)
+            throw new IndexOutOfRangeException("Name read is out of allotted bounds.");
+
+        byte[] nameBytes = _dictionary[nameAddress..(nameAddress + nameLength)];
+        string name = System.Text.Encoding.UTF8.GetString(nameBytes);
+
+        // Read bytecode from dictionary memory
+        if (bytecodeAddress + bytecodeLength > Here)
+            throw new IndexOutOfRangeException("Bytecode read is out of allotted bounds.");
+
+        byte[] bytecode = _dictionary[bytecodeAddress..(bytecodeAddress + bytecodeLength)];
+
+        // Define the word
+        DefineWord(name, bytecode);
+    }
+
+    private void HandleRedefine()
+    {
+        // REDEFINE expects on stack: ( bytecode-length bytecode-address name-length name-address -- success-flag )
+        // Returns true (1) if word was redefined, false (0) if it didn't exist
+
+        if (_dataStack.Count < 4)
+            throw new InvalidOperationException("REDEFINE requires 4 values on stack: name-address, name-length, bytecode-address, bytecode-length");
+
+        int bytecodeLength = (int)_dataStack.Pop().AsInteger();
+        int bytecodeAddress = _dataStack.Pop().AsPointer();
+        int nameLength = (int)_dataStack.Pop().AsInteger();
+        int nameAddress = _dataStack.Pop().AsPointer();
+
+        // Read name from dictionary memory
+        if (nameAddress + nameLength > Here)
+            throw new IndexOutOfRangeException("Name read is out of allotted bounds.");
+
+        byte[] nameBytes = _dictionary[nameAddress..(nameAddress + nameLength)];
+        string name = System.Text.Encoding.UTF8.GetString(nameBytes);
+
+        // Read bytecode from dictionary memory
+        if (bytecodeAddress + bytecodeLength > Here)
+            throw new IndexOutOfRangeException("Bytecode read is out of allotted bounds.");
+
+        byte[] bytecode = _dictionary[bytecodeAddress..(bytecodeAddress + bytecodeLength)];
+
+        // Redefine the word and push success flag
+        bool success = RedefineWord(name, bytecode);
+        _dataStack.Push(Value.Boolean(success));
+    }
+
+    private void HandlePrint()
+    {
+        if (_dataStack.Count > 0)
+        {
+            Console.WriteLine($"> {_dataStack.Peek()}");
+        }
+    }
+
+    private void HandleBinaryOp(Func<Value, Value, Value> operation)
+    {
+        if (_dataStack.Count < 2)
+            throw new InvalidOperationException("Binary operation requires two operands on the stack.");
+        var b = _dataStack.Pop();
+        var a = _dataStack.Pop();
+        _dataStack.Push(operation(a, b));
+    }
+
+    private void HandleStore() // Expects (value, address) on stack
+    {
+        if (_dataStack.Count < 2)
+            throw new InvalidOperationException("STORE requires a value and an address on the stack.");
+        int address = _dataStack.Pop().AsPointer();
+        long value = _dataStack.Pop().AsInteger();
+
+        if (address + 8 > Here)
+            throw new IndexOutOfRangeException("Memory write is out of allotted bounds.");
+
+        Span<byte> slice = _dictionary.AsSpan(address, 8);
+        BitConverter.TryWriteBytes(slice, value);
+    }
+
+    private void HandleFetch() // Expects (address) on stack
+    {
+        if (_dataStack.Count < 1)
+            throw new InvalidOperationException("FETCH requires an address on the stack.");
+        int address = _dataStack.Pop().AsPointer();
+
+        if (address + 8 > Here)
+            throw new IndexOutOfRangeException("Memory read is out of allotted bounds.");
+
+        ReadOnlySpan<byte> slice = _dictionary.AsSpan(address, 8);
+        _dataStack.Push(Value.Integer(BitConverter.ToInt64(slice)));
+    }
+}
