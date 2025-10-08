@@ -48,7 +48,7 @@ public static class StructDefiner
     {
         // NEW-{struct}: ( ...fieldValuesInOrder -- addr ) allocate and initialize
         var newName = $"NEW-{structName}";
-        vm.DefineNative(newName, (Action)(() =>
+        vm.DefineNative(newName, () =>
         {
             int fieldCount = fields.Length;
             if (vm.DataStackCount() < fieldCount)
@@ -63,29 +63,29 @@ public static class StructDefiner
             for (int i = 0; i < fieldCount; i++)
                 vm.Write64(addr + fields[i].OffsetBytes, vals[i]);
             vm.PushValue(Value.Pointer(addr));
-        }));
+        });
 
         // GET-{field}: ( addr -- value )
         foreach (var f in fields)
         {
             var getName = $"GET-{structName}-{f.Name.ToUpper()}";
-            vm.DefineNative(getName, (Action)(() =>
+            vm.DefineNative(getName, () =>
             {
                 int addr = vm.PopValue().AsPointer();
                 vm.PushValue(Value.Integer(vm.Read64(addr + f.OffsetBytes)));
-            }));
+            });
         }
 
         // SET-{field}: ( value addr -- )
         foreach (var f in fields)
         {
             var setName = $"SET-{structName}-{f.Name.ToUpper()}";
-            vm.DefineNative(setName, (Action)(() =>
+            vm.DefineNative(setName, () =>
             {
                 int addr = vm.PopValue().AsPointer();
                 long val = vm.PopValue().AsInteger();
                 vm.Write64(addr + f.OffsetBytes, val);
-            }));
+            });
         }
     }
 }

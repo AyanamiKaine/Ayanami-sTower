@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Text;
 
 namespace StellaLang;
 
@@ -277,6 +278,14 @@ public class VMActor
     /// runtime-friendly way.
     /// </summary>
     private bool _variableDefinitionPending = false;
+    private bool _docsGetPending = false;
+    private bool _docsSetPending = false;
+
+    /// <summary>
+    /// Documentation store: canonical word name -> UTF-8 text. We allocate memory for the
+    /// string only when DOCS is called to return a pointer/length to programs.
+    /// </summary>
+    private readonly Dictionary<string, string> _docs = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// The "HERE" pointer. This is the address where the next byte will be written.
@@ -422,6 +431,44 @@ public class VMActor
     /// <param name="name">The name of the word to execute.</param>
     public void ExecuteWord(string name)
     {
+        // Intercept DOCS-W NAME: fetch docs for this word name
+        if (_docsGetPending)
+        {
+            _docsGetPending = false;
+
+            var canonical = _aliases.TryGetValue(name, out var alias1) ? alias1 : name;
+            if (_docs.TryGetValue(canonical, out var text))
+            {
+                var bytes = Encoding.UTF8.GetBytes(text);
+                int addr = Allocate(bytes.Length);
+                bytes.AsSpan().CopyTo(_dictionary.AsSpan(addr));
+                _dataStack.Push(Value.Pointer(addr));
+                _dataStack.Push(Value.Integer(bytes.Length));
+            }
+            else
+            {
+                _dataStack.Push(Value.Pointer(0));
+                _dataStack.Push(Value.Integer(0));
+            }
+            return;
+        }
+
+        // Intercept DOCS!-W NAME: set docs for this word name from (doc-addr doc-len)
+        if (_docsSetPending)
+        {
+            _docsSetPending = false;
+            if (_dataStack.Count < 2)
+                throw new InvalidOperationException("DOCS!-W requires doc-address and doc-length on the stack before the name.");
+            int docLen = (int)_dataStack.Pop().AsInteger();
+            int docAddr = _dataStack.Pop().AsPointer();
+            if (docLen < 0 || docAddr < 0 || docAddr + docLen > Here)
+                throw new IndexOutOfRangeException("Doc read is out of allotted bounds.");
+            string text = Encoding.UTF8.GetString(_dictionary, docAddr, docLen);
+            var canonical = _aliases.TryGetValue(name, out var alias2) ? alias2 : name;
+            _docs[canonical] = text;
+            return;
+        }
+
         // Intercept VARIABLE NAME pattern: if a variable definition is pending,
         // define (or redefine) a word with this name that pushes a freshly allocated address.
         if (_variableDefinitionPending)
@@ -1011,7 +1058,7 @@ public class VMActor
     private void RegisterAssemblerWords()
     {
         // HERE: ( -- addr )
-        DefineNative("HERE", (Func<int>)(() => Here));
+        DefineNative("HERE", () => Here);
 
         // ALLOT: ( n -- )
         DefineNative("ALLOT", (Action<int>)(n => Allot(n)));
@@ -1023,11 +1070,11 @@ public class VMActor
         DefineNative("EMIT64", (Action<long>)(x => { Write64(Here, x); Here += 8; }));
 
         // SWAP: ( a b -- b a )
-        DefineNative("SWAP", (Action)(() => { var a = _dataStack.Pop(); var b = _dataStack.Pop(); _dataStack.Push(a); _dataStack.Push(b); }));
+        DefineNative("SWAP", () => { var a = _dataStack.Pop(); var b = _dataStack.Pop(); _dataStack.Push(a); _dataStack.Push(b); });
 
         // VARIABLE: ( -- )  The next word name invoked will be defined as a variable
         // (a word that pushes an allocated 8-byte cell address).
-        DefineNative("VARIABLE", (Action)(() => { _variableDefinitionPending = true; }));
+        DefineNative("VARIABLE", () => _variableDefinitionPending = true);
 
         // Optional helpers: generic FIELD@ and FIELD! for (addr offset -- value) and (value addr offset -- )
         var fieldGet = new BytecodeBuilder().Op(OpCode.ADD).Op(OpCode.FETCH).Op(OpCode.RETURN).Build();
@@ -1035,6 +1082,115 @@ public class VMActor
 
         var fieldSet = new BytecodeBuilder().Op(OpCode.ADD).Op(OpCode.STORE).Op(OpCode.RETURN).Build();
         DefineWord("FIELD!", fieldSet);
+
+        // DOCS: ( name-addr name-len -- doc-addr doc-len | 0 0 )
+        DefineNative("DOCS", () =>
+        {
+            if (_dataStack.Count < 2)
+                throw new InvalidOperationException("DOCS requires name-address and name-length on the stack.");
+
+            int nameLen = (int)_dataStack.Pop().AsInteger();
+            int nameAddr = _dataStack.Pop().AsPointer();
+
+            if (nameLen < 0 || nameAddr < 0 || nameAddr + nameLen > Here)
+                throw new IndexOutOfRangeException("Name read is out of allotted bounds.");
+
+            string name = Encoding.UTF8.GetString(_dictionary, nameAddr, nameLen);
+            var canonical = _aliases.TryGetValue(name, out var alias) ? alias : name;
+
+            if (_docs.TryGetValue(canonical, out var text))
+            {
+                var bytes = Encoding.UTF8.GetBytes(text);
+                int addr = Allocate(bytes.Length);
+                bytes.AsSpan().CopyTo(_dictionary.AsSpan(addr));
+                _dataStack.Push(Value.Pointer(addr));
+                _dataStack.Push(Value.Integer(bytes.Length));
+            }
+            else
+            {
+                _dataStack.Push(Value.Pointer(0));
+                _dataStack.Push(Value.Integer(0));
+            }
+        });
+
+        // DOCS!: ( name-addr name-len doc-addr doc-len -- )
+        DefineNative("DOCS!", () =>
+        {
+            if (_dataStack.Count < 4)
+                throw new InvalidOperationException("DOCS! requires name-address, name-length, doc-address, and doc-length on the stack.");
+
+            int docLen = (int)_dataStack.Pop().AsInteger();
+            int docAddr = _dataStack.Pop().AsPointer();
+            int nameLen = (int)_dataStack.Pop().AsInteger();
+            int nameAddr = _dataStack.Pop().AsPointer();
+
+            if (nameLen < 0 || nameAddr < 0 || nameAddr + nameLen > Here)
+                throw new IndexOutOfRangeException("Name read is out of allotted bounds.");
+            if (docLen < 0 || docAddr < 0 || docAddr + docLen > Here)
+                throw new IndexOutOfRangeException("Doc read is out of allotted bounds.");
+
+            string name = Encoding.UTF8.GetString(_dictionary, nameAddr, nameLen);
+            var canonical = _aliases.TryGetValue(name, out var alias) ? alias : name;
+
+            // Read provided bytes into managed string storage
+            var span = _dictionary.AsSpan(docAddr, docLen);
+            string text = Encoding.UTF8.GetString(span);
+            _docs[canonical] = text;
+        });
+
+        // DOCS-W: ( -- doc-addr doc-len | 0 0 ) for the NEXT word called
+        DefineNative("DOCS-W", () => _docsGetPending = true);
+
+        // DOCS!-W: ( doc-addr doc-len -- ) sets docs for the NEXT word called
+        DefineNative("DOCS!-W", () => _docsSetPending = true);
+
+        // Seed default docs
+        PrepopulateDocs();
+    }
+
+    /// <summary>
+    /// Store default documentation strings into dictionary memory and index them.
+    /// </summary>
+    private void PrepopulateDocs()
+    {
+        void Seed(string name, string text)
+        {
+            var canonical = _aliases.TryGetValue(name, out var alias) ? alias : name;
+            _docs[canonical] = text;
+        }
+
+        Seed("PUSH", "Push immediate 64-bit integer onto the stack. Usage: bytecode only.");
+        Seed("PRINT", "Print top of stack. ( x -- )");
+        Seed("POP", "Discard top of stack. ( x -- )");
+        Seed("DUP", "Duplicate top of stack. ( x -- x x )");
+        Seed("ADD", "Add top two values. Mixed int/float promotion. ( a b -- a+b )");
+        Seed("SUB", "Subtract top two values. ( a b -- a-b )");
+        Seed("MUL", "Multiply top two values. ( a b -- a*b )");
+        Seed("DIV", "Divide top two values. ( a b -- a/b )");
+        Seed("STORE", "Store 64-bit value at address. ( value addr -- ) Alias: !");
+        Seed("FETCH", "Fetch 64-bit value from address. ( addr -- value ) Alias: @");
+        Seed("CALL", "Call a word by index (bytecode only). ( -- )");
+        Seed("RETURN", "Return from a word call (bytecode only). ( -- )");
+        Seed("DEFINE", "Define a new word from memory. ( name-addr name-len bytecode-addr bytecode-len -- )");
+        Seed("REDEFINE", "Redefine existing word. ( name-addr name-len bytecode-addr bytecode-len -- success )");
+        Seed("HALT", "Stop bytecode execution (bytecode only). ( -- )");
+
+        Seed("HERE", "Return current HERE pointer. ( -- addr )");
+        Seed("ALLOT", "Reserve N bytes in dictionary. ( n -- )");
+        Seed("EMIT", "Write a byte at HERE and advance. ( b -- )");
+        Seed("EMIT64", "Write 64-bit value at HERE and advance by 8. ( x -- )");
+        Seed("SWAP", "Swap top two stack items. ( a b -- b a )");
+        Seed("FIELD@", "Read field at offset. ( addr offset -- value )");
+        Seed("FIELD!", "Write field at offset. ( value addr offset -- )");
+        Seed("VARIABLE", "Next executed word name becomes a variable that pushes its address. ( -- ) then NAME");
+        Seed("DOCS", "Lookup documentation for a word. ( name-addr name-len -- doc-addr doc-len | 0 0 )");
+        Seed("DOCS!", "Set documentation for a word. ( name-addr name-len doc-addr doc-len -- )");
+        Seed("DOCS-W", "Lookup docs for the NEXT word invoked. Usage: DOCS-W NAME  ( -- doc-addr doc-len )");
+        Seed("DOCS!-W", "Set docs for the NEXT word invoked from given bytes. Usage: doc-addr doc-len DOCS!-W NAME");
+
+        // Aliases
+        Seed("@", "Alias of FETCH. ( addr -- value )");
+        Seed("!", "Alias of STORE. ( value addr -- )");
     }
 
     /// <summary>
