@@ -19,3 +19,5 @@ This gives you the overview of the problem we are facing. Many concepts, many di
 ## The Basic Idea
 
 The basic idea is having a simple virtual machine that is extendible at runtime. It should be made out of a small core. Performance will be the last thing we care about. The reason for that is I need to explore the idea more. Performance of a bad idea means little to me.
+
+## Single vs Multiple Stacks
