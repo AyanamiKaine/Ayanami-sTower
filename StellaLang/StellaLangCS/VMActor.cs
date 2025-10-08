@@ -43,6 +43,13 @@ public enum OpCode : byte
     /// <summary>Redefine an existing word.</summary>
     REDEFINE = 0x33,
 
+    /// <summary>Unconditional jump to absolute offset in bytecode.</summary>
+    JUMP = 0x40,
+    /// <summary>Conditional jump: pops condition, jumps to offset if zero (false).</summary>
+    JUMPZ = 0x41,
+    /// <summary>Conditional jump: pops condition, jumps to offset if non-zero (true).</summary>
+    JUMPNZ = 0x42,
+
     /// <summary>Stop execution.</summary>
     HALT = 0xFF,
 }
@@ -280,6 +287,12 @@ public class VMActor
     private bool _variableDefinitionPending = false;
     private bool _docsGetPending = false;
     private bool _docsSetPending = false;
+
+    /// <summary>
+    /// Compilation control flow stack. Stores addresses of forward jumps that need backpatching.
+    /// Used by IF/ELSE/THEN to track jump targets during bytecode compilation.
+    /// </summary>
+    private readonly Stack<int> _controlFlowStack = new();
 
     /// <summary>
     /// Documentation store: canonical word name -> UTF-8 text. We allocate memory for the
@@ -657,11 +670,11 @@ public class VMActor
     private static object? ConvertValueToType(Value v, Type t, string? forWord = null)
     {
         if (t == typeof(Value)) return v;
-        if (t == typeof(long) || t == typeof(Int64)) return v.AsInteger();
-        if (t == typeof(int) || t == typeof(Int32)) return (int)v.AsInteger();
-        if (t == typeof(double) || t == typeof(Double)) return v.AsFloat();
-        if (t == typeof(float) || t == typeof(Single)) return (float)v.AsFloat();
-        if (t == typeof(bool) || t == typeof(Boolean)) return v.AsBoolean();
+        if (t == typeof(long) || t == typeof(long)) return v.AsInteger();
+        if (t == typeof(int) || t == typeof(int)) return (int)v.AsInteger();
+        if (t == typeof(double) || t == typeof(double)) return v.AsFloat();
+        if (t == typeof(float) || t == typeof(float)) return (float)v.AsFloat();
+        if (t == typeof(bool) || t == typeof(bool)) return v.AsBoolean();
         throw new InvalidOperationException($"Unsupported parameter type '{t.Name}'{(forWord is not null ? $" for native word '{forWord}'" : string.Empty)}.");
     }
 
@@ -964,6 +977,18 @@ public class VMActor
         _words[(byte)OpCode.REDEFINE] = Word.Native("REDEFINE", (byte)OpCode.REDEFINE, HandleRedefine);
         _wordNames["REDEFINE"] = (byte)OpCode.REDEFINE;
 
+        // Index 0x40 = OpCode.JUMP
+        _words[(byte)OpCode.JUMP] = Word.Native("JUMP", (byte)OpCode.JUMP, HandleJump);
+        _wordNames["JUMP"] = (byte)OpCode.JUMP;
+
+        // Index 0x41 = OpCode.JUMPZ
+        _words[(byte)OpCode.JUMPZ] = Word.Native("JUMPZ", (byte)OpCode.JUMPZ, HandleJumpZ);
+        _wordNames["JUMPZ"] = (byte)OpCode.JUMPZ;
+
+        // Index 0x42 = OpCode.JUMPNZ
+        _words[(byte)OpCode.JUMPNZ] = Word.Native("JUMPNZ", (byte)OpCode.JUMPNZ, HandleJumpNZ);
+        _wordNames["JUMPNZ"] = (byte)OpCode.JUMPNZ;
+
         // Index 0xFF = OpCode.HALT - handled specially in Run/Step
         _words[(byte)OpCode.HALT] = Word.Native("HALT", (byte)OpCode.HALT, () => { });
         _wordNames["HALT"] = (byte)OpCode.HALT;
@@ -1056,6 +1081,20 @@ public class VMActor
         return _dictionary[address];
     }
 
+    /// <summary>
+    /// Gets a slice of the dictionary memory as a Span for reading/writing.
+    /// Useful for tests and external manipulation of dictionary contents.
+    /// </summary>
+    /// <param name="address">Starting address in the dictionary.</param>
+    /// <param name="length">Number of bytes to include in the slice.</param>
+    /// <returns>A span over the dictionary memory.</returns>
+    public Span<byte> GetDictionarySlice(int address, int length)
+    {
+        if (address < 0 || address + length > Capacity)
+            throw new IndexOutOfRangeException($"Dictionary slice out of bounds: address={address}, length={length}, capacity={Capacity}");
+        return _dictionary.AsSpan(address, length);
+    }
+
     private void RegisterAssemblerWords()
     {
         // HERE: ( -- addr )
@@ -1065,10 +1104,10 @@ public class VMActor
         DefineNative("ALLOT", (Action<int>)(n => Allot(n)));
 
         // EMIT: ( b -- ) write a byte at HERE and advance
-        DefineNative("EMIT", (Action<int>)(b => { Write8(Here, (byte)(b & 0xFF)); Here += 1; }));
+        DefineNative("EMIT", (Action<int>)(b => { Allot(1); _dictionary[Here - 1] = (byte)(b & 0xFF); }));
 
         // EMIT64: ( x -- ) write 8 bytes at HERE and advance
-        DefineNative("EMIT64", (Action<long>)(x => { Write64(Here, x); Here += 8; }));
+        DefineNative("EMIT64", (Action<long>)(x => { Allot(8); BitConverter.TryWriteBytes(_dictionary.AsSpan(Here - 8, 8), x); }));
 
         // SWAP: ( a b -- b a )
         DefineNative("SWAP", () => { var a = _dataStack.Pop(); var b = _dataStack.Pop(); _dataStack.Push(a); _dataStack.Push(b); });
@@ -1145,6 +1184,69 @@ public class VMActor
         // DOCS!-W: ( doc-addr doc-len -- ) sets docs for the NEXT word called
         DefineNative("DOCS!-W", () => { _docsSetPending = true; });
 
+        // Control flow compilation words
+        // IF: ( -- ) Compile a JUMPZ, push its address for later backpatching
+        DefineNative("IF", () =>
+        {
+            // Allocate space and emit JUMPZ opcode
+            Allot(1);
+            _dictionary[Here - 1] = (byte)OpCode.JUMPZ;
+
+            // Push the address where the offset will be written (for backpatching)
+            _controlFlowStack.Push(Here);
+
+            // Allocate space for placeholder offset (will be backpatched by ELSE or THEN)
+            Allot(2);
+            _dictionary[Here - 2] = 0;
+            _dictionary[Here - 1] = 0;
+        });
+
+        // ELSE: ( -- ) Backpatch the IF jump, compile unconditional JUMP, push its address
+        DefineNative("ELSE", () =>
+        {
+            if (_controlFlowStack.Count == 0)
+                throw new InvalidOperationException("ELSE without matching IF");
+
+            // Allocate space and emit unconditional JUMP
+            Allot(1);
+            _dictionary[Here - 1] = (byte)OpCode.JUMP;
+
+            // Save address for THEN to backpatch
+            int elseJumpAddr = Here;
+
+            // Allocate space for placeholder offset
+            Allot(2);
+            _dictionary[Here - 2] = 0;
+            _dictionary[Here - 1] = 0;
+
+            // Backpatch the IF's JUMPZ to point here (the ELSE clause)
+            int ifJumpAddr = _controlFlowStack.Pop();
+            short ifOffset = (short)(Here - (ifJumpAddr + 2));
+            BitConverter.TryWriteBytes(_dictionary.AsSpan(ifJumpAddr, 2), ifOffset);
+
+            // Push ELSE's JUMP address for THEN to backpatch
+            _controlFlowStack.Push(elseJumpAddr);
+        });
+
+        // THEN: ( -- ) Backpatch the most recent forward jump to point here
+        DefineNative("THEN", () =>
+        {
+            if (_controlFlowStack.Count == 0)
+                throw new InvalidOperationException("THEN without matching IF or ELSE");
+
+            // Pop the jump address that needs backpatching
+            int jumpAddr = _controlFlowStack.Pop();
+
+            // Calculate offset from the jump instruction to HERE
+            // jumpAddr points to the 2-byte offset field
+            // After reading the offset, IP will be at jumpAddr + 2
+            // We want to jump to HERE, so offset = HERE - (jumpAddr + 2)
+            short offset = (short)(Here - (jumpAddr + 2));
+
+            // Backpatch the offset
+            BitConverter.TryWriteBytes(_dictionary.AsSpan(jumpAddr, 2), offset);
+        });
+
         // Seed default docs
         PrepopulateDocs();
     }
@@ -1188,6 +1290,9 @@ public class VMActor
         Seed("DOCS!", "Set documentation for a word. ( name-addr name-len doc-addr doc-len -- )");
         Seed("DOCS-W", "Lookup docs for the NEXT word invoked. Usage: DOCS-W NAME  ( -- doc-addr doc-len )");
         Seed("DOCS!-W", "Set docs for the NEXT word invoked from given bytes. Usage: doc-addr doc-len DOCS!-W NAME");
+        Seed("IF", "Compile conditional branch. Pops condition, jumps to ELSE/THEN if zero. Usage: condition IF ... THEN or condition IF ... ELSE ... THEN");
+        Seed("ELSE", "Compile alternate branch. Backpatches IF, compiles jump to THEN. Usage: IF ... ELSE ... THEN");
+        Seed("THEN", "Compile end of conditional. Backpatches IF or ELSE jump target. Usage: IF ... THEN");
 
         // Aliases
         Seed("@", "Alias of FETCH. ( addr -- value )");
@@ -1343,5 +1448,67 @@ public class VMActor
 
         ReadOnlySpan<byte> slice = _dictionary.AsSpan(address, 8);
         _dataStack.Push(Value.Integer(BitConverter.ToInt64(slice)));
+    }
+
+    private void HandleJump()
+    {
+        // JUMP expects offset in bytecode (2 bytes)
+        if (_ip + 2 > _bytecode.Length)
+            throw new InvalidOperationException("JUMP instruction requires 2 bytes for offset.");
+
+        short offset = BitConverter.ToInt16(_bytecode, _ip);
+        _ip += 2;
+
+        // Apply the offset to current IP
+        _ip += offset;
+
+        if (_ip < 0 || _ip > _bytecode.Length)
+            throw new InvalidOperationException($"JUMP offset out of bounds: {_ip}");
+    }
+
+    private void HandleJumpZ()
+    {
+        // JUMPZ expects offset in bytecode (2 bytes) and condition on stack
+        if (_dataStack.Count < 1)
+            throw new InvalidOperationException("JUMPZ requires a condition on the stack.");
+
+        if (_ip + 2 > _bytecode.Length)
+            throw new InvalidOperationException("JUMPZ instruction requires 2 bytes for offset.");
+
+        var condition = _dataStack.Pop();
+        short offset = BitConverter.ToInt16(_bytecode, _ip);
+        _ip += 2;
+
+        // Jump if condition is zero/false
+        if (condition.AsInteger() == 0)
+        {
+            _ip += offset;
+
+            if (_ip < 0 || _ip > _bytecode.Length)
+                throw new InvalidOperationException($"JUMPZ offset out of bounds: {_ip}");
+        }
+    }
+
+    private void HandleJumpNZ()
+    {
+        // JUMPNZ expects offset in bytecode (2 bytes) and condition on stack
+        if (_dataStack.Count < 1)
+            throw new InvalidOperationException("JUMPNZ requires a condition on the stack.");
+
+        if (_ip + 2 > _bytecode.Length)
+            throw new InvalidOperationException("JUMPNZ instruction requires 2 bytes for offset.");
+
+        var condition = _dataStack.Pop();
+        short offset = BitConverter.ToInt16(_bytecode, _ip);
+        _ip += 2;
+
+        // Jump if condition is non-zero/true
+        if (condition.AsInteger() != 0)
+        {
+            _ip += offset;
+
+            if (_ip < 0 || _ip > _bytecode.Length)
+                throw new InvalidOperationException($"JUMPNZ offset out of bounds: {_ip}");
+        }
     }
 }

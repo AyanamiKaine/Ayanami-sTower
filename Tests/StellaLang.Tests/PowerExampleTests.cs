@@ -346,6 +346,263 @@ public class PowerExampleTests
         Assert.Equal(21, vm.DataStack.First().AsInteger());
     }
 
+    [Fact]
+    public void Example_ControlFlow_ConditionalExecution()
+    {
+        // Demonstrates Forth-style IF...ELSE...THEN control flow
+        // Forth program: : BREAKFAST HURRIED? IF CEREAL ELSE EGGS THEN CLEAN ;
+        var vm = new VMActor();
+
+        // Define helper words that return values (mimicking Forth words that push to stack)
+        vm.DefineNative("CEREAL", () => 1);   // Quick breakfast (returns 1)
+        vm.DefineNative("EGGS", () => 2);     // Full breakfast (returns 2)
+        vm.DefineNative("CLEAN", () => 99);   // Always clean up (returns 99)
+
+        // Define BREAKFAST with conditional logic
+        // In Forth: : BREAKFAST HURRIED? IF CEREAL ELSE EGGS THEN CLEAN ;
+        // This demonstrates how IF...ELSE...THEN translates to our VM
+        vm.DefineNative("BREAKFAST", (bool hurried) =>
+        {
+            // IF HURRIED? (parameter on stack)
+            if (hurried)
+            {
+                // THEN CEREAL
+                vm.ExecuteWord("CEREAL");
+            }
+            else
+            {
+                // ELSE EGGS
+                vm.ExecuteWord("EGGS");
+            }
+            // THEN CLEAN (always executes after IF/ELSE)
+            vm.ExecuteWord("CLEAN");
+        });
+
+        // Test hurried path: should execute CEREAL (1) then CLEAN (99)
+        new ProgramBuilder().Push(1).Word("BREAKFAST").RunOn(vm);  // true = hurried
+        Assert.Equal(2, vm.DataStack.Count());
+        Assert.Equal(99, vm.DataStack.First().AsInteger());        // CLEAN on top
+        Assert.Equal(1, vm.DataStack.Skip(1).First().AsInteger()); // CEREAL below
+
+        // Test leisurely path: should execute EGGS (2) then CLEAN (99)
+        // Create new VM to start with clean stack
+        vm = new VMActor();
+        vm.DefineNative("CEREAL", () => 1);
+        vm.DefineNative("EGGS", () => 2);
+        vm.DefineNative("CLEAN", () => 99);
+        vm.DefineNative("BREAKFAST", (bool hurried) =>
+        {
+            if (hurried)
+                vm.ExecuteWord("CEREAL");
+            else
+                vm.ExecuteWord("EGGS");
+            vm.ExecuteWord("CLEAN");
+        });
+
+        new ProgramBuilder().Push(0).Word("BREAKFAST").RunOn(vm);  // false = not hurried
+        Assert.Equal(2, vm.DataStack.Count());
+        Assert.Equal(99, vm.DataStack.First().AsInteger());        // CLEAN on top
+        Assert.Equal(2, vm.DataStack.Skip(1).First().AsInteger()); // EGGS below
+    }
+
+    [Fact]
+    public void Example_ControlFlow_BytecodeJumps()
+    {
+        // Demonstrates Forth IF...ELSE...THEN using actual bytecode jumps
+        // Forth program: : BREAKFAST HURRIED? IF CEREAL ELSE EGGS THEN CLEAN ;
+        var vm = new VMActor();
+
+        // Bytecode layout (byte offsets):
+        // [0-2]:   JUMPZ      (1 opcode + 2 offset bytes = 3 total)
+        // [3-11]:  PUSH 1     (1 opcode + 8 value bytes = 9 total) <- CEREAL  
+        // [12-14]: JUMP       (1 opcode + 2 offset bytes = 3 total)
+        // [15-23]: PUSH 2     (1 opcode + 8 value bytes = 9 total) <- EGGS
+        // [24-32]: PUSH 99    (1 opcode + 8 value bytes = 9 total) <- CLEAN
+        // [33]:    RETURN
+
+        // When JUMPZ executes, IP will be at 3 (after reading opcode and offset)
+        // To reach byte 15 (EGGS), offset = 15 - 3 = 12
+
+        // When JUMP executes at byte 12, IP will be at 15 (after reading opcode and offset)
+        // To reach byte 24 (CLEAN), offset = 24 - 15 = 9
+
+        var breakfast = new BytecodeBuilder()
+            .JumpZ(12)              // If false, jump to EGGS at byte 15 (offset from IP=3)
+            .Push(1)                // CEREAL (bytes 3-11)
+            .Jump(9)                // Jump to CLEAN at byte 24 (offset from IP=15)
+            .Push(2)                // EGGS (bytes 15-23)
+            .Push(99)               // CLEAN (bytes 24-32)
+            .Op(OpCode.RETURN)
+            .Build();
+
+        vm.DefineWord("BREAKFAST", breakfast);
+
+        // Test true path: CEREAL (1) then CLEAN (99)
+        new ProgramBuilder().Push(1).Word("BREAKFAST").RunOn(vm);
+        Assert.Equal(2, vm.DataStack.Count());
+        Assert.Equal(99, vm.DataStack.First().AsInteger());        // CLEAN on top
+        Assert.Equal(1, vm.DataStack.Skip(1).First().AsInteger()); // CEREAL below
+
+        // Test false path: EGGS (2) then CLEAN (99)
+        vm = new VMActor();
+        vm.DefineWord("BREAKFAST", breakfast);
+        new ProgramBuilder().Push(0).Word("BREAKFAST").RunOn(vm);
+        Assert.Equal(2, vm.DataStack.Count());
+        Assert.Equal(99, vm.DataStack.First().AsInteger());        // CLEAN on top
+        Assert.Equal(2, vm.DataStack.Skip(1).First().AsInteger()); // EGGS below
+    }
+
+    [Fact]
+    public void Example_ControlFlow_LoopWithJumps()
+    {
+        // Demonstrates a simple countdown loop using JUMPNZ (backward jump)
+        // Pseudocode: counter = 3; do { counter--; } while (counter != 0);
+        var vm = new VMActor();
+
+        // Bytecode layout:
+        // [0-8]:   PUSH 3      (9 bytes)
+        // [9-17]:  PUSH 1      (9 bytes) <- loop_start
+        // [18]:    SUB         (1 byte)
+        // [19]:    DUP         (1 byte)
+        // [20-22]: JUMPNZ      (3 bytes) - when this executes, IP will be at 23
+        // [23]:    RETURN      (1 byte)
+        //
+        // To jump back to byte 9 from IP=23, offset = 9 - 23 = -14
+
+        var countdown = new BytecodeBuilder()
+            .Push(3)                // Start counter at 3 (bytes 0-8)
+                                    // loop_start: (byte 9)
+            .Push(1)                // Push 1 (bytes 9-17)
+            .Op(OpCode.SUB)         // counter - 1 (byte 18)
+            .Op(OpCode.DUP)         // Duplicate for test (byte 19)
+            .JumpNZ(-14)            // Jump back to loop_start if non-zero (bytes 20-22)
+            .Op(OpCode.RETURN)      // (byte 23)
+            .Build();
+
+        vm.DefineWord("COUNTDOWN", countdown);
+        new ProgramBuilder().Word("COUNTDOWN").RunOn(vm);
+
+        // Stack should have 0 on top (the final counter value after loop exits)
+        Assert.Single(vm.DataStack);
+        Assert.Equal(0, vm.DataStack.First().AsInteger());
+    }
+
+    [Fact]
+    public void Example_ControlFlow_UsingIfElseThen()
+    {
+        // Demonstrates using IF/ELSE/THEN words to compile conditional logic
+        // This is the Forth-style approach where control flow words generate bytecode
+        var vm = new VMActor();
+
+        // We'll compile the BREAKFAST word using IF/ELSE/THEN
+        // Compiled code: DUP IF 1 ELSE 2 THEN 99 RETURN
+        // Meaning: ( condition -- condition result 99 ) or ( condition -- condition result 99 )
+        // Actually we want: ( condition -- result 99 )
+        // So: IF 1 ELSE 2 THEN 99 RETURN
+
+        int startAddr = vm.Here;
+
+        // Compile bytecode using IF/ELSE/THEN
+        // Note: IF/ELSE/THEN compile jump instructions, they don't execute
+        // We need to emit opcodes manually for the PUSH instructions
+
+        vm.ExecuteWord("IF");           // Compile JUMPZ (if condition is zero, skip to ELSE)
+
+        // THEN branch: emit PUSH 1
+        vm.PushValue(Value.Integer((byte)OpCode.PUSH));
+        vm.ExecuteWord("EMIT");
+        vm.PushValue(Value.Integer(1)); // CEREAL value
+        vm.ExecuteWord("EMIT64");
+
+        vm.ExecuteWord("ELSE");         // Compile JUMP to skip ELSE branch, backpatch IF
+
+        // ELSE branch: emit PUSH 2
+        vm.PushValue(Value.Integer((byte)OpCode.PUSH));
+        vm.ExecuteWord("EMIT");
+        vm.PushValue(Value.Integer(2)); // EGGS value
+        vm.ExecuteWord("EMIT64");
+
+        vm.ExecuteWord("THEN");         // Backpatch ELSE's JUMP target
+
+        // After IF/ELSE/THEN: emit PUSH 99 (CLEAN)
+        vm.PushValue(Value.Integer((byte)OpCode.PUSH));
+        vm.ExecuteWord("EMIT");
+        vm.PushValue(Value.Integer(99));
+        vm.ExecuteWord("EMIT64");
+
+        // Emit RETURN
+        vm.PushValue(Value.Integer((byte)OpCode.RETURN));
+        vm.ExecuteWord("EMIT");
+
+        int endAddr = vm.Here;
+        int codeLen = endAddr - startAddr;
+
+        // Extract the compiled bytecode using reflection
+        var dict = GetDictSpan(vm, startAddr, codeLen);
+        var compiledCode = dict.ToArray();
+
+        // Define BREAKFAST with the compiled code
+        vm.DefineWord("BREAKFAST", compiledCode);
+
+        // Test true path (non-zero condition): should get 1 (CEREAL) and 99 (CLEAN)
+        new ProgramBuilder().Push(1).Word("BREAKFAST").RunOn(vm);
+        Assert.Equal(2, vm.DataStack.Count());
+        Assert.Equal(99, vm.DataStack.First().AsInteger());        // CLEAN on top
+        Assert.Equal(1, vm.DataStack.Skip(1).First().AsInteger()); // CEREAL below
+
+        // Test false path (zero condition): should get 2 (EGGS) and 99 (CLEAN)
+        vm = new VMActor();
+        vm.DefineWord("BREAKFAST", compiledCode);
+        new ProgramBuilder().Push(0).Word("BREAKFAST").RunOn(vm);
+        Assert.Equal(2, vm.DataStack.Count());
+        Assert.Equal(99, vm.DataStack.First().AsInteger());        // CLEAN on top
+        Assert.Equal(2, vm.DataStack.Skip(1).First().AsInteger()); // EGGS below
+    }
+
+    [Fact]
+    public void Example_ControlFlow_ErgonomicIfElseThen()
+    {
+        // Demonstrates using ProgramBuilder's ergonomic If method
+        // Much cleaner than manually calling ExecuteWord("IF"), EMIT, etc.
+        var vm = new VMActor();
+
+        int startAddr = vm.Here;
+
+        // Compile: IF 1 ELSE 2 THEN 99 RETURN using ergonomic syntax
+        new ProgramBuilder()
+            .If(
+                thenBranch => thenBranch.CompilePush(1),
+                elseBranch => elseBranch.CompilePush(2)
+            )
+            .CompilePush(99)
+            .CompileOp(OpCode.RETURN)
+            .Execute(vm);
+
+        int endAddr = vm.Here;
+        int codeLen = endAddr - startAddr;
+
+        // Extract the compiled bytecode
+        var dict = GetDictSpan(vm, startAddr, codeLen);
+        var compiledCode = dict.ToArray();
+
+        // Define BREAKFAST with the compiled code
+        vm.DefineWord("BREAKFAST", compiledCode);
+
+        // Test true path (non-zero condition): should get 1 (CEREAL) and 99 (CLEAN)
+        new ProgramBuilder().Push(1).Word("BREAKFAST").RunOn(vm);
+        Assert.Equal(2, vm.DataStack.Count());
+        Assert.Equal(99, vm.DataStack.First().AsInteger());        // CLEAN on top
+        Assert.Equal(1, vm.DataStack.Skip(1).First().AsInteger()); // CEREAL below
+
+        // Test false path (zero condition): should get 2 (EGGS) and 99 (CLEAN)
+        vm = new VMActor();
+        vm.DefineWord("BREAKFAST", compiledCode);
+        new ProgramBuilder().Push(0).Word("BREAKFAST").RunOn(vm);
+        Assert.Equal(2, vm.DataStack.Count());
+        Assert.Equal(99, vm.DataStack.First().AsInteger());        // CLEAN on top
+        Assert.Equal(2, vm.DataStack.Skip(1).First().AsInteger()); // EGGS below
+    }
+
     private static Span<byte> GetDictSpan(VMActor vm, int addr, int len)
     {
         var fi = typeof(VMActor).GetField("_dictionary", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;

@@ -60,6 +60,71 @@ public class ProgramBuilder
     }
 
     /// <summary>
+    /// Begin a conditional structure. Emits IF word.
+    /// Usage: .If(thenActions) or .If(thenActions, elseActions)
+    /// </summary>
+    public ProgramBuilder If(Action<ProgramBuilder> thenBranch, Action<ProgramBuilder>? elseBranch = null)
+    {
+        Word("IF");
+        thenBranch(this);
+
+        if (elseBranch is not null)
+        {
+            Word("ELSE");
+            elseBranch(this);
+        }
+
+        Word("THEN");
+        return this;
+    }
+
+    /// <summary>
+    /// Emit a single opcode as a helper for EMIT word compilation.
+    /// </summary>
+    public ProgramBuilder Emit(byte opcode)
+    {
+        Word("EMIT");
+        Push(opcode);
+        Word("EMIT");
+        return this;
+    }
+
+    /// <summary>
+    /// Emit a 64-bit value as a helper for EMIT64 word compilation.
+    /// </summary>
+    public ProgramBuilder Emit64(long value)
+    {
+        Word("EMIT64");
+        Push(value);
+        Word("EMIT64");
+        return this;
+    }
+
+    /// <summary>
+    /// Compile a PUSH instruction into dictionary memory.
+    /// Usage: .CompilePush(42) emits the PUSH opcode followed by the 64-bit value.
+    /// </summary>
+    public ProgramBuilder CompilePush(long value)
+    {
+        Push((byte)OpCode.PUSH);
+        Word("EMIT");
+        Push(value);
+        Word("EMIT64");
+        return this;
+    }
+
+    /// <summary>
+    /// Compile an opcode into dictionary memory.
+    /// Usage: .CompileOp(OpCode.ADD) emits the ADD opcode.
+    /// </summary>
+    public ProgramBuilder CompileOp(OpCode opcode)
+    {
+        Push((byte)opcode);
+        Word("EMIT");
+        return this;
+    }
+
+    /// <summary>
     /// Execute the composed program on the provided VM.
     /// Segments of bytecode are executed via LoadBytecode/Run, and word calls are invoked via ExecuteWord.
     /// </summary>
