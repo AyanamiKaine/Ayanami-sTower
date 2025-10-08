@@ -1,4 +1,8 @@
-﻿namespace StellaLang;
+﻿using System.Reflection;
+using System.Linq;
+using System.Linq.Expressions;
+
+namespace StellaLang;
 
 /// <summary>
 /// Opcode enumeration for bytecode instructions.
@@ -258,6 +262,13 @@ public class VMActor
     /// (e.g., redefining ADD to use MUL and MUL to use ADD).
     /// </summary>
     private int _redefinitionNesting = 0;
+
+    /// <summary>
+    /// Managed object heap for interop. We store opaque handles (ints) on the VM stack
+    /// that reference real managed objects here.
+    /// </summary>
+    private readonly Dictionary<int, object> _objectHeap = new();
+    private int _nextObjectHandle = 1;
 
     /// <summary>
     /// The "HERE" pointer. This is the address where the next byte will be written.
@@ -526,6 +537,242 @@ public class VMActor
     /// Gets the current data stack for inspection (useful for testing/debugging).
     /// </summary>
     public IEnumerable<Value> DataStack => _dataStack;
+
+    // ===== Native interop helpers =====
+
+    private static Value MapObjectToValue(object obj, string? forWord = null)
+    {
+        return obj switch
+        {
+            Value v => v,
+            long l => Value.Integer(l),
+            int i => Value.Integer(i),
+            double d => Value.Float(d),
+            float f => Value.Float(f),
+            bool b => Value.Boolean(b),
+            _ => throw new InvalidOperationException($"Unsupported return type '{obj.GetType().Name}'{(forWord is not null ? $" for native word '{forWord}'" : string.Empty)}.")
+        };
+    }
+
+    private static object? ConvertValueToType(Value v, Type t, string? forWord = null)
+    {
+        if (t == typeof(Value)) return v;
+        if (t == typeof(long) || t == typeof(Int64)) return v.AsInteger();
+        if (t == typeof(int) || t == typeof(Int32)) return (int)v.AsInteger();
+        if (t == typeof(double) || t == typeof(Double)) return v.AsFloat();
+        if (t == typeof(float) || t == typeof(Single)) return (float)v.AsFloat();
+        if (t == typeof(bool) || t == typeof(Boolean)) return v.AsBoolean();
+        throw new InvalidOperationException($"Unsupported parameter type '{t.Name}'{(forWord is not null ? $" for native word '{forWord}'" : string.Empty)}.");
+    }
+
+    private int StoreObject(object obj)
+    {
+        var handle = _nextObjectHandle++;
+        _objectHeap[handle] = obj;
+        return handle;
+    }
+
+    private object ResolveObject(int handle)
+    {
+        if (!_objectHeap.TryGetValue(handle, out var obj))
+            throw new InvalidOperationException($"Invalid object handle: {handle}");
+        return obj;
+    }
+
+    /// <summary>
+    /// Defines a native word by binding a managed delegate. When executed, the VM will:
+    /// - Pop as many arguments from the stack as the delegate's parameter count (top is last parameter)
+    /// - Convert each <see cref="Value"/> to the corresponding parameter type (supported: long/int, double/float, bool, Value)
+    /// - Invoke the delegate
+    /// - If the delegate returns a value (non-void), convert it back to <see cref="Value"/> and push it on the stack
+    /// This allows ergonomic interop with native C# methods without writing manual stack wrappers.
+    /// </summary>
+    /// <param name="name">The word name to bind.</param>
+    /// <param name="impl">The managed delegate to invoke.</param>
+    /// <exception cref="InvalidOperationException">Thrown for unsupported parameter/return types or insufficient stack items.</exception>
+    public void DefineNative(string name, Delegate impl)
+    {
+        // Resolve alias to canonical name for storage
+        var canonicalName = _aliases.TryGetValue(name, out var alias) ? alias : name;
+
+        var method = impl.Method;
+        var parameters = method.GetParameters();
+        var returnsVoid = method.ReturnType == typeof(void);
+
+        void handler()
+        {
+            int arity = parameters.Length;
+            if (_dataStack.Count < arity)
+                throw new InvalidOperationException($"Word '{name}' requires {arity} argument(s) on the stack.");
+
+            // Pop in reverse to build left-to-right argument order
+            var argValues = new Value[arity];
+            for (int i = arity - 1; i >= 0; i--)
+                argValues[i] = _dataStack.Pop();
+
+            var callArgs = new object?[arity];
+            for (int i = 0; i < arity; i++)
+                callArgs[i] = ConvertValueToType(argValues[i], parameters[i].ParameterType, name);
+
+            var result = impl.DynamicInvoke(callArgs);
+
+            if (!returnsVoid)
+            {
+                if (result is null)
+                    throw new InvalidOperationException($"Native word '{name}' returned null for non-void method.");
+                _dataStack.Push(MapObjectToValue(result, name));
+            }
+        }
+
+        _redefinitions[canonicalName] = Word.Native(canonicalName, 0, handler);
+    }
+
+    /// <summary>
+    /// Defines a word that constructs a .NET object using the specified constructor and
+    /// pushes an opaque handle (Value.Pointer) to the VM stack. The handle can be used
+    /// with instance-by-handle words.
+    /// Stack: ( ctor-arg1 ... ctor-argN -- handle )
+    /// </summary>
+    public void DefineConstructor(string name, Type type, params Type[] parameterTypes)
+    {
+        var ctor = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, binder: null, types: parameterTypes, modifiers: null)
+                   ?? throw new InvalidOperationException($"Constructor not found: {type.FullName}({string.Join(", ", parameterTypes.Select(t => t.Name))})");
+
+        var parameters = ctor.GetParameters();
+        void handler()
+        {
+            int arity = parameters.Length;
+            if (_dataStack.Count < arity)
+                throw new InvalidOperationException($"Word '{name}' requires {arity} argument(s) on the stack.");
+
+            var argValues = new Value[arity];
+            for (int i = arity - 1; i >= 0; i--)
+                argValues[i] = _dataStack.Pop();
+
+            var callArgs = new object?[arity];
+            for (int i = 0; i < arity; i++)
+                callArgs[i] = ConvertValueToType(argValues[i], parameters[i].ParameterType, name);
+
+            var obj = ctor.Invoke(callArgs);
+            int handle = StoreObject(obj!);
+            _dataStack.Push(Value.Pointer(handle));
+        }
+
+        _redefinitions[name] = Word.Native(name, 0, handler);
+    }
+
+    /// <summary>
+    /// Defines a word that calls an instance method on a .NET object identified by a handle
+    /// (Value.Pointer) at the bottom of the argument group. The stack layout must be:
+    /// ( handle arg1 ... argN -- [result] ) where result is pushed if the method is non-void.
+    /// </summary>
+    public void DefineInstanceByHandle(string name, Type type, string methodOrPropertyName, params Type[] parameterTypes)
+    {
+        var mi = type.GetMethod(methodOrPropertyName, BindingFlags.Public | BindingFlags.Instance, binder: null, types: parameterTypes, modifiers: null);
+
+        // If a method isn't found and no parameters were specified, try binding a property getter
+        if (mi is null && parameterTypes.Length == 0)
+        {
+            var pi = type.GetProperty(methodOrPropertyName, BindingFlags.Public | BindingFlags.Instance);
+            if (pi is not null && pi.CanRead)
+            {
+                void getterHandler()
+                {
+                    if (_dataStack.Count < 1)
+                        throw new InvalidOperationException($"Word '{name}' requires 1 value on the stack (handle).");
+
+                    int handle = _dataStack.Pop().AsPointer();
+                    var target = ResolveObject(handle);
+                    if (!type.IsInstanceOfType(target))
+                        throw new InvalidOperationException($"Handle does not reference instance of {type.FullName}.");
+
+                    var value = pi.GetValue(target)!;
+                    _dataStack.Push(MapObjectToValue(value, name));
+                }
+
+                _redefinitions[name] = Word.Native(name, 0, getterHandler);
+                return;
+            }
+        }
+
+        if (mi is null)
+            throw new InvalidOperationException($"Instance method not found: {type.FullName}.{methodOrPropertyName}({string.Join(", ", parameterTypes.Select(t => t.Name))})");
+
+        var parameters = mi.GetParameters();
+        bool returnsVoid = mi.ReturnType == typeof(void);
+
+        void handler()
+        {
+            int arity = parameters.Length;
+            if (_dataStack.Count < arity + 1)
+                throw new InvalidOperationException($"Word '{name}' requires {arity + 1} value(s) on the stack (handle + {arity} args).");
+
+            // Pop args first (top of stack) then the handle (receiver at bottom of group)
+            var argValues = new Value[arity];
+            for (int i = arity - 1; i >= 0; i--)
+                argValues[i] = _dataStack.Pop();
+
+            int handle = _dataStack.Pop().AsPointer();
+            var target = ResolveObject(handle);
+            if (!type.IsInstanceOfType(target))
+                throw new InvalidOperationException($"Handle does not reference instance of {type.FullName}.");
+
+            var callArgs = new object?[arity];
+            for (int i = 0; i < arity; i++)
+                callArgs[i] = ConvertValueToType(argValues[i], parameters[i].ParameterType, name);
+
+            var result = mi.Invoke(target, callArgs);
+            if (!returnsVoid)
+                _dataStack.Push(MapObjectToValue(result!, name));
+        }
+
+        _redefinitions[name] = Word.Native(name, 0, handler);
+    }
+
+    /// <summary>
+    /// Defines a native word by binding a static method via reflection.
+    /// Example: DefineNativeStatic("MAX", typeof(System.Math), nameof(System.Math.Max), typeof(int), typeof(int))
+    /// </summary>
+    public void DefineNativeStatic(string name, Type declaringType, string methodName, params Type[] parameterTypes)
+    {
+        var mi = declaringType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Static, binder: null, types: parameterTypes, modifiers: null)
+                 ?? throw new InvalidOperationException($"Static method not found: {declaringType.FullName}.{methodName}({string.Join(", ", parameterTypes.Select(t => t.Name))})");
+        var del = CreateDelegateForMethod(mi, target: null);
+        DefineNative(name, del);
+    }
+
+    /// <summary>
+    /// Defines a native word by binding an instance method via reflection.
+    /// Example: DefineNativeInstance("NEXT", new Random(0), nameof(Random.Next), typeof(int), typeof(int))
+    /// </summary>
+    public void DefineNativeInstance(string name, object target, string methodName, params Type[] parameterTypes)
+    {
+        var mi = target.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance, binder: null, types: parameterTypes, modifiers: null)
+                 ?? throw new InvalidOperationException($"Instance method not found: {target.GetType().FullName}.{methodName}({string.Join(", ", parameterTypes.Select(t => t.Name))})");
+        var del = CreateDelegateForMethod(mi, target);
+        DefineNative(name, del);
+    }
+
+    private static Delegate CreateDelegateForMethod(MethodInfo mi, object? target)
+    {
+        var paramTypes = mi.GetParameters().Select(p => p.ParameterType).ToArray();
+        var returnType = mi.ReturnType;
+
+        Type delegateType;
+        if (returnType == typeof(void))
+        {
+            delegateType = Expression.GetActionType(paramTypes);
+        }
+        else
+        {
+            var types = new List<Type>(paramTypes) { returnType };
+            delegateType = Expression.GetFuncType(types.ToArray());
+        }
+
+        return target is null
+            ? mi.CreateDelegate(delegateType)
+            : mi.CreateDelegate(delegateType, target);
+    }
 
     /// <summary>
     /// Populates the instruction table with opcode handlers.
