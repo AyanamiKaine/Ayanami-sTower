@@ -271,6 +271,14 @@ public class VMActor
     private int _nextObjectHandle = 1;
 
     /// <summary>
+    /// When true, the next word name executed via ExecuteWord(name) will be defined
+    /// as a VARIABLE (a word that pushes an address of an 8-byte cell allocated in the dictionary),
+    /// instead of being executed. This mimics Forth's "VARIABLE NAME" immediate behavior in a
+    /// runtime-friendly way.
+    /// </summary>
+    private bool _variableDefinitionPending = false;
+
+    /// <summary>
     /// The "HERE" pointer. This is the address where the next byte will be written.
     /// </summary>
     public int Here { get; set; } = 0;
@@ -414,6 +422,27 @@ public class VMActor
     /// <param name="name">The name of the word to execute.</param>
     public void ExecuteWord(string name)
     {
+        // Intercept VARIABLE NAME pattern: if a variable definition is pending,
+        // define (or redefine) a word with this name that pushes a freshly allocated address.
+        if (_variableDefinitionPending)
+        {
+            _variableDefinitionPending = false;
+
+            // Allocate 8 bytes (one cell) and build a word that pushes its address
+            int addr = Allocate(8);
+            var bytecode = new BytecodeBuilder()
+                .Push(addr)
+                .Op(OpCode.RETURN)
+                .Build();
+
+            // Redefine if exists; otherwise define new
+            if (GetWord(name) is not null)
+                RedefineWord(name, bytecode);
+            else
+                DefineWord(name, bytecode);
+            return;
+        }
+
         var word = GetWord(name) ?? throw new InvalidOperationException($"Word '{name}' not found in dictionary.");
         ExecuteWord(word);
     }
@@ -995,6 +1024,10 @@ public class VMActor
 
         // SWAP: ( a b -- b a )
         DefineNative("SWAP", (Action)(() => { var a = _dataStack.Pop(); var b = _dataStack.Pop(); _dataStack.Push(a); _dataStack.Push(b); }));
+
+        // VARIABLE: ( -- )  The next word name invoked will be defined as a variable
+        // (a word that pushes an allocated 8-byte cell address).
+        DefineNative("VARIABLE", (Action)(() => { _variableDefinitionPending = true; }));
 
         // Optional helpers: generic FIELD@ and FIELD! for (addr offset -- value) and (value addr offset -- )
         var fieldGet = new BytecodeBuilder().Op(OpCode.ADD).Op(OpCode.FETCH).Op(OpCode.RETURN).Build();
