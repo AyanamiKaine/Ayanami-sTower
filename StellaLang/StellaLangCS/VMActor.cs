@@ -313,6 +313,7 @@ public class VMActor
     {
         _dictionary = new byte[initialCapacity];
         PopulateWords();
+        RegisterAssemblerWords();
     }
 
     /// <summary>
@@ -537,6 +538,28 @@ public class VMActor
     /// Gets the current data stack for inspection (useful for testing/debugging).
     /// </summary>
     public IEnumerable<Value> DataStack => _dataStack;
+
+    /// <summary>
+    /// Pushes a value onto the VM data stack. Intended for host-side helpers and tests.
+    /// </summary>
+    /// <param name="value">The value to push.</param>
+    public void PushValue(Value value) => _dataStack.Push(value);
+
+    /// <summary>
+    /// Pops and returns the top value from the VM data stack.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">If the stack is empty.</exception>
+    public Value PopValue()
+    {
+        if (_dataStack.Count == 0)
+            throw new InvalidOperationException("Stack underflow.");
+        return _dataStack.Pop();
+    }
+
+    /// <summary>
+    /// Returns the current number of elements on the data stack.
+    /// </summary>
+    public int DataStackCount() => _dataStack.Count;
 
     // ===== Native interop helpers =====
 
@@ -882,6 +905,20 @@ public class VMActor
         Here += byteCount;
     }
 
+    /// <summary>
+    /// Allocates a contiguous block of bytes in the dictionary memory and returns the base address.
+    /// Advances the HERE pointer. Similar to Forth's ALLOT but returns the starting address.
+    /// </summary>
+    /// <param name="byteCount">Number of bytes to allocate.</param>
+    /// <returns>The base address (pointer) to the allocated block.</returns>
+    public int Allocate(int byteCount)
+    {
+        EnsureCapacity(byteCount);
+        int baseAddr = Here;
+        Here += byteCount;
+        return baseAddr;
+    }
+
     private void EnsureCapacity(int requiredBytes)
     {
         if (Here + requiredBytes > Capacity)
@@ -894,6 +931,77 @@ public class VMActor
             // array and copies the old data over automatically.
             Array.Resize(ref _dictionary, newCapacity);
         }
+    }
+
+    /// <summary>
+    /// Writes a 64-bit integer to dictionary memory at the specified address.
+    /// </summary>
+    /// <param name="address">Byte address within the dictionary.</param>
+    /// <param name="value">The 64-bit value to write.</param>
+    public void Write64(int address, long value)
+    {
+        if (address + 8 > Here)
+            throw new IndexOutOfRangeException("Memory write is out of allotted bounds.");
+        Span<byte> slice = _dictionary.AsSpan(address, 8);
+        BitConverter.TryWriteBytes(slice, value);
+    }
+
+    /// <summary>
+    /// Reads a 64-bit integer from dictionary memory at the specified address.
+    /// </summary>
+    /// <param name="address">Byte address within the dictionary.</param>
+    /// <returns>The 64-bit integer read.</returns>
+    public long Read64(int address)
+    {
+        if (address + 8 > Here)
+            throw new IndexOutOfRangeException("Memory read is out of allotted bounds.");
+        ReadOnlySpan<byte> slice = _dictionary.AsSpan(address, 8);
+        return BitConverter.ToInt64(slice);
+    }
+
+    /// <summary>
+    /// Writes a single byte to dictionary memory at the specified address.
+    /// </summary>
+    public void Write8(int address, byte value)
+    {
+        if (address + 1 > Here)
+            throw new IndexOutOfRangeException("Memory write is out of allotted bounds.");
+        _dictionary[address] = value;
+    }
+
+    /// <summary>
+    /// Reads a single byte from dictionary memory at the specified address.
+    /// </summary>
+    public byte Read8(int address)
+    {
+        if (address + 1 > Here)
+            throw new IndexOutOfRangeException("Memory read is out of allotted bounds.");
+        return _dictionary[address];
+    }
+
+    private void RegisterAssemblerWords()
+    {
+        // HERE: ( -- addr )
+        DefineNative("HERE", (Func<int>)(() => Here));
+
+        // ALLOT: ( n -- )
+        DefineNative("ALLOT", (Action<int>)(n => Allot(n)));
+
+        // EMIT: ( b -- ) write a byte at HERE and advance
+        DefineNative("EMIT", (Action<int>)(b => { Write8(Here, (byte)(b & 0xFF)); Here += 1; }));
+
+        // EMIT64: ( x -- ) write 8 bytes at HERE and advance
+        DefineNative("EMIT64", (Action<long>)(x => { Write64(Here, x); Here += 8; }));
+
+        // SWAP: ( a b -- b a )
+        DefineNative("SWAP", (Action)(() => { var a = _dataStack.Pop(); var b = _dataStack.Pop(); _dataStack.Push(a); _dataStack.Push(b); }));
+
+        // Optional helpers: generic FIELD@ and FIELD! for (addr offset -- value) and (value addr offset -- )
+        var fieldGet = new BytecodeBuilder().Op(OpCode.ADD).Op(OpCode.FETCH).Op(OpCode.RETURN).Build();
+        DefineWord("FIELD@", fieldGet);
+
+        var fieldSet = new BytecodeBuilder().Op(OpCode.ADD).Op(OpCode.STORE).Op(OpCode.RETURN).Build();
+        DefineWord("FIELD!", fieldSet);
     }
 
     /// <summary>
