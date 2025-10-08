@@ -6,38 +6,6 @@ namespace StellaLang.Tests;
 /// </summary>
 public class VMTests
 {
-    /// <summary>
-    /// Helper class to build bytecode programs for testing.
-    /// </summary>
-    private class BytecodeBuilder
-    {
-        private readonly List<byte> _bytes = [];
-
-        /// <summary>
-        /// Adds an opcode to the bytecode.
-        /// </summary>
-        public BytecodeBuilder Op(OpCode opcode)
-        {
-            _bytes.Add((byte)opcode);
-            return this;
-        }
-
-        /// <summary>
-        /// Adds a PUSH instruction followed by an integer value.
-        /// </summary>
-        public BytecodeBuilder Push(long value)
-        {
-            _bytes.Add((byte)OpCode.PUSH);
-            _bytes.AddRange(BitConverter.GetBytes(value));
-            return this;
-        }
-
-        /// <summary>
-        /// Builds the final bytecode array.
-        /// </summary>
-        public byte[] Build() => [.. _bytes];
-    }
-
     [Fact]
     public void PushInstructionPutsValueOnStack()
     {
