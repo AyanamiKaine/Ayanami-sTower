@@ -701,7 +701,11 @@ public class VM
     /// <exception cref="InvalidOperationException">Thrown when memory access is out of bounds.</exception>
     private void ValidateMemoryAccess(long address, int size, string operation)
     {
-        if (address < 0 || address > double.MaxValue)
+        /*
+        Since the underlying Memory<byte> and arrays in .NET are limited to int.MaxValue elements, the VM is effectively limited to a 2GB address space.
+        */
+        
+        if (address < 0 || address > int.MaxValue)
         {
             throw new InvalidOperationException(
                 $"Memory access violation in {operation}: address {address} out of valid range");
@@ -723,7 +727,11 @@ public class VM
     /// <exception cref="InvalidOperationException">Thrown when jump target is invalid.</exception>
     private void ValidateJumpTarget(long address, string operation)
     {
-        if (address < 0 || address > double.MaxValue)
+        /*
+        Since the underlying Memory<byte> and arrays in .NET are limited to int.MaxValue elements, the VM is effectively limited to a 2GB address space.
+        */
+
+        if (address < 0 || address > int.MaxValue)
         {
             throw new InvalidOperationException(
                 $"Invalid jump target in {operation}: address {address} out of valid range");
