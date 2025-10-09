@@ -55,7 +55,10 @@ public class VM
     /// <summary>
     /// Flag indicating if the VM should halt.
     /// </summary>
+    public bool Halted => _halted;
+
     private bool _halted;
+
 
     /// <summary>
     /// Initializes a new instance of the VM with default stack sizes.
