@@ -43,6 +43,16 @@ public class CodeBuilder
         return this;
     }
 
+    /// <summary>
+    /// Pushes a 64-bit float onto the float stack.
+    /// </summary>
+    public CodeBuilder FPushFloat(float value)
+    {
+        EmitOpCode(OPCode.FPUSH_DOUBLE);
+        EmitDouble(value);
+        return this;
+    }
+
     // ===== Stack Manipulation =====
 
     /// <summary>Duplicates the top of the stack.</summary>

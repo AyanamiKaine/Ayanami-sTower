@@ -170,6 +170,15 @@ public struct MemoryStack(int size)
     }
 
     /// <summary>
+    /// Peeks at the top 64-bit integer value on the stack without removing it.
+    /// </summary>
+    /// <returns>The long value at the top of the stack.</returns>
+    public readonly long PeekCell()
+    {
+        return PeekLong();
+    }
+
+    /// <summary>
     /// Pushes an unsigned 64-bit integer value onto the stack.
     /// </summary>
     /// <param name="value">The ulong value to push.</param>
