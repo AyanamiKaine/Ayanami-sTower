@@ -539,5 +539,93 @@ public class MemoryStackTests
         Assert.Equal(value, peek3);
         Assert.Equal(4, stack.Pointer); // Pointer unchanged
     }
+
+    [Fact]
+    public void FromKilobytes_CreatesCorrectSize()
+    {
+        // Arrange & Act
+        var stack = MemoryStack.FromKilobytes(5);
+
+        // Assert
+        Assert.Equal(5 * 1024, stack.Memory.Length);
+        Assert.True(stack.IsEmpty);
+    }
+
+    [Fact]
+    public void FromMegabytes_CreatesCorrectSize()
+    {
+        // Arrange & Act
+        var stack = MemoryStack.FromMegabytes(5);
+
+        // Assert
+        Assert.Equal(5 * 1024 * 1024, stack.Memory.Length);
+        Assert.True(stack.IsEmpty);
+    }
+
+    [Fact]
+    public void FromKilobytes_WithZero_CreatesEmptyStack()
+    {
+        // Arrange & Act
+        var stack = MemoryStack.FromKilobytes(0);
+
+        // Assert
+        Assert.Equal(0, stack.Memory.Length);
+        Assert.True(stack.IsEmpty);
+    }
+
+    [Fact]
+    public void FromMegabytes_WithZero_CreatesEmptyStack()
+    {
+        // Arrange & Act
+        var stack = MemoryStack.FromMegabytes(0);
+
+        // Assert
+        Assert.Equal(0, stack.Memory.Length);
+        Assert.True(stack.IsEmpty);
+    }
+
+    [Fact]
+    public void FromKilobytes_WithNegative_ThrowsException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentOutOfRangeException>(() => MemoryStack.FromKilobytes(-1));
+    }
+
+    [Fact]
+    public void FromMegabytes_WithNegative_ThrowsException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentOutOfRangeException>(() => MemoryStack.FromMegabytes(-1));
+    }
+
+    [Fact]
+    public void FromKilobytes_CanPushAndPopValues()
+    {
+        // Arrange
+        var stack = MemoryStack.FromKilobytes(1);
+        const int value = 42;
+
+        // Act
+        stack.PushInt(value);
+        int result = stack.PopInt();
+
+        // Assert
+        Assert.Equal(value, result);
+    }
+
+    [Fact]
+    public void FromMegabytes_CanPushAndPopValues()
+    {
+        // Arrange
+        var stack = MemoryStack.FromMegabytes(1);
+        const long value = 123456789L;
+
+        // Act
+        stack.PushLong(value);
+        long result = stack.PopLong();
+
+        // Assert
+        Assert.Equal(value, result);
+    }
 }
 

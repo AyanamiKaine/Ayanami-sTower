@@ -13,22 +13,22 @@ public class VM
     /// <summary>
     /// Data stack for integer/cell operations.
     /// </summary>
-    public MemoryStack DataStack = new(1024 * 8);
+    public MemoryStack DataStack = MemoryStack.FromMegabytes(40);
 
     /// <summary>
     /// Float stack for floating-point operations.
     /// </summary>
-    public MemoryStack FloatStack = new(1024 * 8);
+    public MemoryStack FloatStack = MemoryStack.FromMegabytes(8);
 
     /// <summary>
     /// Return stack for storing return addresses and temporary values.
     /// </summary>
-    public MemoryStack ReturnStack = new(1024 * 8);
+    public MemoryStack ReturnStack = MemoryStack.FromMegabytes(12);
 
     /// <summary>
     /// VM memory for FETCH/STORE operations.
     /// </summary>
-    public MemoryStack Memory = new(1024 * 64);
+    public MemoryStack Memory = MemoryStack.FromMegabytes(124);
 
     /// <summary>
     /// The bytecode being executed.

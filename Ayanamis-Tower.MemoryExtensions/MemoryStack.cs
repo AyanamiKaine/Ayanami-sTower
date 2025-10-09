@@ -269,4 +269,48 @@ public struct MemoryStack(int size)
     {
         _pointer = 0;
     }
+
+    /// <summary>
+    /// Creates a new MemoryStack with the specified size in kilobytes.
+    /// </summary>
+    /// <param name="kilobytes">The size of the stack in kilobytes.</param>
+    /// <returns>A new MemoryStack instance.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when kilobytes is negative or the result exceeds int.MaxValue.</exception>
+    public static MemoryStack FromKilobytes(int kilobytes)
+    {
+        if (kilobytes < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(kilobytes), "Kilobytes must be non-negative.");
+        }
+
+        long bytes = (long)kilobytes * 1024;
+        if (bytes > int.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(kilobytes), "Resulting size exceeds maximum allowed size.");
+        }
+
+        return new MemoryStack((int)bytes);
+    }
+
+    /// <summary>
+    /// Creates a new MemoryStack with the specified size in megabytes.
+    /// </summary>
+    /// <param name="megabytes">The size of the stack in megabytes.</param>
+    /// <returns>A new MemoryStack instance.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when megabytes is negative or the result exceeds int.MaxValue.</exception>
+    public static MemoryStack FromMegabytes(int megabytes)
+    {
+        if (megabytes < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(megabytes), "Megabytes must be non-negative.");
+        }
+
+        long bytes = (long)megabytes * 1024 * 1024;
+        if (bytes > int.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(megabytes), "Resulting size exceeds maximum allowed size.");
+        }
+
+        return new MemoryStack((int)bytes);
+    }
 }
