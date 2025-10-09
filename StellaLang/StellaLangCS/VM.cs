@@ -222,61 +222,84 @@ public class VM
             [OPCode.FETCH] = () =>
             {
                 long addr = DataStack.PopLong();
-                // Create a temporary pointer for reading
-                int tempPtr = (int)addr;
-                DataStack.PushLong(Memory.Memory.PopLong(ref tempPtr));
+                // Read directly from memory at address
+                byte[] bytes = new byte[8];
+                for (int i = 0; i < 8; i++)
+                {
+                    bytes[i] = Memory.Memory.Span[(int)addr + i];
+                }
+                long value = BitConverter.ToInt64(bytes, 0);
+                DataStack.PushLong(value);
             },
             [OPCode.STORE] = () =>
             {
                 long addr = DataStack.PopLong();
                 long value = DataStack.PopLong();
-                int tempPtr = (int)addr;
-                Memory.Memory.PushLong(ref tempPtr, value);
+                // Write directly to memory at address
+                byte[] bytes = BitConverter.GetBytes(value);
+                for (int i = 0; i < 8; i++)
+                {
+                    Memory.Memory.Span[(int)addr + i] = bytes[i];
+                }
             },
 
             // Memory access - byte
             [OPCode.FETCH_BYTE] = () =>
             {
                 long addr = DataStack.PopLong();
-                int tempPtr = (int)addr;
-                DataStack.PushLong(Memory.Memory.Pop(ref tempPtr));
+                DataStack.PushLong(Memory.Memory.Span[(int)addr]);
             },
             [OPCode.STORE_BYTE] = () =>
             {
                 long addr = DataStack.PopLong();
                 long value = DataStack.PopLong();
-                int tempPtr = (int)addr;
-                Memory.Memory.Push(ref tempPtr, (byte)value);
+                Memory.Memory.Span[(int)addr] = (byte)value;
             },
 
             // Memory access - word (16-bit)
             [OPCode.FETCH_WORD] = () =>
             {
                 long addr = DataStack.PopLong();
-                int tempPtr = (int)addr;
-                DataStack.PushLong(Memory.Memory.PopShort(ref tempPtr));
+                byte[] bytes = new byte[2];
+                for (int i = 0; i < 2; i++)
+                {
+                    bytes[i] = Memory.Memory.Span[(int)addr + i];
+                }
+                short value = BitConverter.ToInt16(bytes, 0);
+                DataStack.PushLong(value);
             },
             [OPCode.STORE_WORD] = () =>
             {
                 long addr = DataStack.PopLong();
                 long value = DataStack.PopLong();
-                int tempPtr = (int)addr;
-                Memory.Memory.PushShort(ref tempPtr, (short)value);
+                byte[] bytes = BitConverter.GetBytes((short)value);
+                for (int i = 0; i < 2; i++)
+                {
+                    Memory.Memory.Span[(int)addr + i] = bytes[i];
+                }
             },
 
             // Memory access - long (32-bit)
             [OPCode.FETCH_LONG] = () =>
             {
                 long addr = DataStack.PopLong();
-                int tempPtr = (int)addr;
-                DataStack.PushLong(Memory.Memory.PopInt(ref tempPtr));
+                byte[] bytes = new byte[4];
+                for (int i = 0; i < 4; i++)
+                {
+                    bytes[i] = Memory.Memory.Span[(int)addr + i];
+                }
+                int value = BitConverter.ToInt32(bytes, 0);
+                DataStack.PushLong(value);
             },
             [OPCode.STORE_LONG] = () =>
             {
                 long addr = DataStack.PopLong();
                 long value = DataStack.PopLong();
-                int tempPtr = (int)addr;
-                Memory.Memory.PushInt(ref tempPtr, (int)value);
+                byte[] bytes = BitConverter.GetBytes((int)value);
+                for (int i = 0; i < 4; i++)
+                {
+                    Memory.Memory.Span[(int)addr + i] = bytes[i];
+                }
             },
 
             // Float operations
@@ -367,15 +390,23 @@ public class VM
             [OPCode.FFETCH] = () =>
             {
                 long addr = DataStack.PopLong();
-                int tempPtr = (int)addr;
-                FloatStack.PushDouble(Memory.Memory.PopDouble(ref tempPtr));
+                byte[] bytes = new byte[8];
+                for (int i = 0; i < 8; i++)
+                {
+                    bytes[i] = Memory.Memory.Span[(int)addr + i];
+                }
+                double value = BitConverter.ToDouble(bytes, 0);
+                FloatStack.PushDouble(value);
             },
             [OPCode.FSTORE] = () =>
             {
                 long addr = DataStack.PopLong();
                 double value = FloatStack.PopDouble();
-                int tempPtr = (int)addr;
-                Memory.Memory.PushDouble(ref tempPtr, value);
+                byte[] bytes = BitConverter.GetBytes(value);
+                for (int i = 0; i < 8; i++)
+                {
+                    Memory.Memory.Span[(int)addr + i] = bytes[i];
+                }
             },
 
             // Type conversion

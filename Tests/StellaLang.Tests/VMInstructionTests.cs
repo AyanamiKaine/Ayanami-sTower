@@ -237,9 +237,9 @@ public class VMInstructionTests
 
         var code = new CodeBuilder()
             .PushCell(1234)      // Value to store
-            .PushCell(0)         // Address to store at
+            .PushCell(50)         // Address to store at
             .Store()             // STORE instruction
-            .PushCell(0)         // Address to fetch from
+            .PushCell(50)         // Address to fetch from
             .Fetch()             // FETCH instruction
             .Build();
 
@@ -247,6 +247,27 @@ public class VMInstructionTests
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 1234;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void FSTOREFFETCHVMInstructionTest()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .FPushDouble(1234.5)      // Value to store
+            .PushCell(50)         // Address to store at
+            .FStore()             // STORE instruction
+            .PushCell(50)         // Address to fetch from
+            .FFetch()             // FETCH instruction
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.FloatStack.PeekDouble();
+        const double expectedTopValue = 1234.5;
 
         Assert.Equal(expectedTopValue, currentTopStackValue);
     }
