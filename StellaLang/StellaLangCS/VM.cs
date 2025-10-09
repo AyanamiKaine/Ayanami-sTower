@@ -2,6 +2,12 @@ using System;
 
 namespace StellaLang;
 
+
+/*
+NOTES:
+We should throw exceptions for Stack overflow/underflow interrupts.
+*/
+
 /// <summary>
 /// A simple stack-based virtual machine for executing StellaLang bytecode.
 /// </summary>
@@ -13,6 +19,11 @@ public class VM
     public Dictionary<string, List<OPCode>> Dictionary = [];
 
     /// <summary>
+    /// Memory of the VM.
+    /// </summary>
+    public List<byte> Memory = [];
+
+    /// <summary>
     /// Data stack.
     /// </summary>
     public List<byte> DataStack = [];
@@ -22,6 +33,12 @@ public class VM
     /// instead of instruction operands
     /// </summary>
     public List<byte> ReturnStack = [];
+
+    /// <summary>
+    /// The program counter holds the address
+    /// of the next instruction to be executed.
+    /// </summary>
+    public int ProgramCounter = 0;
 
     private void PreDefineWords()
     {
@@ -68,6 +85,9 @@ public class VM
         DefineWord("UNTIL", []);
         DefineWord("WHILE", []);
         DefineWord("REPEAT", []);
+
+        DefineWord("CALL", []);
+        DefineWord("RETURN", []);
     }
 
     /// <summary>
@@ -97,6 +117,11 @@ public class VM
     /// Runs the current program until it hits a HALT OPCODE.
     /// </summary>
     public void Execute()
+    {
+
+    }
+
+    private void GetNextInstruction()
     {
 
     }
