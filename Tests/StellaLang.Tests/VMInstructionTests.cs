@@ -241,8 +241,8 @@ public class VMInstructionTests
 
         /*
         [
-            2 <- Remainder
-            4 <- Quotient <- Top of Stack
+            4 <- Quotient 
+            2 <- Remainder <- Top of Stack
         ]
         */
 
@@ -254,8 +254,8 @@ public class VMInstructionTests
         vm.DataStack.PopLong();
         long currentQuotient = vm.DataStack.PeekLong();
 
-        Assert.Equal(expectedRemainder, currentRemainder);
-        Assert.Equal(expectedQuotient, currentQuotient);
+        Assert.Equal(expectedRemainder, currentQuotient);
+        Assert.Equal(expectedQuotient, currentRemainder);
     }
 
     [Fact]
