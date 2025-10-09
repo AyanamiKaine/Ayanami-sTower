@@ -22,7 +22,7 @@ The basic idea is having a simple virtual machine that is extendible at runtime.
 
 ## Single vs Multiple Stacks
 
-We can have just one stack that is the same for temporary data and used for the call/return stack. This is quite cumbersome. Instead, having two stacks to separate them is desirable.
+We can have just one stack that is the same for temporary data and used for the call/return stack. This is quite cumbersome. Instead, having two stacks to separate them is desirable. See SingleVsMultipleStacks.md.
 
 ## OP-Code number of operands
 
