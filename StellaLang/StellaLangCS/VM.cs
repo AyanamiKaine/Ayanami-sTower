@@ -60,6 +60,12 @@ public class VM
     public Dictionary<long, Action<VM>> SyscallHandlers = [];
 
     /// <summary>
+    /// Optional trace hook called before each instruction is executed.
+    /// Useful for debugging, logging, or single-stepping through programs.
+    /// </summary>
+    public Action<VM>? TraceHook;
+
+    /// <summary>
     /// Flag indicating if the VM should halt.
     /// </summary>
     public bool Halted => _halted;
@@ -588,6 +594,9 @@ public class VM
         if (_halted || PC >= _bytecode.Length)
             return;
 
+        // Call trace hook before executing instruction (if registered)
+        TraceHook?.Invoke(this);
+
         byte opcodeByte = _bytecode[PC++];
         OpHandler? handler = _dispatchTable[opcodeByte];
 
@@ -758,9 +767,110 @@ public class VM
 
     /// <summary>
     /// Gets the current state of the VM for debugging.
+    /// Provides a comprehensive summary of PC, halt status, and stack depths.
     /// </summary>
     public override string ToString()
     {
-        return $"VM [PC={PC}, Halted={_halted}, DataStack depth={DataStack.Pointer}, FloatStack depth={FloatStack.Pointer}]";
+        int dataDepth = DataStack.Pointer / sizeof(long);
+        int floatDepth = FloatStack.Pointer / sizeof(double);
+        int returnDepth = ReturnStack.Pointer / sizeof(long);
+
+        string opcodeInfo = "";
+        if (PC < _bytecode.Length)
+        {
+            byte opcode = _bytecode[PC];
+            opcodeInfo = $", NextOp=0x{opcode:X2}";
+        }
+
+        return $"VM [PC={PC}/{_bytecode.Length}, Halted={_halted}{opcodeInfo}, " +
+               $"DataStack={dataDepth}, FloatStack={floatDepth}, ReturnStack={returnDepth}]";
+    }
+
+    /// <summary>
+    /// Gets detailed VM state including stack contents for deep debugging.
+    /// </summary>
+    /// <param name="maxStackItems">Maximum number of stack items to display per stack (default: 5).</param>
+    /// <returns>Detailed string representation of VM state.</returns>
+    public string ToDetailedString(int maxStackItems = 5)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("=== VM State ===");
+        sb.AppendLine($"PC: {PC}/{_bytecode.Length}");
+        sb.AppendLine($"Halted: {_halted}");
+
+        if (PC < _bytecode.Length)
+        {
+            byte opcode = _bytecode[PC];
+            sb.AppendLine($"Next Opcode: 0x{opcode:X2} ({(OPCode)opcode})");
+        }
+
+        // Data stack
+        int dataDepth = DataStack.Pointer / sizeof(long);
+        sb.AppendLine($"\nData Stack (depth={dataDepth}):");
+        if (dataDepth > 0)
+        {
+            int itemsToShow = Math.Min(dataDepth, maxStackItems);
+            for (int i = 0; i < itemsToShow; i++)
+            {
+                int offset = DataStack.Pointer - (i + 1) * sizeof(long);
+                long value = BitConverter.ToInt64(DataStack.Memory.Span.Slice(offset, sizeof(long)));
+                sb.AppendLine($"  [{dataDepth - i - 1}]: {value} (0x{value:X})");
+            }
+            if (dataDepth > maxStackItems)
+            {
+                sb.AppendLine($"  ... ({dataDepth - maxStackItems} more items)");
+            }
+        }
+        else
+        {
+            sb.AppendLine("  (empty)");
+        }
+
+        // Float stack
+        int floatDepth = FloatStack.Pointer / sizeof(double);
+        sb.AppendLine($"\nFloat Stack (depth={floatDepth}):");
+        if (floatDepth > 0)
+        {
+            int itemsToShow = Math.Min(floatDepth, maxStackItems);
+            for (int i = 0; i < itemsToShow; i++)
+            {
+                int offset = FloatStack.Pointer - (i + 1) * sizeof(double);
+                double value = BitConverter.ToDouble(FloatStack.Memory.Span.Slice(offset, sizeof(double)));
+                sb.AppendLine($"  [{floatDepth - i - 1}]: {value}");
+            }
+            if (floatDepth > maxStackItems)
+            {
+                sb.AppendLine($"  ... ({floatDepth - maxStackItems} more items)");
+            }
+        }
+        else
+        {
+            sb.AppendLine("  (empty)");
+        }
+
+        // Return stack
+        int returnDepth = ReturnStack.Pointer / sizeof(long);
+        sb.AppendLine($"\nReturn Stack (depth={returnDepth}):");
+        if (returnDepth > 0)
+        {
+            int itemsToShow = Math.Min(returnDepth, maxStackItems);
+            for (int i = 0; i < itemsToShow; i++)
+            {
+                int offset = ReturnStack.Pointer - (i + 1) * sizeof(long);
+                long value = BitConverter.ToInt64(ReturnStack.Memory.Span.Slice(offset, sizeof(long)));
+                sb.AppendLine($"  [{returnDepth - i - 1}]: {value} (PC)");
+            }
+            if (returnDepth > maxStackItems)
+            {
+                sb.AppendLine($"  ... ({returnDepth - maxStackItems} more items)");
+            }
+        }
+        else
+        {
+            sb.AppendLine("  (empty)");
+        }
+
+        sb.AppendLine("================");
+        return sb.ToString();
     }
 }
