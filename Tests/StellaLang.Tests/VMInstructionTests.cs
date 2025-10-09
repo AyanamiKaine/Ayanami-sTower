@@ -193,7 +193,7 @@ public class VMInstructionTests
     }
 
     [Fact]
-    public void NEGVMInstructionTest()
+    public void NEGVMInstructionTest1()
     {
         var vm = new VM();
 
@@ -210,9 +210,27 @@ public class VMInstructionTests
         Assert.Equal(expectedTopValue, currentTopStackValue);
     }
 
+    [Fact]
+    public void NEGVMInstructionTest2()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(-42)
+            .Neg()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 42;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
 
     [Fact]
-    public void EQVMInstructionTest()
+    public void EQVMInstructionTest1()
     {
         var vm = new VM();
 
@@ -226,6 +244,234 @@ public class VMInstructionTests
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 1;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void EQVMInstructionTest2()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(42)
+            .PushCell(50)
+            .Eq()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 0;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void NEQVMInstructionTest1()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(42)
+            .PushCell(50)
+            .Neq()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 1;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void NEQVMInstructionTest2()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(42)
+            .PushCell(42)
+            .Neq()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 0;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void LTVMInstructionTest1()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(42)
+            .PushCell(50)
+            .Lt()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 1;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void LTVMInstructionTest2()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(50)
+            .PushCell(42)
+            .Lt()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 0;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void LTEVMInstructionTest1()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(50)
+            .PushCell(50)
+            .Lte()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 1;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void LTEVMInstructionTest2()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(50)
+            .PushCell(42)
+            .Lte()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 0;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void GTVMInstructionTest1()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(42)
+            .PushCell(50)
+            .Gt()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 0;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void GTVMInstructionTest2()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(50)
+            .PushCell(42)
+            .Gt()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 1;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void GTEVMInstructionTest1()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(50)
+            .PushCell(50)
+            .Gte()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 1;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void GTEVMInstructionTest2()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(50)
+            .PushCell(42)
+            .Gte()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 1;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void OVERVMInstructionTest()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(50)
+            .PushCell(42)
+            .Over()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 50;
 
         Assert.Equal(expectedTopValue, currentTopStackValue);
     }
