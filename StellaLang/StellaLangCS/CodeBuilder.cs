@@ -158,17 +158,17 @@ public class CodeBuilder
     /// <summary>Store byte to memory.</summary>
     public CodeBuilder StoreByte() { EmitOpCode(OPCode.STORE_BYTE); return this; }
 
-    /// <summary>Fetch 16-bit word from memory.</summary>
-    public CodeBuilder FetchWord() { EmitOpCode(OPCode.FETCH_WORD); return this; }
+    /// <summary>Fetch 16-bit short from memory.</summary>
+    public CodeBuilder FetchShort() { EmitOpCode(OPCode.FETCH_SHORT); return this; }
 
-    /// <summary>Store 16-bit word to memory.</summary>
-    public CodeBuilder StoreWord() { EmitOpCode(OPCode.STORE_WORD); return this; }
+    /// <summary>Store 16-bit short to memory.</summary>
+    public CodeBuilder StoreShort() { EmitOpCode(OPCode.STORE_SHORT); return this; }
 
-    /// <summary>Fetch 32-bit long from memory.</summary>
-    public CodeBuilder FetchLong() { EmitOpCode(OPCode.FETCH_LONG); return this; }
+    /// <summary>Fetch 32-bit int from memory.</summary>
+    public CodeBuilder FetchInt() { EmitOpCode(OPCode.FETCH_INT); return this; }
 
-    /// <summary>Store 32-bit long to memory.</summary>
-    public CodeBuilder StoreLong() { EmitOpCode(OPCode.STORE_LONG); return this; }
+    /// <summary>Store 32-bit int to memory.</summary>
+    public CodeBuilder StoreInt() { EmitOpCode(OPCode.STORE_INT); return this; }
 
     // ===== Float Operations =====
 

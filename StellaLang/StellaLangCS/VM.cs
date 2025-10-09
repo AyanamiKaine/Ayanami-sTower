@@ -340,40 +340,40 @@ public class VM
             vm.Memory.Memory.Span[(int)addr] = (byte)value;
         };
 
-        // Memory access - word (16-bit)
-        table[(byte)OPCode.FETCH_WORD] = static vm =>
+        // Memory access - short (16-bit)
+        table[(byte)OPCode.FETCH_SHORT] = static vm =>
         {
-            vm.CheckDataStackDepth(1, "FETCH_WORD");
+            vm.CheckDataStackDepth(1, "FETCH_SHORT");
             long addr = vm.DataStack.PopLong();
-            vm.ValidateMemoryAccess(addr, 2, "FETCH_WORD");
+            vm.ValidateMemoryAccess(addr, 2, "FETCH_SHORT");
             short value = MemoryMarshal.Read<short>(vm.Memory.Memory.Span.Slice((int)addr, 2));
             vm.DataStack.PushLong(value);
         };
-        table[(byte)OPCode.STORE_WORD] = static vm =>
+        table[(byte)OPCode.STORE_SHORT] = static vm =>
         {
-            vm.CheckDataStackDepth(2, "STORE_WORD");
+            vm.CheckDataStackDepth(2, "STORE_SHORT");
             long addr = vm.DataStack.PopLong();
             long value = vm.DataStack.PopLong();
-            vm.ValidateMemoryAccess(addr, 2, "STORE_WORD");
+            vm.ValidateMemoryAccess(addr, 2, "STORE_SHORT");
             short shortValue = (short)value;
             MemoryMarshal.Write(vm.Memory.Memory.Span.Slice((int)addr, 2), in shortValue);
         };
 
-        // Memory access - long (32-bit)
-        table[(byte)OPCode.FETCH_LONG] = static vm =>
+        // Memory access - int (32-bit)
+        table[(byte)OPCode.FETCH_INT] = static vm =>
         {
-            vm.CheckDataStackDepth(1, "FETCH_LONG");
+            vm.CheckDataStackDepth(1, "FETCH_INT");
             long addr = vm.DataStack.PopLong();
-            vm.ValidateMemoryAccess(addr, 4, "FETCH_LONG");
+            vm.ValidateMemoryAccess(addr, 4, "FETCH_INT");
             int value = MemoryMarshal.Read<int>(vm.Memory.Memory.Span.Slice((int)addr, 4));
             vm.DataStack.PushLong(value);
         };
-        table[(byte)OPCode.STORE_LONG] = static vm =>
+        table[(byte)OPCode.STORE_INT] = static vm =>
         {
-            vm.CheckDataStackDepth(2, "STORE_LONG");
+            vm.CheckDataStackDepth(2, "STORE_INT");
             long addr = vm.DataStack.PopLong();
             long value = vm.DataStack.PopLong();
-            vm.ValidateMemoryAccess(addr, 4, "STORE_LONG");
+            vm.ValidateMemoryAccess(addr, 4, "STORE_INT");
             int intValue = (int)value;
             MemoryMarshal.Write(vm.Memory.Memory.Span.Slice((int)addr, 4), in intValue);
         };
@@ -704,7 +704,7 @@ public class VM
         /*
         Since the underlying Memory<byte> and arrays in .NET are limited to int.MaxValue elements, the VM is effectively limited to a 2GB address space.
         */
-        
+
         if (address < 0 || address > int.MaxValue)
         {
             throw new InvalidOperationException(

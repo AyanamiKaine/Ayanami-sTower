@@ -146,33 +146,33 @@ public enum OPCode
 
     // Granular Memory Access
     /// <summary>
-    /// (C@ in Forth): Pops an address, fetches a single byte from that address, 
+    /// (C@ in Forth): Pops an address, fetches a single byte (8-bit) from that address, 
     /// pushes it onto the stack (zero-extended to a full cell).
     /// Essential for string and buffer manipulation.
     /// </summary>
     FETCH_BYTE,
     /// <summary>
-    /// (C! in Forth): Pops an address and a value, stores the lowest byte of the value at the address.
+    /// (C! in Forth): Pops an address and a value, stores the lowest byte (8-bit) of the value at the address.
     /// </summary>
     STORE_BYTE,
     /// <summary>
-    /// (W@ - 16-bit word fetch): Pops an address, fetches a 16-bit value from that address,
+    /// (W@ in Forth): Pops an address, fetches a 16-bit short value from that address,
     /// pushes it onto the stack (zero-extended to a full cell).
     /// </summary>
-    FETCH_WORD,
+    FETCH_SHORT,
     /// <summary>
-    /// (W! - 16-bit word store): Pops an address and a value, stores the lowest 16 bits of the value at the address.
+    /// (W! in Forth): Pops an address and a value, stores the lowest 16 bits (short) of the value at the address.
     /// </summary>
-    STORE_WORD,
+    STORE_SHORT,
     /// <summary>
-    /// (L@ - 32-bit long fetch): Pops an address, fetches a 32-bit value from that address,
+    /// (L@ in Forth): Pops an address, fetches a 32-bit int value from that address,
     /// pushes it onto the stack (zero-extended to a full cell).
     /// </summary>
-    FETCH_LONG,
+    FETCH_INT,
     /// <summary>
-    /// (L! - 32-bit long store): Pops an address and a value, stores the lowest 32 bits of the value at the address.
+    /// (L! in Forth): Pops an address and a value, stores the lowest 32 bits (int) of the value at the address.
     /// </summary>
-    STORE_LONG,
+    STORE_INT,
 
     // ===== Float Extension =====
 
