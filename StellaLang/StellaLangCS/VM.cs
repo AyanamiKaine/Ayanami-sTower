@@ -38,7 +38,7 @@ public class VM
     /// <summary>
     /// The program counter - points to the next instruction to execute.
     /// </summary>
-    public int PC = 0;
+    public int PC;
 
     /// <summary>
     /// Instruction dispatch table - maps opcodes to their implementation.
@@ -48,7 +48,7 @@ public class VM
     /// <summary>
     /// System call handlers - maps syscall IDs to native functions.
     /// </summary>
-    public Dictionary<long, Action<VM>> SyscallHandlers = new();
+    public Dictionary<long, Action<VM>> SyscallHandlers = [];
 
     /// <summary>
     /// Flag indicating if the VM should halt.
