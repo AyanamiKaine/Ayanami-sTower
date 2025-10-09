@@ -41,3 +41,7 @@ In the beginning certain assumptions where thought to be fixed. Like duhh a car 
 I really like the Entity-Component-Systems framework [Flecs](https://www.flecs.dev/). A component can be seen as a field that is associated with an ID, and that idea represents our object. Based on our current context we query only the data of a component we currently need. There is no need to get the entire object when we only need two or three fields. This also allows us to better create functionality for a collection of components.
 
 An entity/object has a certain behavior when it has the right sets of components. This simplifies things greatly as we don't have to detail with dispatching different nested behavior based on type hierarchies.
+
+### Query Database System
+
+To get data relating to an object we query the component database. Imagine a button, and you would like to change the button with the text "Click Me". You would query the Content field component and would say something like (Button where Content "Click Me"). What query syntax exists is irrelevant it could also be just SQL.
