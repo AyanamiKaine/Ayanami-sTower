@@ -72,11 +72,10 @@ public class VM
 
     private bool _halted;
 
-
     /// <summary>
     /// Initializes a new instance of the VM with default stack sizes.
     /// </summary>
-    public VM() : this(40, 8, 12, 124)
+    public VM() : this(4, 4, 4, 12)
     {
     }
 
