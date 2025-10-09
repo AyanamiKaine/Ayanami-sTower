@@ -7,21 +7,84 @@ namespace StellaLang.Tests;
 public class VMInstructionTests
 {
     [Fact]
-    public void PushVMInstructionTest()
+    public void AddVMInstructionTest()
     {
         var vm = new VM();
 
-        // The VM should intepret the byte code so it sees push and interprets the next string as an integer.
-        // and pushes the value onto the data stack. It should push four bytes (32bit integer = 4 bytes)
-        const string code =
-        """
-        PUSH 839
-        """;
+        var code = new CodeBuilder()
+            .PushCell(42)
+            .PushCell(100)
+            .Add()
+            .Build();
+
         vm.Execute(code);
 
-        var currentTopStackValue = vm.DataStack.PeekInt();
-        const int expectedTopValue = 839;
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 142;
 
         Assert.Equal(expectedTopValue, currentTopStackValue);
     }
+
+    [Fact]
+    public void PushCellVMInstructionTest()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(100)
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 100;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+
+    [Fact]
+    public void PushDoubleVMInstructionTest()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .FPushDouble(100.5)
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.FloatStack.PeekDouble();
+        const double expectedTopValue = 100.5;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void DUPVMInstructionTest()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(100)
+            .Dup()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 100;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+
+        // After duplication, the second value should also be 100
+        vm.Execute(new CodeBuilder()
+            .Drop()
+            .Build());
+
+        currentTopStackValue = vm.DataStack.PeekLong();
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
 }
