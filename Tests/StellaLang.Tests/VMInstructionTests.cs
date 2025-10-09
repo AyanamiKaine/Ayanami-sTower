@@ -112,61 +112,61 @@ public class VMInstructionTests
     [Fact]
     public void ROTVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
     public void TO_RVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
     public void R_FROMVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
     public void R_FETCHVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
     public void ANDVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
     public void ORVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
     public void XORVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
     public void NOTVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
     public void SHLVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
     public void SHRVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
@@ -649,43 +649,43 @@ public class VMInstructionTests
     [Fact]
     public void CELL_TO_FLOATVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
     public void FLOAT_TO_CELLVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
     public void JMPVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
     public void JZVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
     public void JNZVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
     public void CALLVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
     public void RETCALLVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 
     [Fact]
@@ -723,6 +723,6 @@ public class VMInstructionTests
     [Fact]
     public void SYSCALLVMInstructionTest()
     {
-        Assert.Fail("NOT YET IMPLEMENTED");
+        Assert.Fail("TEST NOT YET IMPLEMENTED");
     }
 }
