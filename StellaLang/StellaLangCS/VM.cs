@@ -23,14 +23,14 @@ public class VM
     /// Data stack. Also often called parameter stack or expression stack.
     /// This is where we push and pop values for operations.
     /// </summary>
-    public MemoryStack DataStack = new MemoryStack(1024);
+    public MemoryStack DataStack = new(1024);
 
     /// <summary>
     /// Return stack is used to store
     /// subroutine return addresses
     /// instead of instruction operands
     /// </summary>
-    public MemoryStack ReturnStack = new MemoryStack(1024);
+    public MemoryStack ReturnStack = new(1024);
 
     /// <summary>
     /// The program counter holds the address
