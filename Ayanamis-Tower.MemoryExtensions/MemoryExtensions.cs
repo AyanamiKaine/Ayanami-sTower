@@ -32,6 +32,19 @@ public static class MemoryExtensions
     }
 
     /// <summary>
+    /// Peeks at the top byte value on the stack without removing it.
+    /// </summary>
+    /// <param name="stack">The memory representing the stack.</param>
+    /// <param name="pointer">Reference to the stack pointer.</param>
+    /// <returns>The byte value at the top of the stack.</returns>
+    public static byte Peek(this Memory<byte> stack, ref int pointer)
+    {
+        if (pointer <= 0)
+            throw new InvalidOperationException("Stack is empty");
+        return stack.Span[pointer - 1];
+    }
+
+    /// <summary>
     /// Pushes a 32-bit integer value onto the stack as 4 bytes (little-endian).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
@@ -58,6 +71,24 @@ public static class MemoryExtensions
         for (int i = 3; i >= 0; i--)
         {
             bytes[i] = stack.Pop(ref pointer);
+        }
+        return BitConverter.ToInt32(bytes, 0);
+    }
+
+    /// <summary>
+    /// Peeks at the top 32-bit integer value on the stack without removing it (4 bytes, little-endian).
+    /// </summary>
+    /// <param name="stack">The memory representing the stack.</param>
+    /// <param name="pointer">Reference to the stack pointer.</param>
+    /// <returns>The integer value at the top of the stack.</returns>
+    public static int PeekInt(this Memory<byte> stack, ref int pointer)
+    {
+        if (pointer < 4)
+            throw new InvalidOperationException("Not enough data on stack");
+        byte[] bytes = new byte[4];
+        for (int i = 0; i < 4; i++)
+        {
+            bytes[i] = stack.Span[pointer - 4 + i];
         }
         return BitConverter.ToInt32(bytes, 0);
     }
@@ -94,6 +125,24 @@ public static class MemoryExtensions
     }
 
     /// <summary>
+    /// Peeks at the top 16-bit integer value on the stack without removing it (2 bytes, little-endian).
+    /// </summary>
+    /// <param name="stack">The memory representing the stack.</param>
+    /// <param name="pointer">Reference to the stack pointer.</param>
+    /// <returns>The short value at the top of the stack.</returns>
+    public static short PeekShort(this Memory<byte> stack, ref int pointer)
+    {
+        if (pointer < 2)
+            throw new InvalidOperationException("Not enough data on stack");
+        byte[] bytes = new byte[2];
+        for (int i = 0; i < 2; i++)
+        {
+            bytes[i] = stack.Span[pointer - 2 + i];
+        }
+        return BitConverter.ToInt16(bytes, 0);
+    }
+
+    /// <summary>
     /// Pushes an unsigned 32-bit integer value onto the stack as 4 bytes (little-endian).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
@@ -120,6 +169,24 @@ public static class MemoryExtensions
         for (int i = 3; i >= 0; i--)
         {
             bytes[i] = stack.Pop(ref pointer);
+        }
+        return BitConverter.ToUInt32(bytes, 0);
+    }
+
+    /// <summary>
+    /// Peeks at the top unsigned 32-bit integer value on the stack without removing it (4 bytes, little-endian).
+    /// </summary>
+    /// <param name="stack">The memory representing the stack.</param>
+    /// <param name="pointer">Reference to the stack pointer.</param>
+    /// <returns>The uint value at the top of the stack.</returns>
+    public static uint PeekUInt(this Memory<byte> stack, ref int pointer)
+    {
+        if (pointer < 4)
+            throw new InvalidOperationException("Not enough data on stack");
+        byte[] bytes = new byte[4];
+        for (int i = 0; i < 4; i++)
+        {
+            bytes[i] = stack.Span[pointer - 4 + i];
         }
         return BitConverter.ToUInt32(bytes, 0);
     }
@@ -156,6 +223,24 @@ public static class MemoryExtensions
     }
 
     /// <summary>
+    /// Peeks at the top 64-bit integer value on the stack without removing it (8 bytes, little-endian).
+    /// </summary>
+    /// <param name="stack">The memory representing the stack.</param>
+    /// <param name="pointer">Reference to the stack pointer.</param>
+    /// <returns>The long value at the top of the stack.</returns>
+    public static long PeekLong(this Memory<byte> stack, ref int pointer)
+    {
+        if (pointer < 8)
+            throw new InvalidOperationException("Not enough data on stack");
+        byte[] bytes = new byte[8];
+        for (int i = 0; i < 8; i++)
+        {
+            bytes[i] = stack.Span[pointer - 8 + i];
+        }
+        return BitConverter.ToInt64(bytes, 0);
+    }
+
+    /// <summary>
     /// Pushes an unsigned 64-bit integer value onto the stack as 8 bytes (little-endian).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
@@ -182,6 +267,24 @@ public static class MemoryExtensions
         for (int i = 7; i >= 0; i--)
         {
             bytes[i] = stack.Pop(ref pointer);
+        }
+        return BitConverter.ToUInt64(bytes, 0);
+    }
+
+    /// <summary>
+    /// Peeks at the top unsigned 64-bit integer value on the stack without removing it (8 bytes, little-endian).
+    /// </summary>
+    /// <param name="stack">The memory representing the stack.</param>
+    /// <param name="pointer">Reference to the stack pointer.</param>
+    /// <returns>The ulong value at the top of the stack.</returns>
+    public static ulong PeekULong(this Memory<byte> stack, ref int pointer)
+    {
+        if (pointer < 8)
+            throw new InvalidOperationException("Not enough data on stack");
+        byte[] bytes = new byte[8];
+        for (int i = 0; i < 8; i++)
+        {
+            bytes[i] = stack.Span[pointer - 8 + i];
         }
         return BitConverter.ToUInt64(bytes, 0);
     }
@@ -218,6 +321,24 @@ public static class MemoryExtensions
     }
 
     /// <summary>
+    /// Peeks at the top 32-bit floating-point value on the stack without removing it (4 bytes, little-endian).
+    /// </summary>
+    /// <param name="stack">The memory representing the stack.</param>
+    /// <param name="pointer">Reference to the stack pointer.</param>
+    /// <returns>The float value at the top of the stack.</returns>
+    public static float PeekFloat(this Memory<byte> stack, ref int pointer)
+    {
+        if (pointer < 4)
+            throw new InvalidOperationException("Not enough data on stack");
+        byte[] bytes = new byte[4];
+        for (int i = 0; i < 4; i++)
+        {
+            bytes[i] = stack.Span[pointer - 4 + i];
+        }
+        return BitConverter.ToSingle(bytes, 0);
+    }
+
+    /// <summary>
     /// Pushes a 64-bit floating-point value onto the stack as 8 bytes (little-endian).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
@@ -244,6 +365,24 @@ public static class MemoryExtensions
         for (int i = 7; i >= 0; i--)
         {
             bytes[i] = stack.Pop(ref pointer);
+        }
+        return BitConverter.ToDouble(bytes, 0);
+    }
+
+    /// <summary>
+    /// Peeks at the top 64-bit floating-point value on the stack without removing it (8 bytes, little-endian).
+    /// </summary>
+    /// <param name="stack">The memory representing the stack.</param>
+    /// <param name="pointer">Reference to the stack pointer.</param>
+    /// <returns>The double value at the top of the stack.</returns>
+    public static double PeekDouble(this Memory<byte> stack, ref int pointer)
+    {
+        if (pointer < 8)
+            throw new InvalidOperationException("Not enough data on stack");
+        byte[] bytes = new byte[8];
+        for (int i = 0; i < 8; i++)
+        {
+            bytes[i] = stack.Span[pointer - 8 + i];
         }
         return BitConverter.ToDouble(bytes, 0);
     }

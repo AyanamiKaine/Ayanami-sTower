@@ -353,4 +353,191 @@ public class MemoryStackTests
 
         Assert.True(stack.IsEmpty);
     }
+
+    [Fact]
+    public void Peek_Byte_ReturnsValueWithoutRemoving()
+    {
+        // Arrange
+        var stack = new MemoryStack(1024);
+        const byte value = 42;
+
+        // Act
+        stack.Push(value);
+        byte peeked = stack.Peek();
+        byte popped = stack.Pop();
+
+        // Assert
+        Assert.Equal(value, peeked);
+        Assert.Equal(value, popped);
+        Assert.True(stack.IsEmpty);
+    }
+
+    [Fact]
+    public void PeekInt_ReturnsValueWithoutRemoving()
+    {
+        // Arrange
+        var stack = new MemoryStack(1024);
+        const int value = 123456;
+
+        // Act
+        stack.PushInt(value);
+        int peeked = stack.PeekInt();
+        int popped = stack.PopInt();
+
+        // Assert
+        Assert.Equal(value, peeked);
+        Assert.Equal(value, popped);
+        Assert.True(stack.IsEmpty);
+    }
+
+    [Fact]
+    public void PeekShort_ReturnsValueWithoutRemoving()
+    {
+        // Arrange
+        var stack = new MemoryStack(1024);
+        const short value = 12345;
+
+        // Act
+        stack.PushShort(value);
+        short peeked = stack.PeekShort();
+        short popped = stack.PopShort();
+
+        // Assert
+        Assert.Equal(value, peeked);
+        Assert.Equal(value, popped);
+        Assert.True(stack.IsEmpty);
+    }
+
+    [Fact]
+    public void PeekUInt_ReturnsValueWithoutRemoving()
+    {
+        // Arrange
+        var stack = new MemoryStack(1024);
+        const uint value = 4294967295;
+
+        // Act
+        stack.PushUInt(value);
+        uint peeked = stack.PeekUInt();
+        uint popped = stack.PopUInt();
+
+        // Assert
+        Assert.Equal(value, peeked);
+        Assert.Equal(value, popped);
+        Assert.True(stack.IsEmpty);
+    }
+
+    [Fact]
+    public void PeekLong_ReturnsValueWithoutRemoving()
+    {
+        // Arrange
+        var stack = new MemoryStack(1024);
+        const long value = 9223372036854775807;
+
+        // Act
+        stack.PushLong(value);
+        long peeked = stack.PeekLong();
+        long popped = stack.PopLong();
+
+        // Assert
+        Assert.Equal(value, peeked);
+        Assert.Equal(value, popped);
+        Assert.True(stack.IsEmpty);
+    }
+
+    [Fact]
+    public void PeekULong_ReturnsValueWithoutRemoving()
+    {
+        // Arrange
+        var stack = new MemoryStack(1024);
+        const ulong value = 18446744073709551615;
+
+        // Act
+        stack.PushULong(value);
+        ulong peeked = stack.PeekULong();
+        ulong popped = stack.PopULong();
+
+        // Assert
+        Assert.Equal(value, peeked);
+        Assert.Equal(value, popped);
+        Assert.True(stack.IsEmpty);
+    }
+
+    [Fact]
+    public void PeekFloat_ReturnsValueWithoutRemoving()
+    {
+        // Arrange
+        var stack = new MemoryStack(1024);
+        const float value = 3.14159f;
+
+        // Act
+        stack.PushFloat(value);
+        float peeked = stack.PeekFloat();
+        float popped = stack.PopFloat();
+
+        // Assert
+        Assert.Equal(value, peeked);
+        Assert.Equal(value, popped);
+        Assert.True(stack.IsEmpty);
+    }
+
+    [Fact]
+    public void PeekDouble_ReturnsValueWithoutRemoving()
+    {
+        // Arrange
+        var stack = new MemoryStack(1024);
+        const double value = 3.141592653589793;
+
+        // Act
+        stack.PushDouble(value);
+        double peeked = stack.PeekDouble();
+        double popped = stack.PopDouble();
+
+        // Assert
+        Assert.Equal(value, peeked);
+        Assert.Equal(value, popped);
+        Assert.True(stack.IsEmpty);
+    }
+
+    [Fact]
+    public void Peek_OnEmptyStack_ThrowsException()
+    {
+        // Arrange
+        var stack = new MemoryStack(1024);
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(() => stack.Peek());
+    }
+
+    [Fact]
+    public void PeekInt_WithInsufficientData_ThrowsException()
+    {
+        // Arrange
+        var stack = new MemoryStack(1024);
+        stack.Push(1);
+        stack.Push(2);
+
+        // Act & Assert (only 2 bytes, need 4 for int)
+        Assert.Throws<InvalidOperationException>(() => stack.PeekInt());
+    }
+
+    [Fact]
+    public void Peek_MultipleTimes_ReturnsSameValue()
+    {
+        // Arrange
+        var stack = new MemoryStack(1024);
+        const int value = 999;
+
+        // Act
+        stack.PushInt(value);
+        int peek1 = stack.PeekInt();
+        int peek2 = stack.PeekInt();
+        int peek3 = stack.PeekInt();
+
+        // Assert
+        Assert.Equal(value, peek1);
+        Assert.Equal(value, peek2);
+        Assert.Equal(value, peek3);
+        Assert.Equal(4, stack.Pointer); // Pointer unchanged
+    }
 }
+

@@ -48,6 +48,16 @@ public struct MemoryStack(int size)
     }
 
     /// <summary>
+    /// Peeks at the top byte value on the stack without removing it.
+    /// </summary>
+    /// <returns>The byte value at the top of the stack.</returns>
+    public readonly byte Peek()
+    {
+        int tempPointer = _pointer;
+        return Memory.Peek(ref tempPointer);
+    }
+
+    /// <summary>
     /// Pushes a 32-bit integer value onto the stack.
     /// </summary>
     /// <param name="value">The integer value to push.</param>
@@ -63,6 +73,16 @@ public struct MemoryStack(int size)
     public int PopInt()
     {
         return Memory.PopInt(ref _pointer);
+    }
+
+    /// <summary>
+    /// Peeks at the top 32-bit integer value on the stack without removing it.
+    /// </summary>
+    /// <returns>The integer value at the top of the stack.</returns>
+    public readonly int PeekInt()
+    {
+        int tempPointer = _pointer;
+        return Memory.PeekInt(ref tempPointer);
     }
 
     /// <summary>
@@ -84,6 +104,16 @@ public struct MemoryStack(int size)
     }
 
     /// <summary>
+    /// Peeks at the top 16-bit integer value on the stack without removing it.
+    /// </summary>
+    /// <returns>The short value at the top of the stack.</returns>
+    public readonly short PeekShort()
+    {
+        int tempPointer = _pointer;
+        return Memory.PeekShort(ref tempPointer);
+    }
+
+    /// <summary>
     /// Pushes an unsigned 32-bit integer value onto the stack.
     /// </summary>
     /// <param name="value">The uint value to push.</param>
@@ -99,6 +129,16 @@ public struct MemoryStack(int size)
     public uint PopUInt()
     {
         return Memory.PopUInt(ref _pointer);
+    }
+
+    /// <summary>
+    /// Peeks at the top unsigned 32-bit integer value on the stack without removing it.
+    /// </summary>
+    /// <returns>The uint value at the top of the stack.</returns>
+    public readonly uint PeekUInt()
+    {
+        int tempPointer = _pointer;
+        return Memory.PeekUInt(ref tempPointer);
     }
 
     /// <summary>
@@ -120,6 +160,16 @@ public struct MemoryStack(int size)
     }
 
     /// <summary>
+    /// Peeks at the top 64-bit integer value on the stack without removing it.
+    /// </summary>
+    /// <returns>The long value at the top of the stack.</returns>
+    public readonly long PeekLong()
+    {
+        int tempPointer = _pointer;
+        return Memory.PeekLong(ref tempPointer);
+    }
+
+    /// <summary>
     /// Pushes an unsigned 64-bit integer value onto the stack.
     /// </summary>
     /// <param name="value">The ulong value to push.</param>
@@ -135,6 +185,16 @@ public struct MemoryStack(int size)
     public ulong PopULong()
     {
         return Memory.PopULong(ref _pointer);
+    }
+
+    /// <summary>
+    /// Peeks at the top unsigned 64-bit integer value on the stack without removing it.
+    /// </summary>
+    /// <returns>The ulong value at the top of the stack.</returns>
+    public readonly ulong PeekULong()
+    {
+        int tempPointer = _pointer;
+        return Memory.PeekULong(ref tempPointer);
     }
 
     /// <summary>
@@ -156,6 +216,16 @@ public struct MemoryStack(int size)
     }
 
     /// <summary>
+    /// Peeks at the top 32-bit floating-point value on the stack without removing it.
+    /// </summary>
+    /// <returns>The float value at the top of the stack.</returns>
+    public readonly float PeekFloat()
+    {
+        int tempPointer = _pointer;
+        return Memory.PeekFloat(ref tempPointer);
+    }
+
+    /// <summary>
     /// Pushes a 64-bit floating-point value onto the stack.
     /// </summary>
     /// <param name="value">The double value to push.</param>
@@ -171,6 +241,16 @@ public struct MemoryStack(int size)
     public double PopDouble()
     {
         return Memory.PopDouble(ref _pointer);
+    }
+
+    /// <summary>
+    /// Peeks at the top 64-bit floating-point value on the stack without removing it.
+    /// </summary>
+    /// <returns>The double value at the top of the stack.</returns>
+    public readonly double PeekDouble()
+    {
+        int tempPointer = _pointer;
+        return Memory.PeekDouble(ref tempPointer);
     }
 
     /// <summary>

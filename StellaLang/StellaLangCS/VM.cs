@@ -18,13 +18,19 @@ public class VM
     /// A table where we map names to op codes. Same concept as in FORTH. A dictionary of words.
     /// </summary>
     public Dictionary<string, List<OPCode>> Dictionary = [];
-
+    /// <summary>
+    /// Here we define what should happen when we encounter an OP CODE.
+    /// </summary>
+    public Dictionary<OPCode, Action> InstructionTable = [];
     /// <summary>
     /// Data stack. Also often called parameter stack or expression stack.
     /// This is where we push and pop values for operations.
     /// </summary>
     public MemoryStack DataStack = new(1024);
-
+    /// <summary>
+    /// Handles floats/doubles.
+    /// </summary>
+    public MemoryStack FloatStack = new(1024);
     /// <summary>
     /// Return stack is used to store
     /// subroutine return addresses
@@ -52,6 +58,16 @@ public class VM
     public void Execute()
     {
 
+    }
+
+    /// <summary>
+    /// Executes a set of byte codes.
+    /// </summary>
+    /// <param name="code"></param>
+    /// <exception cref="NotImplementedException"></exception>
+    public void Execute(string code)
+    {
+        throw new NotImplementedException();
     }
 
     private void GetNextInstruction()
