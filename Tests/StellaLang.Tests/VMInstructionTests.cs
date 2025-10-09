@@ -69,6 +69,18 @@ public class VMInstructionTests
     }
 
     [Fact]
+    public void DUPStackUnderFlowVMInstructionTest()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .Dup()
+            .Build();
+
+        Assert.Throws<InvalidOperationException>(() => vm.Execute(code));
+    }
+
+    [Fact]
     public void SWAPVMInstructionTest()
     {
         var vm = new VM();
@@ -95,6 +107,66 @@ public class VMInstructionTests
         currentTopStackValue = vm.DataStack.PeekLong();
 
         Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void ROTVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
+    }
+
+    [Fact]
+    public void TO_RVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
+    }
+
+    [Fact]
+    public void R_FROMVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
+    }
+
+    [Fact]
+    public void R_FETCHVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
+    }
+
+    [Fact]
+    public void ANDVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
+    }
+
+    [Fact]
+    public void ORVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
+    }
+
+    [Fact]
+    public void XORVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
+    }
+
+    [Fact]
+    public void NOTVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
+    }
+
+    [Fact]
+    public void SHLVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
+    }
+
+    [Fact]
+    public void SHRVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
     }
 
     [Fact]
@@ -155,6 +227,38 @@ public class VMInstructionTests
     }
 
     [Fact]
+    public void DIVMODVMInstructionTest()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(42) // Dividend
+            .PushCell(10) // Divisor
+            .DivMod()
+            .Build();
+
+        vm.Execute(code);
+
+        /*
+        [
+            2 <- Remainder
+            4 <- Quotient <- Top of Stack
+        ]
+        */
+
+        const long expectedQuotient = 4;
+        const long expectedRemainder = 2;
+
+        long currentRemainder = vm.DataStack.PeekLong();
+
+        vm.DataStack.PopLong();
+        long currentQuotient = vm.DataStack.PeekLong();
+
+        Assert.Equal(expectedRemainder, currentRemainder);
+        Assert.Equal(expectedQuotient, currentQuotient);
+    }
+
+    [Fact]
     public void FAddVMInstructionTest()
     {
         var vm = new VM();
@@ -190,6 +294,30 @@ public class VMInstructionTests
         const double expectedTopValue = 4250.0;
 
         Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void FDIVMODVMInstructionTest()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .FPushDouble(42.5) // Dividend
+            .FPushDouble(10.0) // Divisor
+            .FDiv()
+            .Build();
+
+        vm.Execute(code);
+
+        /*
+        [
+            4.25 <- Quotient <- Top of Stack
+        ]
+        */
+        const double expectedTopStackValue = 4.25;
+        double currentTopStackValue = vm.FloatStack.PeekDouble();
+
+        Assert.Equal(expectedTopStackValue, currentTopStackValue);
     }
 
     [Fact]
@@ -516,5 +644,37 @@ public class VMInstructionTests
         const double expectedTopValue = 1234.5;
 
         Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+    [Fact]
+    public void HALTVMInstructionTest()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .Halt()
+            .Build();
+
+        vm.Execute(code);
+
+        const bool expectedHaltValue = true;
+
+        var isHalted = vm.Halted;
+
+        Assert.Equal(expectedHaltValue, isHalted);
+    }
+
+    [Fact]
+    public void NOPVMInstructionTest()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .Nop()
+            .Build();
+
+        vm.Execute(code);
+
+        Assert.Throws<InvalidOperationException>(() => vm.DataStack.PeekLong());
     }
 }
