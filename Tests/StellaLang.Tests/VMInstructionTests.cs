@@ -112,7 +112,37 @@ public class VMInstructionTests
     [Fact]
     public void ROTVMInstructionTest()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(1)
+            .PushCell(2)
+            .PushCell(3)
+            .Rot()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        long expectedTopValue = 1;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+
+        vm.Execute(new CodeBuilder()
+            .Drop()
+            .Build());
+
+        currentTopStackValue = vm.DataStack.PeekLong();
+        expectedTopValue = 3;
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+        
+        vm.Execute(new CodeBuilder()
+            .Drop()
+            .Build());
+
+        currentTopStackValue = vm.DataStack.PeekLong();
+        expectedTopValue = 2;
+        Assert.Equal(expectedTopValue, currentTopStackValue);
     }
 
     [Fact]
