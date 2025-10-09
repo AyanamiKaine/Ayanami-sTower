@@ -2,12 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>AyanamisTower.MemoryExtensions</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\Ayanamis-Tower.MemoryExtensions\AyanamisTower.MemoryExtensions.csproj" />
-  </ItemGroup>
 
 </Project>
