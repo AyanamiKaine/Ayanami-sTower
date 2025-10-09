@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using AyanamisTower.MemoryExtensions;
 
 namespace StellaLang;
@@ -13,22 +14,22 @@ public class VM
     /// <summary>
     /// Data stack for integer/cell operations.
     /// </summary>
-    public MemoryStack DataStack = MemoryStack.FromMegabytes(40);
+    public MemoryStack DataStack;
 
     /// <summary>
     /// Float stack for floating-point operations.
     /// </summary>
-    public MemoryStack FloatStack = MemoryStack.FromMegabytes(8);
+    public MemoryStack FloatStack;
 
     /// <summary>
     /// Return stack for storing return addresses and temporary values.
     /// </summary>
-    public MemoryStack ReturnStack = MemoryStack.FromMegabytes(12);
+    public MemoryStack ReturnStack;
 
     /// <summary>
     /// VM memory for FETCH/STORE operations.
     /// </summary>
-    public MemoryStack Memory = MemoryStack.FromMegabytes(124);
+    public MemoryStack Memory;
 
     /// <summary>
     /// The bytecode being executed.
@@ -56,10 +57,25 @@ public class VM
     private bool _halted;
 
     /// <summary>
-    /// Initializes a new instance of the VM.
+    /// Initializes a new instance of the VM with default stack sizes.
     /// </summary>
-    public VM()
+    public VM() : this(40, 8, 12, 124)
     {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the VM with custom stack sizes.
+    /// </summary>
+    /// <param name="dataStackMB">Data stack size in megabytes.</param>
+    /// <param name="floatStackMB">Float stack size in megabytes.</param>
+    /// <param name="returnStackMB">Return stack size in megabytes.</param>
+    /// <param name="memoryMB">Memory size in megabytes.</param>
+    public VM(int dataStackMB, int floatStackMB, int returnStackMB, int memoryMB)
+    {
+        DataStack = MemoryStack.FromMegabytes(dataStackMB);
+        FloatStack = MemoryStack.FromMegabytes(floatStackMB);
+        ReturnStack = MemoryStack.FromMegabytes(returnStackMB);
+        Memory = MemoryStack.FromMegabytes(memoryMB);
         _dispatchTable = InitializeDispatchTable();
     }
 
@@ -75,10 +91,19 @@ public class VM
             [OPCode.FPUSH_DOUBLE] = () => FloatStack.PushDouble(ReadDouble()),
 
             // Stack manipulation
-            [OPCode.DUP] = () => DataStack.PushLong(DataStack.PeekLong()),
-            [OPCode.DROP] = () => DataStack.PopLong(),
+            [OPCode.DUP] = () =>
+            {
+                CheckDataStackDepth(1, "DUP");
+                DataStack.PushLong(DataStack.PeekLong());
+            },
+            [OPCode.DROP] = () =>
+            {
+                CheckDataStackDepth(1, "DROP");
+                DataStack.PopLong();
+            },
             [OPCode.SWAP] = () =>
             {
+                CheckDataStackDepth(2, "SWAP");
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
                 DataStack.PushLong(b);
@@ -86,6 +111,7 @@ public class VM
             },
             [OPCode.OVER] = () =>
             {
+                CheckDataStackDepth(2, "OVER");
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a);
@@ -94,6 +120,7 @@ public class VM
             },
             [OPCode.ROT] = () =>
             {
+                CheckDataStackDepth(3, "ROT");
                 long c = DataStack.PopLong();
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
@@ -103,78 +130,115 @@ public class VM
             },
 
             // Return stack manipulation
-            [OPCode.TO_R] = () => ReturnStack.PushLong(DataStack.PopLong()),
-            [OPCode.R_FROM] = () => DataStack.PushLong(ReturnStack.PopLong()),
-            [OPCode.R_FETCH] = () => DataStack.PushLong(ReturnStack.PeekLong()),
+            [OPCode.TO_R] = () =>
+            {
+                CheckDataStackDepth(1, "TO_R");
+                ReturnStack.PushLong(DataStack.PopLong());
+            },
+            [OPCode.R_FROM] = () =>
+            {
+                CheckReturnStackDepth(1, "R_FROM");
+                DataStack.PushLong(ReturnStack.PopLong());
+            },
+            [OPCode.R_FETCH] = () =>
+            {
+                CheckReturnStackDepth(1, "R_FETCH");
+                DataStack.PushLong(ReturnStack.PeekLong());
+            },
 
             // Arithmetic
             [OPCode.ADD] = () =>
             {
+                CheckDataStackDepth(2, "ADD");
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a + b);
             },
             [OPCode.SUB] = () =>
             {
+                CheckDataStackDepth(2, "SUB");
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a - b);
             },
             [OPCode.MUL] = () =>
             {
+                CheckDataStackDepth(2, "MUL");
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a * b);
             },
             [OPCode.DIV] = () =>
             {
+                CheckDataStackDepth(2, "DIV");
                 long b = DataStack.PopLong();
+                if (b == 0)
+                    throw new DivideByZeroException("Division by zero in DIV operation");
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a / b);
             },
             [OPCode.MOD] = () =>
             {
+                CheckDataStackDepth(2, "MOD");
                 long b = DataStack.PopLong();
+                if (b == 0)
+                    throw new DivideByZeroException("Division by zero in MOD operation");
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a % b);
             },
             [OPCode.DIVMOD] = () =>
             {
+                CheckDataStackDepth(2, "DIVMOD");
                 long b = DataStack.PopLong();
+                if (b == 0)
+                    throw new DivideByZeroException("Division by zero in DIVMOD operation");
                 long a = DataStack.PopLong();
-                DataStack.PushLong(a % b);  // remainder
-                DataStack.PushLong(a / b);  // quotient
+                DataStack.PushLong(a / b);  // quotient first (Forth convention)
+                DataStack.PushLong(a % b);  // remainder second
             },
-            [OPCode.NEG] = () => DataStack.PushLong(-DataStack.PopLong()),
+            [OPCode.NEG] = () =>
+            {
+                CheckDataStackDepth(1, "NEG");
+                DataStack.PushLong(-DataStack.PopLong());
+            },
 
             // Bitwise operations
             [OPCode.AND] = () =>
             {
+                CheckDataStackDepth(2, "AND");
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a & b);
             },
             [OPCode.OR] = () =>
             {
+                CheckDataStackDepth(2, "OR");
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a | b);
             },
             [OPCode.XOR] = () =>
             {
+                CheckDataStackDepth(2, "XOR");
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a ^ b);
             },
-            [OPCode.NOT] = () => DataStack.PushLong(~DataStack.PopLong()),
+            [OPCode.NOT] = () =>
+            {
+                CheckDataStackDepth(1, "NOT");
+                DataStack.PushLong(~DataStack.PopLong());
+            },
             [OPCode.SHL] = () =>
             {
+                CheckDataStackDepth(2, "SHL");
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a << (int)b);
             },
             [OPCode.SHR] = () =>
             {
+                CheckDataStackDepth(2, "SHR");
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a >> (int)b);
@@ -183,36 +247,42 @@ public class VM
             // Comparison
             [OPCode.EQ] = () =>
             {
+                CheckDataStackDepth(2, "EQ");
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a == b ? 1 : 0);
             },
             [OPCode.NEQ] = () =>
             {
+                CheckDataStackDepth(2, "NEQ");
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a != b ? 1 : 0);
             },
             [OPCode.LT] = () =>
             {
+                CheckDataStackDepth(2, "LT");
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a < b ? 1 : 0);
             },
             [OPCode.LTE] = () =>
             {
+                CheckDataStackDepth(2, "LTE");
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a <= b ? 1 : 0);
             },
             [OPCode.GT] = () =>
             {
+                CheckDataStackDepth(2, "GT");
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a > b ? 1 : 0);
             },
             [OPCode.GTE] = () =>
             {
+                CheckDataStackDepth(2, "GTE");
                 long b = DataStack.PopLong();
                 long a = DataStack.PopLong();
                 DataStack.PushLong(a >= b ? 1 : 0);
@@ -221,92 +291,90 @@ public class VM
             // Memory access - cell (64-bit)
             [OPCode.FETCH] = () =>
             {
+                CheckDataStackDepth(1, "FETCH");
                 long addr = DataStack.PopLong();
-                // Read directly from memory at address
-                byte[] bytes = new byte[8];
-                for (int i = 0; i < 8; i++)
-                {
-                    bytes[i] = Memory.Memory.Span[(int)addr + i];
-                }
-                long value = BitConverter.ToInt64(bytes, 0);
+                ValidateMemoryAccess(addr, 8, "FETCH");
+                long value = MemoryMarshal.Read<long>(Memory.Memory.Span.Slice((int)addr, 8));
                 DataStack.PushLong(value);
             },
             [OPCode.STORE] = () =>
             {
+                CheckDataStackDepth(2, "STORE");
                 long addr = DataStack.PopLong();
                 long value = DataStack.PopLong();
-                // Write directly to memory at address
-                byte[] bytes = BitConverter.GetBytes(value);
-                for (int i = 0; i < 8; i++)
-                {
-                    Memory.Memory.Span[(int)addr + i] = bytes[i];
-                }
+                ValidateMemoryAccess(addr, 8, "STORE");
+                MemoryMarshal.Write(Memory.Memory.Span.Slice((int)addr, 8), in value);
             },
 
             // Memory access - byte
             [OPCode.FETCH_BYTE] = () =>
             {
+                CheckDataStackDepth(1, "FETCH_BYTE");
                 long addr = DataStack.PopLong();
+                ValidateMemoryAccess(addr, 1, "FETCH_BYTE");
                 DataStack.PushLong(Memory.Memory.Span[(int)addr]);
             },
             [OPCode.STORE_BYTE] = () =>
             {
+                CheckDataStackDepth(2, "STORE_BYTE");
                 long addr = DataStack.PopLong();
                 long value = DataStack.PopLong();
+                ValidateMemoryAccess(addr, 1, "STORE_BYTE");
                 Memory.Memory.Span[(int)addr] = (byte)value;
             },
 
             // Memory access - word (16-bit)
             [OPCode.FETCH_WORD] = () =>
             {
+                CheckDataStackDepth(1, "FETCH_WORD");
                 long addr = DataStack.PopLong();
-                byte[] bytes = new byte[2];
-                for (int i = 0; i < 2; i++)
-                {
-                    bytes[i] = Memory.Memory.Span[(int)addr + i];
-                }
-                short value = BitConverter.ToInt16(bytes, 0);
+                ValidateMemoryAccess(addr, 2, "FETCH_WORD");
+                short value = MemoryMarshal.Read<short>(Memory.Memory.Span.Slice((int)addr, 2));
                 DataStack.PushLong(value);
             },
             [OPCode.STORE_WORD] = () =>
             {
+                CheckDataStackDepth(2, "STORE_WORD");
                 long addr = DataStack.PopLong();
                 long value = DataStack.PopLong();
-                byte[] bytes = BitConverter.GetBytes((short)value);
-                for (int i = 0; i < 2; i++)
-                {
-                    Memory.Memory.Span[(int)addr + i] = bytes[i];
-                }
+                ValidateMemoryAccess(addr, 2, "STORE_WORD");
+                short shortValue = (short)value;
+                MemoryMarshal.Write(Memory.Memory.Span.Slice((int)addr, 2), in shortValue);
             },
 
             // Memory access - long (32-bit)
             [OPCode.FETCH_LONG] = () =>
             {
+                CheckDataStackDepth(1, "FETCH_LONG");
                 long addr = DataStack.PopLong();
-                byte[] bytes = new byte[4];
-                for (int i = 0; i < 4; i++)
-                {
-                    bytes[i] = Memory.Memory.Span[(int)addr + i];
-                }
-                int value = BitConverter.ToInt32(bytes, 0);
+                ValidateMemoryAccess(addr, 4, "FETCH_LONG");
+                int value = MemoryMarshal.Read<int>(Memory.Memory.Span.Slice((int)addr, 4));
                 DataStack.PushLong(value);
             },
             [OPCode.STORE_LONG] = () =>
             {
+                CheckDataStackDepth(2, "STORE_LONG");
                 long addr = DataStack.PopLong();
                 long value = DataStack.PopLong();
-                byte[] bytes = BitConverter.GetBytes((int)value);
-                for (int i = 0; i < 4; i++)
-                {
-                    Memory.Memory.Span[(int)addr + i] = bytes[i];
-                }
+                ValidateMemoryAccess(addr, 4, "STORE_LONG");
+                int intValue = (int)value;
+                MemoryMarshal.Write(Memory.Memory.Span.Slice((int)addr, 4), in intValue);
             },
 
             // Float operations
-            [OPCode.FDUP] = () => FloatStack.PushDouble(FloatStack.PeekDouble()),
-            [OPCode.FDROP] = () => FloatStack.PopDouble(),
+            [OPCode.FDUP] = () =>
+            {
+                CheckFloatStackDepth(1, "FDUP");
+                FloatStack.PushDouble(FloatStack.PeekDouble());
+            },
+            [OPCode.FDROP] = () =>
+            {
+                CheckFloatStackDepth(1, "FDROP");
+                FloatStack.PopDouble();
+            },
             [OPCode.FSWAP] = () =>
             {
+                CheckFloatStackDepth(2, "FSWAP");
                 double b = FloatStack.PopDouble();
                 double a = FloatStack.PopDouble();
                 FloatStack.PushDouble(b);
@@ -314,6 +382,7 @@ public class VM
             },
             [OPCode.FOVER] = () =>
             {
+                CheckFloatStackDepth(2, "FOVER");
                 double b = FloatStack.PopDouble();
                 double a = FloatStack.PopDouble();
                 FloatStack.PushDouble(a);
@@ -324,63 +393,77 @@ public class VM
             // Float arithmetic
             [OPCode.FADD] = () =>
             {
+                CheckFloatStackDepth(2, "FADD");
                 double b = FloatStack.PopDouble();
                 double a = FloatStack.PopDouble();
                 FloatStack.PushDouble(a + b);
             },
             [OPCode.FSUB] = () =>
             {
+                CheckFloatStackDepth(2, "FSUB");
                 double b = FloatStack.PopDouble();
                 double a = FloatStack.PopDouble();
                 FloatStack.PushDouble(a - b);
             },
             [OPCode.FMUL] = () =>
             {
+                CheckFloatStackDepth(2, "FMUL");
                 double b = FloatStack.PopDouble();
                 double a = FloatStack.PopDouble();
                 FloatStack.PushDouble(a * b);
             },
             [OPCode.FDIV] = () =>
             {
+                CheckFloatStackDepth(2, "FDIV");
                 double b = FloatStack.PopDouble();
                 double a = FloatStack.PopDouble();
                 FloatStack.PushDouble(a / b);
             },
-            [OPCode.FNEG] = () => FloatStack.PushDouble(-FloatStack.PopDouble()),
+            [OPCode.FNEG] = () =>
+            {
+                CheckFloatStackDepth(1, "FNEG");
+                FloatStack.PushDouble(-FloatStack.PopDouble());
+            },
 
             // Float comparison
             [OPCode.FEQ] = () =>
             {
+                CheckFloatStackDepth(2, "FEQ");
                 double b = FloatStack.PopDouble();
                 double a = FloatStack.PopDouble();
                 DataStack.PushLong(a == b ? 1 : 0);
             },
             [OPCode.FNEQ] = () =>
             {
+                CheckFloatStackDepth(2, "FNEQ");
                 double b = FloatStack.PopDouble();
                 double a = FloatStack.PopDouble();
                 DataStack.PushLong(a != b ? 1 : 0);
             },
             [OPCode.FLT] = () =>
             {
+                CheckFloatStackDepth(2, "FLT");
                 double b = FloatStack.PopDouble();
                 double a = FloatStack.PopDouble();
                 DataStack.PushLong(a < b ? 1 : 0);
             },
             [OPCode.FLTE] = () =>
             {
+                CheckFloatStackDepth(2, "FLTE");
                 double b = FloatStack.PopDouble();
                 double a = FloatStack.PopDouble();
                 DataStack.PushLong(a <= b ? 1 : 0);
             },
             [OPCode.FGT] = () =>
             {
+                CheckFloatStackDepth(2, "FGT");
                 double b = FloatStack.PopDouble();
                 double a = FloatStack.PopDouble();
                 DataStack.PushLong(a > b ? 1 : 0);
             },
             [OPCode.FGTE] = () =>
             {
+                CheckFloatStackDepth(2, "FGTE");
                 double b = FloatStack.PopDouble();
                 double a = FloatStack.PopDouble();
                 DataStack.PushLong(a >= b ? 1 : 0);
@@ -389,57 +472,82 @@ public class VM
             // Float memory access
             [OPCode.FFETCH] = () =>
             {
+                CheckDataStackDepth(1, "FFETCH");
                 long addr = DataStack.PopLong();
-                byte[] bytes = new byte[8];
-                for (int i = 0; i < 8; i++)
-                {
-                    bytes[i] = Memory.Memory.Span[(int)addr + i];
-                }
-                double value = BitConverter.ToDouble(bytes, 0);
+                ValidateMemoryAccess(addr, 8, "FFETCH");
+                double value = MemoryMarshal.Read<double>(Memory.Memory.Span.Slice((int)addr, 8));
                 FloatStack.PushDouble(value);
             },
             [OPCode.FSTORE] = () =>
             {
+                CheckDataStackDepth(1, "FSTORE");
+                CheckFloatStackDepth(1, "FSTORE");
                 long addr = DataStack.PopLong();
                 double value = FloatStack.PopDouble();
-                byte[] bytes = BitConverter.GetBytes(value);
-                for (int i = 0; i < 8; i++)
-                {
-                    Memory.Memory.Span[(int)addr + i] = bytes[i];
-                }
+                ValidateMemoryAccess(addr, 8, "FSTORE");
+                MemoryMarshal.Write(Memory.Memory.Span.Slice((int)addr, 8), in value);
             },
 
             // Type conversion
-            [OPCode.CELL_TO_FLOAT] = () => FloatStack.PushDouble(DataStack.PopLong()),
-            [OPCode.FLOAT_TO_CELL] = () => DataStack.PushLong((long)FloatStack.PopDouble()),
+            [OPCode.CELL_TO_FLOAT] = () =>
+            {
+                CheckDataStackDepth(1, "CELL_TO_FLOAT");
+                FloatStack.PushDouble(DataStack.PopLong());
+            },
+            [OPCode.FLOAT_TO_CELL] = () =>
+            {
+                CheckFloatStackDepth(1, "FLOAT_TO_CELL");
+                DataStack.PushLong((long)FloatStack.PopDouble());
+            },
 
             // Control flow
-            [OPCode.JMP] = () => PC = (int)ReadLong(),
-            [OPCode.JZ] = () =>
+            [OPCode.JMP] = () =>
             {
                 long addr = ReadLong();
+                ValidateJumpTarget(addr, "JMP");
+                PC = (int)addr;
+            },
+            [OPCode.JZ] = () =>
+            {
+                CheckDataStackDepth(1, "JZ");
+                long addr = ReadLong();
                 if (DataStack.PopLong() == 0)
+                {
+                    ValidateJumpTarget(addr, "JZ");
                     PC = (int)addr;
+                }
             },
             [OPCode.JNZ] = () =>
             {
+                CheckDataStackDepth(1, "JNZ");
                 long addr = ReadLong();
                 if (DataStack.PopLong() != 0)
+                {
+                    ValidateJumpTarget(addr, "JNZ");
                     PC = (int)addr;
+                }
             },
             [OPCode.CALL] = () =>
             {
                 long addr = ReadLong();
+                ValidateJumpTarget(addr, "CALL");
                 ReturnStack.PushLong(PC);
                 PC = (int)addr;
             },
-            [OPCode.RET] = () => PC = (int)ReturnStack.PopLong(),
+            [OPCode.RET] = () =>
+            {
+                CheckReturnStackDepth(1, "RET");
+                long addr = ReturnStack.PopLong();
+                ValidateJumpTarget(addr, "RET");
+                PC = (int)addr;
+            },
             [OPCode.HALT] = () => _halted = true,
             [OPCode.NOP] = () => { /* Do nothing */ },
 
             // System call
             [OPCode.SYSCALL] = () =>
             {
+                CheckDataStackDepth(1, "SYSCALL");
                 long syscallId = DataStack.PopLong();
                 if (SyscallHandlers.TryGetValue(syscallId, out var handler))
                     handler(this);
@@ -510,6 +618,101 @@ public class VM
         FloatStack = new(1024 * 8);
         ReturnStack = new(1024 * 8);
         Memory = new(1024 * 64);
+    }
+
+    // Helper methods for validation
+
+    /// <summary>
+    /// Validates that the data stack has at least the required depth.
+    /// </summary>
+    /// <param name="requiredDepth">The minimum number of elements required on the stack.</param>
+    /// <param name="operation">The operation name for error reporting.</param>
+    /// <exception cref="InvalidOperationException">Thrown when stack underflow would occur.</exception>
+    private void CheckDataStackDepth(int requiredDepth, string operation)
+    {
+        int currentDepth = DataStack.Pointer / sizeof(long);
+        if (currentDepth < requiredDepth)
+        {
+            throw new InvalidOperationException(
+                $"Data stack underflow in {operation}: required {requiredDepth} elements, have {currentDepth}");
+        }
+    }
+
+    /// <summary>
+    /// Validates that the float stack has at least the required depth.
+    /// </summary>
+    /// <param name="requiredDepth">The minimum number of elements required on the stack.</param>
+    /// <param name="operation">The operation name for error reporting.</param>
+    /// <exception cref="InvalidOperationException">Thrown when stack underflow would occur.</exception>
+    private void CheckFloatStackDepth(int requiredDepth, string operation)
+    {
+        int currentDepth = FloatStack.Pointer / sizeof(double);
+        if (currentDepth < requiredDepth)
+        {
+            throw new InvalidOperationException(
+                $"Float stack underflow in {operation}: required {requiredDepth} elements, have {currentDepth}");
+        }
+    }
+
+    /// <summary>
+    /// Validates that the return stack has at least the required depth.
+    /// </summary>
+    /// <param name="requiredDepth">The minimum number of elements required on the stack.</param>
+    /// <param name="operation">The operation name for error reporting.</param>
+    /// <exception cref="InvalidOperationException">Thrown when stack underflow would occur.</exception>
+    private void CheckReturnStackDepth(int requiredDepth, string operation)
+    {
+        int currentDepth = ReturnStack.Pointer / sizeof(long);
+        if (currentDepth < requiredDepth)
+        {
+            throw new InvalidOperationException(
+                $"Return stack underflow in {operation}: required {requiredDepth} elements, have {currentDepth}");
+        }
+    }
+
+    /// <summary>
+    /// Validates that a memory access is within bounds.
+    /// </summary>
+    /// <param name="address">The memory address to access.</param>
+    /// <param name="size">The number of bytes to access.</param>
+    /// <param name="operation">The operation name for error reporting.</param>
+    /// <exception cref="InvalidOperationException">Thrown when memory access is out of bounds.</exception>
+    private void ValidateMemoryAccess(long address, int size, string operation)
+    {
+        if (address < 0 || address > int.MaxValue)
+        {
+            throw new InvalidOperationException(
+                $"Memory access violation in {operation}: address {address} out of valid range");
+        }
+
+        int addr = (int)address;
+        if (addr + size > Memory.Memory.Length)
+        {
+            throw new InvalidOperationException(
+                $"Memory access violation in {operation}: address {address} + size {size} exceeds memory bounds ({Memory.Memory.Length})");
+        }
+    }
+
+    /// <summary>
+    /// Validates that a jump target is within bytecode bounds.
+    /// </summary>
+    /// <param name="address">The jump target address.</param>
+    /// <param name="operation">The operation name for error reporting.</param>
+    /// <exception cref="InvalidOperationException">Thrown when jump target is invalid.</exception>
+    private void ValidateJumpTarget(long address, string operation)
+    {
+        if (address < 0 || address > int.MaxValue)
+        {
+            throw new InvalidOperationException(
+                $"Invalid jump target in {operation}: address {address} out of valid range");
+        }
+
+        int addr = (int)address;
+        if (addr >= _bytecode.Length)
+        {
+            throw new InvalidOperationException(
+                $"Invalid jump target in {operation}: address {address} exceeds bytecode length ({_bytecode.Length})");
+        }
     }
 
     // Helper methods for reading operands from bytecode
