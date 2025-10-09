@@ -198,8 +198,8 @@ public class VM
             if (b == 0)
                 throw new DivideByZeroException("Division by zero in DIVMOD operation");
             long a = DataStack.PopLong();
-            DataStack.PushLong(a / b);  // quotient first (Forth convention)
-            DataStack.PushLong(a % b);  // remainder second
+            DataStack.PushLong(a % b);  // remainder first (Forth convention)
+            DataStack.PushLong(a / b);  // quotient second
         };
         table[(byte)OPCode.NEG] = () =>
         {
@@ -686,7 +686,7 @@ public class VM
     /// <exception cref="InvalidOperationException">Thrown when memory access is out of bounds.</exception>
     private void ValidateMemoryAccess(long address, int size, string operation)
     {
-        if (address < 0 || address > int.MaxValue)
+        if (address < 0 || address > double.MaxValue)
         {
             throw new InvalidOperationException(
                 $"Memory access violation in {operation}: address {address} out of valid range");
@@ -708,7 +708,7 @@ public class VM
     /// <exception cref="InvalidOperationException">Thrown when jump target is invalid.</exception>
     private void ValidateJumpTarget(long address, string operation)
     {
-        if (address < 0 || address > int.MaxValue)
+        if (address < 0 || address > double.MaxValue)
         {
             throw new InvalidOperationException(
                 $"Invalid jump target in {operation}: address {address} out of valid range");
