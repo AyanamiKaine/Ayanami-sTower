@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\StellaLang\StellaLang.csproj" />
+    <ProjectReference Include="..\..\StellaLang\StellaLangCS\StellaLang.csproj" />
   </ItemGroup>
 
   <ItemGroup>
