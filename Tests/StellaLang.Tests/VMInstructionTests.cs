@@ -647,6 +647,48 @@ public class VMInstructionTests
     }
 
     [Fact]
+    public void CELL_TO_FLOATVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
+    }
+
+    [Fact]
+    public void FLOAT_TO_CELLVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
+    }
+
+    [Fact]
+    public void JMPVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
+    }
+
+    [Fact]
+    public void JZVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
+    }
+
+    [Fact]
+    public void JNZVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
+    }
+
+    [Fact]
+    public void CALLVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
+    }
+
+    [Fact]
+    public void RETCALLVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
+    }
+
+    [Fact]
     public void HALTVMInstructionTest()
     {
         var vm = new VM();
@@ -676,5 +718,11 @@ public class VMInstructionTests
         vm.Execute(code);
 
         Assert.Throws<InvalidOperationException>(() => vm.DataStack.PeekLong());
+    }
+
+    [Fact]
+    public void SYSCALLVMInstructionTest()
+    {
+        Assert.Fail("NOT YET IMPLEMENTED");
     }
 }
