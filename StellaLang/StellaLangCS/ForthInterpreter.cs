@@ -144,7 +144,6 @@ public class ForthInterpreter
     /// <param name="input">The line of FORTH source code to interpret.</param>
     public void Interpret(string input)
     {
-        try { Console.WriteLine($"Interpret called with: {input}"); } catch { }
         _inputBuffer = input;
         _inputPosition = 0;
 
