@@ -762,6 +762,98 @@ public class VM
         Memory.Clear();
     }
 
+    #region Memory Growth Methods
+
+    /// <summary>
+    /// Grows the data stack capacity to the specified size in megabytes.
+    /// Preserves existing stack contents.
+    /// </summary>
+    /// <param name="megabytes">The new data stack size in megabytes.</param>
+    public void GrowDataStack(int megabytes)
+    {
+        DataStack.GrowTo(megabytes * 1024 * 1024);
+    }
+
+    /// <summary>
+    /// Grows the float stack capacity to the specified size in megabytes.
+    /// Preserves existing stack contents.
+    /// </summary>
+    /// <param name="megabytes">The new float stack size in megabytes.</param>
+    public void GrowFloatStack(int megabytes)
+    {
+        FloatStack.GrowTo(megabytes * 1024 * 1024);
+    }
+
+    /// <summary>
+    /// Grows the return stack capacity to the specified size in megabytes.
+    /// Preserves existing stack contents.
+    /// </summary>
+    /// <param name="megabytes">The new return stack size in megabytes.</param>
+    public void GrowReturnStack(int megabytes)
+    {
+        ReturnStack.GrowTo(megabytes * 1024 * 1024);
+    }
+
+    /// <summary>
+    /// Grows the VM memory capacity to the specified size in megabytes.
+    /// Preserves existing memory contents.
+    /// </summary>
+    /// <param name="megabytes">The new memory size in megabytes.</param>
+    public void GrowMemory(int megabytes)
+    {
+        Memory.GrowTo(megabytes * 1024 * 1024);
+    }
+
+    /// <summary>
+    /// Doubles the capacity of all stacks and memory.
+    /// Preserves existing contents.
+    /// </summary>
+    public void DoubleAllCapacity()
+    {
+        DataStack.Double();
+        FloatStack.Double();
+        ReturnStack.Double();
+        Memory.Double();
+    }
+
+    /// <summary>
+    /// Doubles the data stack capacity.
+    /// Preserves existing stack contents.
+    /// </summary>
+    public void DoubleDataStack()
+    {
+        DataStack.Double();
+    }
+
+    /// <summary>
+    /// Doubles the float stack capacity.
+    /// Preserves existing stack contents.
+    /// </summary>
+    public void DoubleFloatStack()
+    {
+        FloatStack.Double();
+    }
+
+    /// <summary>
+    /// Doubles the return stack capacity.
+    /// Preserves existing stack contents.
+    /// </summary>
+    public void DoubleReturnStack()
+    {
+        ReturnStack.Double();
+    }
+
+    /// <summary>
+    /// Doubles the memory capacity.
+    /// Preserves existing memory contents.
+    /// </summary>
+    public void DoubleMemory()
+    {
+        Memory.Double();
+    }
+
+    #endregion
+
     // Helper methods for validation
 
     /// <summary>

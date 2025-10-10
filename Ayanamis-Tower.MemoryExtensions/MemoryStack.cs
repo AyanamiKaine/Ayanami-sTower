@@ -5,6 +5,7 @@ namespace AyanamisTower.MemoryExtensions;
 /// <summary>
 /// A stack implementation using Memory&lt;byte&gt; with built-in pointer management.
 /// Provides type-safe push/pop operations for various value types.
+/// Supports dynamic growth when capacity is exceeded.
 /// </summary>
 /// <remarks>
 /// Initializes a new instance of the MemoryStack with the specified size.
@@ -13,11 +14,17 @@ namespace AyanamisTower.MemoryExtensions;
 public struct MemoryStack(int size)
 {
     private int _pointer = 0;
+    private byte[] _buffer = new byte[size];
 
     /// <summary>
     /// Gets the underlying memory buffer.
     /// </summary>
-    public Memory<byte> Memory { get; } = new byte[size];
+    public Memory<byte> Memory => _buffer;
+
+    /// <summary>
+    /// Gets the current capacity of the stack in bytes.
+    /// </summary>
+    public readonly int Capacity => _buffer.Length;
 
     /// <summary>
     /// Gets the current stack pointer (top of stack index).
@@ -51,7 +58,7 @@ public struct MemoryStack(int size)
     /// Peeks at the top byte value on the stack without removing it.
     /// </summary>
     /// <returns>The byte value at the top of the stack.</returns>
-    public readonly byte Peek()
+    public byte Peek()
     {
         int tempPointer = _pointer;
         return Memory.Peek(ref tempPointer);
@@ -79,7 +86,7 @@ public struct MemoryStack(int size)
     /// Peeks at the top 32-bit integer value on the stack without removing it.
     /// </summary>
     /// <returns>The integer value at the top of the stack.</returns>
-    public readonly int PeekInt()
+    public int PeekInt()
     {
         int tempPointer = _pointer;
         return Memory.PeekInt(ref tempPointer);
@@ -107,7 +114,7 @@ public struct MemoryStack(int size)
     /// Peeks at the top 16-bit integer value on the stack without removing it.
     /// </summary>
     /// <returns>The short value at the top of the stack.</returns>
-    public readonly short PeekShort()
+    public short PeekShort()
     {
         int tempPointer = _pointer;
         return Memory.PeekShort(ref tempPointer);
@@ -135,7 +142,7 @@ public struct MemoryStack(int size)
     /// Peeks at the top unsigned 32-bit integer value on the stack without removing it.
     /// </summary>
     /// <returns>The uint value at the top of the stack.</returns>
-    public readonly uint PeekUInt()
+    public uint PeekUInt()
     {
         int tempPointer = _pointer;
         return Memory.PeekUInt(ref tempPointer);
@@ -163,7 +170,7 @@ public struct MemoryStack(int size)
     /// Peeks at the top 64-bit integer value on the stack without removing it.
     /// </summary>
     /// <returns>The long value at the top of the stack.</returns>
-    public readonly long PeekLong()
+    public long PeekLong()
     {
         int tempPointer = _pointer;
         return Memory.PeekLong(ref tempPointer);
@@ -173,7 +180,7 @@ public struct MemoryStack(int size)
     /// Peeks at the top 64-bit integer value on the stack without removing it.
     /// </summary>
     /// <returns>The long value at the top of the stack.</returns>
-    public readonly long PeekCell()
+    public long PeekCell()
     {
         return PeekLong();
     }
@@ -200,7 +207,7 @@ public struct MemoryStack(int size)
     /// Peeks at the top unsigned 64-bit integer value on the stack without removing it.
     /// </summary>
     /// <returns>The ulong value at the top of the stack.</returns>
-    public readonly ulong PeekULong()
+    public ulong PeekULong()
     {
         int tempPointer = _pointer;
         return Memory.PeekULong(ref tempPointer);
@@ -228,7 +235,7 @@ public struct MemoryStack(int size)
     /// Peeks at the top 32-bit floating-point value on the stack without removing it.
     /// </summary>
     /// <returns>The float value at the top of the stack.</returns>
-    public readonly float PeekFloat()
+    public float PeekFloat()
     {
         int tempPointer = _pointer;
         return Memory.PeekFloat(ref tempPointer);
@@ -256,7 +263,7 @@ public struct MemoryStack(int size)
     /// Peeks at the top 64-bit floating-point value on the stack without removing it.
     /// </summary>
     /// <returns>The double value at the top of the stack.</returns>
-    public readonly double PeekDouble()
+    public double PeekDouble()
     {
         int tempPointer = _pointer;
         return Memory.PeekDouble(ref tempPointer);
@@ -278,6 +285,104 @@ public struct MemoryStack(int size)
     public void Reset()
     {
         _pointer = 0;
+    }
+
+    /// <summary>
+    /// Grows the stack capacity to the specified size in bytes.
+    /// Preserves existing data. If the new size is smaller than current capacity, no action is taken.
+    /// </summary>
+    /// <param name="newSizeBytes">The new capacity in bytes.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when newSizeBytes is negative or exceeds int.MaxValue.</exception>
+    public void GrowTo(int newSizeBytes)
+    {
+        if (newSizeBytes < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(newSizeBytes), "Size must be non-negative.");
+        }
+
+        if (newSizeBytes <= _buffer.Length)
+        {
+            return; // Already large enough
+        }
+
+        var newBuffer = new byte[newSizeBytes];
+        Array.Copy(_buffer, newBuffer, _buffer.Length);
+        _buffer = newBuffer;
+    }
+
+    /// <summary>
+    /// Grows the stack capacity by the specified number of bytes.
+    /// Preserves existing data.
+    /// </summary>
+    /// <param name="additionalBytes">The number of bytes to add to current capacity.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when additionalBytes is negative or result exceeds int.MaxValue.</exception>
+    public void GrowBy(int additionalBytes)
+    {
+        if (additionalBytes < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(additionalBytes), "Additional bytes must be non-negative.");
+        }
+
+        long newSize = (long)_buffer.Length + additionalBytes;
+        if (newSize > int.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(additionalBytes),
+                $"Resulting size {newSize} exceeds maximum allowed size {int.MaxValue}.");
+        }
+
+        GrowTo((int)newSize);
+    }
+
+    /// <summary>
+    /// Grows the stack capacity by a factor (e.g., 2.0 for doubling).
+    /// Preserves existing data.
+    /// </summary>
+    /// <param name="factor">The growth factor (must be >= 1.0).</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when factor &lt; 1.0 or result exceeds int.MaxValue.</exception>
+    public void GrowByFactor(double factor)
+    {
+        if (factor < 1.0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(factor), "Growth factor must be >= 1.0.");
+        }
+
+        long newSize = (long)(_buffer.Length * factor);
+        if (newSize > int.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(factor),
+                $"Resulting size {newSize} exceeds maximum allowed size {int.MaxValue}.");
+        }
+
+        GrowTo((int)newSize);
+    }
+
+    /// <summary>
+    /// Doubles the stack capacity. Preserves existing data.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when doubling would exceed int.MaxValue.</exception>
+    public void Double()
+    {
+        GrowByFactor(2.0);
+    }
+
+    /// <summary>
+    /// Grows the stack to accommodate at least the specified number of additional bytes from current pointer.
+    /// Useful for ensuring space before a series of push operations.
+    /// </summary>
+    /// <param name="requiredBytes">The number of bytes needed.</param>
+    public void EnsureCapacity(int requiredBytes)
+    {
+        int neededCapacity = _pointer + requiredBytes;
+        if (neededCapacity > _buffer.Length)
+        {
+            // Grow to at least double the current size or enough for required bytes, whichever is larger
+            int newSize = Math.Max(neededCapacity, _buffer.Length * 2);
+            if (newSize < 0) // Overflow check
+            {
+                newSize = int.MaxValue;
+            }
+            GrowTo(newSize);
+        }
     }
 
     /// <summary>
