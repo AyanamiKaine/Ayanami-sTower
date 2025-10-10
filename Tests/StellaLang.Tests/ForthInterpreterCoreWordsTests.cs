@@ -259,7 +259,7 @@ public class ForthInterpreterCoreWordsTests
     }
 
     [Fact]
-    public void DefiningNewWord()
+    public void DefiningNewWord1Test()
     {
         var vm = new VM();
         var forth = new ForthInterpreter(vm);
@@ -271,6 +271,23 @@ public class ForthInterpreterCoreWordsTests
 
         long currentTopStackValue = vm.DataStack.PeekCell();
         Assert.Equal(30, currentTopStackValue);
+    }
+
+    [Fact]
+    public void DefiningNewWord2Test()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret(": DOUBLE 2 * ;");
+        forth.Interpret(": QUADRUPLE DOUBLE DOUBLE ;");
+
+        // Defines a new word DOUBLE that multiplies by 2.
+
+        forth.Interpret("15 QUADRUPLE");
+        // Executes QUADRUPLE.
+
+        long currentTopStackValue = vm.DataStack.PeekCell();
+        Assert.Equal(60, currentTopStackValue);
     }
 }
 
