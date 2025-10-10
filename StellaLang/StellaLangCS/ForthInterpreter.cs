@@ -592,47 +592,67 @@ public class ForthInterpreter
     /// </example>
     private void InitializePrimitives()
     {
-        // Memory operations - VM STORE/FETCH expect different operand order than FORTH
+        InitializeMemoryOperations();
+        InitializeArithmeticOperations();
+        InitializeStackOperations();
+        InitializeComparisonOperations();
+        InitializeFloatingPointOperations();
+        InitializeCompilationWords();
+        InitializeControlFlowWords();
+        InitializeStandardLibrary();
+    }
+
+    /// <summary>
+    /// Initializes memory access primitives (! and @).
+    /// </summary>
+    private void InitializeMemoryOperations()
+    {
+        // VM STORE/FETCH expect different operand order than FORTH
         // FORTH: value address ! → need to swap before calling STORE
-        // FORTH: address @ → works directly with FETCH
         DefinePrimitive("!", new CodeBuilder().Swap().Store().Build());
         DefinePrimitive("@", OPCode.FETCH);
+    }
 
-        // Basic arithmetic - VM opcodes
+    /// <summary>
+    /// Initializes arithmetic primitives (+, -, *, /, MOD, etc.).
+    /// </summary>
+    private void InitializeArithmeticOperations()
+    {
+        // Basic arithmetic
         DefinePrimitive("+", OPCode.ADD);
         DefinePrimitive("-", OPCode.SUB);
         DefinePrimitive("*", OPCode.MUL);
         DefinePrimitive("/", OPCode.DIV);
         DefinePrimitive("MOD", OPCode.MOD);
         DefinePrimitive("/MOD", OPCode.DIVMOD);
-
-        // Unary operations - VM opcodes
         DefinePrimitive("NEGATE", OPCode.NEG);
 
-        // Compound operations using CodeBuilder to create bytecode sequences
-        // 1+: PUSH 1, ADD
+        // Convenience arithmetic operations
         DefinePrimitive("1+", new CodeBuilder().PushCell(1).Add().Build());
-
-        // 1-: PUSH 1, SUB
         DefinePrimitive("1-", new CodeBuilder().PushCell(1).Sub().Build());
-
-        // 2*: PUSH 2, MUL
         DefinePrimitive("2*", new CodeBuilder().PushCell(2).Mul().Build());
-
-        // 2/: PUSH 2, DIV
         DefinePrimitive("2/", new CodeBuilder().PushCell(2).Div().Build());
+    }
 
-        // Stack manipulation - VM opcodes
+    /// <summary>
+    /// Initializes stack manipulation primitives (DUP, DROP, SWAP, etc.).
+    /// </summary>
+    private void InitializeStackOperations()
+    {
         DefinePrimitive("DUP", OPCode.DUP);
         DefinePrimitive("DROP", OPCode.DROP);
         DefinePrimitive("SWAP", OPCode.SWAP);
         DefinePrimitive("OVER", OPCode.OVER);
         DefinePrimitive("ROT", OPCode.ROT);
-
-        // 2DUP: OVER OVER
         DefinePrimitive("2DUP", new CodeBuilder().Over().Over().Build());
+    }
 
-        // Comparison operations - VM opcodes
+    /// <summary>
+    /// Initializes comparison primitives (&lt;, &gt;, =, etc.).
+    /// </summary>
+    private void InitializeComparisonOperations()
+    {
+        // Binary comparisons
         DefinePrimitive("<", OPCode.LT);
         DefinePrimitive(">", OPCode.GT);
         DefinePrimitive("=", OPCode.EQ);
@@ -640,23 +660,25 @@ public class ForthInterpreter
         DefinePrimitive(">=", OPCode.GTE);
         DefinePrimitive("<>", OPCode.NEQ);
 
-        // 0<: PUSH 0, SWAP, LT
+        // Zero comparisons
         DefinePrimitive("0<", new CodeBuilder().PushCell(0).Swap().Lt().Build());
-
-        // 0>: PUSH 0, SWAP, GT
         DefinePrimitive("0>", new CodeBuilder().PushCell(0).Swap().Gt().Build());
-
-        // 0=: PUSH 0, EQ
         DefinePrimitive("0=", new CodeBuilder().PushCell(0).Eq().Build());
+    }
 
-        // Floating-point operations - VM opcodes
+    /// <summary>
+    /// Initializes floating-point primitives (F+, F-, FDUP, etc.).
+    /// </summary>
+    private void InitializeFloatingPointOperations()
+    {
+        // Floating-point arithmetic
         DefinePrimitive("F+", OPCode.FADD);
         DefinePrimitive("F-", OPCode.FSUB);
         DefinePrimitive("F*", OPCode.FMUL);
         DefinePrimitive("F/", OPCode.FDIV);
         DefinePrimitive("FNEGATE", OPCode.FNEG);
 
-        // Floating-point comparison operations - VM opcodes
+        // Floating-point comparisons
         DefinePrimitive("F<", OPCode.FLT);
         DefinePrimitive("F>", OPCode.FGT);
         DefinePrimitive("F=", OPCode.FEQ);
@@ -664,112 +686,84 @@ public class ForthInterpreter
         DefinePrimitive("F>=", OPCode.FGTE);
         DefinePrimitive("F<>", OPCode.FNEQ);
 
-        // F0<: PUSH 0.0, F< (compares value < 0.0)
-        // Stack: ( F: x -- ) ( -- flag )
+        // Floating-point zero comparisons
         DefinePrimitive("F0<", new CodeBuilder().FPushDouble(0.0).FLt().Build());
-
-        // F0>: PUSH 0.0, F> (compares value > 0.0)
         DefinePrimitive("F0>", new CodeBuilder().FPushDouble(0.0).FGt().Build());
-
-        // F0=: PUSH 0.0, F= (compares value == 0.0)
         DefinePrimitive("F0=", new CodeBuilder().FPushDouble(0.0).FEq().Build());
 
-        // Floating-point stack operations - VM opcodes
+        // Floating-point stack operations
         DefinePrimitive("FDUP", OPCode.FDUP);
         DefinePrimitive("FDROP", OPCode.FDROP);
         DefinePrimitive("FSWAP", OPCode.FSWAP);
         DefinePrimitive("FOVER", OPCode.FOVER);
+    }
 
-        // Compilation words - these must use handlers as they manipulate the interpreter state
+    /// <summary>
+    /// Initializes compilation words (: and ;).
+    /// </summary>
+    private void InitializeCompilationWords()
+    {
         DefinePrimitive(":", forth =>
         {
-            // Enter compilation mode
             string? name = forth.ReadWord();
             if (name == null)
-            {
                 throw new InvalidOperationException("Expected word name after :");
-            }
             forth.CreateColonDefinition(name);
         });
 
-        DefinePrimitive(";", forth =>
-        {
-            // Exit compilation mode and add the word to the dictionary
-            forth.FinishColonDefinition();
-        }, isImmediate: true);
+        DefinePrimitive(";", forth => forth.FinishColonDefinition(), isImmediate: true);
+    }
 
-        // Control flow words - these must use handlers as they manipulate compilation state
-        // (all immediate - executed during compilation)
+    /// <summary>
+    /// Initializes control flow words (IF, THEN, ELSE).
+    /// </summary>
+    private void InitializeControlFlowWords()
+    {
         DefinePrimitive("IF", forth =>
         {
             if (!forth._compileMode)
-            {
                 throw new InvalidOperationException("IF can only be used in compilation mode");
-            }
 
-            // Generate a unique label for the target (THEN or ELSE)
             string label = $"L{forth._labelCounter++}";
-
-            // Emit JZ (jump if zero/false) - will jump to THEN or ELSE
-            // In FORTH, the convention is: condition IF true-clause THEN
-            // If condition is 0 (false), jump forward to THEN
             forth._codeBuilder.Jz(label);
-
-            // Push label onto compile stack for THEN/ELSE to resolve
             forth._compileStack.Push(label);
         }, isImmediate: true);
 
         DefinePrimitive("ELSE", forth =>
         {
             if (!forth._compileMode)
-            {
                 throw new InvalidOperationException("ELSE can only be used in compilation mode");
-            }
             if (forth._compileStack.Count == 0)
-            {
                 throw new InvalidOperationException("ELSE without matching IF");
-            }
 
-            // Pop the IF label
             string ifLabel = forth._compileStack.Pop();
-
-            // Generate label for the end (after ELSE clause)
             string endLabel = $"L{forth._labelCounter++}";
 
-            // Emit unconditional jump to skip ELSE clause when IF condition is true
             forth._codeBuilder.Jmp(endLabel);
-
-            // Mark the IF's target (beginning of ELSE clause)
             forth._codeBuilder.Label(ifLabel);
-
-            // Push the end label for THEN to resolve
             forth._compileStack.Push(endLabel);
         }, isImmediate: true);
 
         DefinePrimitive("THEN", forth =>
         {
             if (!forth._compileMode)
-            {
                 throw new InvalidOperationException("THEN can only be used in compilation mode");
-            }
             if (forth._compileStack.Count == 0)
-            {
                 throw new InvalidOperationException("THEN without matching IF");
-            }
 
-            // Pop the label (from IF or ELSE)
             string label = forth._compileStack.Pop();
-
-            // Mark this position as the target
             forth._codeBuilder.Label(label);
         }, isImmediate: true);
+    }
 
-        // Define MAX, MIN, ABS, and FABS by compiling FORTH source code
-        // MAX: 2DUP < IF SWAP THEN DROP
-        // MIN: 2DUP > IF SWAP THEN DROP
-        // ABS: DUP 0 < IF NEGATE THEN
-        // FABS: FDUP F0< IF FNEGATE THEN
-        // This is more elegant than manually building bytecode
+    /// <summary>
+    /// Initializes standard library words defined in FORTH itself.
+    /// These are higher-level words built from primitives.
+    /// </summary>
+    private void InitializeStandardLibrary()
+    {
+        // Define common words by compiling FORTH source
+        // This demonstrates FORTH's power: the language defining itself
         Interpret(": MAX 2DUP < IF SWAP THEN DROP ;");
         Interpret(": MIN 2DUP > IF SWAP THEN DROP ;");
         Interpret(": ABS DUP 0 < IF NEGATE THEN ;");
