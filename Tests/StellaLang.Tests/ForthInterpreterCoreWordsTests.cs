@@ -1374,7 +1374,7 @@ public class ForthInterpreterCoreWordsTests
         var forth = new ForthInterpreter(vm);
 
         // Capture console output
-        using var sw = new System.IO.StringWriter();
+        using var sw = new StringWriter();
         var originalOut = Console.Out;
         Console.SetOut(sw);
 
@@ -1396,7 +1396,7 @@ public class ForthInterpreterCoreWordsTests
         var vm = new VM();
         var forth = new ForthInterpreter(vm);
 
-        using var sw = new System.IO.StringWriter();
+        using var sw = new StringWriter();
         var originalOut = Console.Out;
         Console.SetOut(sw);
 
@@ -1418,7 +1418,7 @@ public class ForthInterpreterCoreWordsTests
         var vm = new VM();
         var forth = new ForthInterpreter(vm);
 
-        using var sw = new System.IO.StringWriter();
+        using var sw = new StringWriter();
         var originalOut = Console.Out;
         Console.SetOut(sw);
 
@@ -1440,7 +1440,7 @@ public class ForthInterpreterCoreWordsTests
         var vm = new VM();
         var forth = new ForthInterpreter(vm);
 
-        using var sw = new System.IO.StringWriter();
+        using var sw = new StringWriter();
         var originalOut = Console.Out;
         Console.SetOut(sw);
 
@@ -1462,7 +1462,7 @@ public class ForthInterpreterCoreWordsTests
         var vm = new VM();
         var forth = new ForthInterpreter(vm);
 
-        using var sw = new System.IO.StringWriter();
+        using var sw = new StringWriter();
         var originalOut = Console.Out;
         Console.SetOut(sw);
 
@@ -1561,7 +1561,7 @@ public class ForthInterpreterCoreWordsTests
             vm.Memory[addr + i] = (byte)text[i];
         }
 
-        using var sw = new System.IO.StringWriter();
+        using var sw = new StringWriter();
         var originalOut = Console.Out;
         Console.SetOut(sw);
 
@@ -1583,7 +1583,7 @@ public class ForthInterpreterCoreWordsTests
         var vm = new VM();
         var forth = new ForthInterpreter(vm);
 
-        using var sw = new System.IO.StringWriter();
+        using var sw = new StringWriter();
         var originalOut = Console.Out;
         Console.SetOut(sw);
 
