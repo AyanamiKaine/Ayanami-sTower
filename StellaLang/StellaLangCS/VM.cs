@@ -630,7 +630,8 @@ public class VM
     }
 
     /// <summary>
-    /// Resets the VM to initial state.
+    /// Resets the VM to initial state. This does not free the memory allocated for stacks and memory.
+    /// It just resets the pointer of the memory to the beginning. Overwrites existing data.
     /// </summary>
     public void Reset()
     {
