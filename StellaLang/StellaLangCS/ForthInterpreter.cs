@@ -26,6 +26,13 @@ public class ForthInterpreter
     private readonly List<byte> _dataSpace;
 
     /// <summary>
+    /// Global code space for all compiled colon definitions.
+    /// This allows proper CALL/RET semantics instead of inlining.
+    /// Each word's ExecutionToken is an offset into this code space.
+    /// </summary>
+    private readonly List<byte> _codeSpace;
+
+    /// <summary>
     /// The current compilation pointer (HERE in FORTH).
     /// Points to the next free location in data space.
     /// </summary>
@@ -115,6 +122,7 @@ public class ForthInterpreter
         _vm = vm;
         _dictionary = [];
         _dataSpace = [];
+        _codeSpace = [];
         _here = 0;
         _compileMode = false;
         _inputBuffer = string.Empty;
@@ -326,8 +334,20 @@ public class ForthInterpreter
             throw new InvalidOperationException($"Word {word.Name} has no compiled code");
         }
 
-        // Execute the bytecode using the VM
-        _vm.Execute(word.CompiledCode);
+        // Set the currently executing word for runtime introspection (e.g., DOES>)
+        var previousWord = _vm.CurrentlyExecutingWord;
+        _vm.CurrentlyExecutingWord = word;
+
+        try
+        {
+            // Execute the bytecode using the VM
+            _vm.Execute(word.CompiledCode);
+        }
+        finally
+        {
+            // Restore previous executing word
+            _vm.CurrentlyExecutingWord = previousWord;
+        }
     }
 
     #endregion
@@ -433,12 +453,17 @@ public class ForthInterpreter
             .Syscall()
             .Build();
 
+        // Store the bytecode in the global code space for proper CALL/RET semantics
+        int executionToken = _codeSpace.Count;
+        _codeSpace.AddRange(bytecode);
+
         // Create the word definition
         var word = new WordDefinition
         {
             Name = _currentWordName,
             Type = WordType.ColonDefinition,
-            CompiledCode = bytecode,
+            CompiledCode = bytecode,  // Keep for compatibility
+            ExecutionToken = executionToken,  // Offset into global code space
             IsImmediate = false
         };
 
@@ -540,35 +565,28 @@ public class ForthInterpreter
         }
         else if (word.Type == WordType.ColonDefinition)
         {
-            // For colon definitions, use CALL to invoke them properly.
-            // This enables recursion (via RECURSE) and proper call/return semantics.
-            // Each colon definition is a callable subroutine that ends with RET.
+            // For colon definitions, inline the word's bytecode directly
+            // This preserves the execution context and allows nested calls to work
             if (word.CompiledCode == null || word.CompiledCode.Length == 0)
             {
                 throw new InvalidOperationException($"Word {word.Name} has no compiled code");
             }
 
-            // Store the word's bytecode in VM memory if not already stored
-            // For now, we'll use a simpler approach: create a callable reference
-            // We need to know where this word's code lives in memory
-
-            // TEMPORARY LIMITATION: We can't easily CALL to arbitrary bytecode without
-            // loading it into a continuous address space. For now, inline with a workaround.
-            // TODO: Implement a proper code segment in VM memory for callable words
-
-            // Workaround: Strip the exit syscall (PUSH_CELL + SYSCALL = 10 bytes) and inline
+            // Strip the exit syscall from the end (PUSH_CELL + SYSCALL = 10 bytes)
             // The exit syscall is: PUSH_CELL <8-byte-syscall-id> SYSCALL
-            // Total: 1 + 8 + 1 = 10 bytes
             int length = word.CompiledCode.Length;
 
-            // Check if the last instruction is SYSCALL (the exit syscall)
+            // Check if the last instruction is the exit syscall
             if (length >= 10 && word.CompiledCode[length - 1] == (byte)OPCode.SYSCALL)
             {
-                // Strip the exit syscall: PUSH_CELL (1 byte) + long (8 bytes) + SYSCALL (1 byte)
-                length -= 10;
+                // Verify it's the exit syscall by checking if it's a PUSH_CELL followed by SYSCALL
+                if (word.CompiledCode[length - 10] == (byte)OPCode.PUSH_CELL)
+                {
+                    length -= 10; // Strip PUSH_CELL (1 byte) + long (8 bytes) + SYSCALL (1 byte)
+                }
             }
 
-            // Copy the bytecode without the exit syscall
+            // Inline the bytecode (without the exit syscall)
             if (length > 0)
             {
                 byte[] codeToInline = new byte[length];
@@ -1095,33 +1113,9 @@ public class ForthInterpreter
                 if (snippetIndexLong < 0) throw new InvalidOperationException("DOES> runtime: negative snippet index");
                 int snippetIndex = (int)snippetIndexLong;
 
-                // Determine which modifier (the word currently executing) provided the snippet
-                byte[]? vmBytecode = (byte[]?)typeof(VM).GetField("_bytecode", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(vm);
-                WordDefinition? modifierWord = null;
-                if (vmBytecode != null)
-                {
-                    foreach (var kv in _dictionary)
-                    {
-                        var w = kv.Value;
-                        if (w.CompiledCode == null) continue;
-                        if (ReferenceEquals(w.CompiledCode, vmBytecode)) { modifierWord = w; break; }
-                    }
-                    if (modifierWord == null)
-                    {
-                        foreach (var kv in _dictionary)
-                        {
-                            var w = kv.Value;
-                            if (w.CompiledCode == null) continue;
-                            if (w.CompiledCode.Length != vmBytecode.Length) continue;
-                            bool eq = true;
-                            for (int i = 0; i < w.CompiledCode.Length; i++) { if (w.CompiledCode[i] != vmBytecode[i]) { eq = false; break; } }
-                            if (eq) { modifierWord = w; break; }
-                        }
-                    }
-                }
-
-                if (modifierWord == null)
-                    throw new InvalidOperationException("DOES> runtime: cannot determine modifier word at runtime");
+                // Get the currently executing word (the modifier word containing DOES>)
+                if (vm.CurrentlyExecutingWord is not WordDefinition modifierWord)
+                    throw new InvalidOperationException("DOES> runtime: no word currently executing or wrong type");
 
                 // DEBUG: log what snippet we're about to attach
                 try { Console.WriteLine($"DOES> runtime: modifier={modifierWord.Name} created={_lastCreatedWord} snippetIndex={snippetIndex}"); } catch { }

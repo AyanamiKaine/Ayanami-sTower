@@ -66,6 +66,13 @@ public class VM
     public Action<VM>? TraceHook;
 
     /// <summary>
+    /// The word definition currently being executed.
+    /// Set by the interpreter when executing colon definitions to enable
+    /// runtime introspection for features like DOES>.
+    /// </summary>
+    public object? CurrentlyExecutingWord;
+
+    /// <summary>
     /// Flag indicating if the VM should halt.
     /// </summary>
     public bool Halted => _halted;
