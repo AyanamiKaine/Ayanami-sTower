@@ -715,6 +715,7 @@ public class ForthInterpreter
         {
             const long COMMA_SYSCALL_ID = 1101;
             const long ALLOT_SYSCALL_ID = 1102;
+            const long C_COMMA_SYSCALL_ID = 1103;
 
             // , ( x -- ) store cell at HERE and advance HERE
             _vm.SyscallHandlers[COMMA_SYSCALL_ID] = vm =>
@@ -725,6 +726,16 @@ public class ForthInterpreter
                 _here += 8;
             };
             DefinePrimitive(",", new CodeBuilder().PushCell(COMMA_SYSCALL_ID).Syscall().Build());
+
+            // C, ( c -- ) store byte at HERE and advance HERE
+            _vm.SyscallHandlers[C_COMMA_SYSCALL_ID] = vm =>
+            {
+                long value = vm.DataStack.PopLong();
+                int address = _here;
+                vm.Memory[address] = (byte)value;
+                _here += 1;
+            };
+            DefinePrimitive("C,", new CodeBuilder().PushCell(C_COMMA_SYSCALL_ID).Syscall().Build());
 
             // ALLOT ( n -- ) advance HERE by n bytes
             _vm.SyscallHandlers[ALLOT_SYSCALL_ID] = vm =>
@@ -899,6 +910,72 @@ public class ForthInterpreter
                 // Enables operations after the recursive call returns
                 forth._codeBuilder.Call(forth._currentStartLabel);
             }
+        }, isImmediate: true);
+
+        // CREATE - Create a new word that pushes its data field address when executed
+        // Uses a syscall-based approach so it can be used in colon definitions
+        {
+            const long CREATE_SYSCALL_ID = 1300;
+
+            _vm.SyscallHandlers[CREATE_SYSCALL_ID] = vm =>
+            {
+                string? name = ReadWord() ?? throw new InvalidOperationException("Expected word name after CREATE");
+
+                // Align data-space pointer if necessary (to 8-byte boundary for cells)
+                int remainder = _here % 8;
+                if (remainder != 0)
+                {
+                    _here += (8 - remainder);
+                }
+
+                // The data field address is the current HERE
+                // Note: CREATE does NOT advance HERE - that's for ALLOT or , to do
+                int dataFieldAddress = _here;
+
+                // Create bytecode that pushes the data field address
+                byte[] bytecode = new CodeBuilder()
+                    .PushCell(dataFieldAddress)
+                    .Build();
+
+                // Add the exit syscall
+                const long WORD_EXIT_SYSCALL_ID = 1200;
+                bytecode = new CodeBuilder()
+                    .AppendBytes(bytecode)
+                    .PushCell(WORD_EXIT_SYSCALL_ID)
+                    .Syscall()
+                    .Build();
+
+                // Create the word definition
+                var wordDef = new WordDefinition
+                {
+                    Name = name,
+                    Type = WordType.ColonDefinition,  // Treat as colon definition for execution
+                    DataAddress = dataFieldAddress,
+                    CompiledCode = bytecode,
+                    IsImmediate = false
+                };
+
+                AddWord(name, wordDef);
+            };
+
+            DefinePrimitive("CREATE", new CodeBuilder().PushCell(CREATE_SYSCALL_ID).Syscall().Build());
+        }
+
+        // DOES> - Modify the most recently CREATEd word to execute following code
+        DefinePrimitive("DOES>", forth =>
+        {
+            if (!forth._compileMode)
+                throw new InvalidOperationException("DOES> can only be used in compilation mode");
+
+            // DOES> modifies the most recently created word to execute the code that follows
+            // This is complex to implement properly, so for now we'll provide a basic implementation
+
+            // Strategy: Compile a jump to skip over the DOES> code during definition,
+            // then modify the last created word to call back to this code
+
+            throw new NotImplementedException(
+                "DOES> is a complex word requiring runtime code modification. " +
+                "For now, use explicit colon definitions instead.");
         }, isImmediate: true);
 
         DefinePrimitive("VARIABLE", forth =>
