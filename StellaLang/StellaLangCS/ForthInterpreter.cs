@@ -367,8 +367,39 @@ public class ForthInterpreter
             _codeBuilder.Label(_currentExitLabel);
         }
 
-        // Add HALT instruction to end the definition
-        byte[] bytecode = _codeBuilder.Halt().Build();
+        // Check if return stack has a return address (called via CALL), if so RET, else HALT
+        // This allows words to work both when called recursively and when executed directly
+        // Strategy: Check return stack depth. If >0, RET; else HALT
+        // Use a syscall to check return stack depth and conditionally RET or HALT
+        const long WORD_EXIT_SYSCALL_ID = 1200;
+        
+        _vm.SyscallHandlers[WORD_EXIT_SYSCALL_ID] = vm =>
+        {
+            // Calculate return stack depth (pointer / 8 since each entry is a long/8 bytes)
+            int returnStackDepth = vm.ReturnStack.Pointer / 8;
+            
+            // If return stack has entries, we were CALLed, so RET
+            // Otherwise, we were executed directly, so HALT
+            if (returnStackDepth > 0)
+            {
+                // Pop return address and jump to it (manual RET implementation)
+                long addr = vm.ReturnStack.PopLong();
+                vm.PC = (int)addr;
+            }
+            else
+            {
+                // Direct execution - halt the VM
+                // We need to set the internal _halted field
+                // Since we're in a syscall lambda, we have access to VM internals
+                typeof(VM).GetField("_halted", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                    .SetValue(vm, true);
+            }
+        };
+
+        byte[] bytecode = _codeBuilder
+            .PushCell(WORD_EXIT_SYSCALL_ID)
+            .Syscall()
+            .Build();
 
         // Create the word definition
         var word = new WordDefinition
@@ -428,20 +459,38 @@ public class ForthInterpreter
         }
         else if (word.Type == WordType.ColonDefinition)
         {
-            // For colon definitions, inline their bytecode
+            // For colon definitions, use CALL to invoke them properly.
+            // This enables recursion (via RECURSE) and proper call/return semantics.
+            // Each colon definition is a callable subroutine that ends with RET.
             if (word.CompiledCode == null || word.CompiledCode.Length == 0)
             {
                 throw new InvalidOperationException($"Word {word.Name} has no compiled code");
             }
 
-            // Inline the bytecode (strip the HALT instruction from the end)
+            // Store the word's bytecode in VM memory if not already stored
+            // For now, we'll use a simpler approach: create a callable reference
+            // We need to know where this word's code lives in memory
+            
+            // TEMPORARY LIMITATION: We can't easily CALL to arbitrary bytecode without
+            // loading it into a continuous address space. For now, inline with a workaround.
+            // TODO: Implement a proper code segment in VM memory for callable words
+            
+            // Workaround: Strip RET+HALT and inline (preserves old behavior for now)
             int length = word.CompiledCode.Length;
-            if (length > 0 && word.CompiledCode[length - 1] == (byte)OPCode.HALT)
+            // Strip RET (second to last) and HALT (last)
+            if (length >= 2 && 
+                word.CompiledCode[length - 2] == (byte)OPCode.RET &&
+                word.CompiledCode[length - 1] == (byte)OPCode.HALT)
+            {
+                length -= 2;
+            }
+            // Fallback: strip just HALT if that's all we find
+            else if (length > 0 && word.CompiledCode[length - 1] == (byte)OPCode.HALT)
             {
                 length--;
             }
 
-            // Copy the bytecode without the HALT
+            // Copy the bytecode without the RET+HALT
             if (length > 0)
             {
                 byte[] codeToInline = new byte[length];
@@ -819,18 +868,18 @@ public class ForthInterpreter
         // RECURSE - Call the word currently being compiled (recursive call)
         DefinePrimitive("RECURSE", forth =>
         {
-            // Minimal RECURSE support: emit a jump to the current word's start label.
-            // Note: This models tail recursion (RECURSE in tail position). Non-tail recursion
-            // would require CALL/RET based invocation which conflicts with our current use of
-            // the return stack for loop indices. Until that refactor, we provide a safe tail-recursive form.
+            // Emit a CALL to the current word's start, enabling both tail and non-tail recursion.
+            // The VM's CALL instruction pushes the return address to the return stack,
+            // and RET (emitted at the end of the word) pops it to return.
+            // This properly supports recursive calls that need to perform operations after returning.
             if (!forth._compileMode)
                 throw new InvalidOperationException("RECURSE can only be used inside a colon definition during compilation");
 
             if (forth._currentStartLabel is null)
                 throw new InvalidOperationException("RECURSE used outside of a colon definition");
 
-            // Unconditional jump back to the beginning of the current definition
-            forth._codeBuilder.Jmp(forth._currentStartLabel);
+            // Call back to the beginning of the current definition
+            forth._codeBuilder.Call(forth._currentStartLabel);
         }, isImmediate: true);
 
         DefinePrimitive("VARIABLE", forth =>

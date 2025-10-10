@@ -83,6 +83,38 @@ public class ForthProgramTests
         forth.Interpret("0 1 10 fib-rec");
         Assert.Equal(55L, vm.DataStack.PopLong());
     }
+
+    /// <summary>
+    /// Test factorial using non-tail recursion with RECURSE.
+    /// This verifies that CALL/RET work properly for recursion.
+    /// </summary>
+    [Fact]
+    public void TestFactorialRecursive()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Factorial: factorial(n) = n <= 1 ? 1 : n * factorial(n-1)
+        // Stack effect: ( n -- n! )
+        const string factDef =
+            ": factorial ( n -- n! )  DUP 1 <= IF DROP 1 EXIT THEN  DUP 1- RECURSE * ;";
+
+        forth.Interpret(factDef);
+
+        // Test factorial values
+        forth.Interpret("0 factorial");
+        Assert.Equal(1L, vm.DataStack.PopLong());
+
+        forth.Interpret("1 factorial");
+        Assert.Equal(1L, vm.DataStack.PopLong());
+
+        forth.Interpret("5 factorial");
+        Assert.Equal(120L, vm.DataStack.PopLong());
+
+        forth.Interpret("10 factorial");
+        Assert.Equal(3628800L, vm.DataStack.PopLong());
+    }
+
     /// <summary>
     /// Test Fibonacci sequence calculation using iterative approach.
     /// Based on the classic Forth fibonacci implementation from literate programs.
