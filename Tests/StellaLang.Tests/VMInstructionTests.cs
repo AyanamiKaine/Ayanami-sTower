@@ -948,31 +948,195 @@ public class VMInstructionTests
     [Fact]
     public void JMPVMInstructionTest()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        var vm = new VM();
+
+        // Test that JMP unconditionally jumps over code
+        var code = new CodeBuilder()
+            .PushCell(1)           // Push 1 onto stack
+            .Jmp("skip")           // Jump over the next instruction
+            .PushCell(999)         // This should be SKIPPED
+            .Label("skip")         // Jump target
+            .PushCell(2)           // This should execute
+            .Build();
+
+        vm.Execute(code);
+
+        // Stack should be: [1, 2] (top)
+        // If JMP failed, it would be: [1, 999, 2]
+
+        long topValue = vm.DataStack.PopLong();
+        Assert.Equal(2, topValue);  // Should be 2 (the value after the label)
+
+        long secondValue = vm.DataStack.PopLong();
+        Assert.Equal(1, secondValue);  // Should be 1 (before the jump)
+
+        // Stack should now be empty
+        Assert.True(vm.DataStack.IsEmpty);
     }
 
     [Fact]
     public void JZVMInstructionTest()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        // Test JZ (Jump if Zero) - should jump when top of stack is 0
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(0)           // Push 0 (condition is true)
+            .Jz("zero_case")       // Should jump because top is 0
+            .PushCell(999)         // This should be SKIPPED
+            .Label("zero_case")
+            .PushCell(42)          // This should execute
+            .Build();
+
+        vm.Execute(code);
+
+        long topValue = vm.DataStack.PopLong();
+        Assert.Equal(42, topValue);  // Should be 42 (jumped successfully)
+
+        // Stack should now be empty (the 0 was consumed by JZ)
+        Assert.True(vm.DataStack.IsEmpty);
+    }
+
+    [Fact]
+    public void JZVMInstructionTestNoJump()
+    {
+        // Test JZ when condition is false (non-zero) - should NOT jump
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(1)           // Push 1 (condition is false)
+            .Jz("zero_case")       // Should NOT jump because top is not 0
+            .PushCell(100)         // This should execute
+            .Halt()                // End program
+            .Label("zero_case")
+            .PushCell(999)         // This should be SKIPPED
+            .Halt()
+            .Build();
+
+        vm.Execute(code);
+
+        long topValue = vm.DataStack.PopLong();
+        Assert.Equal(100, topValue);  // Should be 100 (did not jump)
+
+        Assert.True(vm.DataStack.IsEmpty);
     }
 
     [Fact]
     public void JNZVMInstructionTest()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        // Test JNZ (Jump if Not Zero) - should jump when top of stack is non-zero
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(1)           // Push 1 (condition is true)
+            .Jnz("nonzero_case")   // Should jump because top is non-zero
+            .PushCell(999)         // This should be SKIPPED
+            .Label("nonzero_case")
+            .PushCell(42)          // This should execute
+            .Build();
+
+        vm.Execute(code);
+
+        long topValue = vm.DataStack.PopLong();
+        Assert.Equal(42, topValue);  // Should be 42 (jumped successfully)
+
+        // Stack should now be empty (the 1 was consumed by JNZ)
+        Assert.True(vm.DataStack.IsEmpty);
+    }
+
+    [Fact]
+    public void JNZVMInstructionTestNoJump()
+    {
+        // Test JNZ when condition is false (zero) - should NOT jump
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(0)           // Push 0 (condition is false)
+            .Jnz("nonzero_case")   // Should NOT jump because top is 0
+            .PushCell(100)         // This should execute
+            .Halt()                // End program
+            .Label("nonzero_case")
+            .PushCell(999)         // This should be SKIPPED
+            .Halt()
+            .Build();
+
+        vm.Execute(code);
+
+        long topValue = vm.DataStack.PopLong();
+        Assert.Equal(100, topValue);  // Should be 100 (did not jump)
+
+        Assert.True(vm.DataStack.IsEmpty);
     }
 
     [Fact]
     public void CALLVMInstructionTest()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        // Test CALL instruction - should save return address and jump to function
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(10)          // Initial value
+            .Call("function")      // Call the function
+            .PushCell(20)          // This executes after return
+            .Halt()                // End program
+            .Label("function")     // Function starts here
+            .PushCell(5)           // Function body: push 5
+            .Ret()                 // Return to caller
+            .Build();
+
+        vm.Execute(code);
+
+        // Stack should contain (from bottom): [10, 5, 20]
+        long topValue = vm.DataStack.PopLong();
+        Assert.Equal(20, topValue);  // Value after function call
+
+        long secondValue = vm.DataStack.PopLong();
+        Assert.Equal(5, secondValue);  // Value pushed by function
+
+        long thirdValue = vm.DataStack.PopLong();
+        Assert.Equal(10, thirdValue);  // Initial value
+
+        Assert.True(vm.DataStack.IsEmpty);
+        Assert.True(vm.ReturnStack.IsEmpty);  // Return stack should be empty after RET
     }
 
     [Fact]
     public void RETCALLVMInstructionTest()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        // Test nested CALL/RET - function calling another function
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(1)           // Initial value
+            .Call("func_a")        // Call function A
+            .PushCell(4)           // After both functions return
+            .Halt()                // End program
+            .Label("func_a")       // Function A
+            .PushCell(2)
+            .Call("func_b")        // Function A calls function B
+            .Ret()                 // Return from A
+            .Label("func_b")       // Function B
+            .PushCell(3)
+            .Ret()                 // Return from B
+            .Build();
+
+        vm.Execute(code);
+
+        // Stack should contain: [1, 2, 3, 4]
+        long val4 = vm.DataStack.PopLong();
+        Assert.Equal(4, val4);
+
+        long val3 = vm.DataStack.PopLong();
+        Assert.Equal(3, val3);
+
+        long val2 = vm.DataStack.PopLong();
+        Assert.Equal(2, val2);
+
+        long val1 = vm.DataStack.PopLong();
+        Assert.Equal(1, val1);
+
+        Assert.True(vm.DataStack.IsEmpty);
+        Assert.True(vm.ReturnStack.IsEmpty);  // All returns completed
     }
 
     [Fact]
@@ -1010,6 +1174,53 @@ public class VMInstructionTests
     [Fact]
     public void SYSCALLVMInstructionTest()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        var vm = new VM();
+
+        // Register a syscall handler
+        bool syscallWasCalled = false;
+        long capturedValue = 0;
+
+        vm.SyscallHandlers[42] = (vm) =>
+        {
+            syscallWasCalled = true;
+            // Syscall can read from the data stack
+            if (!vm.DataStack.IsEmpty)
+            {
+                capturedValue = vm.DataStack.PopLong();
+            }
+            // And push results back
+            vm.DataStack.PushLong(100);
+        };
+
+        var code = new CodeBuilder()
+            .PushCell(999)         // Value for syscall to consume
+            .PushCell(42)          // Syscall ID
+            .Syscall()             // Invoke syscall
+            .Build();
+
+        vm.Execute(code);
+
+        Assert.True(syscallWasCalled);
+        Assert.Equal(999, capturedValue);
+
+        // Syscall should have pushed 100
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(100, result);
+
+        Assert.True(vm.DataStack.IsEmpty);
+    }
+
+    [Fact]
+    public void SYSCALLVMInstructionTestUnknown()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(999)         // Unknown syscall ID
+            .Syscall()
+            .Build();
+
+        // Should throw for unknown syscall
+        Assert.Throws<InvalidOperationException>(() => vm.Execute(code));
     }
 }
