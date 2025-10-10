@@ -372,12 +372,12 @@ public class ForthInterpreter
         // Strategy: Check return stack depth. If >0, RET; else HALT
         // Use a syscall to check return stack depth and conditionally RET or HALT
         const long WORD_EXIT_SYSCALL_ID = 1200;
-        
+
         _vm.SyscallHandlers[WORD_EXIT_SYSCALL_ID] = vm =>
         {
             // Calculate return stack depth (pointer / 8 since each entry is a long/8 bytes)
             int returnStackDepth = vm.ReturnStack.Pointer / 8;
-            
+
             // If return stack has entries, we were CALLed, so RET
             // Otherwise, we were executed directly, so HALT
             if (returnStackDepth > 0)
@@ -470,15 +470,15 @@ public class ForthInterpreter
             // Store the word's bytecode in VM memory if not already stored
             // For now, we'll use a simpler approach: create a callable reference
             // We need to know where this word's code lives in memory
-            
+
             // TEMPORARY LIMITATION: We can't easily CALL to arbitrary bytecode without
             // loading it into a continuous address space. For now, inline with a workaround.
             // TODO: Implement a proper code segment in VM memory for callable words
-            
+
             // Workaround: Strip RET+HALT and inline (preserves old behavior for now)
             int length = word.CompiledCode.Length;
             // Strip RET (second to last) and HALT (last)
-            if (length >= 2 && 
+            if (length >= 2 &&
                 word.CompiledCode[length - 2] == (byte)OPCode.RET &&
                 word.CompiledCode[length - 1] == (byte)OPCode.HALT)
             {
