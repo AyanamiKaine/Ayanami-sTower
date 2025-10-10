@@ -678,7 +678,7 @@ public class VM
             vm.PC = (int)addr;
         };
         table[(byte)OPCode.HALT] = static vm => vm._halted = true;
-        table[(byte)OPCode.NOP] = static vm => { /* Do nothing */ };
+        table[(byte)OPCode.NOP] = static _ => { /* Do nothing */ };
 
         // System call
         table[(byte)OPCode.SYSCALL] = static vm =>
