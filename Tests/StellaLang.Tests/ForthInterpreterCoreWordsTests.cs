@@ -1667,6 +1667,179 @@ public class ForthInterpreterCoreWordsTests
         long result = vm.DataStack.PopLong();
         Assert.Equal(150, result);
     }
+
+    /// <summary>
+    /// ?DO...LOOP - Basic counted loop that executes when start is less than limit
+    /// </summary>
+    [Fact]
+    public void QuestionMarkDoLoopBasicTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Sum numbers 0 to 4: 0 + 1 + 2 + 3 + 4 = 10
+        forth.Interpret(": SUM 0 5 0 ?DO I + LOOP ;");
+        forth.Interpret("SUM");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(10, result);
+    }
+
+    /// <summary>
+    /// ?DO...LOOP - Skip loop when start equals or exceeds limit (zero iterations)
+    /// </summary>
+    [Fact]
+    public void QuestionMarkDoLoopSkipWhenStartEqualsLimitTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Should not execute loop body when start == limit
+        forth.Interpret(": TEST 100 5 5 ?DO I + LOOP ;");
+        forth.Interpret("TEST");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(100, result); // Should remain 100 (loop didn't execute)
+    }
+
+    /// <summary>
+    /// ?DO...LOOP - Skip loop when start exceeds limit (zero iterations)
+    /// </summary>
+    [Fact]
+    public void QuestionMarkDoLoopSkipWhenStartGreaterThanLimitTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Should not execute loop body when start > limit
+        // ?DO takes ( limit start -- ), so use 5 10 for start=10, limit=5
+        forth.Interpret(": TEST 42 5 10 ?DO I + LOOP ;");
+        forth.Interpret("TEST");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(42, result); // Should remain 42 (loop didn't execute)
+    }
+
+    /// <summary>
+    /// ?DO...LOOP - Loop with single iteration
+    /// </summary>
+    [Fact]
+    public void QuestionMarkDoLoopSingleIterationTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Loop executes exactly once: i=0
+        forth.Interpret(": TEST 0 1 0 ?DO I + LOOP ;");
+        forth.Interpret("TEST");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(0, result); // Only i=0 is added
+    }
+
+    /// <summary>
+    /// ?DO...LOOP - Using loop index I to access values
+    /// </summary>
+    [Fact]
+    public void QuestionMarkDoLoopIndexAccessTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Multiply each index by 2 and sum: (0*2) + (1*2) + (2*2) + (3*2) = 0 + 2 + 4 + 6 = 12
+        forth.Interpret(": TEST 0 4 0 ?DO I 2 * + LOOP ;");
+        forth.Interpret("TEST");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(12, result);
+    }
+
+    /// <summary>
+    /// ?DO...LOOP - Nested loops
+    /// </summary>
+    [Fact]
+    public void QuestionMarkDoLoopNestedTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Outer loop: 0, 1, 2
+        // Inner loop: for each outer, counts 0, 1
+        // Total iterations: 3 * 2 = 6
+        forth.Interpret(": NESTED 0 3 0 ?DO 2 0 ?DO 1 + LOOP LOOP ;");
+        forth.Interpret("NESTED");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(6, result); // 6 total inner loop iterations
+    }
+
+    /// <summary>
+    /// LOOP - Test that loop counter increments correctly
+    /// </summary>
+    [Fact]
+    public void LoopIncrementTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Collect all loop indices: 3 + 4 + 5 + 6 + 7 + 8 + 9 = 42
+        forth.Interpret(": TEST 0 10 3 ?DO I + LOOP ;");
+        forth.Interpret("TEST");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(42, result);
+    }
+
+    /// <summary>
+    /// ?DO...LOOP - Large range test
+    /// </summary>
+    [Fact]
+    public void QuestionMarkDoLoopLargeRangeTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Sum 0 to 99: (99 * 100) / 2 = 4950
+        forth.Interpret(": SUM100 0 100 0 ?DO I + LOOP ;");
+        forth.Interpret("SUM100");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(4950, result);
+    }
+
+    /// <summary>
+    /// ?DO...LOOP - Using I multiple times in loop body
+    /// </summary>
+    [Fact]
+    public void QuestionMarkDoLoopMultipleIndexUsageTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Square each index and sum: 0^2 + 1^2 + 2^2 + 3^2 = 0 + 1 + 4 + 9 = 14
+        forth.Interpret(": SUMSQUARES 0 4 0 ?DO I I * + LOOP ;");
+        forth.Interpret("SUMSQUARES");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(14, result);
+    }
+
+    /// <summary>
+    /// ?DO...LOOP - Edge case with negative start
+    /// </summary>
+    [Fact]
+    public void QuestionMarkDoLoopNegativeStartTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Sum from -2 to 2 inclusive: -2 + -1 + 0 + 1 + 2 = 0
+        forth.Interpret(": TEST 0 3 -2 ?DO I + LOOP ;");
+        forth.Interpret("TEST");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(0, result);
+    }
 }
 
 

@@ -74,6 +74,16 @@ public class ForthInterpreter
     private string _currentWordName;
 
     /// <summary>
+    /// The exit label for the current word being compiled (for EXIT to jump to).
+    /// </summary>
+    private string? _currentExitLabel;
+
+    /// <summary>
+    /// The start label for the current word being compiled (for RECURSE to jump to).
+    /// </summary>
+    private string? _currentStartLabel;
+
+    /// <summary>
     /// Initializes a new instance of the FORTH interpreter.
     /// </summary>
     /// <param name="vm">The VM instance to use for execution.</param>
@@ -334,6 +344,11 @@ public class ForthInterpreter
         _compileMode = true;
         _codeBuilder.Clear();
         _currentWordName = name;
+        _currentExitLabel = $"EXIT_{name}_{_labelCounter++}";
+        _currentStartLabel = $"START_{name}_{_labelCounter++}";
+
+        // Add the start label at the beginning
+        _codeBuilder.Label(_currentStartLabel);
     }
 
     /// <summary>
@@ -344,6 +359,12 @@ public class ForthInterpreter
         if (!_compileMode)
         {
             throw new InvalidOperationException("Cannot finish a colon definition without starting one");
+        }
+
+        // Add the exit label for EXIT to jump to
+        if (_currentExitLabel != null)
+        {
+            _codeBuilder.Label(_currentExitLabel);
         }
 
         // Add HALT instruction to end the definition
@@ -364,6 +385,8 @@ public class ForthInterpreter
         // Exit compilation mode
         _compileMode = false;
         _currentWordName = string.Empty;
+        _currentExitLabel = null;
+        _currentStartLabel = null;
     }
 
     #endregion
@@ -584,6 +607,8 @@ public class ForthInterpreter
     /// This includes stack operations, arithmetic, control flow, etc.
     /// Primitives are defined with their actual FORTH names including symbols like !, @, +, -, etc.
     /// Each primitive has a handler (Action&lt;ForthInterpreter&gt;) that executes the operation.
+    /// 
+    /// By default words should be implemented using bytecode not handlers.
     /// </summary>
     /// <example>
     /// Examples of primitive definitions:
@@ -630,20 +655,11 @@ public class ForthInterpreter
         DefinePrimitive("!", new CodeBuilder().Swap().Store().Build());
         DefinePrimitive("@", OPCode.FETCH);
 
-        // Byte operations
-        DefinePrimitive("C!", forth =>
-        {
-            long value = forth._vm.DataStack.PopLong();
-            long address = forth._vm.DataStack.PopLong();
-            forth._vm.Memory[(int)address] = (byte)value;
-        });
-
-        DefinePrimitive("C@", forth =>
-        {
-            long address = forth._vm.DataStack.PopLong();
-            byte value = forth._vm.Memory[(int)address];
-            forth._vm.DataStack.PushLong(value);
-        });
+        // Byte operations - use VM opcodes for compilation support
+        // Note: C! uses same convention as !: ( address value -- )
+        // VM STORE_BYTE expects address on top, value below, so we need SWAP
+        DefinePrimitive("C!", new CodeBuilder().Swap().StoreByte().Build());
+        DefinePrimitive("C@", OPCode.FETCH_BYTE);
 
         // Cell size (8 bytes in our implementation)
         DefinePrimitive("CELL+", new CodeBuilder().PushCell(8).Add().Build());
@@ -690,6 +706,12 @@ public class ForthInterpreter
         DefinePrimitive("1-", new CodeBuilder().PushCell(1).Sub().Build());
         DefinePrimitive("2*", new CodeBuilder().PushCell(2).Mul().Build());
         DefinePrimitive("2/", new CodeBuilder().PushCell(2).Div().Build());
+
+        // Bitwise operations
+        DefinePrimitive("AND", OPCode.AND);
+        DefinePrimitive("OR", OPCode.OR);
+        DefinePrimitive("XOR", OPCode.XOR);
+        DefinePrimitive("INVERT", OPCode.NOT);
     }
 
     /// <summary>
@@ -774,6 +796,30 @@ public class ForthInterpreter
         });
 
         DefinePrimitive(";", forth => forth.FinishColonDefinition(), isImmediate: true);
+
+        // EXIT - Early return from a word definition (jump to end)
+        DefinePrimitive("EXIT", forth =>
+        {
+            if (!forth._compileMode)
+                throw new InvalidOperationException("EXIT can only be used in compilation mode");
+            if (forth._currentExitLabel == null)
+                throw new InvalidOperationException("EXIT used outside of colon definition");
+
+            forth._codeBuilder.Jmp(forth._currentExitLabel);
+        }, isImmediate: true);
+
+        // RECURSE - Call the word currently being compiled (recursive call)
+        // Note: This is a simplified implementation that won't work during compilation
+        // Instead, we document that recursive functions should call themselves by name
+        // after they're defined, or we disable RECURSE for now
+        DefinePrimitive("RECURSE", forth =>
+        {
+            throw new NotImplementedException(
+                "RECURSE is not yet implemented. " +
+                "For recursive definitions, split into two words: " +
+                "define a helper word first, then define the main word that calls the helper recursively. " +
+                "Or wait for full RECURSE support which requires call/return stack management.");
+        }, isImmediate: true);
 
         DefinePrimitive("VARIABLE", forth =>
         {
@@ -908,6 +954,106 @@ public class ForthInterpreter
             forth._codeBuilder.Jmp(dest);  // Jump back to BEGIN unconditionally
             forth._codeBuilder.Label(orig);  // Resolve forward reference
         }, isImmediate: true);
+
+        // ?DO...LOOP counted loops
+        // ?DO ( limit start -- ) - Start a loop, skip if start >= limit
+        // Loop index is on return stack
+        DefinePrimitive("?DO", forth =>
+        {
+            if (!forth._compileMode)
+                throw new InvalidOperationException("?DO can only be used in compilation mode");
+
+            string loopLabel = $"L{forth._labelCounter++}";
+            string exitLabel = $"L{forth._labelCounter++}";
+            string skipLabel = $"L{forth._labelCounter++}";
+
+            // Stack: limit start
+            // Check if start >= limit, if so skip loop
+            forth._codeBuilder
+                .Over()          // limit start limit
+                .Over()          // limit start limit start
+                .Swap()          // limit start start limit
+                .Lt();           // limit start (start<limit?)
+
+            // If start >= limit (condition is false/0), skip to skipLabel to clean up and exit
+            forth._codeBuilder.Jz(skipLabel);
+
+            // Condition is true (start < limit), proceed with loop
+            // Move limit and start to return stack
+            forth._codeBuilder.ToR().ToR();  // limit->R, start->R (R: start limit)
+
+            // Mark loop start
+            forth._codeBuilder.Label(loopLabel);
+
+            // Push labels for LOOP to use
+            forth._compileStack.Push(exitLabel);  // Exit label
+            forth._compileStack.Push(loopLabel);  // Loop start label
+            forth._compileStack.Push(skipLabel);  // Skip label for cleanup
+        }, isImmediate: true);
+
+        // LOOP - End of ?DO loop, increment index and loop if index < limit
+        // Per Forth standard: increment index, exit if index == limit, otherwise loop
+        DefinePrimitive("LOOP", forth =>
+        {
+            if (!forth._compileMode)
+                throw new InvalidOperationException("LOOP can only be used in compilation mode");
+            if (forth._compileStack.Count < 3)
+                throw new InvalidOperationException("LOOP without matching ?DO");
+
+            string skipLabel = forth._compileStack.Pop();
+            string loopLabel = forth._compileStack.Pop();
+            string exitLabel = forth._compileStack.Pop();
+
+            // R stack has: index limit (based on the order they were pushed)
+            // Per Forth standard: add one to loop index, check if equal to limit
+            forth._codeBuilder
+                .RFrom()         // Pop limit
+                .RFrom()         // Pop current index
+                .PushCell(1)
+                .Add()           // Increment index: index+1
+                .Over()          // Stack: limit index+1 limit
+                .Over()          // Stack: limit index+1 limit index+1
+                .Eq();           // Check if index+1 == limit
+
+            // Stack now: limit index+1 (index+1==limit)
+            // If equal (flag is -1/true), exit loop
+            // If not equal (flag is 0/false), continue loop
+
+            string continueLabel = $"L{forth._labelCounter++}";
+            forth._codeBuilder.Jz(continueLabel);  // If 0 (not equal), continue looping
+
+            // Index equals limit - exit loop
+            forth._codeBuilder
+                .Drop()          // Drop index+1
+                .Drop()          // Drop limit
+                .Jmp(exitLabel);
+
+            // Continue looping - put values back on R stack
+            forth._codeBuilder.Label(continueLabel);
+            forth._codeBuilder
+                .ToR()           // Put index+1 back on R
+                .ToR()           // Put limit back on R
+                .Jmp(loopLabel);
+
+            // Skip label - clean up stack when loop was never entered
+            forth._codeBuilder.Label(skipLabel);
+            forth._codeBuilder
+                .Drop()          // Drop start
+                .Drop();         // Drop limit
+
+            // Exit point
+            forth._codeBuilder.Label(exitLabel);
+        }, isImmediate: true);
+
+        // I - Get current loop index (from return stack)
+        // R stack: index limit (limit on top after ?DO puts them there)
+        // Need to access the index (second item) without disturbing the R stack
+        DefinePrimitive("I", new CodeBuilder()
+            .RFrom()      // Get limit from R stack -> Stack: limit
+            .RFetch()     // Peek at index (now on top of R) -> Stack: limit index
+            .Swap()       // Stack: index limit
+            .ToR()        // Put limit back on R stack -> Stack: index
+            .Build());
     }
 
     /// <summary>
@@ -924,6 +1070,13 @@ public class ForthInterpreter
         Interpret(": MIN 2DUP > IF SWAP THEN DROP ;");
         Interpret(": ABS DUP 0 < IF NEGATE THEN ;");
         Interpret(": FABS FDUP F0< IF FNEGATE THEN ;");
+
+        // Unsigned comparison (U<)
+        // For unsigned comparison: treat negative numbers as large positive
+        // If both have same sign, regular < works
+        // If a<0 and b>=0, then a_unsigned > b_unsigned (return false)
+        // If a>=0 and b<0, then a_unsigned < b_unsigned (return true)
+        Interpret(": U< ( a b -- flag )  2DUP XOR 0< IF SWAP DROP 0< 0= ELSE < THEN ;");
 
         // Tier 1: Essential stack manipulation
         Interpret(": 2DROP DROP DROP ;");
@@ -950,6 +1103,10 @@ public class ForthInterpreter
         Interpret(": NOT 0 = ;");
         Interpret(": AND * ;");  // Bitwise AND for booleans (-1 * -1 = 1, but we'll use 0 and non-zero)
         Interpret(": OR + 0 < > ;");  // Logical OR (any non-zero is true)
+
+        // String operations
+        // COUNT ( c-addr -- addr len ) - Convert counted string to address and length
+        Interpret(": COUNT DUP 1+ SWAP C@ ;");
     }
 
     /// <summary>
@@ -1038,6 +1195,8 @@ public class ForthInterpreter
         });
 
         // WORD ( delimiter -- c-addr ) Parse word delimited by character
+        // Note: This word cannot be used in colon definitions as it requires
+        // access to the interpreter's input buffer state
         DefinePrimitive("WORD", forth =>
         {
             long delimiter = forth._vm.DataStack.PopLong();
@@ -1074,24 +1233,27 @@ public class ForthInterpreter
             forth._vm.DataStack.PushLong(address);
         });
 
-        // COUNT ( c-addr -- addr len ) Convert counted string to addr/len
-        DefinePrimitive("COUNT", forth =>
-        {
-            long cAddr = forth._vm.DataStack.PopLong();
-            byte length = forth._vm.Memory[(int)cAddr];
-            forth._vm.DataStack.PushLong(cAddr + 1);  // address of first char
-            forth._vm.DataStack.PushLong(length);      // length
-        });
+        // COUNT ( c-addr -- addr len ) Convert counted string to address and length
+        // Now compilable as it uses C@ which is opcode-based
+        DefinePrimitive("COUNT", new CodeBuilder()
+            .Dup()           // c-addr c-addr
+            .PushCell(1)     // c-addr c-addr 1
+            .Add()           // c-addr addr
+            .Swap()          // addr c-addr
+            .FetchByte()     // addr len
+            .Build());
 
-        // TYPE ( addr len -- ) Print string
+        // TYPE ( addr len -- ) Print string of given length
+        // Note: This word cannot be used in colon definitions as it requires
+        // a handler for Console.Write which has no VM opcode equivalent
         DefinePrimitive("TYPE", forth =>
         {
-            long length = forth._vm.DataStack.PopLong();
-            long address = forth._vm.DataStack.PopLong();
+            long len = forth._vm.DataStack.PopLong();
+            long addr = forth._vm.DataStack.PopLong();
 
-            for (int i = 0; i < length; i++)
+            for (long i = 0; i < len; i++)
             {
-                byte b = forth._vm.Memory[(int)address + i];
+                byte b = forth._vm.Memory[(int)(addr + i)];
                 Console.Write((char)b);
             }
         });

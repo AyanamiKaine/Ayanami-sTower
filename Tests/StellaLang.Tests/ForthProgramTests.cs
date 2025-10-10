@@ -49,4 +49,57 @@ public class ForthProgramTests
         var interpreter = new ForthInterpreter();
         interpreter.Interpret(forthCode);
     }
+
+    /// <summary>
+    /// Test Fibonacci sequence calculation using iterative approach.
+    /// Based on the classic Forth fibonacci implementation from literate programs.
+    /// </summary>
+    [Fact]
+    public void TestFibonacciIterative()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Classic Forth iterative Fibonacci: fib-iter
+        const string fibDef = ": fib-iter ( n -- f )  0 1 rot 0 ?do over + swap loop drop ;";
+
+        forth.Interpret(fibDef);
+
+        // Test first 10 Fibonacci numbers: 0, 1, 1, 2, 3, 5, 8, 13, 21, 34
+        long[] expectedFib = { 0, 1, 1, 2, 3, 5, 8, 13, 21, 34 };
+
+        for (int i = 0; i < expectedFib.Length; i++)
+        {
+            forth.Interpret($"{i} fib-iter");
+            long result = vm.DataStack.PopLong();
+            Assert.Equal(expectedFib[i], result);
+        }
+    }
+    /// <summary>
+    /// Test a simpler Fibonacci for edge cases.
+    /// </summary>
+    [Fact]
+    public void TestFibonacciSimple()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Simple iterative version
+        const string fibDef = ": fib ( n -- fib[n] )  0 1 rot 0 ?do over + swap loop drop ;";
+
+        forth.Interpret(fibDef);
+
+        // Test cases
+        forth.Interpret("0 fib");
+        Assert.Equal(0L, vm.DataStack.PopLong());
+
+        forth.Interpret("1 fib");
+        Assert.Equal(1L, vm.DataStack.PopLong());
+
+        forth.Interpret("5 fib");
+        Assert.Equal(5L, vm.DataStack.PopLong());
+
+        forth.Interpret("10 fib");
+        Assert.Equal(55L, vm.DataStack.PopLong());
+    }
 }
