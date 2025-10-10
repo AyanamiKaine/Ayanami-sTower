@@ -817,16 +817,20 @@ public class ForthInterpreter
         }, isImmediate: true);
 
         // RECURSE - Call the word currently being compiled (recursive call)
-        // Note: This is a simplified implementation that won't work during compilation
-        // Instead, we document that recursive functions should call themselves by name
-        // after they're defined, or we disable RECURSE for now
         DefinePrimitive("RECURSE", forth =>
         {
-            throw new NotImplementedException(
-                "RECURSE is not yet implemented. " +
-                "For recursive definitions, split into two words: " +
-                "define a helper word first, then define the main word that calls the helper recursively. " +
-                "Or wait for full RECURSE support which requires call/return stack management.");
+            // Minimal RECURSE support: emit a jump to the current word's start label.
+            // Note: This models tail recursion (RECURSE in tail position). Non-tail recursion
+            // would require CALL/RET based invocation which conflicts with our current use of
+            // the return stack for loop indices. Until that refactor, we provide a safe tail-recursive form.
+            if (!forth._compileMode)
+                throw new InvalidOperationException("RECURSE can only be used inside a colon definition during compilation");
+
+            if (forth._currentStartLabel is null)
+                throw new InvalidOperationException("RECURSE used outside of a colon definition");
+
+            // Unconditional jump back to the beginning of the current definition
+            forth._codeBuilder.Jmp(forth._currentStartLabel);
         }, isImmediate: true);
 
         DefinePrimitive("VARIABLE", forth =>

@@ -51,6 +51,39 @@ public class ForthProgramTests
     }
 
     /// <summary>
+    /// Test Fibonacci using a single tail-recursive definition with RECURSE.
+    /// </summary>
+    [Fact]
+    public void TestFibonacciRecursiveTail()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Tail-recursive Fibonacci in a single word expecting ( a b n -- f )
+        // a = F(n), b = F(n+1). Base: n==0 -> return a. Step: (b, a+b, n-1)
+        const string fibTail =
+            ": fib-rec ( a b n -- f )  DUP 0= IF DROP DROP EXIT THEN  >R TUCK + R> 1- RECURSE ;";
+
+        forth.Interpret(fibTail);
+
+        // Validate a few values
+        // Bootstrap calls with initial accumulators a=0, b=1: (0 1 n)
+        forth.Interpret("0 1 0 fib-rec");
+        Assert.Equal(0L, vm.DataStack.PopLong());
+
+        forth.Interpret("0 1 1 fib-rec");
+        Assert.Equal(1L, vm.DataStack.PopLong());
+
+        forth.Interpret("0 1 2 fib-rec");
+        Assert.Equal(1L, vm.DataStack.PopLong());
+
+        forth.Interpret("0 1 5 fib-rec");
+        Assert.Equal(5L, vm.DataStack.PopLong());
+
+        forth.Interpret("0 1 10 fib-rec");
+        Assert.Equal(55L, vm.DataStack.PopLong());
+    }
+    /// <summary>
     /// Test Fibonacci sequence calculation using iterative approach.
     /// Based on the classic Forth fibonacci implementation from literate programs.
     /// </summary>
