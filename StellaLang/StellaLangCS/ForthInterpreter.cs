@@ -561,7 +561,7 @@ public class ForthInterpreter
     /// <returns>True if parsing succeeded, false otherwise.</returns>
     private bool TryParseFloat(string text, out double value)
     {
-        return double.TryParse(text, System.Globalization.NumberStyles.Float, 
+        return double.TryParse(text, System.Globalization.NumberStyles.Float,
             System.Globalization.CultureInfo.InvariantCulture, out value);
     }
 
