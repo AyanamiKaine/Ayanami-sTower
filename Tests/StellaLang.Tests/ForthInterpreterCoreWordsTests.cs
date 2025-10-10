@@ -32,6 +32,7 @@ public class ForthInterpreterCoreWordsTests
     {
         var vm = new VM();
         var forth = new ForthInterpreter(vm);
+        forth.Interpret("10 20 !");
         forth.Interpret("10 @");
         // fetch the value at address 10 push it to stack
 
@@ -255,6 +256,21 @@ public class ForthInterpreterCoreWordsTests
 
         long currentTopStackValue = vm.DataStack.PeekCell();
         Assert.Equal(10, currentTopStackValue);
+    }
+
+    [Fact]
+    public void DefiningNewWord()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret(": DOUBLE 2 * ;");
+        // Defines a new word DOUBLE that multiplies by 2.
+
+        forth.Interpret("15 DOUBLE");
+        // Executes DOUBLE.
+
+        long currentTopStackValue = vm.DataStack.PeekCell();
+        Assert.Equal(30, currentTopStackValue);
     }
 }
 

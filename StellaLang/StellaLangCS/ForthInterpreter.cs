@@ -98,7 +98,14 @@ public class ForthInterpreter
     /// <param name="input">The line of FORTH source code to interpret.</param>
     public void Interpret(string input)
     {
-        throw new NotImplementedException("Outer interpreter not yet implemented");
+        _inputBuffer = input;
+        _inputPosition = 0;
+
+        string? word;
+        while ((word = ReadWord()) != null)
+        {
+            ProcessWord(word);
+        }
     }
 
     /// <summary>
@@ -117,7 +124,40 @@ public class ForthInterpreter
     /// <param name="word">The word to process.</param>
     private void ProcessWord(string word)
     {
-        throw new NotImplementedException("ProcessWord not yet implemented");
+        // Try to find word in dictionary
+        var definition = FindWord(word);
+
+        if (definition != null)
+        {
+            // Execute the word
+            if (definition.Type == WordType.Primitive && definition.PrimitiveHandler != null)
+            {
+                definition.PrimitiveHandler(this);
+            }
+            else
+            {
+                throw new NotImplementedException($"Word type {definition.Type} not yet supported");
+            }
+        }
+        else
+        {
+            // Try to parse as number
+            if (TryParseNumber(word, out long intValue, out double doubleValue, out bool isFloat))
+            {
+                if (isFloat)
+                {
+                    _vm.FloatStack.PushDouble(doubleValue);
+                }
+                else
+                {
+                    _vm.DataStack.PushLong(intValue);
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException($"Unknown word: {word}");
+            }
+        }
     }
 
     /// <summary>
@@ -127,7 +167,18 @@ public class ForthInterpreter
     /// <returns>The next word, or null if end of input.</returns>
     private string? ReadWord()
     {
-        throw new NotImplementedException("ReadWord not yet implemented");
+        SkipWhitespace();
+
+        if (_inputPosition >= _inputBuffer.Length)
+            return null;
+
+        int start = _inputPosition;
+        while (_inputPosition < _inputBuffer.Length && !char.IsWhiteSpace(_inputBuffer[_inputPosition]))
+        {
+            _inputPosition++;
+        }
+
+        return _inputBuffer.Substring(start, _inputPosition - start);
     }
 
     /// <summary>
@@ -135,7 +186,10 @@ public class ForthInterpreter
     /// </summary>
     private void SkipWhitespace()
     {
-        throw new NotImplementedException("SkipWhitespace not yet implemented");
+        while (_inputPosition < _inputBuffer.Length && char.IsWhiteSpace(_inputBuffer[_inputPosition]))
+        {
+            _inputPosition++;
+        }
     }
 
     #endregion
@@ -173,7 +227,7 @@ public class ForthInterpreter
     /// <returns>The word definition if found, null otherwise.</returns>
     private WordDefinition? FindWord(string name)
     {
-        throw new NotImplementedException("FindWord not yet implemented");
+        return _dictionary.TryGetValue(name.ToUpper(), out var word) ? word : null;
     }
 
     /// <summary>
@@ -183,7 +237,7 @@ public class ForthInterpreter
     /// <param name="definition">The word definition.</param>
     private void AddWord(string name, WordDefinition definition)
     {
-        throw new NotImplementedException("AddWord not yet implemented");
+        _dictionary[name.ToUpper()] = definition;
     }
 
     /// <summary>
@@ -286,7 +340,23 @@ public class ForthInterpreter
     /// <returns>True if parsing succeeded, false otherwise.</returns>
     private bool TryParseNumber(string text, out long intValue, out double doubleValue, out bool isFloat)
     {
-        throw new NotImplementedException("TryParseNumber not yet implemented");
+        intValue = 0;
+        doubleValue = 0;
+        isFloat = false;
+
+        // Check if it's a floating-point number (contains '.' or 'e'/'E')
+        if (text.Contains('.') || text.Contains('e') || text.Contains('E'))
+        {
+            if (TryParseFloat(text, out doubleValue))
+            {
+                isFloat = true;
+                return true;
+            }
+            return false;
+        }
+
+        // Try to parse as integer
+        return TryParseInteger(text, out intValue);
     }
 
     /// <summary>
@@ -297,7 +367,16 @@ public class ForthInterpreter
     /// <returns>True if parsing succeeded, false otherwise.</returns>
     private bool TryParseInteger(string text, out long value)
     {
-        throw new NotImplementedException("TryParseInteger not yet implemented");
+        try
+        {
+            value = Convert.ToInt64(text, _base);
+            return true;
+        }
+        catch
+        {
+            value = 0;
+            return false;
+        }
     }
 
     /// <summary>
@@ -309,7 +388,7 @@ public class ForthInterpreter
     /// <returns>True if parsing succeeded, false otherwise.</returns>
     private bool TryParseFloat(string text, out double value)
     {
-        throw new NotImplementedException("TryParseFloat not yet implemented");
+        return double.TryParse(text, out value);
     }
 
     #endregion
@@ -344,7 +423,159 @@ public class ForthInterpreter
     /// </example>
     private void InitializePrimitives()
     {
-        throw new NotImplementedException("InitializePrimitives not yet implemented");
+        // Memory operations
+        DefinePrimitive("!", forth =>
+        {
+            long value = forth._vm.DataStack.PopLong();
+            long address = forth._vm.DataStack.PopLong();
+            forth._vm.Memory.WriteCellAt((int)address, value);
+        });
+
+        DefinePrimitive("@", forth =>
+        {
+            long address = forth._vm.DataStack.PopLong();
+            long value = forth._vm.Memory.ReadCellAt((int)address);
+            forth._vm.DataStack.PushLong(value);
+        });
+
+        // Basic arithmetic
+        DefinePrimitive("+", forth =>
+        {
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(a + b);
+        });
+
+        DefinePrimitive("-", forth =>
+        {
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(a - b);
+        });
+
+        DefinePrimitive("*", forth =>
+        {
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(a * b);
+        });
+
+        DefinePrimitive("/", forth =>
+        {
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(a / b);
+        });
+
+        DefinePrimitive("MOD", forth =>
+        {
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(a % b);
+        });
+
+        DefinePrimitive("/MOD", forth =>
+        {
+            long divisor = forth._vm.DataStack.PopLong();
+            long dividend = forth._vm.DataStack.PopLong();
+            long remainder = dividend % divisor;
+            long quotient = dividend / divisor;
+            forth._vm.DataStack.PushLong(remainder);
+            forth._vm.DataStack.PushLong(quotient);
+        });
+
+        // Unary operations
+        DefinePrimitive("NEGATE", forth =>
+        {
+            long value = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(-value);
+        });
+
+        DefinePrimitive("ABS", forth =>
+        {
+            long value = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(Math.Abs(value));
+        });
+
+        // Increment/Decrement
+        DefinePrimitive("1+", forth =>
+        {
+            long value = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(value + 1);
+        });
+
+        DefinePrimitive("1-", forth =>
+        {
+            long value = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(value - 1);
+        });
+
+        // Multiply/Divide by 2
+        DefinePrimitive("2*", forth =>
+        {
+            long value = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(value * 2);
+        });
+
+        DefinePrimitive("2/", forth =>
+        {
+            long value = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(value / 2);
+        });
+
+        // Min/Max
+        DefinePrimitive("MAX", forth =>
+        {
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(Math.Max(a, b));
+        });
+
+        DefinePrimitive("MIN", forth =>
+        {
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(Math.Min(a, b));
+        });
+
+        // Stack manipulation
+        DefinePrimitive("DUP", forth =>
+        {
+            long value = forth._vm.DataStack.PeekLong();
+            forth._vm.DataStack.PushLong(value);
+        });
+
+        DefinePrimitive("DROP", forth =>
+        {
+            forth._vm.DataStack.PopLong();
+        });
+
+        DefinePrimitive("SWAP", forth =>
+        {
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(b);
+            forth._vm.DataStack.PushLong(a);
+        });
+
+        DefinePrimitive("OVER", forth =>
+        {
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(a);
+            forth._vm.DataStack.PushLong(b);
+            forth._vm.DataStack.PushLong(a);
+        });
+
+        DefinePrimitive("ROT", forth =>
+        {
+            long c = forth._vm.DataStack.PopLong();
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(b);
+            forth._vm.DataStack.PushLong(c);
+            forth._vm.DataStack.PushLong(a);
+        });
     }
 
     /// <summary>
@@ -354,7 +585,13 @@ public class ForthInterpreter
     /// <param name="handler">The action to execute when this primitive is called.</param>
     private void DefinePrimitive(string name, Action<ForthInterpreter> handler)
     {
-        throw new NotImplementedException("DefinePrimitive not yet implemented");
+        var word = new WordDefinition
+        {
+            Name = name.ToUpper(),
+            Type = WordType.Primitive,
+            PrimitiveHandler = handler
+        };
+        AddWord(name, word);
     }
 
     #endregion
