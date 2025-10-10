@@ -19,7 +19,7 @@ public struct MemoryStack(int size)
     /// <summary>
     /// Gets the underlying memory buffer.
     /// </summary>
-    public Memory<byte> Memory => _buffer;
+    public readonly Memory<byte> Memory => _buffer;
 
     /// <summary>
     /// Gets the current capacity of the stack in bytes.
@@ -35,6 +35,29 @@ public struct MemoryStack(int size)
     /// Gets whether the stack is empty.
     /// </summary>
     public readonly bool IsEmpty => _pointer == 0;
+
+    /// <summary>
+    /// Gets or sets the byte at the specified index in the underlying buffer.
+    /// This provides array-like access: memory[index].
+    /// </summary>
+    /// <param name="index">The zero-based index of the byte to get or set.</param>
+    /// <returns>The byte at the specified index.</returns>
+    /// <exception cref="IndexOutOfRangeException">Thrown when index is negative or >= Capacity.</exception>
+    public readonly byte this[int index]
+    {
+        get
+        {
+            if (index < 0 || index >= _buffer.Length)
+                throw new IndexOutOfRangeException($"Index {index} is out of range [0, {_buffer.Length}).");
+            return _buffer[index];
+        }
+        set
+        {
+            if (index < 0 || index >= _buffer.Length)
+                throw new IndexOutOfRangeException($"Index {index} is out of range [0, {_buffer.Length}).");
+            _buffer[index] = value;
+        }
+    }
 
     /// <summary>
     /// Pushes a byte value onto the stack.
@@ -286,6 +309,138 @@ public struct MemoryStack(int size)
     {
         _pointer = 0;
     }
+
+    #region Indexed Access Helpers
+
+    /// <summary>
+    /// Reads a 64-bit integer (cell) from the specified byte index in memory.
+    /// Does not affect the stack pointer.
+    /// </summary>
+    /// <param name="byteIndex">The byte index to read from.</param>
+    /// <returns>The 64-bit integer value at the specified index.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the index or read would exceed buffer bounds.</exception>
+    public readonly long ReadCellAt(int byteIndex)
+    {
+        if (byteIndex < 0 || byteIndex + 8 > _buffer.Length)
+            throw new ArgumentOutOfRangeException(nameof(byteIndex),
+                $"Cannot read cell at index {byteIndex}: out of bounds [0, {_buffer.Length - 8}].");
+
+        return System.Runtime.InteropServices.MemoryMarshal.Read<long>(_buffer.AsSpan(byteIndex, 8));
+    }
+
+    /// <summary>
+    /// Writes a 64-bit integer (cell) to the specified byte index in memory.
+    /// Does not affect the stack pointer.
+    /// </summary>
+    /// <param name="byteIndex">The byte index to write to.</param>
+    /// <param name="value">The 64-bit integer value to write.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the index or write would exceed buffer bounds.</exception>
+    public void WriteCellAt(int byteIndex, long value)
+    {
+        if (byteIndex < 0 || byteIndex + 8 > _buffer.Length)
+            throw new ArgumentOutOfRangeException(nameof(byteIndex),
+                $"Cannot write cell at index {byteIndex}: out of bounds [0, {_buffer.Length - 8}].");
+
+        System.Runtime.InteropServices.MemoryMarshal.Write(_buffer.AsSpan(byteIndex, 8), in value);
+    }
+
+    /// <summary>
+    /// Reads a 32-bit integer from the specified byte index in memory.
+    /// Does not affect the stack pointer.
+    /// </summary>
+    /// <param name="byteIndex">The byte index to read from.</param>
+    /// <returns>The 32-bit integer value at the specified index.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the index or read would exceed buffer bounds.</exception>
+    public readonly int ReadIntAt(int byteIndex)
+    {
+        if (byteIndex < 0 || byteIndex + 4 > _buffer.Length)
+            throw new ArgumentOutOfRangeException(nameof(byteIndex),
+                $"Cannot read int at index {byteIndex}: out of bounds [0, {_buffer.Length - 4}].");
+
+        return System.Runtime.InteropServices.MemoryMarshal.Read<int>(_buffer.AsSpan(byteIndex, 4));
+    }
+
+    /// <summary>
+    /// Writes a 32-bit integer to the specified byte index in memory.
+    /// Does not affect the stack pointer.
+    /// </summary>
+    /// <param name="byteIndex">The byte index to write to.</param>
+    /// <param name="value">The 32-bit integer value to write.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the index or write would exceed buffer bounds.</exception>
+    public void WriteIntAt(int byteIndex, int value)
+    {
+        if (byteIndex < 0 || byteIndex + 4 > _buffer.Length)
+            throw new ArgumentOutOfRangeException(nameof(byteIndex),
+                $"Cannot write int at index {byteIndex}: out of bounds [0, {_buffer.Length - 4}].");
+
+        System.Runtime.InteropServices.MemoryMarshal.Write(_buffer.AsSpan(byteIndex, 4), in value);
+    }
+
+    /// <summary>
+    /// Reads a 16-bit integer from the specified byte index in memory.
+    /// Does not affect the stack pointer.
+    /// </summary>
+    /// <param name="byteIndex">The byte index to read from.</param>
+    /// <returns>The 16-bit integer value at the specified index.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the index or read would exceed buffer bounds.</exception>
+    public readonly short ReadShortAt(int byteIndex)
+    {
+        if (byteIndex < 0 || byteIndex + 2 > _buffer.Length)
+            throw new ArgumentOutOfRangeException(nameof(byteIndex),
+                $"Cannot read short at index {byteIndex}: out of bounds [0, {_buffer.Length - 2}].");
+
+        return System.Runtime.InteropServices.MemoryMarshal.Read<short>(_buffer.AsSpan(byteIndex, 2));
+    }
+
+    /// <summary>
+    /// Writes a 16-bit integer to the specified byte index in memory.
+    /// Does not affect the stack pointer.
+    /// </summary>
+    /// <param name="byteIndex">The byte index to write to.</param>
+    /// <param name="value">The 16-bit integer value to write.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the index or write would exceed buffer bounds.</exception>
+    public void WriteShortAt(int byteIndex, short value)
+    {
+        if (byteIndex < 0 || byteIndex + 2 > _buffer.Length)
+            throw new ArgumentOutOfRangeException(nameof(byteIndex),
+                $"Cannot write short at index {byteIndex}: out of bounds [0, {_buffer.Length - 2}].");
+
+        System.Runtime.InteropServices.MemoryMarshal.Write(_buffer.AsSpan(byteIndex, 2), in value);
+    }
+
+    /// <summary>
+    /// Reads a 64-bit double from the specified byte index in memory.
+    /// Does not affect the stack pointer.
+    /// </summary>
+    /// <param name="byteIndex">The byte index to read from.</param>
+    /// <returns>The 64-bit double value at the specified index.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the index or read would exceed buffer bounds.</exception>
+    public readonly double ReadDoubleAt(int byteIndex)
+    {
+        if (byteIndex < 0 || byteIndex + 8 > _buffer.Length)
+            throw new ArgumentOutOfRangeException(nameof(byteIndex),
+                $"Cannot read double at index {byteIndex}: out of bounds [0, {_buffer.Length - 8}].");
+
+        return System.Runtime.InteropServices.MemoryMarshal.Read<double>(_buffer.AsSpan(byteIndex, 8));
+    }
+
+    /// <summary>
+    /// Writes a 64-bit double to the specified byte index in memory.
+    /// Does not affect the stack pointer.
+    /// </summary>
+    /// <param name="byteIndex">The byte index to write to.</param>
+    /// <param name="value">The 64-bit double value to write.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the index or write would exceed buffer bounds.</exception>
+    public void WriteDoubleAt(int byteIndex, double value)
+    {
+        if (byteIndex < 0 || byteIndex + 8 > _buffer.Length)
+            throw new ArgumentOutOfRangeException(nameof(byteIndex),
+                $"Cannot write double at index {byteIndex}: out of bounds [0, {_buffer.Length - 8}].");
+
+        System.Runtime.InteropServices.MemoryMarshal.Write(_buffer.AsSpan(byteIndex, 8), in value);
+    }
+
+    #endregion
 
     /// <summary>
     /// Grows the stack capacity to the specified size in bytes.
