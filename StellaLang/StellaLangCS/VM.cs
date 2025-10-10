@@ -1031,7 +1031,7 @@ public class VM
             int itemsToShow = Math.Min(dataDepth, maxStackItems);
             for (int i = 0; i < itemsToShow; i++)
             {
-                int offset = DataStack.Pointer - (i + 1) * sizeof(long);
+                int offset = DataStack.Pointer - ((i + 1) * sizeof(long));
                 long value = BitConverter.ToInt64(DataStack.Memory.Span.Slice(offset, sizeof(long)));
                 sb.AppendLine($"  [{dataDepth - i - 1}]: {value} (0x{value:X})");
             }
@@ -1053,7 +1053,7 @@ public class VM
             int itemsToShow = Math.Min(floatDepth, maxStackItems);
             for (int i = 0; i < itemsToShow; i++)
             {
-                int offset = FloatStack.Pointer - (i + 1) * sizeof(double);
+                int offset = FloatStack.Pointer - ((i + 1) * sizeof(double));
                 double value = BitConverter.ToDouble(FloatStack.Memory.Span.Slice(offset, sizeof(double)));
                 sb.AppendLine($"  [{floatDepth - i - 1}]: {value}");
             }
@@ -1075,7 +1075,7 @@ public class VM
             int itemsToShow = Math.Min(returnDepth, maxStackItems);
             for (int i = 0; i < itemsToShow; i++)
             {
-                int offset = ReturnStack.Pointer - (i + 1) * sizeof(long);
+                int offset = ReturnStack.Pointer - ((i + 1) * sizeof(long));
                 long value = BitConverter.ToInt64(ReturnStack.Memory.Span.Slice(offset, sizeof(long)));
                 sb.AppendLine($"  [{returnDepth - i - 1}]: {value} (PC)");
             }
