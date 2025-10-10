@@ -94,12 +94,20 @@ public class ForthInterpreter
     /// <summary>
     /// The outer interpreter loop - reads and processes input.
     /// Tokenizes input, looks up words in the dictionary, and either executes or compiles them.
-    /// This is the main REPL (Read-Eval-Print Loop) for FORTH.
     /// </summary>
     /// <param name="input">The line of FORTH source code to interpret.</param>
     public void Interpret(string input)
     {
         throw new NotImplementedException("Outer interpreter not yet implemented");
+    }
+
+    /// <summary>
+    /// The REPL (Read-Eval-Print Loop) - continuously reads input lines and interprets them.
+    /// </summary>
+    /// <exception cref="NotImplementedException"></exception>
+    public void REPL()
+    {
+        throw new NotImplementedException("REPL not yet implemented");
     }
 
     /// <summary>
