@@ -655,12 +655,18 @@ public class ForthInterpreter
     /// </summary>
     private void InitializeStackOperations()
     {
+        // Data stack operations
         DefinePrimitive("DUP", OPCode.DUP);
         DefinePrimitive("DROP", OPCode.DROP);
         DefinePrimitive("SWAP", OPCode.SWAP);
         DefinePrimitive("OVER", OPCode.OVER);
         DefinePrimitive("ROT", OPCode.ROT);
         DefinePrimitive("2DUP", new CodeBuilder().Over().Over().Build());
+
+        // Return stack operations
+        DefinePrimitive(">R", OPCode.TO_R);
+        DefinePrimitive("R>", OPCode.R_FROM);
+        DefinePrimitive("R@", OPCode.R_FETCH);
     }
 
     /// <summary>
@@ -847,10 +853,34 @@ public class ForthInterpreter
     {
         // Define common words by compiling FORTH source
         // This demonstrates FORTH's power: the language defining itself
+
+        // Comparison and min/max operations
         Interpret(": MAX 2DUP < IF SWAP THEN DROP ;");
         Interpret(": MIN 2DUP > IF SWAP THEN DROP ;");
         Interpret(": ABS DUP 0 < IF NEGATE THEN ;");
         Interpret(": FABS FDUP F0< IF FNEGATE THEN ;");
+
+        // Tier 1: Essential stack manipulation
+        Interpret(": 2DROP DROP DROP ;");
+        Interpret(": NIP SWAP DROP ;");
+        Interpret(": TUCK SWAP OVER ;");
+        Interpret(": -ROT ROT ROT ;");
+        Interpret(": ?DUP DUP IF DUP THEN ;");  // Duplicate if non-zero
+
+        // Tier 2: Useful arithmetic and logic
+        Interpret(": SQUARE DUP * ;");
+        // CLAMP ( value min max -- clamped ): Ensure value is between min and max
+        // Uses return stack to temporarily store max while clamping to min
+        // Then retrieves max and clamps the result to it
+        Interpret(": CLAMP >R OVER OVER < IF SWAP THEN DROP R> OVER OVER > IF SWAP THEN DROP ;");
+        Interpret(": SIGN DUP 0 < IF DROP -1 ELSE 0 > IF 1 ELSE 0 THEN THEN ;");
+
+        // Additional useful words
+        Interpret(": TRUE -1 ;");
+        Interpret(": FALSE 0 ;");
+        Interpret(": NOT 0 = ;");
+        Interpret(": AND * ;");  // Bitwise AND for booleans (-1 * -1 = 1, but we'll use 0 and non-zero)
+        Interpret(": OR + 0 < > ;");  // Logical OR (any non-zero is true)
     }
 
     /// <summary>

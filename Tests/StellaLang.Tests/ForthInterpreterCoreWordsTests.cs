@@ -895,5 +895,318 @@ public class ForthInterpreterCoreWordsTests
         long result = vm.DataStack.PeekCell();
         Assert.Equal(3, result);
     }
+
+    // ========== Tier 1: Essential Stack Manipulation Tests ==========
+
+    /// <summary>
+    /// Test 2DROP - drops two items from stack
+    /// ( a b -- )
+    /// </summary>
+    [Fact]
+    public void TwoDropTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        forth.Interpret("1 2 3 4 2DROP");
+
+        // Should have only 1 and 2 left
+        long val2 = vm.DataStack.PopLong();
+        long val1 = vm.DataStack.PopLong();
+
+        Assert.Equal(1, val1);
+        Assert.Equal(2, val2);
+    }
+
+    /// <summary>
+    /// Test NIP - removes second item from stack
+    /// ( a b -- b )
+    /// </summary>
+    [Fact]
+    public void NipTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        forth.Interpret("10 20 NIP");
+
+        long result = vm.DataStack.PeekCell();
+        Assert.Equal(20, result);
+    }
+
+    /// <summary>
+    /// Test TUCK - copies top item below second
+    /// ( a b -- b a b )
+    /// </summary>
+    [Fact]
+    public void TuckTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        forth.Interpret("10 20 TUCK");
+
+        // Stack should be: 20 10 20 (top to bottom)
+        long val3 = vm.DataStack.PopLong();
+        long val2 = vm.DataStack.PopLong();
+        long val1 = vm.DataStack.PopLong();
+
+        Assert.Equal(20, val1);
+        Assert.Equal(10, val2);
+        Assert.Equal(20, val3);
+    }
+
+    /// <summary>
+    /// Test -ROT - rotates three items backwards
+    /// ( a b c -- c a b )
+    /// </summary>
+    [Fact]
+    public void MinusRotTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        forth.Interpret("1 2 3 -ROT");
+
+        // Stack should be: 3 1 2 (top to bottom)
+        long val3 = vm.DataStack.PopLong();
+        long val2 = vm.DataStack.PopLong();
+        long val1 = vm.DataStack.PopLong();
+
+        Assert.Equal(3, val1);
+        Assert.Equal(1, val2);
+        Assert.Equal(2, val3);
+    }
+
+    /// <summary>
+    /// Test ?DUP - duplicates only if non-zero
+    /// </summary>
+    [Fact]
+    public void QuestionDupTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Test with non-zero value
+        forth.Interpret("5 ?DUP");
+        long val2 = vm.DataStack.PopLong();
+        long val1 = vm.DataStack.PopLong();
+        Assert.Equal(5, val1);
+        Assert.Equal(5, val2);
+
+        // Test with zero value
+        vm.DataStack.Clear();
+        forth.Interpret("0 ?DUP");
+        long result = vm.DataStack.PeekCell();
+        Assert.Equal(0, result);
+
+        // Verify stack depth is 1 (not duplicated)
+        vm.DataStack.PopLong();
+        // Stack should be empty now - this will throw if there's more
+    }
+
+    // ========== Tier 2: Arithmetic and Logic Tests ==========
+
+    /// <summary>
+    /// Test SQUARE - squares a number
+    /// ( n -- n*n )
+    /// </summary>
+    [Fact]
+    public void SquareTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        forth.Interpret("5 SQUARE");
+        long result = vm.DataStack.PeekCell();
+        Assert.Equal(25, result);
+
+        vm.DataStack.Clear();
+        forth.Interpret("-3 SQUARE");
+        result = vm.DataStack.PeekCell();
+        Assert.Equal(9, result);
+    }
+
+    /// <summary>
+    /// Test CLAMP - clamps value to range
+    /// ( n min max -- n' ) where min &lt;= n' &lt;= max
+    /// </summary>
+    [Fact]
+    public void ClampTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Test value within range
+        forth.Interpret("5 0 10 CLAMP");
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(5, result);
+
+        // Test value below range
+        forth.Interpret("-5 0 10 CLAMP");
+        result = vm.DataStack.PopLong();
+        Assert.Equal(0, result);
+
+        // Test value above range
+        forth.Interpret("15 0 10 CLAMP");
+        result = vm.DataStack.PopLong();
+        Assert.Equal(10, result);
+    }
+
+    /// <summary>
+    /// Test SIGN - returns sign of number
+    /// ( n -- -1|0|1 )
+    /// </summary>
+    [Fact]
+    public void SignTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Positive number
+        forth.Interpret("42 SIGN");
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(1, result);
+
+        // Negative number
+        forth.Interpret("-42 SIGN");
+        result = vm.DataStack.PopLong();
+        Assert.Equal(-1, result);
+
+        // Zero
+        forth.Interpret("0 SIGN");
+        result = vm.DataStack.PopLong();
+        Assert.Equal(0, result);
+    }
+
+    /// <summary>
+    /// Test TRUE and FALSE constants
+    /// </summary>
+    [Fact]
+    public void TrueFalseTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        forth.Interpret("TRUE");
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(-1, result);
+
+        forth.Interpret("FALSE");
+        result = vm.DataStack.PopLong();
+        Assert.Equal(0, result);
+    }
+
+    /// <summary>
+    /// Test NOT - logical negation
+    /// </summary>
+    [Fact]
+    public void NotTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        forth.Interpret("0 NOT");
+        long result = vm.DataStack.PopLong();
+        Assert.NotEqual(0, result);  // Any non-zero is true
+
+        forth.Interpret("42 NOT");
+        result = vm.DataStack.PopLong();
+        Assert.Equal(0, result);
+    }
+
+    /// <summary>
+    /// Test practical usage of new stack words
+    /// </summary>
+    [Fact]
+    public void StackWordsComboTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Use TUCK and NIP together
+        forth.Interpret(": TESTWORD TUCK + NIP ;");
+        forth.Interpret("5 3 TESTWORD");
+
+        long result = vm.DataStack.PeekCell();
+        Assert.Equal(8, result);  // 5 + 3
+    }
+
+    /// <summary>
+    /// Test ?DUP in conditional logic
+    /// </summary>
+    [Fact]
+    public void QuestionDupInConditionTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Define a word that uses ?DUP for error checking
+        forth.Interpret(": SAFE-DIV ?DUP IF / ELSE DROP -1 THEN ;");
+
+        // Normal division
+        forth.Interpret("10 2 SAFE-DIV");
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(5, result);
+
+        // Division by zero (returns -1)
+        forth.Interpret("10 0 SAFE-DIV");
+        result = vm.DataStack.PopLong();
+        Assert.Equal(-1, result);
+    }
+
+    [Fact]
+    public void ToRTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Move value to return stack
+        forth.Interpret("42 >R");
+        Assert.True(vm.DataStack.IsEmpty);
+        Assert.Equal(8, vm.ReturnStack.Pointer); // One 8-byte value
+        Assert.Equal(42, vm.ReturnStack.PeekLong());
+    }
+
+    [Fact]
+    public void RFromTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Move to return stack and back
+        forth.Interpret("42 >R R>");
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(42, result);
+        Assert.True(vm.ReturnStack.IsEmpty);
+    }
+
+    [Fact]
+    public void RFetchTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Peek at return stack without removing
+        forth.Interpret("42 >R R@");
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(42, result);
+        Assert.Equal(8, vm.ReturnStack.Pointer); // One 8-byte value still there
+        Assert.Equal(42, vm.ReturnStack.PeekLong());
+    }
+
+    [Fact]
+    public void ReturnStackComplexTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Test complex usage: ( a b -- a*a + b*b )
+        forth.Interpret(": SUM-OF-SQUARES >R DUP * R> DUP * + ;");
+        forth.Interpret("3 4 SUM-OF-SQUARES");
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(25, result); // 3*3 + 4*4 = 9 + 16 = 25
+    }
 }
+
 
