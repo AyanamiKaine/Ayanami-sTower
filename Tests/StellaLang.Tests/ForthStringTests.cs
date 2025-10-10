@@ -59,7 +59,7 @@ public class ForthStringTests
             forth.Interpret(": \" ( -- addr )   [CHAR] \" WORD DUP C@ 1+ ALLOT ;");
 
             // Test it by creating a string and using COUNT TYPE
-            forth.Interpret(": test-str ( -- )   \" hello\" COUNT TYPE ;");
+            forth.Interpret(": test-str ( -- )   .\" hello\" COUNT TYPE ;");
             forth.Interpret("test-str");
 
             string output = writer.ToString();
