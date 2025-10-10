@@ -705,9 +705,7 @@ public class ForthInterpreter
     {
         DefinePrimitive(":", forth =>
         {
-            string? name = forth.ReadWord();
-            if (name == null)
-                throw new InvalidOperationException("Expected word name after :");
+            string? name = forth.ReadWord() ?? throw new InvalidOperationException("Expected word name after :");
             forth.CreateColonDefinition(name);
         });
 
@@ -813,7 +811,7 @@ public class ForthInterpreter
     /// </summary>
     private void DefinePrimitive(string name, OPCode opcode, bool isImmediate = false)
     {
-        DefinePrimitive(name, new byte[] { (byte)opcode }, isImmediate);
+        DefinePrimitive(name, [(byte)opcode], isImmediate);
     }
 
     #endregion
