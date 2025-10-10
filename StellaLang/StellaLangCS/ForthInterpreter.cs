@@ -665,21 +665,29 @@ public class ForthInterpreter
         DefinePrimitive("CELL+", new CodeBuilder().PushCell(8).Add().Build());
         DefinePrimitive("CELLS", new CodeBuilder().PushCell(8).Mul().Build());
 
-        // Dictionary operations
-        DefinePrimitive(",", forth =>
+        // Dictionary/data-space operations via syscalls so they compile in colon definitions
         {
-            // Pop value and store in dictionary, then advance HERE
-            long value = forth._vm.DataStack.PopLong();
-            int address = forth._here;
-            forth._vm.Memory.WriteCellAt(address, value);
-            forth._here += 8;
-        });
+            const long COMMA_SYSCALL_ID = 1101;
+            const long ALLOT_SYSCALL_ID = 1102;
 
-        DefinePrimitive("ALLOT", forth =>
-        {
-            long bytes = forth._vm.DataStack.PopLong();
-            forth.Allot((int)bytes);
-        });
+            // , ( x -- ) store cell at HERE and advance HERE
+            _vm.SyscallHandlers[COMMA_SYSCALL_ID] = vm =>
+            {
+                long value = vm.DataStack.PopLong();
+                int address = _here;
+                vm.Memory.WriteCellAt(address, value);
+                _here += 8;
+            };
+            DefinePrimitive(",", new CodeBuilder().PushCell(COMMA_SYSCALL_ID).Syscall().Build());
+
+            // ALLOT ( n -- ) advance HERE by n bytes
+            _vm.SyscallHandlers[ALLOT_SYSCALL_ID] = vm =>
+            {
+                long bytes = vm.DataStack.PopLong();
+                Allot((int)bytes);
+            };
+            DefinePrimitive("ALLOT", new CodeBuilder().PushCell(ALLOT_SYSCALL_ID).Syscall().Build());
+        }
 
         DefinePrimitive("HERE", forth =>
         {
@@ -1232,43 +1240,50 @@ public class ForthInterpreter
         });
 
         // WORD ( delimiter -- c-addr ) Parse word delimited by character
-        // Note: This word cannot be used in colon definitions as it requires
-        // access to the interpreter's input buffer state
-        DefinePrimitive("WORD", forth =>
+        // Implemented as a VM syscall so it can be compiled into colon definitions
         {
-            long delimiter = forth._vm.DataStack.PopLong();
-            char delim = (char)delimiter;
+            const long WORD_SYSCALL_ID = 1001;
 
-            // Skip leading delimiters
-            while (forth._inputPosition < forth._inputBuffer.Length &&
-                   forth._inputBuffer[forth._inputPosition] == delim)
+            // Register syscall handler bound to this interpreter instance
+            _vm.SyscallHandlers[WORD_SYSCALL_ID] = vm =>
             {
-                forth._inputPosition++;
-            }
+                long delimiter = vm.DataStack.PopLong();
+                char delim = (char)delimiter;
 
-            // Collect characters until delimiter
-            var sb = new System.Text.StringBuilder();
-            while (forth._inputPosition < forth._inputBuffer.Length)
-            {
-                char c = forth._inputBuffer[forth._inputPosition];
-                if (c == delim)
-                    break;
-                sb.Append(c);
-                forth._inputPosition++;
-            }
+                // Skip leading delimiters
+                while (_inputPosition < _inputBuffer.Length &&
+                       _inputBuffer[_inputPosition] == delim)
+                {
+                    _inputPosition++;
+                }
 
-            string text = sb.ToString();
+                // Collect characters until delimiter
+                var sb = new System.Text.StringBuilder();
+                while (_inputPosition < _inputBuffer.Length)
+                {
+                    char c = _inputBuffer[_inputPosition];
+                    if (c == delim)
+                        break;
+                    sb.Append(c);
+                    _inputPosition++;
+                }
 
-            // Create counted string in memory: length byte followed by characters
-            int address = forth.Allot(text.Length + 1);
-            forth._vm.Memory[(int)address] = (byte)text.Length;
-            for (int i = 0; i < text.Length; i++)
-            {
-                forth._vm.Memory[(int)address + 1 + i] = (byte)text[i];
-            }
+                string text = sb.ToString();
 
-            forth._vm.DataStack.PushLong(address);
-        });
+                // Create counted string in memory: length byte followed by characters
+                int address = Allot(text.Length + 1);
+                _vm.Memory[(int)address] = (byte)text.Length;
+                for (int i = 0; i < text.Length; i++)
+                {
+                    _vm.Memory[(int)address + 1 + i] = (byte)text[i];
+                }
+
+                vm.DataStack.PushLong(address);
+            };
+
+            // Define WORD as pushing syscall id and invoking SYSCALL
+            DefinePrimitive("WORD", new CodeBuilder().PushCell(WORD_SYSCALL_ID).Syscall().Build());
+        }
 
         // COUNT ( c-addr -- addr len ) Convert counted string to address and length
         // Now compilable as it uses C@ which is opcode-based
@@ -1281,19 +1296,24 @@ public class ForthInterpreter
             .Build());
 
         // TYPE ( addr len -- ) Print string of given length
-        // Note: This word cannot be used in colon definitions as it requires
-        // a handler for Console.Write which has no VM opcode equivalent
-        DefinePrimitive("TYPE", forth =>
+        // Implemented as a VM syscall so it can be compiled into colon definitions
         {
-            long len = forth._vm.DataStack.PopLong();
-            long addr = forth._vm.DataStack.PopLong();
+            const long TYPE_SYSCALL_ID = 1002;
 
-            for (long i = 0; i < len; i++)
+            _vm.SyscallHandlers[TYPE_SYSCALL_ID] = vm =>
             {
-                byte b = forth._vm.Memory[(int)(addr + i)];
-                Console.Write((char)b);
-            }
-        });
+                long len = vm.DataStack.PopLong();
+                long addr = vm.DataStack.PopLong();
+
+                for (long i = 0; i < len; i++)
+                {
+                    byte b = vm.Memory[(int)(addr + i)];
+                    Console.Write((char)b);
+                }
+            };
+
+            DefinePrimitive("TYPE", new CodeBuilder().PushCell(TYPE_SYSCALL_ID).Syscall().Build());
+        }
     }
 
     /// <summary>
