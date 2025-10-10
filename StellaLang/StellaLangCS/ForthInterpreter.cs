@@ -232,7 +232,7 @@ public class ForthInterpreter
             _inputPosition++;
         }
 
-        return _inputBuffer.Substring(start, _inputPosition - start);
+        return _inputBuffer[start.._inputPosition];
     }
 
     /// <summary>
