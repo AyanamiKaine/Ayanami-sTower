@@ -150,9 +150,22 @@ public class ForthInterpreter
             else
             {
                 // Execute the word
-                if (definition.Type == WordType.Primitive && definition.PrimitiveHandler != null)
+                if (definition.Type == WordType.Primitive)
                 {
-                    definition.PrimitiveHandler(this);
+                    // Primitives can execute either via handler (for special cases) or bytecode (preferred)
+                    if (definition.PrimitiveHandler != null)
+                    {
+                        definition.PrimitiveHandler(this);
+                    }
+                    else if (definition.CompiledCode != null)
+                    {
+                        // Execute the primitive's bytecode
+                        _vm.Execute(definition.CompiledCode);
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException($"Primitive '{definition.Name}' has neither handler nor bytecode");
+                    }
                 }
                 else if (definition.Type == WordType.ColonDefinition)
                 {
@@ -363,80 +376,31 @@ public class ForthInterpreter
             throw new InvalidOperationException("Cannot compile a word outside of compilation mode");
         }
 
-        // For primitives, we need to inline their bytecode equivalent
         if (word.Type == WordType.Primitive)
         {
-            // Map primitive operations to bytecode
-            switch (word.Name.ToUpper())
+            // For primitives, inline their bytecode
+            if (word.CompiledCode != null && word.CompiledCode.Length > 0)
             {
-                case "+": _codeBuilder.Add(); break;
-                case "-": _codeBuilder.Sub(); break;
-                case "*": _codeBuilder.Mul(); break;
-                case "/": _codeBuilder.Div(); break;
-                case "MOD": _codeBuilder.Mod(); break;
-                case "/MOD": _codeBuilder.DivMod(); break;
-                case "NEGATE": _codeBuilder.Neg(); break;
-                case "ABS":
-                    // ABS requires conditional logic - we'll do DUP, 0<, IF NEGATE THEN
-                    // For now, just use a simple implementation
-                    throw new NotImplementedException("ABS compilation not yet supported");
-                case "1+": _codeBuilder.PushCell(1).Add(); break;
-                case "1-": _codeBuilder.PushCell(1).Sub(); break;
-                case "2*": _codeBuilder.PushCell(2).Mul(); break;
-                case "2/": _codeBuilder.PushCell(2).Div(); break;
-                case "MAX":
-                case "MIN":
-                    throw new NotImplementedException($"{word.Name} compilation not yet supported");
-                case "DUP": _codeBuilder.Dup(); break;
-                case "2DUP":
-                    // 2DUP: ( a b -- a b a b )
-                    _codeBuilder.Over().Over();
-                    break;
-                case "DROP": _codeBuilder.Drop(); break;
-                case "SWAP": _codeBuilder.Swap(); break;
-                case "OVER": _codeBuilder.Over(); break;
-                case "ROT": _codeBuilder.Rot(); break;
-                case "!": _codeBuilder.Store(); break;
-                case "@": _codeBuilder.Fetch(); break;
-                // Comparison operations
-                case "<": _codeBuilder.Lt(); break;
-                case ">": _codeBuilder.Gt(); break;
-                case "=": _codeBuilder.Eq(); break;
-                case "<=": _codeBuilder.Lte(); break;
-                case ">=": _codeBuilder.Gte(); break;
-                case "<>": _codeBuilder.Neq(); break;
-                case "0<":
-                    // 0< means "less than zero": ( n -- flag )
-                    // Need to compare n < 0, so push 0, swap, then compare
-                    _codeBuilder.PushCell(0).Swap().Lt();
-                    break;
-                case "0>":
-                    // 0> means "greater than zero": ( n -- flag )
-                    _codeBuilder.PushCell(0).Swap().Gt();
-                    break;
-                case "0=":
-                    // 0= means "equal to zero": ( n -- flag )
-                    _codeBuilder.PushCell(0).Eq();
-                    break;
-                // Floating-point operations
-                case "F+": _codeBuilder.FAdd(); break;
-                case "F-": _codeBuilder.FSub(); break;
-                case "F*": _codeBuilder.FMul(); break;
-                case "F/": _codeBuilder.FDiv(); break;
-                case "FNEGATE": _codeBuilder.FNeg(); break;
-                case "FABS":
-                    throw new NotImplementedException("FABS compilation not yet supported");
-                case "FDUP": _codeBuilder.FDup(); break;
-                case "FDROP": _codeBuilder.FDrop(); break;
-                case "FSWAP": _codeBuilder.FSwap(); break;
-                case "FOVER": _codeBuilder.FOver(); break;
-                default:
-                    throw new NotImplementedException($"Primitive '{word.Name}' cannot be compiled yet");
+                // Inline the primitive's bytecode
+                _codeBuilder.AppendBytes(word.CompiledCode);
+            }
+            else if (word.PrimitiveHandler != null)
+            {
+                // Some primitives use handlers (like control flow words, or complex operations)
+                // These cannot be compiled inline and need special handling
+                throw new InvalidOperationException(
+                    $"Primitive '{word.Name}' uses a handler and cannot be compiled inline. " +
+                    $"It may require control flow or be a compile-time-only word.");
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    $"Primitive '{word.Name}' has neither bytecode nor handler");
             }
         }
         else if (word.Type == WordType.ColonDefinition)
         {
-            // For colon definitions, we need to inline their bytecode
+            // For colon definitions, inline their bytecode
             if (word.CompiledCode == null || word.CompiledCode.Length == 0)
             {
                 throw new InvalidOperationException($"Word {word.Name} has no compiled code");
@@ -628,107 +592,47 @@ public class ForthInterpreter
     /// </example>
     private void InitializePrimitives()
     {
-        // Memory operations
-        DefinePrimitive("!", forth =>
-        {
-            long value = forth._vm.DataStack.PopLong();
-            long address = forth._vm.DataStack.PopLong();
-            forth._vm.Memory.WriteCellAt((int)address, value);
-        });
+        // Memory operations - VM STORE/FETCH expect different operand order than FORTH
+        // FORTH: value address ! → need to swap before calling STORE
+        // FORTH: address @ → works directly with FETCH
+        DefinePrimitive("!", new CodeBuilder().Swap().Store().Build());
+        DefinePrimitive("@", OPCode.FETCH);
 
-        DefinePrimitive("@", forth =>
-        {
-            long address = forth._vm.DataStack.PopLong();
-            long value = forth._vm.Memory.ReadCellAt((int)address);
-            forth._vm.DataStack.PushLong(value);
-        });
+        // Basic arithmetic - VM opcodes
+        DefinePrimitive("+", OPCode.ADD);
+        DefinePrimitive("-", OPCode.SUB);
+        DefinePrimitive("*", OPCode.MUL);
+        DefinePrimitive("/", OPCode.DIV);
+        DefinePrimitive("MOD", OPCode.MOD);
+        DefinePrimitive("/MOD", OPCode.DIVMOD);
 
-        // Basic arithmetic
-        DefinePrimitive("+", forth =>
-        {
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(a + b);
-        });
+        // Unary operations - VM opcodes
+        DefinePrimitive("NEGATE", OPCode.NEG);
 
-        DefinePrimitive("-", forth =>
-        {
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(a - b);
-        });
-
-        DefinePrimitive("*", forth =>
-        {
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(a * b);
-        });
-
-        DefinePrimitive("/", forth =>
-        {
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(a / b);
-        });
-
-        DefinePrimitive("MOD", forth =>
-        {
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(a % b);
-        });
-
-        DefinePrimitive("/MOD", forth =>
-        {
-            long divisor = forth._vm.DataStack.PopLong();
-            long dividend = forth._vm.DataStack.PopLong();
-            long remainder = dividend % divisor;
-            long quotient = dividend / divisor;
-            forth._vm.DataStack.PushLong(remainder);
-            forth._vm.DataStack.PushLong(quotient);
-        });
-
-        // Unary operations
-        DefinePrimitive("NEGATE", forth =>
-        {
-            long value = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(-value);
-        });
-
+        // ABS requires multiple opcodes (since we don't have a single ABS opcode)
+        // ABS: DUP 0 < IF NEGATE THEN - but we can use Math.Abs via handler for now
+        // TODO: Once control flow is stable, implement as bytecode sequence
         DefinePrimitive("ABS", forth =>
         {
             long value = forth._vm.DataStack.PopLong();
             forth._vm.DataStack.PushLong(Math.Abs(value));
         });
 
-        // Increment/Decrement
-        DefinePrimitive("1+", forth =>
-        {
-            long value = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(value + 1);
-        });
+        // Compound operations using CodeBuilder to create bytecode sequences
+        // 1+: PUSH 1, ADD
+        DefinePrimitive("1+", new CodeBuilder().PushCell(1).Add().Build());
 
-        DefinePrimitive("1-", forth =>
-        {
-            long value = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(value - 1);
-        });
+        // 1-: PUSH 1, SUB
+        DefinePrimitive("1-", new CodeBuilder().PushCell(1).Sub().Build());
 
-        // Multiply/Divide by 2
-        DefinePrimitive("2*", forth =>
-        {
-            long value = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(value * 2);
-        });
+        // 2*: PUSH 2, MUL
+        DefinePrimitive("2*", new CodeBuilder().PushCell(2).Mul().Build());
 
-        DefinePrimitive("2/", forth =>
-        {
-            long value = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(value / 2);
-        });
+        // 2/: PUSH 2, DIV
+        DefinePrimitive("2/", new CodeBuilder().PushCell(2).Div().Build());
 
-        // Min/Max
+        // Min/Max - these need conditional logic which we'll implement with handlers for now
+        // TODO: Implement as bytecode once control flow is stable
         DefinePrimitive("MAX", forth =>
         {
             long b = forth._vm.DataStack.PopLong();
@@ -743,192 +647,54 @@ public class ForthInterpreter
             forth._vm.DataStack.PushLong(Math.Min(a, b));
         });
 
-        // Stack manipulation
-        DefinePrimitive("DUP", forth =>
-        {
-            long value = forth._vm.DataStack.PeekLong();
-            forth._vm.DataStack.PushLong(value);
-        });
+        // Stack manipulation - VM opcodes
+        DefinePrimitive("DUP", OPCode.DUP);
+        DefinePrimitive("DROP", OPCode.DROP);
+        DefinePrimitive("SWAP", OPCode.SWAP);
+        DefinePrimitive("OVER", OPCode.OVER);
+        DefinePrimitive("ROT", OPCode.ROT);
 
-        DefinePrimitive("2DUP", forth =>
-        {
-            // Duplicates top two stack items: ( a b -- a b a b )
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(a);
-            forth._vm.DataStack.PushLong(b);
-            forth._vm.DataStack.PushLong(a);
-            forth._vm.DataStack.PushLong(b);
-        });
+        // 2DUP: OVER OVER
+        DefinePrimitive("2DUP", new CodeBuilder().Over().Over().Build());
 
-        DefinePrimitive("DROP", forth =>
-        {
-            forth._vm.DataStack.PopLong();
-        });
+        // Comparison operations - VM opcodes
+        DefinePrimitive("<", OPCode.LT);
+        DefinePrimitive(">", OPCode.GT);
+        DefinePrimitive("=", OPCode.EQ);
+        DefinePrimitive("<=", OPCode.LTE);
+        DefinePrimitive(">=", OPCode.GTE);
+        DefinePrimitive("<>", OPCode.NEQ);
 
-        DefinePrimitive("SWAP", forth =>
-        {
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(b);
-            forth._vm.DataStack.PushLong(a);
-        });
+        // 0<: PUSH 0, SWAP, LT
+        DefinePrimitive("0<", new CodeBuilder().PushCell(0).Swap().Lt().Build());
 
-        DefinePrimitive("OVER", forth =>
-        {
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(a);
-            forth._vm.DataStack.PushLong(b);
-            forth._vm.DataStack.PushLong(a);
-        });
+        // 0>: PUSH 0, SWAP, GT
+        DefinePrimitive("0>", new CodeBuilder().PushCell(0).Swap().Gt().Build());
 
-        DefinePrimitive("ROT", forth =>
-        {
-            long c = forth._vm.DataStack.PopLong();
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(b);
-            forth._vm.DataStack.PushLong(c);
-            forth._vm.DataStack.PushLong(a);
-        });
+        // 0=: PUSH 0, EQ
+        DefinePrimitive("0=", new CodeBuilder().PushCell(0).Eq().Build());
 
-        // Comparison operations
-        DefinePrimitive("<", forth =>
-        {
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(a < b ? 1 : 0);
-        });
+        // Floating-point operations - VM opcodes
+        DefinePrimitive("F+", OPCode.FADD);
+        DefinePrimitive("F-", OPCode.FSUB);
+        DefinePrimitive("F*", OPCode.FMUL);
+        DefinePrimitive("F/", OPCode.FDIV);
+        DefinePrimitive("FNEGATE", OPCode.FNEG);
 
-        DefinePrimitive(">", forth =>
-        {
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(a > b ? 1 : 0);
-        });
-
-        DefinePrimitive("=", forth =>
-        {
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(a == b ? 1 : 0);
-        });
-
-        DefinePrimitive("<=", forth =>
-        {
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(a <= b ? 1 : 0);
-        });
-
-        DefinePrimitive(">=", forth =>
-        {
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(a >= b ? 1 : 0);
-        });
-
-        DefinePrimitive("<>", forth =>
-        {
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(a != b ? 1 : 0);
-        });
-
-        DefinePrimitive("0<", forth =>
-        {
-            long value = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(value < 0 ? 1 : 0);
-        });
-
-        DefinePrimitive("0>", forth =>
-        {
-            long value = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(value > 0 ? 1 : 0);
-        });
-
-        DefinePrimitive("0=", forth =>
-        {
-            long value = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(value == 0 ? 1 : 0);
-        });
-
-        // Floating-point arithmetic operations
-        DefinePrimitive("F+", forth =>
-        {
-            double b = forth._vm.FloatStack.PopDouble();
-            double a = forth._vm.FloatStack.PopDouble();
-            forth._vm.FloatStack.PushDouble(a + b);
-        });
-
-        DefinePrimitive("F-", forth =>
-        {
-            double b = forth._vm.FloatStack.PopDouble();
-            double a = forth._vm.FloatStack.PopDouble();
-            forth._vm.FloatStack.PushDouble(a - b);
-        });
-
-        DefinePrimitive("F*", forth =>
-        {
-            double b = forth._vm.FloatStack.PopDouble();
-            double a = forth._vm.FloatStack.PopDouble();
-            forth._vm.FloatStack.PushDouble(a * b);
-        });
-
-        DefinePrimitive("F/", forth =>
-        {
-            double b = forth._vm.FloatStack.PopDouble();
-            double a = forth._vm.FloatStack.PopDouble();
-            if (b == 0.0)
-            {
-                throw new DivideByZeroException("Float division by zero");
-            }
-            forth._vm.FloatStack.PushDouble(a / b);
-        });
-
-        DefinePrimitive("FNEGATE", forth =>
-        {
-            double value = forth._vm.FloatStack.PopDouble();
-            forth._vm.FloatStack.PushDouble(-value);
-        });
-
+        // FABS - use handler for now (VM doesn't have FABS opcode)
         DefinePrimitive("FABS", forth =>
         {
             double value = forth._vm.FloatStack.PopDouble();
             forth._vm.FloatStack.PushDouble(Math.Abs(value));
         });
 
-        // Floating-point stack operations
-        DefinePrimitive("FDUP", forth =>
-        {
-            double value = forth._vm.FloatStack.PeekDouble();
-            forth._vm.FloatStack.PushDouble(value);
-        });
+        // Floating-point stack operations - VM opcodes
+        DefinePrimitive("FDUP", OPCode.FDUP);
+        DefinePrimitive("FDROP", OPCode.FDROP);
+        DefinePrimitive("FSWAP", OPCode.FSWAP);
+        DefinePrimitive("FOVER", OPCode.FOVER);
 
-        DefinePrimitive("FDROP", forth =>
-        {
-            forth._vm.FloatStack.PopDouble();
-        });
-
-        DefinePrimitive("FSWAP", forth =>
-        {
-            double b = forth._vm.FloatStack.PopDouble();
-            double a = forth._vm.FloatStack.PopDouble();
-            forth._vm.FloatStack.PushDouble(b);
-            forth._vm.FloatStack.PushDouble(a);
-        });
-
-        DefinePrimitive("FOVER", forth =>
-        {
-            double b = forth._vm.FloatStack.PopDouble();
-            double a = forth._vm.FloatStack.PopDouble();
-            forth._vm.FloatStack.PushDouble(a);
-            forth._vm.FloatStack.PushDouble(b);
-            forth._vm.FloatStack.PushDouble(a);
-        });
-
-        // Compilation words
+        // Compilation words - these must use handlers as they manipulate the interpreter state
         DefinePrimitive(":", forth =>
         {
             // Enter compilation mode
@@ -946,7 +712,8 @@ public class ForthInterpreter
             forth.FinishColonDefinition();
         }, isImmediate: true);
 
-        // Control flow words (all immediate - executed during compilation)
+        // Control flow words - these must use handlers as they manipulate compilation state
+        // (all immediate - executed during compilation)
         DefinePrimitive("IF", forth =>
         {
             if (!forth._compileMode)
@@ -1030,6 +797,34 @@ public class ForthInterpreter
         AddWord(name, word);
     }
 
+    /// <summary>
+    /// Defines a primitive word that executes VM bytecode.
+    /// This is the preferred approach for most primitives as it ensures interpretation
+    /// and compilation use the exact same VM opcodes.
+    /// </summary>
+    /// <param name="name">The name of the primitive word.</param>
+    /// <param name="bytecode">The VM bytecode to execute.</param>
+    /// <param name="isImmediate">Whether this is an immediate word.</param>
+    private void DefinePrimitive(string name, byte[] bytecode, bool isImmediate = false)
+    {
+        var word = new WordDefinition
+        {
+            Name = name.ToUpper(),
+            Type = WordType.Primitive,
+            CompiledCode = bytecode,
+            IsImmediate = isImmediate
+        };
+        AddWord(name, word);
+    }
+
+    /// <summary>
+    /// Helper to define a primitive from a single opcode.
+    /// </summary>
+    private void DefinePrimitive(string name, OPCode opcode, bool isImmediate = false)
+    {
+        DefinePrimitive(name, new byte[] { (byte)opcode }, isImmediate);
+    }
+
     #endregion
 
     #region Public API
@@ -1070,8 +865,8 @@ public class WordDefinition
     public WordType Type { get; set; }
 
     /// <summary>
-    /// For primitive words: the handler action to execute.
-    /// This allows primitives to have arbitrary names including symbols like !, @, +, -, etc.
+    /// For primitive words: optional handler action to execute (for special cases like immediate words).
+    /// Most primitives use CompiledCode instead.
     /// </summary>
     public Action<ForthInterpreter>? PrimitiveHandler { get; set; }
 
@@ -1091,7 +886,9 @@ public class WordDefinition
     public bool IsImmediate { get; set; }
 
     /// <summary>
-    /// The compiled bytecode for this word (for colon definitions).
+    /// The compiled bytecode for this word.
+    /// For primitives: the opcode(s) to execute.
+    /// For colon definitions: the full compiled definition.
     /// </summary>
     public byte[]? CompiledCode { get; set; }
 }
