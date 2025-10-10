@@ -475,22 +475,19 @@ public class ForthInterpreter
             // loading it into a continuous address space. For now, inline with a workaround.
             // TODO: Implement a proper code segment in VM memory for callable words
 
-            // Workaround: Strip RET+HALT and inline (preserves old behavior for now)
+            // Workaround: Strip the exit syscall (PUSH_CELL + SYSCALL = 10 bytes) and inline
+            // The exit syscall is: PUSH_CELL <8-byte-syscall-id> SYSCALL
+            // Total: 1 + 8 + 1 = 10 bytes
             int length = word.CompiledCode.Length;
-            // Strip RET (second to last) and HALT (last)
-            if (length >= 2 &&
-                word.CompiledCode[length - 2] == (byte)OPCode.RET &&
-                word.CompiledCode[length - 1] == (byte)OPCode.HALT)
+
+            // Check if the last instruction is SYSCALL (the exit syscall)
+            if (length >= 10 && word.CompiledCode[length - 1] == (byte)OPCode.SYSCALL)
             {
-                length -= 2;
-            }
-            // Fallback: strip just HALT if that's all we find
-            else if (length > 0 && word.CompiledCode[length - 1] == (byte)OPCode.HALT)
-            {
-                length--;
+                // Strip the exit syscall: PUSH_CELL (1 byte) + long (8 bytes) + SYSCALL (1 byte)
+                length -= 10;
             }
 
-            // Copy the bytecode without the RET+HALT
+            // Copy the bytecode without the exit syscall
             if (length > 0)
             {
                 byte[] codeToInline = new byte[length];
@@ -866,20 +863,42 @@ public class ForthInterpreter
         }, isImmediate: true);
 
         // RECURSE - Call the word currently being compiled (recursive call)
+        // Supports both tail call optimization and general recursion
         DefinePrimitive("RECURSE", forth =>
         {
-            // Emit a CALL to the current word's start, enabling both tail and non-tail recursion.
-            // The VM's CALL instruction pushes the return address to the return stack,
-            // and RET (emitted at the end of the word) pops it to return.
-            // This properly supports recursive calls that need to perform operations after returning.
             if (!forth._compileMode)
                 throw new InvalidOperationException("RECURSE can only be used inside a colon definition during compilation");
 
             if (forth._currentStartLabel is null)
                 throw new InvalidOperationException("RECURSE used outside of a colon definition");
 
-            // Call back to the beginning of the current definition
-            forth._codeBuilder.Call(forth._currentStartLabel);
+            // Tail call optimization: check if RECURSE is in tail position
+            // A tail call is when RECURSE is the last operation before the word ends
+            // We detect this by peeking ahead in the input to see if `;` follows
+
+            // Save current position
+            int savedPos = forth._inputPosition;
+            forth.SkipWhitespace();
+
+            // Peek at next word
+            string? nextWord = forth.ReadWord();
+            bool isTailPosition = nextWord == ";" || nextWord == null;
+
+            // Restore position (don't consume the word we peeked at)
+            forth._inputPosition = savedPos;
+
+            if (isTailPosition)
+            {
+                // Tail call optimization: JMP instead of CALL
+                // This avoids growing the return stack for tail recursion
+                forth._codeBuilder.Jmp(forth._currentStartLabel);
+            }
+            else
+            {
+                // Non-tail recursion: use CALL for proper return semantics
+                // Enables operations after the recursive call returns
+                forth._codeBuilder.Call(forth._currentStartLabel);
+            }
         }, isImmediate: true);
 
         DefinePrimitive("VARIABLE", forth =>

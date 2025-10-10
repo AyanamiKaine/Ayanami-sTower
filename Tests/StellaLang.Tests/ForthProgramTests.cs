@@ -116,6 +116,41 @@ public class ForthProgramTests
     }
 
     /// <summary>
+    /// Test that demonstrates both tail-call optimization and non-tail recursion.
+    /// </summary>
+    [Fact]
+    public void TestTailCallOptimization()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Tail-recursive countdown (RECURSE is in tail position, should use JMP)
+        const string countdownDef =
+            ": countdown ( n -- )  DUP 0= IF DROP EXIT THEN  1- RECURSE ;";
+
+        forth.Interpret(countdownDef);
+
+        // This should not overflow return stack even with large n
+        forth.Interpret("1000 countdown");
+        // If tail-call optimization works, return stack should be empty
+        Assert.Equal(0, vm.ReturnStack.Pointer);
+
+        // Non-tail recursive sum (RECURSE is NOT in tail position due to +)
+        const string sumDef =
+            ": sum ( n -- sum )  DUP 0= IF EXIT THEN  DUP 1- RECURSE + ;";
+
+        forth.Interpret(sumDef);
+
+        // sum(10) = 10 + 9 + 8 + ... + 1 = 55
+        forth.Interpret("10 sum");
+        Assert.Equal(55L, vm.DataStack.PopLong());
+
+        // sum(5) = 5 + 4 + 3 + 2 + 1 = 15
+        forth.Interpret("5 sum");
+        Assert.Equal(15L, vm.DataStack.PopLong());
+    }
+
+    /// <summary>
     /// Test Fibonacci sequence calculation using iterative approach.
     /// Based on the classic Forth fibonacci implementation from literate programs.
     /// </summary>
