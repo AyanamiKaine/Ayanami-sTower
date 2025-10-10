@@ -66,7 +66,7 @@ public static class MemoryExtensions
         if (pointer + size > stack.Length)
             throw new InvalidOperationException("Stack overflow");
 
-        MemoryMarshal.Write(stack.Span.Slice(pointer), in value);
+        MemoryMarshal.Write(stack.Span[pointer..], in value);
         pointer += size;
     }
 
@@ -83,7 +83,7 @@ public static class MemoryExtensions
             throw new InvalidOperationException("Stack underflow");
 
         pointer -= size;
-        return MemoryMarshal.Read<int>(stack.Span.Slice(pointer));
+        return MemoryMarshal.Read<int>(stack.Span[pointer..]);
     }
 
     /// <summary>
@@ -98,7 +98,7 @@ public static class MemoryExtensions
         if (pointer < size)
             throw new InvalidOperationException("Not enough data on stack");
 
-        return MemoryMarshal.Read<int>(stack.Span.Slice(pointer - size));
+        return MemoryMarshal.Read<int>(stack.Span[(pointer - size)..]);
     }
 
     /// <summary>
@@ -113,7 +113,7 @@ public static class MemoryExtensions
         if (pointer + size > stack.Length)
             throw new InvalidOperationException("Stack overflow");
 
-        MemoryMarshal.Write(stack.Span.Slice(pointer), in value);
+        MemoryMarshal.Write(stack.Span[pointer..], in value);
         pointer += size;
     }
 
@@ -130,7 +130,7 @@ public static class MemoryExtensions
             throw new InvalidOperationException("Stack underflow");
 
         pointer -= size;
-        return MemoryMarshal.Read<short>(stack.Span.Slice(pointer));
+        return MemoryMarshal.Read<short>(stack.Span[pointer..]);
     }
 
     /// <summary>
@@ -145,7 +145,7 @@ public static class MemoryExtensions
         if (pointer < size)
             throw new InvalidOperationException("Not enough data on stack");
 
-        return MemoryMarshal.Read<short>(stack.Span.Slice(pointer - size));
+        return MemoryMarshal.Read<short>(stack.Span[(pointer - size)..]);
     }
 
     /// <summary>
@@ -160,7 +160,7 @@ public static class MemoryExtensions
         if (pointer + size > stack.Length)
             throw new InvalidOperationException("Stack overflow");
 
-        MemoryMarshal.Write(stack.Span.Slice(pointer), in value);
+        MemoryMarshal.Write(stack.Span[pointer..], in value);
         pointer += size;
     }
 
@@ -177,7 +177,7 @@ public static class MemoryExtensions
             throw new InvalidOperationException("Stack underflow");
 
         pointer -= size;
-        return MemoryMarshal.Read<uint>(stack.Span.Slice(pointer));
+        return MemoryMarshal.Read<uint>(stack.Span[pointer..]);
     }
 
     /// <summary>
@@ -192,7 +192,7 @@ public static class MemoryExtensions
         if (pointer < size)
             throw new InvalidOperationException("Not enough data on stack");
 
-        return MemoryMarshal.Read<uint>(stack.Span.Slice(pointer - size));
+        return MemoryMarshal.Read<uint>(stack.Span[(pointer - size)..]);
     }
 
     /// <summary>
@@ -207,7 +207,7 @@ public static class MemoryExtensions
         if (pointer + size > stack.Length)
             throw new InvalidOperationException("Stack overflow");
 
-        MemoryMarshal.Write(stack.Span.Slice(pointer), in value);
+        MemoryMarshal.Write(stack.Span[pointer..], in value);
         pointer += size;
     }
 
@@ -224,7 +224,7 @@ public static class MemoryExtensions
             throw new InvalidOperationException("Stack underflow");
 
         pointer -= size;
-        return MemoryMarshal.Read<long>(stack.Span.Slice(pointer));
+        return MemoryMarshal.Read<long>(stack.Span[pointer..]);
     }
 
     /// <summary>
@@ -239,7 +239,7 @@ public static class MemoryExtensions
         if (pointer < size)
             throw new InvalidOperationException("Not enough data on stack");
 
-        return MemoryMarshal.Read<long>(stack.Span.Slice(pointer - size));
+        return MemoryMarshal.Read<long>(stack.Span[(pointer - size)..]);
     }
 
     /// <summary>
@@ -254,7 +254,7 @@ public static class MemoryExtensions
         if (pointer + size > stack.Length)
             throw new InvalidOperationException("Stack overflow");
 
-        MemoryMarshal.Write(stack.Span.Slice(pointer), in value);
+        MemoryMarshal.Write(stack.Span[pointer..], in value);
         pointer += size;
     }
 
@@ -271,7 +271,7 @@ public static class MemoryExtensions
             throw new InvalidOperationException("Stack underflow");
 
         pointer -= size;
-        return MemoryMarshal.Read<ulong>(stack.Span.Slice(pointer));
+        return MemoryMarshal.Read<ulong>(stack.Span[pointer..]);
     }
 
     /// <summary>
@@ -286,7 +286,7 @@ public static class MemoryExtensions
         if (pointer < size)
             throw new InvalidOperationException("Not enough data on stack");
 
-        return MemoryMarshal.Read<ulong>(stack.Span.Slice(pointer - size));
+        return MemoryMarshal.Read<ulong>(stack.Span[(pointer - size)..]);
     }
 
     /// <summary>
@@ -301,7 +301,7 @@ public static class MemoryExtensions
         if (pointer + size > stack.Length)
             throw new InvalidOperationException("Stack overflow");
 
-        MemoryMarshal.Write(stack.Span.Slice(pointer), in value);
+        MemoryMarshal.Write(stack.Span[pointer..], in value);
         pointer += size;
     }
 
@@ -318,7 +318,7 @@ public static class MemoryExtensions
             throw new InvalidOperationException("Stack underflow");
 
         pointer -= size;
-        return MemoryMarshal.Read<float>(stack.Span.Slice(pointer));
+        return MemoryMarshal.Read<float>(stack.Span[pointer..]);
     }
 
     /// <summary>
@@ -333,7 +333,7 @@ public static class MemoryExtensions
         if (pointer < size)
             throw new InvalidOperationException("Not enough data on stack");
 
-        return MemoryMarshal.Read<float>(stack.Span.Slice(pointer - size));
+        return MemoryMarshal.Read<float>(stack.Span[(pointer - size)..]);
     }
 
     /// <summary>
@@ -348,7 +348,7 @@ public static class MemoryExtensions
         if (pointer + size > stack.Length)
             throw new InvalidOperationException("Stack overflow");
 
-        MemoryMarshal.Write(stack.Span.Slice(pointer), in value);
+        MemoryMarshal.Write(stack.Span[pointer..], in value);
         pointer += size;
     }
 
@@ -365,7 +365,7 @@ public static class MemoryExtensions
             throw new InvalidOperationException("Stack underflow");
 
         pointer -= size;
-        return MemoryMarshal.Read<double>(stack.Span.Slice(pointer));
+        return MemoryMarshal.Read<double>(stack.Span[pointer..]);
     }
 
     /// <summary>
@@ -380,6 +380,6 @@ public static class MemoryExtensions
         if (pointer < size)
             throw new InvalidOperationException("Not enough data on stack");
 
-        return MemoryMarshal.Read<double>(stack.Span.Slice(pointer - size));
+        return MemoryMarshal.Read<double>(stack.Span[(pointer - size)..]);
     }
 }
