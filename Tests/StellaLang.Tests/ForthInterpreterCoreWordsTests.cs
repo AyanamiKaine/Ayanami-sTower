@@ -57,6 +57,22 @@ public class ForthInterpreterCoreWordsTests
     }
 
     /// <summary>
+    /// + Add
+    /// </summary>
+    [Fact]
+    public void FloatAddPlusSymbolTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret("10.5 20.5 +");
+        // pushes two values and adds them. 
+        // The result is pushed to stack.
+
+        double currentTopStackValue = vm.FloatStack.PeekDouble();
+        Assert.Equal(31, currentTopStackValue);
+    }
+
+    /// <summary>
     /// * Multiply
     /// </summary>
     [Fact]
@@ -288,6 +304,20 @@ public class ForthInterpreterCoreWordsTests
 
         long currentTopStackValue = vm.DataStack.PeekCell();
         Assert.Equal(60, currentTopStackValue);
+    }
+
+    [Fact]
+    public void DefiningNewWord3Test()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret(": TEST 2 5 MAX * ;");
+
+        // Defines a new word TEST that finds the maximum of 2 and 5, then multiplies by the top stack value.
+
+        forth.Interpret("TEST");
+        long currentTopStackValue = vm.DataStack.PeekCell();
+        Assert.Equal(5, currentTopStackValue);
     }
 }
 
