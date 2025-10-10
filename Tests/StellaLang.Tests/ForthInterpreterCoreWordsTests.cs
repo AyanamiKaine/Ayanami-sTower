@@ -510,4 +510,132 @@ public class ForthInterpreterCoreWordsTests
         double result = vm.FloatStack.PeekDouble();
         Assert.Equal(14.0, result, 5);
     }
+
+    // ===== Control Flow Tests (IF THEN ELSE) =====
+
+    /// <summary>
+    /// Test simple IF THEN (condition true)
+    /// </summary>
+    [Fact]
+    public void IfThenTrueTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret(": TEST 1 IF 42 THEN ;");
+
+        forth.Interpret("TEST");
+        long result = vm.DataStack.PeekCell();
+        Assert.Equal(42, result);
+    }
+
+    /// <summary>
+    /// Test simple IF THEN (condition false)
+    /// </summary>
+    [Fact]
+    public void IfThenFalseTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret(": TEST 0 IF 42 THEN ;");
+
+        forth.Interpret("TEST");
+        // Stack should be empty since IF condition was false
+        Assert.Equal(0, vm.DataStack.Pointer);
+    }
+
+    /// <summary>
+    /// Test IF ELSE THEN (condition true)
+    /// </summary>
+    [Fact]
+    public void IfElseThenTrueTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret(": TEST 1 IF 42 ELSE 99 THEN ;");
+
+        forth.Interpret("TEST");
+        long result = vm.DataStack.PeekCell();
+        Assert.Equal(42, result);
+    }
+
+    /// <summary>
+    /// Test IF ELSE THEN (condition false)
+    /// </summary>
+    [Fact]
+    public void IfElseThenFalseTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret(": TEST 0 IF 42 ELSE 99 THEN ;");
+
+        forth.Interpret("TEST");
+        long result = vm.DataStack.PeekCell();
+        Assert.Equal(99, result);
+    }
+
+    /// <summary>
+    /// Test MAX implementation using IF THEN
+    /// </summary>
+    [Fact]
+    public void MaxWithIfThenTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        // MAX: ( a b -- max ) : MAX 2DUP < IF SWAP THEN DROP ;
+        forth.Interpret(": MAX 2DUP < IF SWAP THEN DROP ;");
+
+        forth.Interpret("10 42 MAX");
+        long result = vm.DataStack.PeekCell();
+        Assert.Equal(42, result);
+
+        // Test the other direction
+        vm.DataStack.Clear();
+        forth.Interpret("42 10 MAX");
+        result = vm.DataStack.PeekCell();
+        Assert.Equal(42, result);
+    }
+
+    /// <summary>
+    /// Test MIN implementation using IF THEN
+    /// </summary>
+    [Fact]
+    public void MinWithIfThenTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        // MIN: ( a b -- min ) : MIN 2DUP > IF SWAP THEN DROP ;
+        forth.Interpret(": MIN 2DUP > IF SWAP THEN DROP ;");
+
+        forth.Interpret("10 42 MIN");
+        long result = vm.DataStack.PeekCell();
+        Assert.Equal(10, result);
+
+        // Test the other direction
+        vm.DataStack.Clear();
+        forth.Interpret("42 10 MIN");
+        result = vm.DataStack.PeekCell();
+        Assert.Equal(10, result);
+    }
+
+    /// <summary>
+    /// Test ABS implementation using IF THEN
+    /// </summary>
+    [Fact]
+    public void AbsWithIfThenTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        // ABS: ( n -- |n| ) : ABS DUP 0 < IF NEGATE THEN ;
+        forth.Interpret(": ABS DUP 0 < IF NEGATE THEN ;");
+
+        forth.Interpret("-42 ABS");
+        long result = vm.DataStack.PeekCell();
+        Assert.Equal(42, result);
+
+        // Test with positive number
+        vm.DataStack.Clear();
+        forth.Interpret("42 ABS");
+        result = vm.DataStack.PeekCell();
+        Assert.Equal(42, result);
+    }
 }

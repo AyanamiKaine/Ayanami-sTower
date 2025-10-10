@@ -54,8 +54,14 @@ public class ForthInterpreter
 
     /// <summary>
     /// Stack for tracking compilation state (used for control structures).
+    /// Stores labels for IF/THEN/ELSE, loop structures, etc.
     /// </summary>
-    private readonly Stack<int> _compileStack;
+    private readonly Stack<string> _compileStack;
+
+    /// <summary>
+    /// Counter for generating unique labels during compilation.
+    /// </summary>
+    private int _labelCounter;
 
     /// <summary>
     /// The code builder used for generating bytecode.
@@ -81,7 +87,8 @@ public class ForthInterpreter
         _inputBuffer = string.Empty;
         _inputPosition = 0;
         _base = 10;
-        _compileStack = new Stack<int>();
+        _compileStack = new Stack<string>();
+        _labelCounter = 0;
         _codeBuilder = new CodeBuilder();
         _currentWordName = string.Empty;
 
@@ -381,12 +388,36 @@ public class ForthInterpreter
                 case "MIN":
                     throw new NotImplementedException($"{word.Name} compilation not yet supported");
                 case "DUP": _codeBuilder.Dup(); break;
+                case "2DUP":
+                    // 2DUP: ( a b -- a b a b )
+                    _codeBuilder.Over().Over();
+                    break;
                 case "DROP": _codeBuilder.Drop(); break;
                 case "SWAP": _codeBuilder.Swap(); break;
                 case "OVER": _codeBuilder.Over(); break;
                 case "ROT": _codeBuilder.Rot(); break;
                 case "!": _codeBuilder.Store(); break;
                 case "@": _codeBuilder.Fetch(); break;
+                // Comparison operations
+                case "<": _codeBuilder.Lt(); break;
+                case ">": _codeBuilder.Gt(); break;
+                case "=": _codeBuilder.Eq(); break;
+                case "<=": _codeBuilder.Lte(); break;
+                case ">=": _codeBuilder.Gte(); break;
+                case "<>": _codeBuilder.Neq(); break;
+                case "0<":
+                    // 0< means "less than zero": ( n -- flag )
+                    // Need to compare n < 0, so push 0, swap, then compare
+                    _codeBuilder.PushCell(0).Swap().Lt();
+                    break;
+                case "0>":
+                    // 0> means "greater than zero": ( n -- flag )
+                    _codeBuilder.PushCell(0).Swap().Gt();
+                    break;
+                case "0=":
+                    // 0= means "equal to zero": ( n -- flag )
+                    _codeBuilder.PushCell(0).Eq();
+                    break;
                 // Floating-point operations
                 case "F+": _codeBuilder.FAdd(); break;
                 case "F-": _codeBuilder.FSub(); break;
@@ -719,6 +750,17 @@ public class ForthInterpreter
             forth._vm.DataStack.PushLong(value);
         });
 
+        DefinePrimitive("2DUP", forth =>
+        {
+            // Duplicates top two stack items: ( a b -- a b a b )
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(a);
+            forth._vm.DataStack.PushLong(b);
+            forth._vm.DataStack.PushLong(a);
+            forth._vm.DataStack.PushLong(b);
+        });
+
         DefinePrimitive("DROP", forth =>
         {
             forth._vm.DataStack.PopLong();
@@ -749,6 +791,67 @@ public class ForthInterpreter
             forth._vm.DataStack.PushLong(b);
             forth._vm.DataStack.PushLong(c);
             forth._vm.DataStack.PushLong(a);
+        });
+
+        // Comparison operations
+        DefinePrimitive("<", forth =>
+        {
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(a < b ? 1 : 0);
+        });
+
+        DefinePrimitive(">", forth =>
+        {
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(a > b ? 1 : 0);
+        });
+
+        DefinePrimitive("=", forth =>
+        {
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(a == b ? 1 : 0);
+        });
+
+        DefinePrimitive("<=", forth =>
+        {
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(a <= b ? 1 : 0);
+        });
+
+        DefinePrimitive(">=", forth =>
+        {
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(a >= b ? 1 : 0);
+        });
+
+        DefinePrimitive("<>", forth =>
+        {
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(a != b ? 1 : 0);
+        });
+
+        DefinePrimitive("0<", forth =>
+        {
+            long value = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(value < 0 ? 1 : 0);
+        });
+
+        DefinePrimitive("0>", forth =>
+        {
+            long value = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(value > 0 ? 1 : 0);
+        });
+
+        DefinePrimitive("0=", forth =>
+        {
+            long value = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(value == 0 ? 1 : 0);
         });
 
         // Floating-point arithmetic operations
@@ -841,6 +944,71 @@ public class ForthInterpreter
         {
             // Exit compilation mode and add the word to the dictionary
             forth.FinishColonDefinition();
+        }, isImmediate: true);
+
+        // Control flow words (all immediate - executed during compilation)
+        DefinePrimitive("IF", forth =>
+        {
+            if (!forth._compileMode)
+            {
+                throw new InvalidOperationException("IF can only be used in compilation mode");
+            }
+
+            // Generate a unique label for the target (THEN or ELSE)
+            string label = $"L{forth._labelCounter++}";
+
+            // Emit JZ (jump if zero/false) - will jump to THEN or ELSE
+            // In FORTH, the convention is: condition IF true-clause THEN
+            // If condition is 0 (false), jump forward to THEN
+            forth._codeBuilder.Jz(label);
+
+            // Push label onto compile stack for THEN/ELSE to resolve
+            forth._compileStack.Push(label);
+        }, isImmediate: true);
+
+        DefinePrimitive("ELSE", forth =>
+        {
+            if (!forth._compileMode)
+            {
+                throw new InvalidOperationException("ELSE can only be used in compilation mode");
+            }
+            if (forth._compileStack.Count == 0)
+            {
+                throw new InvalidOperationException("ELSE without matching IF");
+            }
+
+            // Pop the IF label
+            string ifLabel = forth._compileStack.Pop();
+
+            // Generate label for the end (after ELSE clause)
+            string endLabel = $"L{forth._labelCounter++}";
+
+            // Emit unconditional jump to skip ELSE clause when IF condition is true
+            forth._codeBuilder.Jmp(endLabel);
+
+            // Mark the IF's target (beginning of ELSE clause)
+            forth._codeBuilder.Label(ifLabel);
+
+            // Push the end label for THEN to resolve
+            forth._compileStack.Push(endLabel);
+        }, isImmediate: true);
+
+        DefinePrimitive("THEN", forth =>
+        {
+            if (!forth._compileMode)
+            {
+                throw new InvalidOperationException("THEN can only be used in compilation mode");
+            }
+            if (forth._compileStack.Count == 0)
+            {
+                throw new InvalidOperationException("THEN without matching IF");
+            }
+
+            // Pop the label (from IF or ELSE)
+            string label = forth._compileStack.Pop();
+
+            // Mark this position as the target
+            forth._codeBuilder.Label(label);
         }, isImmediate: true);
     }
 
