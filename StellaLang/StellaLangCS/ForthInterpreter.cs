@@ -1044,9 +1044,6 @@ public class ForthInterpreter
             {
                 if (!forth._compileMode)
                     throw new InvalidOperationException("DOES> can only be used in compilation mode");
-                if (!forth._createEmittedInCurrentDefinition)
-                    throw new InvalidOperationException("DOES> requires a prior CREATE in the same definition");
-
                 // Mark that we're now compiling DOES> code
                 forth._compilingDoesCode = true;
 
@@ -1116,6 +1113,9 @@ public class ForthInterpreter
                 if (modifierWord == null)
                     throw new InvalidOperationException("DOES> runtime: cannot determine modifier word at runtime");
 
+                // DEBUG: log what snippet we're about to attach
+                try { Console.WriteLine($"DOES> runtime: modifier={modifierWord.Name} created={_lastCreatedWord} snippetIndex={snippetIndex}"); } catch { }
+
                 byte[]? snippet = null;
                 if (modifierWord.DoesCodeSnippets != null && snippetIndex < modifierWord.DoesCodeSnippets.Length)
                 {
@@ -1128,6 +1128,8 @@ public class ForthInterpreter
 
                 if (snippet == null)
                     throw new InvalidOperationException("DOES> runtime: no DOES> snippet available from modifier word");
+
+                try { Console.WriteLine($"DOES> runtime: snippetLength={snippet.Length} dataAddr={dataFieldAddress}"); } catch { }
 
                 // Create new bytecode for the word:
                 // When called, it should: push data-field-address, then execute DOES> snippet
