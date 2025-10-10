@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 
 namespace StellaLang;
+#pragma warning disable CS0414 
 
 /// <summary>
 /// A FORTH interpreter that compiles FORTH code to StellaLang VM bytecode.
