@@ -66,10 +66,12 @@ public enum OPCode
     MUL,
     /// <summary>
     /// Pops two values (b, then a), calculates a / b, pushes the quotient.
+    /// Implements symmetric division (truncates towards zero).
     /// </summary>
     DIV,
     /// <summary>
     /// Pops two values (b, then a), calculates a mod b, pushes the remainder.
+    /// Implements symmetric division (remainder takes the sign of the dividend).
     /// </summary>
     MOD,
     /// <summary>
