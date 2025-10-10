@@ -271,6 +271,100 @@ public struct MemoryStack(int size)
     }
 
     /// <summary>
+    /// Creates a new MemoryStack with the specified size in bytes.
+    /// </summary>
+    /// <param name="bytes">The size of the stack in bytes.</param>
+    /// <returns>A new MemoryStack instance.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when bytes is negative.</exception>
+    public static MemoryStack FromBytes(int bytes)
+    {
+        if (bytes < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(bytes), "Bytes must be non-negative.");
+        }
+
+        return new MemoryStack(bytes);
+    }
+
+    /// <summary>
+    /// Creates a new MemoryStack with the specified size in words (16-bit/2 bytes).
+    /// </summary>
+    /// <param name="words">The size of the stack in words (1 word = 2 bytes).</param>
+    /// <returns>A new MemoryStack instance.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when words is negative or the result exceeds int.MaxValue.</exception>
+    public static MemoryStack FromWords(int words)
+    {
+        if (words < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(words), "Words must be non-negative.");
+        }
+
+        long bytes = (long)words * 2;
+        if (bytes > int.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(words), "Resulting size exceeds maximum allowed size.");
+        }
+
+        return new MemoryStack((int)bytes);
+    }
+
+    /// <summary>
+    /// Creates a new MemoryStack with the specified size in double words (32-bit/4 bytes).
+    /// </summary>
+    /// <param name="dwords">The size of the stack in double words (1 dword = 4 bytes).</param>
+    /// <returns>A new MemoryStack instance.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when dwords is negative or the result exceeds int.MaxValue.</exception>
+    public static MemoryStack FromDWords(int dwords)
+    {
+        if (dwords < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(dwords), "DWords must be non-negative.");
+        }
+
+        long bytes = (long)dwords * 4;
+        if (bytes > int.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(dwords), "Resulting size exceeds maximum allowed size.");
+        }
+
+        return new MemoryStack((int)bytes);
+    }
+
+    /// <summary>
+    /// Creates a new MemoryStack with the specified size in quad words (64-bit/8 bytes).
+    /// </summary>
+    /// <param name="qwords">The size of the stack in quad words (1 qword = 8 bytes).</param>
+    /// <returns>A new MemoryStack instance.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when qwords is negative or the result exceeds int.MaxValue.</exception>
+    public static MemoryStack FromQWords(int qwords)
+    {
+        if (qwords < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(qwords), "QWords must be non-negative.");
+        }
+
+        long bytes = (long)qwords * 8;
+        if (bytes > int.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(qwords), "Resulting size exceeds maximum allowed size.");
+        }
+
+        return new MemoryStack((int)bytes);
+    }
+
+    /// <summary>
+    /// Creates a new MemoryStack with the specified size in cells (64-bit/8 bytes).
+    /// Alias for FromQWords - represents the natural word size for 64-bit systems.
+    /// </summary>
+    /// <param name="cells">The size of the stack in cells (1 cell = 8 bytes).</param>
+    /// <returns>A new MemoryStack instance.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when cells is negative or the result exceeds int.MaxValue.</exception>
+    public static MemoryStack FromCells(int cells)
+    {
+        return FromQWords(cells);
+    }
+
+    /// <summary>
     /// Creates a new MemoryStack with the specified size in kilobytes.
     /// </summary>
     /// <param name="kilobytes">The size of the stack in kilobytes.</param>
@@ -309,6 +403,34 @@ public struct MemoryStack(int size)
         if (bytes > int.MaxValue)
         {
             throw new ArgumentOutOfRangeException(nameof(megabytes), "Resulting size exceeds maximum allowed size.");
+        }
+
+        return new MemoryStack((int)bytes);
+    }
+
+    /// <summary>
+    /// Creates a new MemoryStack with the specified size in gigabytes.
+    /// </summary>
+    /// <param name="gigabytes">The size of the stack in gigabytes.</param>
+    /// <returns>A new MemoryStack instance.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when gigabytes is negative or the result exceeds int.MaxValue (approximately 2GB).</exception>
+    public static MemoryStack FromGigabytes(int gigabytes)
+    {
+        if (gigabytes < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(gigabytes), "Gigabytes must be non-negative.");
+        }
+
+        // Since max size is int.MaxValue (~2GB), only gigabytes <= 2 are valid
+        if (gigabytes > 2)
+        {
+            throw new ArgumentOutOfRangeException(nameof(gigabytes), "Gigabytes cannot exceed 2 (maximum stack size is ~2GB).");
+        }
+
+        long bytes = (long)gigabytes * 1024 * 1024 * 1024;
+        if (bytes > int.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(gigabytes), "Resulting size exceeds maximum allowed size.");
         }
 
         return new MemoryStack((int)bytes);
