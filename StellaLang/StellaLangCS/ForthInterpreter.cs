@@ -218,6 +218,15 @@ public class ForthInterpreter
     }
 
     /// <summary>
+    /// Compiles a floating-point literal value into the current definition.
+    /// </summary>
+    /// <param name="value">The floating-point literal value to compile.</param>
+    private void CompileFloatLiteral(double value)
+    {
+        throw new NotImplementedException("CompileFloatLiteral not yet implemented");
+    }
+
+    /// <summary>
     /// Allocates space in the data space.
     /// </summary>
     /// <param name="bytes">Number of bytes to allocate.</param>
@@ -245,19 +254,54 @@ public class ForthInterpreter
         throw new NotImplementedException("CommaCell not yet implemented");
     }
 
+    /// <summary>
+    /// Writes a double (64-bit floating-point value) to the data space at the current HERE pointer.
+    /// </summary>
+    /// <param name="value">The double value to write.</param>
+    private void CommaDouble(double value)
+    {
+        throw new NotImplementedException("CommaDouble not yet implemented");
+    }
+
     #endregion
 
     #region Number Parsing
 
     /// <summary>
-    /// Attempts to parse a string as a number in the current base.
+    /// Attempts to parse a string as a number (integer or floating-point).
+    /// First tries to parse as integer in the current base, then tries floating-point.
     /// </summary>
     /// <param name="text">The text to parse.</param>
-    /// <param name="value">The parsed value if successful.</param>
+    /// <param name="intValue">The parsed integer value if successful.</param>
+    /// <param name="doubleValue">The parsed double value if text contains a decimal point.</param>
+    /// <param name="isFloat">True if the number is a floating-point value, false if integer.</param>
     /// <returns>True if parsing succeeded, false otherwise.</returns>
-    private bool TryParseNumber(string text, out long value)
+    private bool TryParseNumber(string text, out long intValue, out double doubleValue, out bool isFloat)
     {
         throw new NotImplementedException("TryParseNumber not yet implemented");
+    }
+
+    /// <summary>
+    /// Attempts to parse a string as an integer in the current base.
+    /// </summary>
+    /// <param name="text">The text to parse.</param>
+    /// <param name="value">The parsed integer value if successful.</param>
+    /// <returns>True if parsing succeeded, false otherwise.</returns>
+    private bool TryParseInteger(string text, out long value)
+    {
+        throw new NotImplementedException("TryParseInteger not yet implemented");
+    }
+
+    /// <summary>
+    /// Attempts to parse a string as a floating-point number.
+    /// Handles formats like: 2.3, -4.5, 1.23e10, etc.
+    /// </summary>
+    /// <param name="text">The text to parse.</param>
+    /// <param name="value">The parsed double value if successful.</param>
+    /// <returns>True if parsing succeeded, false otherwise.</returns>
+    private bool TryParseFloat(string text, out double value)
+    {
+        throw new NotImplementedException("TryParseFloat not yet implemented");
     }
 
     #endregion
@@ -273,10 +317,21 @@ public class ForthInterpreter
     /// <example>
     /// Examples of primitive definitions:
     /// <code>
+    /// // Integer/Cell operations
     /// DefinePrimitive("!", forth => { /* STORE operation */ });
     /// DefinePrimitive("@", forth => { /* FETCH operation */ });
     /// DefinePrimitive("+", forth => { /* ADD operation */ });
     /// DefinePrimitive("DUP", forth => { /* DUP operation */ });
+    /// 
+    /// // Floating-point operations (typically prefixed with F in FORTH)
+    /// DefinePrimitive("F!", forth => { /* FSTORE operation */ });
+    /// DefinePrimitive("F@", forth => { /* FFETCH operation */ });
+    /// DefinePrimitive("F+", forth => { /* FADD operation */ });
+    /// DefinePrimitive("FDUP", forth => { /* FDUP operation */ });
+    /// 
+    /// // Type conversion
+    /// DefinePrimitive("S>F", forth => { /* CELL_TO_FLOAT operation */ });
+    /// DefinePrimitive("F>S", forth => { /* FLOAT_TO_CELL operation */ });
     /// </code>
     /// </example>
     private void InitializePrimitives()
@@ -398,8 +453,11 @@ public class InterpreterState
     /// <summary>Number of words in the dictionary.</summary>
     public int DictionarySize { get; set; }
 
-    /// <summary>Current data stack depth.</summary>
+    /// <summary>Current data stack depth (integer/cell values).</summary>
     public int DataStackDepth { get; set; }
+
+    /// <summary>Current floating-point stack depth (double values).</summary>
+    public int FloatStackDepth { get; set; }
 
     /// <summary>Current return stack depth.</summary>
     public int ReturnStackDepth { get; set; }
