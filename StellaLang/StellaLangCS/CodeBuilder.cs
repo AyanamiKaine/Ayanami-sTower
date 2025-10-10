@@ -353,6 +353,17 @@ public class CodeBuilder
     /// </summary>
     public int Size => _bytecode.Count;
 
+    /// <summary>
+    /// Appends raw bytes to the bytecode.
+    /// This is used for inlining compiled word definitions.
+    /// </summary>
+    /// <param name="bytes">The bytes to append.</param>
+    public CodeBuilder AppendBytes(byte[] bytes)
+    {
+        _bytecode.AddRange(bytes);
+        return this;
+    }
+
     // ===== Helper Methods =====
 
     private void EmitOpCode(OPCode opcode)

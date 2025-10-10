@@ -63,6 +63,11 @@ public class ForthInterpreter
     private CodeBuilder _codeBuilder;
 
     /// <summary>
+    /// The name of the word currently being compiled.
+    /// </summary>
+    private string _currentWordName;
+
+    /// <summary>
     /// Initializes a new instance of the FORTH interpreter.
     /// </summary>
     /// <param name="vm">The VM instance to use for execution.</param>
@@ -78,6 +83,7 @@ public class ForthInterpreter
         _base = 10;
         _compileStack = new Stack<int>();
         _codeBuilder = new CodeBuilder();
+        _currentWordName = string.Empty;
 
         InitializePrimitives();
     }
@@ -129,14 +135,26 @@ public class ForthInterpreter
 
         if (definition != null)
         {
-            // Execute the word
-            if (definition.Type == WordType.Primitive && definition.PrimitiveHandler != null)
+            // In compilation mode, compile the word (unless it's immediate)
+            if (_compileMode && !definition.IsImmediate)
             {
-                definition.PrimitiveHandler(this);
+                CompileWord(definition);
             }
             else
             {
-                throw new NotImplementedException($"Word type {definition.Type} not yet supported");
+                // Execute the word
+                if (definition.Type == WordType.Primitive && definition.PrimitiveHandler != null)
+                {
+                    definition.PrimitiveHandler(this);
+                }
+                else if (definition.Type == WordType.ColonDefinition)
+                {
+                    ExecuteColonDefinition(definition);
+                }
+                else
+                {
+                    throw new NotImplementedException($"Word type {definition.Type} not yet supported");
+                }
             }
         }
         else
@@ -144,13 +162,29 @@ public class ForthInterpreter
             // Try to parse as number
             if (TryParseNumber(word, out long intValue, out double doubleValue, out bool isFloat))
             {
-                if (isFloat)
+                if (_compileMode)
                 {
-                    _vm.FloatStack.PushDouble(doubleValue);
+                    // Compile the literal
+                    if (isFloat)
+                    {
+                        CompileFloatLiteral(doubleValue);
+                    }
+                    else
+                    {
+                        CompileLiteral(intValue);
+                    }
                 }
                 else
                 {
-                    _vm.DataStack.PushLong(intValue);
+                    // Execute: push to stack
+                    if (isFloat)
+                    {
+                        _vm.FloatStack.PushDouble(doubleValue);
+                    }
+                    else
+                    {
+                        _vm.DataStack.PushLong(intValue);
+                    }
                 }
             }
             else
@@ -216,6 +250,27 @@ public class ForthInterpreter
         throw new NotImplementedException("ExecutePrimitive not yet implemented");
     }
 
+    /// <summary>
+    /// Executes a colon definition (user-defined word).
+    /// This is the inner interpreter.
+    /// </summary>
+    /// <param name="word">The word definition to execute.</param>
+    private void ExecuteColonDefinition(WordDefinition word)
+    {
+        if (word.Type != WordType.ColonDefinition)
+        {
+            throw new InvalidOperationException("Can only execute colon definitions");
+        }
+
+        if (word.CompiledCode == null || word.CompiledCode.Length == 0)
+        {
+            throw new InvalidOperationException($"Word {word.Name} has no compiled code");
+        }
+
+        // Execute the bytecode using the VM
+        _vm.Execute(word.CompiledCode);
+    }
+
     #endregion
 
     #region Dictionary Management
@@ -246,7 +301,14 @@ public class ForthInterpreter
     /// <param name="name">The name of the new word.</param>
     private void CreateColonDefinition(string name)
     {
-        throw new NotImplementedException("CreateColonDefinition not yet implemented");
+        if (_compileMode)
+        {
+            throw new InvalidOperationException("Cannot start a colon definition while already compiling");
+        }
+
+        _compileMode = true;
+        _codeBuilder.Clear();
+        _currentWordName = name;
     }
 
     /// <summary>
@@ -254,7 +316,29 @@ public class ForthInterpreter
     /// </summary>
     private void FinishColonDefinition()
     {
-        throw new NotImplementedException("FinishColonDefinition not yet implemented");
+        if (!_compileMode)
+        {
+            throw new InvalidOperationException("Cannot finish a colon definition without starting one");
+        }
+
+        // Add HALT instruction to end the definition
+        byte[] bytecode = _codeBuilder.Halt().Build();
+
+        // Create the word definition
+        var word = new WordDefinition
+        {
+            Name = _currentWordName,
+            Type = WordType.ColonDefinition,
+            CompiledCode = bytecode,
+            IsImmediate = false
+        };
+
+        // Add to dictionary
+        AddWord(_currentWordName, word);
+
+        // Exit compilation mode
+        _compileMode = false;
+        _currentWordName = string.Empty;
     }
 
     #endregion
@@ -267,7 +351,73 @@ public class ForthInterpreter
     /// <param name="word">The word to compile.</param>
     private void CompileWord(WordDefinition word)
     {
-        throw new NotImplementedException("CompileWord not yet implemented");
+        if (!_compileMode)
+        {
+            throw new InvalidOperationException("Cannot compile a word outside of compilation mode");
+        }
+
+        // For primitives, we need to inline their bytecode equivalent
+        if (word.Type == WordType.Primitive)
+        {
+            // Map primitive operations to bytecode
+            switch (word.Name.ToUpper())
+            {
+                case "+": _codeBuilder.Add(); break;
+                case "-": _codeBuilder.Sub(); break;
+                case "*": _codeBuilder.Mul(); break;
+                case "/": _codeBuilder.Div(); break;
+                case "MOD": _codeBuilder.Mod(); break;
+                case "/MOD": _codeBuilder.DivMod(); break;
+                case "NEGATE": _codeBuilder.Neg(); break;
+                case "ABS":
+                    // ABS requires conditional logic - we'll do DUP, 0<, IF NEGATE THEN
+                    // For now, just use a simple implementation
+                    throw new NotImplementedException("ABS compilation not yet supported");
+                case "1+": _codeBuilder.PushCell(1).Add(); break;
+                case "1-": _codeBuilder.PushCell(1).Sub(); break;
+                case "2*": _codeBuilder.PushCell(2).Mul(); break;
+                case "2/": _codeBuilder.PushCell(2).Div(); break;
+                case "MAX":
+                case "MIN":
+                    throw new NotImplementedException($"{word.Name} compilation not yet supported");
+                case "DUP": _codeBuilder.Dup(); break;
+                case "DROP": _codeBuilder.Drop(); break;
+                case "SWAP": _codeBuilder.Swap(); break;
+                case "OVER": _codeBuilder.Over(); break;
+                case "ROT": _codeBuilder.Rot(); break;
+                case "!": _codeBuilder.Store(); break;
+                case "@": _codeBuilder.Fetch(); break;
+                default:
+                    throw new NotImplementedException($"Primitive '{word.Name}' cannot be compiled yet");
+            }
+        }
+        else if (word.Type == WordType.ColonDefinition)
+        {
+            // For colon definitions, we need to inline their bytecode
+            if (word.CompiledCode == null || word.CompiledCode.Length == 0)
+            {
+                throw new InvalidOperationException($"Word {word.Name} has no compiled code");
+            }
+
+            // Inline the bytecode (strip the HALT instruction from the end)
+            int length = word.CompiledCode.Length;
+            if (length > 0 && word.CompiledCode[length - 1] == (byte)OPCode.HALT)
+            {
+                length--;
+            }
+
+            // Copy the bytecode without the HALT
+            if (length > 0)
+            {
+                byte[] codeToInline = new byte[length];
+                Array.Copy(word.CompiledCode, codeToInline, length);
+                _codeBuilder.AppendBytes(codeToInline);
+            }
+        }
+        else
+        {
+            throw new NotImplementedException($"Compiling word type {word.Type} not yet supported");
+        }
     }
 
     /// <summary>
@@ -276,7 +426,12 @@ public class ForthInterpreter
     /// <param name="value">The literal value to compile.</param>
     private void CompileLiteral(long value)
     {
-        throw new NotImplementedException("CompileLiteral not yet implemented");
+        if (!_compileMode)
+        {
+            throw new InvalidOperationException("Cannot compile a literal outside of compilation mode");
+        }
+
+        _codeBuilder.PushCell(value);
     }
 
     /// <summary>
@@ -285,7 +440,12 @@ public class ForthInterpreter
     /// <param name="value">The floating-point literal value to compile.</param>
     private void CompileFloatLiteral(double value)
     {
-        throw new NotImplementedException("CompileFloatLiteral not yet implemented");
+        if (!_compileMode)
+        {
+            throw new InvalidOperationException("Cannot compile a literal outside of compilation mode");
+        }
+
+        _codeBuilder.FPushDouble(value);
     }
 
     /// <summary>
@@ -576,6 +736,24 @@ public class ForthInterpreter
             forth._vm.DataStack.PushLong(c);
             forth._vm.DataStack.PushLong(a);
         });
+
+        // Compilation words
+        DefinePrimitive(":", forth =>
+        {
+            // Enter compilation mode
+            string? name = forth.ReadWord();
+            if (name == null)
+            {
+                throw new InvalidOperationException("Expected word name after :");
+            }
+            forth.CreateColonDefinition(name);
+        });
+
+        DefinePrimitive(";", forth =>
+        {
+            // Exit compilation mode and add the word to the dictionary
+            forth.FinishColonDefinition();
+        }, isImmediate: true);
     }
 
     /// <summary>
@@ -583,13 +761,15 @@ public class ForthInterpreter
     /// </summary>
     /// <param name="name">The name of the primitive word (e.g., "!", "@", "DUP", "+").</param>
     /// <param name="handler">The action to execute when this primitive is called.</param>
-    private void DefinePrimitive(string name, Action<ForthInterpreter> handler)
+    /// <param name="isImmediate">Whether this word should be executed even during compilation mode.</param>
+    private void DefinePrimitive(string name, Action<ForthInterpreter> handler, bool isImmediate = false)
     {
         var word = new WordDefinition
         {
             Name = name.ToUpper(),
             Type = WordType.Primitive,
-            PrimitiveHandler = handler
+            PrimitiveHandler = handler,
+            IsImmediate = isImmediate
         };
         AddWord(name, word);
     }
