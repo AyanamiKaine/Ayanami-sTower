@@ -311,7 +311,7 @@ public class ForthInterpreterCoreWordsTests
     {
         var vm = new VM();
         var forth = new ForthInterpreter(vm);
-        forth.Interpret(": TEST 2 5 MAX * ;");
+        forth.Interpret(": TEST 2 5 MAX ;");
 
         // Defines a new word TEST that finds the maximum of 2 and 5, then multiplies by the top stack value.
 

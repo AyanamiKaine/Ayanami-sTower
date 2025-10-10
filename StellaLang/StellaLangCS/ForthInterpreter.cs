@@ -656,12 +656,23 @@ public class ForthInterpreter
         DefinePrimitive("F/", OPCode.FDIV);
         DefinePrimitive("FNEGATE", OPCode.FNEG);
 
-        // FABS - use handler for now (VM doesn't have FABS opcode)
-        DefinePrimitive("FABS", forth =>
-        {
-            double value = forth._vm.FloatStack.PopDouble();
-            forth._vm.FloatStack.PushDouble(Math.Abs(value));
-        });
+        // Floating-point comparison operations - VM opcodes
+        DefinePrimitive("F<", OPCode.FLT);
+        DefinePrimitive("F>", OPCode.FGT);
+        DefinePrimitive("F=", OPCode.FEQ);
+        DefinePrimitive("F<=", OPCode.FLTE);
+        DefinePrimitive("F>=", OPCode.FGTE);
+        DefinePrimitive("F<>", OPCode.FNEQ);
+
+        // F0<: PUSH 0.0, F< (compares value < 0.0)
+        // Stack: ( F: x -- ) ( -- flag )
+        DefinePrimitive("F0<", new CodeBuilder().FPushDouble(0.0).FLt().Build());
+
+        // F0>: PUSH 0.0, F> (compares value > 0.0)
+        DefinePrimitive("F0>", new CodeBuilder().FPushDouble(0.0).FGt().Build());
+
+        // F0=: PUSH 0.0, F= (compares value == 0.0)
+        DefinePrimitive("F0=", new CodeBuilder().FPushDouble(0.0).FEq().Build());
 
         // Floating-point stack operations - VM opcodes
         DefinePrimitive("FDUP", OPCode.FDUP);
@@ -753,10 +764,11 @@ public class ForthInterpreter
             forth._codeBuilder.Label(label);
         }, isImmediate: true);
 
-        // Define MAX and MIN by compiling FORTH source code
+        // Define MAX, MIN, ABS, and FABS by compiling FORTH source code
         // MAX: 2DUP < IF SWAP THEN DROP
         // MIN: 2DUP > IF SWAP THEN DROP
         // ABS: DUP 0 < IF NEGATE THEN
+        // FABS: FDUP F0< IF FNEGATE THEN
         // This is more elegant than manually building bytecode
         Interpret(": MAX 2DUP < IF SWAP THEN DROP ;");
         Interpret(": MIN 2DUP > IF SWAP THEN DROP ;");
