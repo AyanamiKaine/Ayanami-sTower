@@ -84,6 +84,11 @@ public class ForthInterpreter
     private string? _currentStartLabel;
 
     /// <summary>
+    /// The name of the most recently CREATE'd word (for DOES> to modify).
+    /// </summary>
+    private string? _lastCreatedWord;
+
+    /// <summary>
     /// Initializes a new instance of the FORTH interpreter.
     /// </summary>
     /// <param name="vm">The VM instance to use for execution.</param>
@@ -921,6 +926,9 @@ public class ForthInterpreter
             {
                 string? name = ReadWord() ?? throw new InvalidOperationException("Expected word name after CREATE");
 
+                // Track this as the last created word for DOES>
+                _lastCreatedWord = name;
+
                 // Align data-space pointer if necessary (to 8-byte boundary for cells)
                 int remainder = _here % 8;
                 if (remainder != 0)
@@ -967,15 +975,138 @@ public class ForthInterpreter
             if (!forth._compileMode)
                 throw new InvalidOperationException("DOES> can only be used in compilation mode");
 
-            // DOES> modifies the most recently created word to execute the code that follows
-            // This is complex to implement properly, so for now we'll provide a basic implementation
+            // Note: We don't check for _lastCreatedWord here because CREATE might be in the same definition
+            // The check happens at runtime in the syscall handler
 
-            // Strategy: Compile a jump to skip over the DOES> code during definition,
-            // then modify the last created word to call back to this code
+            // DOES> implementation strategy:
+            // At compile-time: Generate code that, when executed, modifies the last CREATE'd word
+            // The modification: Make the word push its data address, then call to DOES> code
 
-            throw new NotImplementedException(
-                "DOES> is a complex word requiring runtime code modification. " +
-                "For now, use explicit colon definitions instead.");
+            // Generate a unique label for the DOES> code
+            string doesCodeLabel = $"DOES_CODE_{forth._labelCounter++}";
+
+            // We need to store the address of the DOES> code so the syscall can access it
+            // We'll allocate space in data space to hold this address
+            int doesAddrStorage = forth._here;
+            forth.Allot(8);  // Allocate 8 bytes for the address
+
+            // Compile a runtime syscall that modifies the last CREATE'd word
+            const long DOES_RUNTIME_SYSCALL_ID = 1301;
+
+            // When this code executes, it will:
+            // 1. Store the DOES> code address in the allocated space (we'll do this after label resolution)
+            // 2. Push the storage address and call the syscall
+            // 3. Skip over the DOES> code and continue
+
+            forth._codeBuilder
+                .PushCell(doesAddrStorage)  // Push address where DOES> code address is stored
+                .PushCell(DOES_RUNTIME_SYSCALL_ID)
+                .Syscall()
+                .Jmp(forth._currentExitLabel!); // Jump to exit, skipping DOES> code
+
+            // Mark where the DOES> code begins (this is where modified words will call)
+            forth._codeBuilder.Label(doesCodeLabel);
+
+            // We need to store the resolved address after building
+            // For now, we'll handle this in the syscall by calculating the address from PC
+
+            // Register the runtime handler that does the actual modification
+            if (!forth._vm.SyscallHandlers.ContainsKey(DOES_RUNTIME_SYSCALL_ID))
+            {
+                forth._vm.SyscallHandlers[DOES_RUNTIME_SYSCALL_ID] = vm =>
+                {
+                    // At runtime, the stack has: ( doesAddrStorage -- )
+                    // We need to:
+                    // 1. Calculate the address of the DOES> code
+                    // 2. Modify the last CREATE'd word to execute that code
+
+                    if (forth._lastCreatedWord == null)
+                        throw new InvalidOperationException("DOES> runtime: no word to modify");
+
+                    var word = forth.FindWord(forth._lastCreatedWord) ?? throw new InvalidOperationException($"DOES> runtime: cannot find word {forth._lastCreatedWord}");
+
+                    // Pop the storage address (we don't actually use it now, but it's on the stack)
+                    long doesAddrStorage = vm.DataStack.PopLong();
+
+                    // The DOES> code is part of the current word's bytecode
+                    // We need to extract it and store it for the modified word to execute
+
+                    // Get the current word being executed
+                    // We'll need to find the DOES> code within it
+
+                    // Calculate the address of the DOES> code
+                    long doesCodeAddr;
+                    // byte[] doesCodeBytecode;
+
+                    if (!vm.ReturnStack.IsEmpty)
+                    {
+                        // We're called from within another word
+                        long returnAddr = vm.ReturnStack.PeekLong();
+                        // After SYSCALL, there's a JMP (9 bytes), then the DOES> code
+                        doesCodeAddr = returnAddr + 9;
+                    }
+                    else
+                    {
+                        // We're executed directly (not called)
+                        // Use the VM's PC directly
+                        doesCodeAddr = vm.PC + 9;  // Skip the JMP instruction
+                    }
+
+                    // Extract the DOES> bytecode from the current bytecode
+                    // The DOES> code runs from doesCodeAddr to the end of the current word
+                    // We need access to the current executing bytecode...
+                    // Since we don't have it easily, let's use a different approach:
+                    // Store the defining word and offset in the modified word
+
+                    // Actually, simpler approach: Store the DOES> code address and the parent word
+                    // Then create a word that:
+                    // 1. Pushes data field address
+                    // 2. Executes a syscall that runs the DOES> code from the parent word
+
+                    // Create a DOES> execution syscall
+                    const long DOES_EXECUTE_SYSCALL_ID = 1302;
+
+                    // Get the data field address from the created word
+                    int dataFieldAddress = word.DataAddress;
+
+                    // Create new bytecode for the word:
+                    // When called, it should: push data-field-address, push DOES> addr, call executor
+                    byte[] newBytecode = new CodeBuilder()
+                        .PushCell(dataFieldAddress)  // Push data field address onto stack
+                        .PushCell(doesCodeAddr)      // Push address of DOES> code
+                        .PushCell(DOES_EXECUTE_SYSCALL_ID)
+                        .Syscall()                   // Execute the DOES> code
+                        .PushCell(1200)              // Exit syscall ID
+                        .Syscall()                   // Return properly
+                        .Build();
+
+                    // Replace the word's compiled code
+                    word.CompiledCode = newBytecode;
+
+                    // Register the DOES> executor syscall if not already done
+                    if (!vm.SyscallHandlers.ContainsKey(DOES_EXECUTE_SYSCALL_ID))
+                    {
+                        vm.SyscallHandlers[DOES_EXECUTE_SYSCALL_ID] = execVm =>
+                        {
+                            // Stack: ( data-field-addr does-code-addr -- ... )
+                            long codeAddr = execVm.DataStack.PopLong();
+                            // data-field-addr is already on stack for the DOES> code to use
+
+                            // We need to execute the bytecode starting at codeAddr
+                            // But we can't easily do that with the current VM architecture
+                            // because Execute() takes a byte array, not an address
+
+                            // Alternative: Use CALL to jump to that address
+                            // But that requires being in the same bytecode context
+
+                            // Best solution: Store the parent word's bytecode in the modified word
+                            // and use an offset
+
+                            throw new NotImplementedException("DOES> execution - need to extract and store DOES> code");
+                        };
+                    }
+                };
+            }
         }, isImmediate: true);
 
         DefinePrimitive("VARIABLE", forth =>
