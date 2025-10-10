@@ -387,6 +387,18 @@ public class ForthInterpreter
                 case "ROT": _codeBuilder.Rot(); break;
                 case "!": _codeBuilder.Store(); break;
                 case "@": _codeBuilder.Fetch(); break;
+                // Floating-point operations
+                case "F+": _codeBuilder.FAdd(); break;
+                case "F-": _codeBuilder.FSub(); break;
+                case "F*": _codeBuilder.FMul(); break;
+                case "F/": _codeBuilder.FDiv(); break;
+                case "FNEGATE": _codeBuilder.FNeg(); break;
+                case "FABS":
+                    throw new NotImplementedException("FABS compilation not yet supported");
+                case "FDUP": _codeBuilder.FDup(); break;
+                case "FDROP": _codeBuilder.FDrop(); break;
+                case "FSWAP": _codeBuilder.FSwap(); break;
+                case "FOVER": _codeBuilder.FOver(); break;
                 default:
                     throw new NotImplementedException($"Primitive '{word.Name}' cannot be compiled yet");
             }
@@ -542,13 +554,15 @@ public class ForthInterpreter
     /// <summary>
     /// Attempts to parse a string as a floating-point number.
     /// Handles formats like: 2.3, -4.5, 1.23e10, etc.
+    /// Uses invariant culture to ensure '.' is always the decimal separator.
     /// </summary>
     /// <param name="text">The text to parse.</param>
     /// <param name="value">The parsed double value if successful.</param>
     /// <returns>True if parsing succeeded, false otherwise.</returns>
     private bool TryParseFloat(string text, out double value)
     {
-        return double.TryParse(text, out value);
+        return double.TryParse(text, System.Globalization.NumberStyles.Float, 
+            System.Globalization.CultureInfo.InvariantCulture, out value);
     }
 
     #endregion
@@ -735,6 +749,80 @@ public class ForthInterpreter
             forth._vm.DataStack.PushLong(b);
             forth._vm.DataStack.PushLong(c);
             forth._vm.DataStack.PushLong(a);
+        });
+
+        // Floating-point arithmetic operations
+        DefinePrimitive("F+", forth =>
+        {
+            double b = forth._vm.FloatStack.PopDouble();
+            double a = forth._vm.FloatStack.PopDouble();
+            forth._vm.FloatStack.PushDouble(a + b);
+        });
+
+        DefinePrimitive("F-", forth =>
+        {
+            double b = forth._vm.FloatStack.PopDouble();
+            double a = forth._vm.FloatStack.PopDouble();
+            forth._vm.FloatStack.PushDouble(a - b);
+        });
+
+        DefinePrimitive("F*", forth =>
+        {
+            double b = forth._vm.FloatStack.PopDouble();
+            double a = forth._vm.FloatStack.PopDouble();
+            forth._vm.FloatStack.PushDouble(a * b);
+        });
+
+        DefinePrimitive("F/", forth =>
+        {
+            double b = forth._vm.FloatStack.PopDouble();
+            double a = forth._vm.FloatStack.PopDouble();
+            if (b == 0.0)
+            {
+                throw new DivideByZeroException("Float division by zero");
+            }
+            forth._vm.FloatStack.PushDouble(a / b);
+        });
+
+        DefinePrimitive("FNEGATE", forth =>
+        {
+            double value = forth._vm.FloatStack.PopDouble();
+            forth._vm.FloatStack.PushDouble(-value);
+        });
+
+        DefinePrimitive("FABS", forth =>
+        {
+            double value = forth._vm.FloatStack.PopDouble();
+            forth._vm.FloatStack.PushDouble(Math.Abs(value));
+        });
+
+        // Floating-point stack operations
+        DefinePrimitive("FDUP", forth =>
+        {
+            double value = forth._vm.FloatStack.PeekDouble();
+            forth._vm.FloatStack.PushDouble(value);
+        });
+
+        DefinePrimitive("FDROP", forth =>
+        {
+            forth._vm.FloatStack.PopDouble();
+        });
+
+        DefinePrimitive("FSWAP", forth =>
+        {
+            double b = forth._vm.FloatStack.PopDouble();
+            double a = forth._vm.FloatStack.PopDouble();
+            forth._vm.FloatStack.PushDouble(b);
+            forth._vm.FloatStack.PushDouble(a);
+        });
+
+        DefinePrimitive("FOVER", forth =>
+        {
+            double b = forth._vm.FloatStack.PopDouble();
+            double a = forth._vm.FloatStack.PopDouble();
+            forth._vm.FloatStack.PushDouble(a);
+            forth._vm.FloatStack.PushDouble(b);
+            forth._vm.FloatStack.PushDouble(a);
         });
 
         // Compilation words

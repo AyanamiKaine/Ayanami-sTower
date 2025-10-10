@@ -57,16 +57,16 @@ public class ForthInterpreterCoreWordsTests
     }
 
     /// <summary>
-    /// + Add
+    /// F+ Floating-point add (this is a legacy test that should use F+)
     /// </summary>
     [Fact]
     public void FloatAddPlusSymbolTest()
     {
         var vm = new VM();
         var forth = new ForthInterpreter(vm);
-        forth.Interpret("10.5 20.5 +");
-        // pushes two values and adds them. 
-        // The result is pushed to stack.
+        forth.Interpret("10.5 20.5 F+");
+        // pushes two float values and adds them with F+. 
+        // The result is pushed to float stack.
 
         double currentTopStackValue = vm.FloatStack.PeekDouble();
         Assert.Equal(31, currentTopStackValue);
@@ -319,5 +319,195 @@ public class ForthInterpreterCoreWordsTests
         long currentTopStackValue = vm.DataStack.PeekCell();
         Assert.Equal(5, currentTopStackValue);
     }
-}
 
+    // ===== Floating-Point Arithmetic Tests =====
+
+    /// <summary>
+    /// F+ Floating-point addition
+    /// </summary>
+    [Fact]
+    public void FloatAddTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret("10.5 20.3 F+");
+        // Adds 10.5 and 20.3.
+
+        double result = vm.FloatStack.PeekDouble();
+        Assert.Equal(30.8, result, 5); // 5 decimal places precision
+    }
+
+    /// <summary>
+    /// F- Floating-point subtraction
+    /// </summary>
+    [Fact]
+    public void FloatSubtractTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret("50.7 20.2 F-");
+        // Subtracts 20.2 from 50.7.
+
+        double result = vm.FloatStack.PeekDouble();
+        Assert.Equal(30.5, result, 5);
+    }
+
+    /// <summary>
+    /// F* Floating-point multiplication
+    /// </summary>
+    [Fact]
+    public void FloatMultiplyTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret("2.5 4.0 F*");
+        // Multiplies 2.5 by 4.0.
+
+        double result = vm.FloatStack.PeekDouble();
+        Assert.Equal(10.0, result, 5);
+    }
+
+    /// <summary>
+    /// F/ Floating-point division
+    /// </summary>
+    [Fact]
+    public void FloatDivideTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret("10.0 4.0 F/");
+        // Divides 10.0 by 4.0.
+
+        double result = vm.FloatStack.PeekDouble();
+        Assert.Equal(2.5, result, 5);
+    }
+
+    /// <summary>
+    /// FNEGATE Floating-point negation
+    /// </summary>
+    [Fact]
+    public void FloatNegateTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret("42.5 FNEGATE");
+        // Negates 42.5.
+
+        double result = vm.FloatStack.PeekDouble();
+        Assert.Equal(-42.5, result, 5);
+    }
+
+    /// <summary>
+    /// FABS Floating-point absolute value
+    /// </summary>
+    [Fact]
+    public void FloatAbsoluteValueTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret("-42.5 FABS");
+        // Gets absolute value of -42.5.
+
+        double result = vm.FloatStack.PeekDouble();
+        Assert.Equal(42.5, result, 5);
+    }
+
+    /// <summary>
+    /// FDUP Duplicate top of float stack
+    /// </summary>
+    [Fact]
+    public void FloatDupTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret("3.14 FDUP");
+        // Duplicates 3.14 on float stack.
+
+        double top = vm.FloatStack.PopDouble();
+        double second = vm.FloatStack.PopDouble();
+        Assert.Equal(3.14, top, 5);
+        Assert.Equal(3.14, second, 5);
+    }
+
+    /// <summary>
+    /// FDROP Drop top of float stack
+    /// </summary>
+    [Fact]
+    public void FloatDropTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret("1.1 2.2 3.3 FDROP");
+        // Drops 3.3 from float stack.
+
+        double result = vm.FloatStack.PeekDouble();
+        Assert.Equal(2.2, result, 5);
+    }
+
+    /// <summary>
+    /// FSWAP Swap top two float stack elements
+    /// </summary>
+    [Fact]
+    public void FloatSwapTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret("1.1 2.2 FSWAP");
+        // Swaps 1.1 and 2.2.
+
+        double top = vm.FloatStack.PopDouble();
+        double second = vm.FloatStack.PopDouble();
+        Assert.Equal(1.1, top, 5);
+        Assert.Equal(2.2, second, 5);
+    }
+
+    /// <summary>
+    /// FOVER Copy second float to top
+    /// </summary>
+    [Fact]
+    public void FloatOverTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret("1.1 2.2 FOVER");
+        // Copies 1.1 to top of float stack.
+
+        double top = vm.FloatStack.PopDouble();
+        double second = vm.FloatStack.PopDouble();
+        double third = vm.FloatStack.PopDouble();
+        Assert.Equal(1.1, top, 5);
+        Assert.Equal(2.2, second, 5);
+        Assert.Equal(1.1, third, 5);
+    }
+
+    /// <summary>
+    /// Test floating-point operations in colon definition
+    /// </summary>
+    [Fact]
+    public void FloatColonDefinitionTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        forth.Interpret(": SQUARE FDUP F* ;");
+        // Defines SQUARE that duplicates and multiplies (x * x).
+
+        forth.Interpret("5.0 SQUARE");
+        double result = vm.FloatStack.PeekDouble();
+        Assert.Equal(25.0, result, 5);
+    }
+
+    /// <summary>
+    /// Test complex floating-point calculation
+    /// </summary>
+    [Fact]
+    public void FloatComplexCalculationTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+        // Calculate (3.0 + 4.0) * 2.0 = 14.0
+        forth.Interpret("3.0 4.0 F+ 2.0 F*");
+
+        double result = vm.FloatStack.PeekDouble();
+        Assert.Equal(14.0, result, 5);
+    }
+}
