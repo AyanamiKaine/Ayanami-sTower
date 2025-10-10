@@ -638,4 +638,262 @@ public class ForthInterpreterCoreWordsTests
         result = vm.DataStack.PeekCell();
         Assert.Equal(42, result);
     }
+
+    /// <summary>
+    /// Test BEGIN...UNTIL loop construct
+    /// T{ : GI4 BEGIN DUP 1+ DUP 5 &gt; UNTIL ; -&gt; }T
+    /// T{ 3 GI4 -&gt; 3 4 5 6 }T
+    /// </summary>
+    [Fact]
+    public void BeginUntilLoopTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Define: : GI4 BEGIN DUP 1+ DUP 5 > UNTIL ;
+        forth.Interpret(": GI4 BEGIN DUP 1+ DUP 5 > UNTIL ;");
+
+        // Test: 3 GI4 -> 3 4 5 6
+        forth.Interpret("3 GI4");
+
+        // Stack should have: 3 4 5 6 (bottom to top)
+        long val4 = vm.DataStack.PopLong();
+        long val3 = vm.DataStack.PopLong();
+        long val2 = vm.DataStack.PopLong();
+        long val1 = vm.DataStack.PopLong();
+
+        Assert.Equal(3, val1);
+        Assert.Equal(4, val2);
+        Assert.Equal(5, val3);
+        Assert.Equal(6, val4);
+    }
+
+    /// <summary>
+    /// Test BEGIN...UNTIL loop with different start values
+    /// T{ 5 GI4 -&gt; 5 6 }T
+    /// T{ 6 GI4 -&gt; 6 7 }T
+    /// </summary>
+    [Fact]
+    public void BeginUntilLoopWithDifferentStartsTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        forth.Interpret(": GI4 BEGIN DUP 1+ DUP 5 > UNTIL ;");
+
+        // Test: 5 GI4 -> 5 6
+        forth.Interpret("5 GI4");
+        long val2 = vm.DataStack.PopLong();
+        long val1 = vm.DataStack.PopLong();
+        Assert.Equal(5, val1);
+        Assert.Equal(6, val2);
+
+        // Test: 6 GI4 -> 6 7
+        vm.DataStack.Clear();
+        forth.Interpret("6 GI4");
+        val2 = vm.DataStack.PopLong();
+        val1 = vm.DataStack.PopLong();
+        Assert.Equal(6, val1);
+        Assert.Equal(7, val2);
+    }
+
+    /// <summary>
+    /// Test BEGIN...WHILE...REPEAT loop construct
+    /// T{ : GI3 BEGIN DUP 5 &lt; WHILE DUP 1+ REPEAT ; -&gt; }T
+    /// T{ 0 GI3 -&gt; 0 1 2 3 4 5 }T
+    /// </summary>
+    [Fact]
+    public void BeginWhileRepeatLoopTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Define: : GI3 BEGIN DUP 5 < WHILE DUP 1+ REPEAT ;
+        forth.Interpret(": GI3 BEGIN DUP 5 < WHILE DUP 1+ REPEAT ;");
+
+        // Test: 0 GI3 -> 0 1 2 3 4 5
+        forth.Interpret("0 GI3");
+
+        long val6 = vm.DataStack.PopLong();
+        long val5 = vm.DataStack.PopLong();
+        long val4 = vm.DataStack.PopLong();
+        long val3 = vm.DataStack.PopLong();
+        long val2 = vm.DataStack.PopLong();
+        long val1 = vm.DataStack.PopLong();
+
+        Assert.Equal(0, val1);
+        Assert.Equal(1, val2);
+        Assert.Equal(2, val3);
+        Assert.Equal(3, val4);
+        Assert.Equal(4, val5);
+        Assert.Equal(5, val6);
+    }
+
+    /// <summary>
+    /// Test BEGIN...WHILE...REPEAT with different start values
+    /// T{ 4 GI3 -&gt; 4 5 }T
+    /// T{ 5 GI3 -&gt; 5 }T
+    /// T{ 6 GI3 -&gt; 6 }T
+    /// </summary>
+    [Fact]
+    public void BeginWhileRepeatWithDifferentStartsTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        forth.Interpret(": GI3 BEGIN DUP 5 < WHILE DUP 1+ REPEAT ;");
+
+        // Test: 4 GI3 -> 4 5
+        forth.Interpret("4 GI3");
+        long val2 = vm.DataStack.PopLong();
+        long val1 = vm.DataStack.PopLong();
+        Assert.Equal(4, val1);
+        Assert.Equal(5, val2);
+
+        // Test: 5 GI3 -> 5
+        vm.DataStack.Clear();
+        forth.Interpret("5 GI3");
+        val1 = vm.DataStack.PopLong();
+        Assert.Equal(5, val1);
+
+        // Test: 6 GI3 -> 6
+        vm.DataStack.Clear();
+        forth.Interpret("6 GI3");
+        val1 = vm.DataStack.PopLong();
+        Assert.Equal(6, val1);
+    }
+
+    /// <summary>
+    /// Test nested BEGIN...WHILE loops
+    /// T{ : GI5 BEGIN DUP 2 &gt; WHILE DUP 5 &lt; WHILE DUP 1+ REPEAT 123 ELSE 345 THEN ; -&gt; }T
+    /// T{ 1 GI5 -&gt; 1 345 }T
+    /// T{ 2 GI5 -&gt; 2 345 }T
+    /// T{ 3 GI5 -&gt; 3 4 5 123 }T
+    /// </summary>
+    [Fact]
+    public void NestedBeginWhileLoopsTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Define: : GI5 BEGIN DUP 2 > WHILE DUP 5 < WHILE DUP 1+ REPEAT 123 ELSE 345 THEN ;
+        forth.Interpret(": GI5 BEGIN DUP 2 > WHILE DUP 5 < WHILE DUP 1+ REPEAT 123 ELSE 345 THEN ;");
+
+        // Test: 1 GI5 -> 1 345
+        forth.Interpret("1 GI5");
+        long val2 = vm.DataStack.PopLong();
+        long val1 = vm.DataStack.PopLong();
+        Assert.Equal(1, val1);
+        Assert.Equal(345, val2);
+
+        // Test: 2 GI5 -> 2 345
+        vm.DataStack.Clear();
+        forth.Interpret("2 GI5");
+        val2 = vm.DataStack.PopLong();
+        val1 = vm.DataStack.PopLong();
+        Assert.Equal(2, val1);
+        Assert.Equal(345, val2);
+
+        // Test: 3 GI5 -> 3 4 5 123
+        vm.DataStack.Clear();
+        forth.Interpret("3 GI5");
+        long val4 = vm.DataStack.PopLong();
+        long val3 = vm.DataStack.PopLong();
+        val2 = vm.DataStack.PopLong();
+        val1 = vm.DataStack.PopLong();
+        Assert.Equal(3, val1);
+        Assert.Equal(4, val2);
+        Assert.Equal(5, val3);
+        Assert.Equal(123, val4);
+    }
+
+    /// <summary>
+    /// Test VARIABLE word
+    /// T{ VARIABLE V1 -&gt; }T
+    /// T{ 123 V1 ! -&gt; }T
+    /// T{ V1 @ -&gt; 123 }T
+    /// </summary>
+    [Fact]
+    public void VariableTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Create a variable
+        forth.Interpret("VARIABLE V1");
+
+        // Store 123 in the variable (using address value ! convention)
+        forth.Interpret("V1 123 !");
+
+        // Fetch the value
+        forth.Interpret("V1 @");
+
+        long result = vm.DataStack.PeekCell();
+        Assert.Equal(123, result);
+    }
+
+    /// <summary>
+    /// Test multiple VARIABLEs
+    /// </summary>
+    [Fact]
+    public void MultipleVariablesTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Create multiple variables
+        forth.Interpret("VARIABLE X");
+        forth.Interpret("VARIABLE Y");
+        forth.Interpret("VARIABLE Z");
+
+        // Store different values (using address value ! convention)
+        forth.Interpret("X 42 !");
+        forth.Interpret("Y 99 !");
+        forth.Interpret("Z 256 !");
+
+        // Fetch and verify X
+        forth.Interpret("X @");
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(42, result);
+
+        // Fetch and verify Y
+        forth.Interpret("Y @");
+        result = vm.DataStack.PopLong();
+        Assert.Equal(99, result);
+
+        // Fetch and verify Z
+        forth.Interpret("Z @");
+        result = vm.DataStack.PopLong();
+        Assert.Equal(256, result);
+    }
+
+    /// <summary>
+    /// Test VARIABLE in a colon definition
+    /// </summary>
+    [Fact]
+    public void VariableInColonDefinitionTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Create a variable
+        forth.Interpret("VARIABLE COUNTER");
+
+        // Define a word that uses the variable (using address value ! convention)
+        forth.Interpret(": INCR COUNTER @ 1 + COUNTER SWAP ! ;");
+
+        // Initialize counter to 0 (using address value ! convention)
+        forth.Interpret("COUNTER 0 !");
+
+        // Increment three times
+        forth.Interpret("INCR");
+        forth.Interpret("INCR");
+        forth.Interpret("INCR");
+
+        // Check the result
+        forth.Interpret("COUNTER @");
+        long result = vm.DataStack.PeekCell();
+        Assert.Equal(3, result);
+    }
 }
+

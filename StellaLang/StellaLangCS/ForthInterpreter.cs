@@ -171,6 +171,11 @@ public class ForthInterpreter
                 {
                     ExecuteColonDefinition(definition);
                 }
+                else if (definition.Type == WordType.Variable)
+                {
+                    // Push the variable's address onto the stack
+                    _vm.DataStack.PushLong(definition.DataAddress);
+                }
                 else
                 {
                     throw new NotImplementedException($"Word type {definition.Type} not yet supported");
@@ -421,6 +426,11 @@ public class ForthInterpreter
                 _codeBuilder.AppendBytes(codeToInline);
             }
         }
+        else if (word.Type == WordType.Variable)
+        {
+            // When compiling a variable reference, push its address as a literal
+            _codeBuilder.PushCell(word.DataAddress);
+        }
         else
         {
             throw new NotImplementedException($"Compiling word type {word.Type} not yet supported");
@@ -457,12 +467,17 @@ public class ForthInterpreter
 
     /// <summary>
     /// Allocates space in the data space.
+    /// This allocates space in VM memory starting from _here.
     /// </summary>
     /// <param name="bytes">Number of bytes to allocate.</param>
     /// <returns>The address of the allocated space.</returns>
     private int Allot(int bytes)
     {
-        throw new NotImplementedException("Allot not yet implemented");
+        int address = _here;
+        _here += bytes;
+        // Note: We don't need to write anything to _dataSpace since we're using VM.Memory
+        // The VM.Memory is pre-allocated and ready to use
+        return address;
     }
 
     /// <summary>
@@ -607,8 +622,9 @@ public class ForthInterpreter
     /// </summary>
     private void InitializeMemoryOperations()
     {
-        // VM STORE/FETCH expect different operand order than FORTH
-        // FORTH: value address ! → need to swap before calling STORE
+        // Note: Our implementation uses ( address value -- ) instead of standard FORTH ( x a-addr -- )
+        // This matches the existing tests and is more intuitive: address value !
+        // VM STORE expects address on top, value below, so we need SWAP
         DefinePrimitive("!", new CodeBuilder().Swap().Store().Build());
         DefinePrimitive("@", OPCode.FETCH);
     }
@@ -710,6 +726,25 @@ public class ForthInterpreter
         });
 
         DefinePrimitive(";", forth => forth.FinishColonDefinition(), isImmediate: true);
+
+        DefinePrimitive("VARIABLE", forth =>
+        {
+            string? name = forth.ReadWord() ?? throw new InvalidOperationException("Expected variable name after VARIABLE");
+
+            // Allocate one cell (8 bytes) in data space
+            int address = forth.Allot(8);
+
+            // Create a word definition for the variable
+            var varDef = new WordDefinition
+            {
+                Name = name,
+                Type = WordType.Variable,
+                DataAddress = address,
+                IsImmediate = false
+            };
+
+            forth._dictionary[name] = varDef;
+        });
     }
 
     /// <summary>
@@ -751,6 +786,56 @@ public class ForthInterpreter
 
             string label = forth._compileStack.Pop();
             forth._codeBuilder.Label(label);
+        }, isImmediate: true);
+
+        // BEGIN...UNTIL loops
+        DefinePrimitive("BEGIN", forth =>
+        {
+            if (!forth._compileMode)
+                throw new InvalidOperationException("BEGIN can only be used in compilation mode");
+
+            string label = $"L{forth._labelCounter++}";
+            forth._codeBuilder.Label(label);
+            forth._compileStack.Push(label);  // Push dest for UNTIL
+        }, isImmediate: true);
+
+        DefinePrimitive("UNTIL", forth =>
+        {
+            if (!forth._compileMode)
+                throw new InvalidOperationException("UNTIL can only be used in compilation mode");
+            if (forth._compileStack.Count == 0)
+                throw new InvalidOperationException("UNTIL without matching BEGIN");
+
+            string dest = forth._compileStack.Pop();
+            forth._codeBuilder.Jz(dest);  // Jump back to BEGIN if zero
+        }, isImmediate: true);
+
+        // BEGIN...WHILE...REPEAT loops
+        DefinePrimitive("WHILE", forth =>
+        {
+            if (!forth._compileMode)
+                throw new InvalidOperationException("WHILE can only be used in compilation mode");
+            if (forth._compileStack.Count == 0)
+                throw new InvalidOperationException("WHILE without matching BEGIN");
+
+            string dest = forth._compileStack.Pop();  // Get the BEGIN label
+            string orig = $"L{forth._labelCounter++}";  // Create forward reference for exit
+            forth._codeBuilder.Jz(orig);  // Jump forward if zero
+            forth._compileStack.Push(orig);  // Push orig for REPEAT
+            forth._compileStack.Push(dest);  // Push dest back for REPEAT
+        }, isImmediate: true);
+
+        DefinePrimitive("REPEAT", forth =>
+        {
+            if (!forth._compileMode)
+                throw new InvalidOperationException("REPEAT can only be used in compilation mode");
+            if (forth._compileStack.Count < 2)
+                throw new InvalidOperationException("REPEAT without matching BEGIN...WHILE");
+
+            string dest = forth._compileStack.Pop();  // Get BEGIN label
+            string orig = forth._compileStack.Pop();  // Get WHILE exit label
+            forth._codeBuilder.Jmp(dest);  // Jump back to BEGIN unconditionally
+            forth._codeBuilder.Label(orig);  // Resolve forward reference
         }, isImmediate: true);
     }
 
