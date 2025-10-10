@@ -67,6 +67,9 @@ public class ForthInterpreter
     /// The code builder used for generating bytecode.
     /// </summary>
     private CodeBuilder _codeBuilder;
+    // Next syscall id to allocate for primitives that use handlers but should be
+    // compilable. Starts in a high range to avoid colliding with reserved ids.
+    private long _nextHandlerSyscallId = 2000;
 
     /// <summary>
     /// The name of the word currently being compiled.
@@ -1647,6 +1650,15 @@ public class ForthInterpreter
             PrimitiveHandler = handler,
             IsImmediate = isImmediate
         };
+
+        // To allow primitives implemented as handlers to be compiled inline,
+        // allocate a dedicated syscall id and register a syscall that invokes
+        // the handler. Also provide compiled bytecode that performs the syscall
+        // so the compiler can inline it like any other primitive.
+        long syscallId = _nextHandlerSyscallId++;
+        _vm.SyscallHandlers[syscallId] = vm => { handler(this); };
+        word.CompiledCode = new CodeBuilder().PushCell(syscallId).Syscall().Build();
+
         AddWord(name, word);
     }
 

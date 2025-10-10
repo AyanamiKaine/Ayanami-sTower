@@ -44,10 +44,30 @@ public class ForthProgramTests
         " dry sand"          90        754  MATERIAL DRY-SAND
         " wet sand"         118        900  MATERIAL WET-SAND
         " clay"             120        727  MATERIAL CLAY
+        
+        CEMENT 10 FOOT PILE
         """;
 
         var interpreter = new ForthInterpreter();
-        interpreter.Interpret(forthCode);
+
+        // Capture console output
+        var originalOut = Console.Out;
+        using var writer = new System.IO.StringWriter();
+        Console.SetOut(writer);
+
+        try
+        {
+            interpreter.Interpret(forthCode);
+
+            string output = writer.ToString();
+            // The program should output "138 tons of cement" (or similar calculation)
+            Assert.Contains("tons of", output);
+            Assert.Contains("cement", output);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
     }
 
     /// <summary>
