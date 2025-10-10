@@ -1,10 +1,16 @@
-﻿namespace AyanamisTower.MemoryExtensions;
+﻿using System.Runtime.InteropServices;
+
+namespace AyanamisTower.MemoryExtensions;
 
 /// <summary>
 /// Extension methods for Memory&lt;byte&gt; to provide stack-like operations.
+/// This version is refactored to use MemoryMarshal for zero-allocation push, pop, and peek operations,
+/// significantly improving performance and reducing GC pressure.
 /// </summary>
 public static class MemoryExtensions
 {
+    // ===== Core Byte Operations =====
+
     /// <summary>
     /// Pushes a byte value onto the stack.
     /// </summary>
@@ -44,346 +50,336 @@ public static class MemoryExtensions
         return stack.Span[pointer - 1];
     }
 
+    // ===== Zero-Allocation Multi-Byte Operations =====
+
+    // ===== Zero-Allocation Multi-Byte Operations =====
+
     /// <summary>
-    /// Pushes a 32-bit integer value onto the stack as 4 bytes (little-endian).
+    /// Pushes a 32-bit integer value onto the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <param name="value">The integer value to push.</param>
     public static void PushInt(this Memory<byte> stack, ref int pointer, int value)
     {
-        byte[] bytes = BitConverter.GetBytes(value);
-        for (int i = 0; i < 4; i++)
-        {
-            stack.Push(ref pointer, bytes[i]);
-        }
+        const int size = sizeof(int);
+        if (pointer + size > stack.Length)
+            throw new InvalidOperationException("Stack overflow");
+
+        MemoryMarshal.Write(stack.Span.Slice(pointer), in value);
+        pointer += size;
     }
 
     /// <summary>
-    /// Pops a 32-bit integer value from the stack (4 bytes, little-endian).
+    /// Pops a 32-bit integer value from the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <returns>The popped integer value.</returns>
     public static int PopInt(this Memory<byte> stack, ref int pointer)
     {
-        byte[] bytes = new byte[4];
-        for (int i = 3; i >= 0; i--)
-        {
-            bytes[i] = stack.Pop(ref pointer);
-        }
-        return BitConverter.ToInt32(bytes, 0);
+        const int size = sizeof(int);
+        if (pointer < size)
+            throw new InvalidOperationException("Stack underflow");
+
+        pointer -= size;
+        return MemoryMarshal.Read<int>(stack.Span.Slice(pointer));
     }
 
     /// <summary>
-    /// Peeks at the top 32-bit integer value on the stack without removing it (4 bytes, little-endian).
+    /// Peeks at the top 32-bit integer value on the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <returns>The integer value at the top of the stack.</returns>
     public static int PeekInt(this Memory<byte> stack, ref int pointer)
     {
-        if (pointer < 4)
+        const int size = sizeof(int);
+        if (pointer < size)
             throw new InvalidOperationException("Not enough data on stack");
-        byte[] bytes = new byte[4];
-        for (int i = 0; i < 4; i++)
-        {
-            bytes[i] = stack.Span[pointer - 4 + i];
-        }
-        return BitConverter.ToInt32(bytes, 0);
+
+        return MemoryMarshal.Read<int>(stack.Span.Slice(pointer - size));
     }
 
     /// <summary>
-    /// Pushes a 16-bit integer value onto the stack as 2 bytes (little-endian).
+    /// Pushes a 16-bit integer value onto the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <param name="value">The short value to push.</param>
     public static void PushShort(this Memory<byte> stack, ref int pointer, short value)
     {
-        byte[] bytes = BitConverter.GetBytes(value);
-        for (int i = 0; i < 2; i++)
-        {
-            stack.Push(ref pointer, bytes[i]);
-        }
+        const int size = sizeof(short);
+        if (pointer + size > stack.Length)
+            throw new InvalidOperationException("Stack overflow");
+
+        MemoryMarshal.Write(stack.Span.Slice(pointer), in value);
+        pointer += size;
     }
 
     /// <summary>
-    /// Pops a 16-bit integer value from the stack (2 bytes, little-endian).
+    /// Pops a 16-bit integer value from the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <returns>The popped short value.</returns>
     public static short PopShort(this Memory<byte> stack, ref int pointer)
     {
-        byte[] bytes = new byte[2];
-        for (int i = 1; i >= 0; i--)
-        {
-            bytes[i] = stack.Pop(ref pointer);
-        }
-        return BitConverter.ToInt16(bytes, 0);
+        const int size = sizeof(short);
+        if (pointer < size)
+            throw new InvalidOperationException("Stack underflow");
+
+        pointer -= size;
+        return MemoryMarshal.Read<short>(stack.Span.Slice(pointer));
     }
 
     /// <summary>
-    /// Peeks at the top 16-bit integer value on the stack without removing it (2 bytes, little-endian).
+    /// Peeks at the top 16-bit integer value on the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <returns>The short value at the top of the stack.</returns>
     public static short PeekShort(this Memory<byte> stack, ref int pointer)
     {
-        if (pointer < 2)
+        const int size = sizeof(short);
+        if (pointer < size)
             throw new InvalidOperationException("Not enough data on stack");
-        byte[] bytes = new byte[2];
-        for (int i = 0; i < 2; i++)
-        {
-            bytes[i] = stack.Span[pointer - 2 + i];
-        }
-        return BitConverter.ToInt16(bytes, 0);
+
+        return MemoryMarshal.Read<short>(stack.Span.Slice(pointer - size));
     }
 
     /// <summary>
-    /// Pushes an unsigned 32-bit integer value onto the stack as 4 bytes (little-endian).
+    /// Pushes an unsigned 32-bit integer value onto the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <param name="value">The uint value to push.</param>
     public static void PushUInt(this Memory<byte> stack, ref int pointer, uint value)
     {
-        byte[] bytes = BitConverter.GetBytes(value);
-        for (int i = 0; i < 4; i++)
-        {
-            stack.Push(ref pointer, bytes[i]);
-        }
+        const int size = sizeof(uint);
+        if (pointer + size > stack.Length)
+            throw new InvalidOperationException("Stack overflow");
+
+        MemoryMarshal.Write(stack.Span.Slice(pointer), in value);
+        pointer += size;
     }
 
     /// <summary>
-    /// Pops an unsigned 32-bit integer value from the stack (4 bytes, little-endian).
+    /// Pops an unsigned 32-bit integer value from the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <returns>The popped uint value.</returns>
     public static uint PopUInt(this Memory<byte> stack, ref int pointer)
     {
-        byte[] bytes = new byte[4];
-        for (int i = 3; i >= 0; i--)
-        {
-            bytes[i] = stack.Pop(ref pointer);
-        }
-        return BitConverter.ToUInt32(bytes, 0);
+        const int size = sizeof(uint);
+        if (pointer < size)
+            throw new InvalidOperationException("Stack underflow");
+
+        pointer -= size;
+        return MemoryMarshal.Read<uint>(stack.Span.Slice(pointer));
     }
 
     /// <summary>
-    /// Peeks at the top unsigned 32-bit integer value on the stack without removing it (4 bytes, little-endian).
+    /// Peeks at the top unsigned 32-bit integer value on the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <returns>The uint value at the top of the stack.</returns>
     public static uint PeekUInt(this Memory<byte> stack, ref int pointer)
     {
-        if (pointer < 4)
+        const int size = sizeof(uint);
+        if (pointer < size)
             throw new InvalidOperationException("Not enough data on stack");
-        byte[] bytes = new byte[4];
-        for (int i = 0; i < 4; i++)
-        {
-            bytes[i] = stack.Span[pointer - 4 + i];
-        }
-        return BitConverter.ToUInt32(bytes, 0);
+
+        return MemoryMarshal.Read<uint>(stack.Span.Slice(pointer - size));
     }
 
     /// <summary>
-    /// Pushes a 64-bit integer value onto the stack as 8 bytes (little-endian).
+    /// Pushes a 64-bit integer value onto the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <param name="value">The long value to push.</param>
     public static void PushLong(this Memory<byte> stack, ref int pointer, long value)
     {
-        byte[] bytes = BitConverter.GetBytes(value);
-        for (int i = 0; i < 8; i++)
-        {
-            stack.Push(ref pointer, bytes[i]);
-        }
+        const int size = sizeof(long);
+        if (pointer + size > stack.Length)
+            throw new InvalidOperationException("Stack overflow");
+
+        MemoryMarshal.Write(stack.Span.Slice(pointer), in value);
+        pointer += size;
     }
 
     /// <summary>
-    /// Pops a 64-bit integer value from the stack (8 bytes, little-endian).
+    /// Pops a 64-bit integer value from the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <returns>The popped long value.</returns>
     public static long PopLong(this Memory<byte> stack, ref int pointer)
     {
-        byte[] bytes = new byte[8];
-        for (int i = 7; i >= 0; i--)
-        {
-            bytes[i] = stack.Pop(ref pointer);
-        }
-        return BitConverter.ToInt64(bytes, 0);
+        const int size = sizeof(long);
+        if (pointer < size)
+            throw new InvalidOperationException("Stack underflow");
+
+        pointer -= size;
+        return MemoryMarshal.Read<long>(stack.Span.Slice(pointer));
     }
 
     /// <summary>
-    /// Peeks at the top 64-bit integer value on the stack without removing it (8 bytes, little-endian).
+    /// Peeks at the top 64-bit integer value on the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <returns>The long value at the top of the stack.</returns>
     public static long PeekLong(this Memory<byte> stack, ref int pointer)
     {
-        if (pointer < 8)
+        const int size = sizeof(long);
+        if (pointer < size)
             throw new InvalidOperationException("Not enough data on stack");
-        byte[] bytes = new byte[8];
-        for (int i = 0; i < 8; i++)
-        {
-            bytes[i] = stack.Span[pointer - 8 + i];
-        }
-        return BitConverter.ToInt64(bytes, 0);
+
+        return MemoryMarshal.Read<long>(stack.Span.Slice(pointer - size));
     }
 
     /// <summary>
-    /// Pushes an unsigned 64-bit integer value onto the stack as 8 bytes (little-endian).
+    /// Pushes an unsigned 64-bit integer value onto the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <param name="value">The ulong value to push.</param>
     public static void PushULong(this Memory<byte> stack, ref int pointer, ulong value)
     {
-        byte[] bytes = BitConverter.GetBytes(value);
-        for (int i = 0; i < 8; i++)
-        {
-            stack.Push(ref pointer, bytes[i]);
-        }
+        const int size = sizeof(ulong);
+        if (pointer + size > stack.Length)
+            throw new InvalidOperationException("Stack overflow");
+
+        MemoryMarshal.Write(stack.Span.Slice(pointer), in value);
+        pointer += size;
     }
 
     /// <summary>
-    /// Pops an unsigned 64-bit integer value from the stack (8 bytes, little-endian).
+    /// Pops an unsigned 64-bit integer value from the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <returns>The popped ulong value.</returns>
     public static ulong PopULong(this Memory<byte> stack, ref int pointer)
     {
-        byte[] bytes = new byte[8];
-        for (int i = 7; i >= 0; i--)
-        {
-            bytes[i] = stack.Pop(ref pointer);
-        }
-        return BitConverter.ToUInt64(bytes, 0);
+        const int size = sizeof(ulong);
+        if (pointer < size)
+            throw new InvalidOperationException("Stack underflow");
+
+        pointer -= size;
+        return MemoryMarshal.Read<ulong>(stack.Span.Slice(pointer));
     }
 
     /// <summary>
-    /// Peeks at the top unsigned 64-bit integer value on the stack without removing it (8 bytes, little-endian).
+    /// Peeks at the top unsigned 64-bit integer value on the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <returns>The ulong value at the top of the stack.</returns>
     public static ulong PeekULong(this Memory<byte> stack, ref int pointer)
     {
-        if (pointer < 8)
+        const int size = sizeof(ulong);
+        if (pointer < size)
             throw new InvalidOperationException("Not enough data on stack");
-        byte[] bytes = new byte[8];
-        for (int i = 0; i < 8; i++)
-        {
-            bytes[i] = stack.Span[pointer - 8 + i];
-        }
-        return BitConverter.ToUInt64(bytes, 0);
+
+        return MemoryMarshal.Read<ulong>(stack.Span.Slice(pointer - size));
     }
 
     /// <summary>
-    /// Pushes a 32-bit floating-point value onto the stack as 4 bytes (little-endian).
+    /// Pushes a 32-bit floating-point value onto the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <param name="value">The float value to push.</param>
     public static void PushFloat(this Memory<byte> stack, ref int pointer, float value)
     {
-        byte[] bytes = BitConverter.GetBytes(value);
-        for (int i = 0; i < 4; i++)
-        {
-            stack.Push(ref pointer, bytes[i]);
-        }
+        const int size = sizeof(float);
+        if (pointer + size > stack.Length)
+            throw new InvalidOperationException("Stack overflow");
+
+        MemoryMarshal.Write(stack.Span.Slice(pointer), in value);
+        pointer += size;
     }
 
     /// <summary>
-    /// Pops a 32-bit floating-point value from the stack (4 bytes, little-endian).
+    /// Pops a 32-bit floating-point value from the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <returns>The popped float value.</returns>
     public static float PopFloat(this Memory<byte> stack, ref int pointer)
     {
-        byte[] bytes = new byte[4];
-        for (int i = 3; i >= 0; i--)
-        {
-            bytes[i] = stack.Pop(ref pointer);
-        }
-        return BitConverter.ToSingle(bytes, 0);
+        const int size = sizeof(float);
+        if (pointer < size)
+            throw new InvalidOperationException("Stack underflow");
+
+        pointer -= size;
+        return MemoryMarshal.Read<float>(stack.Span.Slice(pointer));
     }
 
     /// <summary>
-    /// Peeks at the top 32-bit floating-point value on the stack without removing it (4 bytes, little-endian).
+    /// Peeks at the top 32-bit floating-point value on the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <returns>The float value at the top of the stack.</returns>
     public static float PeekFloat(this Memory<byte> stack, ref int pointer)
     {
-        if (pointer < 4)
+        const int size = sizeof(float);
+        if (pointer < size)
             throw new InvalidOperationException("Not enough data on stack");
-        byte[] bytes = new byte[4];
-        for (int i = 0; i < 4; i++)
-        {
-            bytes[i] = stack.Span[pointer - 4 + i];
-        }
-        return BitConverter.ToSingle(bytes, 0);
+
+        return MemoryMarshal.Read<float>(stack.Span.Slice(pointer - size));
     }
 
     /// <summary>
-    /// Pushes a 64-bit floating-point value onto the stack as 8 bytes (little-endian).
+    /// Pushes a 64-bit floating-point value onto the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <param name="value">The double value to push.</param>
     public static void PushDouble(this Memory<byte> stack, ref int pointer, double value)
     {
-        byte[] bytes = BitConverter.GetBytes(value);
-        for (int i = 0; i < 8; i++)
-        {
-            stack.Push(ref pointer, bytes[i]);
-        }
+        const int size = sizeof(double);
+        if (pointer + size > stack.Length)
+            throw new InvalidOperationException("Stack overflow");
+
+        MemoryMarshal.Write(stack.Span.Slice(pointer), in value);
+        pointer += size;
     }
 
     /// <summary>
-    /// Pops a 64-bit floating-point value from the stack (8 bytes, little-endian).
+    /// Pops a 64-bit floating-point value from the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <returns>The popped double value.</returns>
     public static double PopDouble(this Memory<byte> stack, ref int pointer)
     {
-        byte[] bytes = new byte[8];
-        for (int i = 7; i >= 0; i--)
-        {
-            bytes[i] = stack.Pop(ref pointer);
-        }
-        return BitConverter.ToDouble(bytes, 0);
+        const int size = sizeof(double);
+        if (pointer < size)
+            throw new InvalidOperationException("Stack underflow");
+
+        pointer -= size;
+        return MemoryMarshal.Read<double>(stack.Span.Slice(pointer));
     }
 
     /// <summary>
-    /// Peeks at the top 64-bit floating-point value on the stack without removing it (8 bytes, little-endian).
+    /// Peeks at the top 64-bit floating-point value on the stack (zero-allocation).
     /// </summary>
     /// <param name="stack">The memory representing the stack.</param>
     /// <param name="pointer">Reference to the stack pointer.</param>
     /// <returns>The double value at the top of the stack.</returns>
     public static double PeekDouble(this Memory<byte> stack, ref int pointer)
     {
-        if (pointer < 8)
+        const int size = sizeof(double);
+        if (pointer < size)
             throw new InvalidOperationException("Not enough data on stack");
-        byte[] bytes = new byte[8];
-        for (int i = 0; i < 8; i++)
-        {
-            bytes[i] = stack.Span[pointer - 8 + i];
-        }
-        return BitConverter.ToDouble(bytes, 0);
+
+        return MemoryMarshal.Read<double>(stack.Span.Slice(pointer - size));
     }
 }
