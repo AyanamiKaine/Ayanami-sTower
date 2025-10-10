@@ -1824,6 +1824,94 @@ public class ForthInterpreterCoreWordsTests
         Assert.Equal(14, result);
     }
 
+    // ===== DO...LOOP minimal tests (mirror of ?DO cases) =====
+
+    /// <summary>
+    /// DO...LOOP - Basic counted loop that executes when start is less than limit
+    /// </summary>
+    [Fact]
+    public void DoLoopBasicTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Sum numbers 0 to 4: 0 + 1 + 2 + 3 + 4 = 10
+        forth.Interpret(": SUM 0 5 0 DO I + LOOP ;");
+        forth.Interpret("SUM");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(10, result);
+    }
+
+    /// <summary>
+    /// DO...LOOP - Skip loop when start equals limit (zero iterations)
+    /// </summary>
+    [Fact]
+    public void DoLoopSkipWhenStartEqualsLimitTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Should not execute loop body when start == limit
+        forth.Interpret(": TEST 100 5 5 DO I + LOOP ;");
+        forth.Interpret("TEST");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(100, result); // Should remain 100 (loop didn't execute)
+    }
+
+    /// <summary>
+    /// DO...LOOP - Skip loop when start exceeds limit (zero iterations)
+    /// </summary>
+    [Fact]
+    public void DoLoopSkipWhenStartGreaterThanLimitTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Should not execute loop body when start > limit
+        // DO takes ( limit start -- ), so use 5 10 for start=10, limit=5
+        forth.Interpret(": TEST 42 5 10 DO I + LOOP ;");
+        forth.Interpret("TEST");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(42, result); // Should remain 42 (loop didn't execute)
+    }
+
+    /// <summary>
+    /// DO...LOOP - Loop with single iteration
+    /// </summary>
+    [Fact]
+    public void DoLoopSingleIterationTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Loop executes exactly once: i=0
+        forth.Interpret(": TEST 0 1 0 DO I + LOOP ;");
+        forth.Interpret("TEST");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(0, result); // Only i=0 is added
+    }
+
+    /// <summary>
+    /// DO...LOOP - Using loop index I to access values
+    /// </summary>
+    [Fact]
+    public void DoLoopIndexAccessTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Multiply each index by 2 and sum: 0 + 2 + 4 + 6 = 12
+        forth.Interpret(": TEST 0 4 0 DO I 2 * + LOOP ;");
+        forth.Interpret("TEST");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(12, result);
+    }
+
     /// <summary>
     /// ?DO...LOOP - Edge case with negative start
     /// </summary>

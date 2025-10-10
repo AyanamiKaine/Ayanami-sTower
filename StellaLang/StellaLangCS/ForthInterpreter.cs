@@ -1045,6 +1045,43 @@ public class ForthInterpreter
             forth._codeBuilder.Label(exitLabel);
         }, isImmediate: true);
 
+        // DO...LOOP counted loops (standard form)
+        // DO ( limit start -- ) - With our current positive-step LOOP, we enter only when start < limit
+        // This avoids non-terminating loops for start >= limit until +LOOP is supported.
+        DefinePrimitive("DO", forth =>
+        {
+            if (!forth._compileMode)
+                throw new InvalidOperationException("DO can only be used in compilation mode");
+
+            string loopLabel = $"L{forth._labelCounter++}";
+            string exitLabel = $"L{forth._labelCounter++}";
+            string skipLabel = $"L{forth._labelCounter++}";
+
+            // Stack: limit start
+            // Enter only if start < limit (same guard as ?DO for now)
+            forth._codeBuilder
+                .Over()          // limit start limit
+                .Over()          // limit start limit start
+                .Swap()          // limit start start limit
+                .Lt();           // limit start (start<limit?)
+
+            // If start >= limit (condition is false/0), skip to cleanup and exit
+            forth._codeBuilder.Jz(skipLabel);
+
+            // Move limit and start to return stack
+            forth._codeBuilder.ToR().ToR();  // limit->R, start->R (R: start limit)
+
+            // Mark loop start
+            forth._codeBuilder.Label(loopLabel);
+
+            // Push labels for LOOP to use
+            forth._compileStack.Push(exitLabel);  // Exit label
+            forth._compileStack.Push(loopLabel);  // Loop start label
+            forth._compileStack.Push(skipLabel);  // Skip label for cleanup
+
+            // The corresponding LOOP word will consume these labels
+        }, isImmediate: true);
+
         // I - Get current loop index (from return stack)
         // R stack: index limit (limit on top after ?DO puts them there)
         // Need to access the index (second item) without disturbing the R stack
