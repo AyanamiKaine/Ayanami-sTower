@@ -1207,6 +1207,467 @@ public class ForthInterpreterCoreWordsTests
         long result = vm.DataStack.PopLong();
         Assert.Equal(25, result); // 3*3 + 4*4 = 9 + 16 = 25
     }
+
+    // ========== Comment Tests ==========
+
+    [Fact]
+    public void ParenCommentTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Comments should be ignored
+        forth.Interpret("( this is a comment ) 42");
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(42, result);
+
+        // Comments in definitions
+        vm.DataStack.Clear();
+        forth.Interpret(": TEST ( n -- n*2 ) 2 * ;");
+        forth.Interpret("21 TEST");
+        result = vm.DataStack.PopLong();
+        Assert.Equal(42, result);
+    }
+
+    [Fact]
+    public void BackslashCommentTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Line comments should ignore rest of line
+        forth.Interpret("42 \\ this is ignored\n43");
+        long val2 = vm.DataStack.PopLong();
+        long val1 = vm.DataStack.PopLong();
+        Assert.Equal(42, val1);
+        Assert.Equal(43, val2);
+    }
+
+    // ========== Memory Operations Tests ==========
+
+    [Fact]
+    public void CStoreAndFetchTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Store byte at address 100
+        forth.Interpret("100 65 C!");  // Store 'A' (ASCII 65)
+
+        // Fetch it back
+        forth.Interpret("100 C@");
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(65, result);
+    }
+
+    [Fact]
+    public void CellPlusTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        forth.Interpret("100 CELL+");
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(108, result);  // 100 + 8
+    }
+
+    [Fact]
+    public void CellsTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        forth.Interpret("5 CELLS");
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(40, result);  // 5 * 8
+    }
+
+    [Fact]
+    public void CommaTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Get initial HERE
+        forth.Interpret("HERE");
+        long initialHere = vm.DataStack.PopLong();
+
+        // Store a value with ,
+        forth.Interpret("12345 ,");
+
+        // Check HERE advanced by 8
+        forth.Interpret("HERE");
+        long newHere = vm.DataStack.PopLong();
+        Assert.Equal(initialHere + 8, newHere);
+
+        // Verify the stored value
+        long storedValue = vm.Memory.ReadCellAt((int)initialHere);
+        Assert.Equal(12345, storedValue);
+    }
+
+    [Fact]
+    public void AllotTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Get initial HERE
+        forth.Interpret("HERE");
+        long initialHere = vm.DataStack.PopLong();
+
+        // Allocate 24 bytes
+        forth.Interpret("24 ALLOT");
+
+        // Check HERE advanced by 24
+        forth.Interpret("HERE");
+        long newHere = vm.DataStack.PopLong();
+        Assert.Equal(initialHere + 24, newHere);
+    }
+
+    [Fact]
+    public void HereTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Get HERE
+        forth.Interpret("HERE");
+        long here1 = vm.DataStack.PopLong();
+
+        // Allocate some space
+        forth.Interpret("16 ALLOT");
+
+        // Get HERE again
+        forth.Interpret("HERE");
+        long here2 = vm.DataStack.PopLong();
+
+        // Should have moved
+        Assert.Equal(here1 + 16, here2);
+    }
+
+    // ========== Arithmetic Tests ==========
+
+    [Fact]
+    public void StarSlashTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Test scaled arithmetic: 100 * 355 / 113 (approximation of 100*pi)
+        forth.Interpret("100 355 113 */");
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(314, result);  // 100 * 355 / 113 = 314.15...
+
+        // Test another case: 1000 * 200 / 100
+        vm.DataStack.Clear();
+        forth.Interpret("1000 200 100 */");
+        result = vm.DataStack.PopLong();
+        Assert.Equal(2000, result);
+    }
+
+    // ========== I/O Words Tests (Output verification) ==========
+
+    [Fact]
+    public void DotPrintTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Capture console output
+        using var sw = new System.IO.StringWriter();
+        var originalOut = Console.Out;
+        Console.SetOut(sw);
+
+        try
+        {
+            forth.Interpret("42 .");
+            string output = sw.ToString();
+            Assert.Contains("42", output);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
+
+    [Fact]
+    public void DotQuoteTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        using var sw = new System.IO.StringWriter();
+        var originalOut = Console.Out;
+        Console.SetOut(sw);
+
+        try
+        {
+            forth.Interpret(".\" Hello, World!\"");
+            string output = sw.ToString();
+            Assert.Contains("Hello, World!", output);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
+
+    [Fact]
+    public void EmitTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        using var sw = new System.IO.StringWriter();
+        var originalOut = Console.Out;
+        Console.SetOut(sw);
+
+        try
+        {
+            forth.Interpret("65 EMIT");  // ASCII 'A'
+            string output = sw.ToString();
+            Assert.Contains("A", output);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
+
+    [Fact]
+    public void CRTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        using var sw = new System.IO.StringWriter();
+        var originalOut = Console.Out;
+        Console.SetOut(sw);
+
+        try
+        {
+            forth.Interpret("CR");
+            string output = sw.ToString();
+            Assert.Contains(Environment.NewLine, output);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
+
+    [Fact]
+    public void SpaceTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        using var sw = new System.IO.StringWriter();
+        var originalOut = Console.Out;
+        Console.SetOut(sw);
+
+        try
+        {
+            forth.Interpret("SPACE");
+            string output = sw.ToString();
+            Assert.Equal(" ", output);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
+
+    // ========== String/Character Handling Tests ==========
+
+    [Fact]
+    public void BracketCharTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Test in colon definition (compile-time)
+        forth.Interpret(": TEST [CHAR] A ;");
+        forth.Interpret("TEST");
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(65, result);  // ASCII 'A'
+    }
+
+    [Fact]
+    public void CharTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Test runtime character
+        forth.Interpret("CHAR Z");
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(90, result);  // ASCII 'Z'
+    }
+
+    [Fact]
+    public void WordTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Parse word delimited by space
+        forth.Interpret("32 WORD Hello");  // 32 is ASCII space
+        long addr = vm.DataStack.PopLong();
+
+        // Check it's a counted string
+        byte length = vm.Memory[(int)addr];
+        Assert.Equal(5, length);  // "Hello" is 5 chars
+
+        // Check first character
+        byte firstChar = vm.Memory[(int)addr + 1];
+        Assert.Equal((byte)'H', firstChar);
+    }
+
+    [Fact]
+    public void CountTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Create a counted string manually
+        int addr = 1000;
+        vm.Memory[addr] = 3;  // length
+        vm.Memory[addr + 1] = (byte)'F';
+        vm.Memory[addr + 2] = (byte)'O';
+        vm.Memory[addr + 3] = (byte)'O';
+
+        // Use COUNT
+        forth.Interpret($"{addr} COUNT");
+
+        long length = vm.DataStack.PopLong();
+        long strAddr = vm.DataStack.PopLong();
+
+        Assert.Equal(3, length);
+        Assert.Equal(addr + 1, strAddr);
+    }
+
+    [Fact]
+    public void TypeTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Create a string in memory
+        int addr = 1000;
+        string text = "TEST";
+        for (int i = 0; i < text.Length; i++)
+        {
+            vm.Memory[addr + i] = (byte)text[i];
+        }
+
+        using var sw = new System.IO.StringWriter();
+        var originalOut = Console.Out;
+        Console.SetOut(sw);
+
+        try
+        {
+            forth.Interpret($"{addr} 4 TYPE");
+            string output = sw.ToString();
+            Assert.Equal("TEST", output);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
+
+    [Fact]
+    public void WordCountTypeIntegrationTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        using var sw = new System.IO.StringWriter();
+        var originalOut = Console.Out;
+        Console.SetOut(sw);
+
+        try
+        {
+            // Parse, count, and type a word
+            forth.Interpret("32 WORD Testing COUNT TYPE");
+            string output = sw.ToString();
+            Assert.Contains("Testing", output);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
+
+    // ========== Combined Feature Tests ==========
+
+    [Fact]
+    public void ComplexMemoryManipulationTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Create a simple data structure using , and HERE
+        forth.Interpret("HERE");  // Save start address
+        long startAddr = vm.DataStack.PopLong();
+
+        forth.Interpret("42 ,");   // Store first value
+        forth.Interpret("99 ,");   // Store second value
+        forth.Interpret("256 ,");  // Store third value
+
+        // Read them back
+        long val1 = vm.Memory.ReadCellAt((int)startAddr);
+        long val2 = vm.Memory.ReadCellAt((int)startAddr + 8);
+        long val3 = vm.Memory.ReadCellAt((int)startAddr + 16);
+
+        Assert.Equal(42, val1);
+        Assert.Equal(99, val2);
+        Assert.Equal(256, val3);
+    }
+
+    [Fact]
+    public void ByteArrayManipulationTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Store string as bytes
+        int addr = 2000;
+        forth.Interpret($"{addr} 72 C!");   // 'H'
+        forth.Interpret($"{addr} 1 + 69 C!");   // 'E'
+        forth.Interpret($"{addr} 2 + 76 C!");   // 'L'
+        forth.Interpret($"{addr} 3 + 76 C!");   // 'L'
+        forth.Interpret($"{addr} 4 + 79 C!");   // 'O'
+
+        // Read back and verify
+        byte b1 = vm.Memory[addr];
+        byte b2 = vm.Memory[addr + 1];
+        byte b3 = vm.Memory[addr + 2];
+        byte b4 = vm.Memory[addr + 3];
+        byte b5 = vm.Memory[addr + 4];
+
+        Assert.Equal((byte)'H', b1);
+        Assert.Equal((byte)'E', b2);
+        Assert.Equal((byte)'L', b3);
+        Assert.Equal((byte)'L', b4);
+        Assert.Equal((byte)'O', b5);
+    }
+
+    [Fact]
+    public void ScaledArithmeticPracticalTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Calculate percentage: 75% of 200 = (200 * 75) / 100
+        forth.Interpret(": PERCENT */  ;");
+        forth.Interpret("200 75 100 PERCENT");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(150, result);
+    }
 }
+
 
 

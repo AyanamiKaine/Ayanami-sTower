@@ -614,6 +614,8 @@ public class ForthInterpreter
         InitializeFloatingPointOperations();
         InitializeCompilationWords();
         InitializeControlFlowWords();
+        InitializeIOWords();
+        InitializeStringWords();
         InitializeStandardLibrary();
     }
 
@@ -627,6 +629,46 @@ public class ForthInterpreter
         // VM STORE expects address on top, value below, so we need SWAP
         DefinePrimitive("!", new CodeBuilder().Swap().Store().Build());
         DefinePrimitive("@", OPCode.FETCH);
+
+        // Byte operations
+        DefinePrimitive("C!", forth =>
+        {
+            long value = forth._vm.DataStack.PopLong();
+            long address = forth._vm.DataStack.PopLong();
+            forth._vm.Memory[(int)address] = (byte)value;
+        });
+
+        DefinePrimitive("C@", forth =>
+        {
+            long address = forth._vm.DataStack.PopLong();
+            byte value = forth._vm.Memory[(int)address];
+            forth._vm.DataStack.PushLong(value);
+        });
+
+        // Cell size (8 bytes in our implementation)
+        DefinePrimitive("CELL+", new CodeBuilder().PushCell(8).Add().Build());
+        DefinePrimitive("CELLS", new CodeBuilder().PushCell(8).Mul().Build());
+
+        // Dictionary operations
+        DefinePrimitive(",", forth =>
+        {
+            // Pop value and store in dictionary, then advance HERE
+            long value = forth._vm.DataStack.PopLong();
+            int address = forth._here;
+            forth._vm.Memory.WriteCellAt(address, value);
+            forth._here += 8;
+        });
+
+        DefinePrimitive("ALLOT", forth =>
+        {
+            long bytes = forth._vm.DataStack.PopLong();
+            forth.Allot((int)bytes);
+        });
+
+        DefinePrimitive("HERE", forth =>
+        {
+            forth._vm.DataStack.PushLong(forth._here);
+        });
     }
 
     /// <summary>
@@ -751,6 +793,29 @@ public class ForthInterpreter
 
             forth._dictionary[name] = varDef;
         });
+
+        // ( -- Comments (immediate, skip until closing paren)
+        DefinePrimitive("(", forth =>
+        {
+            // Skip words until we find )
+            string? word;
+            while ((word = forth.ReadWord()) != null && word != ")")
+            {
+                // Just skip
+            }
+            if (word == null)
+                throw new InvalidOperationException("Unclosed comment: missing )");
+        }, isImmediate: true);
+
+        // \ -- Line comment (immediate, skip rest of line)
+        DefinePrimitive("\\", forth =>
+        {
+            // Skip to end of current line
+            while (forth._inputPosition < forth._inputBuffer.Length && forth._inputBuffer[forth._inputPosition] != '\n')
+            {
+                forth._inputPosition++;
+            }
+        }, isImmediate: true);
     }
 
     /// <summary>
@@ -875,12 +940,161 @@ public class ForthInterpreter
         Interpret(": CLAMP >R OVER OVER < IF SWAP THEN DROP R> OVER OVER > IF SWAP THEN DROP ;");
         Interpret(": SIGN DUP 0 < IF DROP -1 ELSE 0 > IF 1 ELSE 0 THEN THEN ;");
 
+        // Scaled arithmetic ( n1 n2 n3 -- n1*n2/n3 )
+        // Note: This is a simplified version. Full FORTH */ uses double-width intermediate
+        Interpret(": */ >R * R> / ;");
+
         // Additional useful words
         Interpret(": TRUE -1 ;");
         Interpret(": FALSE 0 ;");
         Interpret(": NOT 0 = ;");
         Interpret(": AND * ;");  // Bitwise AND for booleans (-1 * -1 = 1, but we'll use 0 and non-zero)
         Interpret(": OR + 0 < > ;");  // Logical OR (any non-zero is true)
+    }
+
+    /// <summary>
+    /// Initializes I/O words for printing and output.
+    /// </summary>
+    private void InitializeIOWords()
+    {
+        // . ( n -- ) Print number
+        DefinePrimitive(".", forth =>
+        {
+            long value = forth._vm.DataStack.PopLong();
+            Console.Write(value);
+            Console.Write(" ");
+        });
+
+        // ." (compile-time string printing)
+        DefinePrimitive(".\"", forth =>
+        {
+            // Read characters until closing "
+            var sb = new System.Text.StringBuilder();
+            while (forth._inputPosition < forth._inputBuffer.Length)
+            {
+                char c = forth._inputBuffer[forth._inputPosition++];
+                if (c == '"')
+                    break;
+                sb.Append(c);
+            }
+            string text = sb.ToString();
+
+            // For now, just print immediately (TODO: proper compile-time string handling)
+            Console.Write(text);
+        }, isImmediate: true);
+
+        // EMIT ( c -- ) Print character
+        DefinePrimitive("EMIT", forth =>
+        {
+            long charCode = forth._vm.DataStack.PopLong();
+            Console.Write((char)charCode);
+        });
+
+        // CR ( -- ) Print newline
+        DefinePrimitive("CR", forth =>
+        {
+            Console.WriteLine();
+        });
+
+        // SPACE ( -- ) Print space
+        DefinePrimitive("SPACE", forth =>
+        {
+            Console.Write(" ");
+        });
+    }
+
+    /// <summary>
+    /// Initializes string and character handling words.
+    /// </summary>
+    private void InitializeStringWords()
+    {
+        // [CHAR] ( "name" -- c ) Compile-time: get ASCII of next character
+        DefinePrimitive("[CHAR]", forth =>
+        {
+            string? word = forth.ReadWord();
+            if (word == null || word.Length == 0)
+                throw new InvalidOperationException("[CHAR] requires a character");
+
+            long charValue = word[0];
+
+            if (forth._compileMode)
+            {
+                forth.CompileLiteral(charValue);
+            }
+            else
+            {
+                forth._vm.DataStack.PushLong(charValue);
+            }
+        }, isImmediate: true);
+
+        // CHAR ( "name" -- c ) Runtime: get ASCII of next character
+        DefinePrimitive("CHAR", forth =>
+        {
+            string? word = forth.ReadWord();
+            if (word == null || word.Length == 0)
+                throw new InvalidOperationException("CHAR requires a character");
+
+            forth._vm.DataStack.PushLong(word[0]);
+        });
+
+        // WORD ( delimiter -- c-addr ) Parse word delimited by character
+        DefinePrimitive("WORD", forth =>
+        {
+            long delimiter = forth._vm.DataStack.PopLong();
+            char delim = (char)delimiter;
+
+            // Skip leading delimiters
+            while (forth._inputPosition < forth._inputBuffer.Length &&
+                   forth._inputBuffer[forth._inputPosition] == delim)
+            {
+                forth._inputPosition++;
+            }
+
+            // Collect characters until delimiter
+            var sb = new System.Text.StringBuilder();
+            while (forth._inputPosition < forth._inputBuffer.Length)
+            {
+                char c = forth._inputBuffer[forth._inputPosition];
+                if (c == delim)
+                    break;
+                sb.Append(c);
+                forth._inputPosition++;
+            }
+
+            string text = sb.ToString();
+
+            // Create counted string in memory: length byte followed by characters
+            int address = forth.Allot(text.Length + 1);
+            forth._vm.Memory[(int)address] = (byte)text.Length;
+            for (int i = 0; i < text.Length; i++)
+            {
+                forth._vm.Memory[(int)address + 1 + i] = (byte)text[i];
+            }
+
+            forth._vm.DataStack.PushLong(address);
+        });
+
+        // COUNT ( c-addr -- addr len ) Convert counted string to addr/len
+        DefinePrimitive("COUNT", forth =>
+        {
+            long cAddr = forth._vm.DataStack.PopLong();
+            byte length = forth._vm.Memory[(int)cAddr];
+            forth._vm.DataStack.PushLong(cAddr + 1);  // address of first char
+            forth._vm.DataStack.PushLong(length);      // length
+        });
+
+        // TYPE ( addr len -- ) Print string
+        DefinePrimitive("TYPE", forth =>
+        {
+            long length = forth._vm.DataStack.PopLong();
+            long address = forth._vm.DataStack.PopLong();
+
+            for (int i = 0; i < length; i++)
+            {
+                byte b = forth._vm.Memory[(int)address + i];
+                Console.Write((char)b);
+            }
+        });
     }
 
     /// <summary>

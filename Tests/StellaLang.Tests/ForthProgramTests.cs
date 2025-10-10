@@ -14,7 +14,7 @@ public class ForthProgramTests
     [Fact]
     public void TestMaterialExample()
     {
-        var forthCode =
+        const string forthCode =
         """
         VARIABLE DENSITY
         VARIABLE THETA
