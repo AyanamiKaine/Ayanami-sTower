@@ -266,7 +266,18 @@ public class ForthInterpreter
     /// <summary>
     /// Initializes the dictionary with primitive words (built-in operations).
     /// This includes stack operations, arithmetic, control flow, etc.
+    /// Primitives are defined with their actual FORTH names including symbols like !, @, +, -, etc.
+    /// Each primitive has a handler (Action&lt;ForthInterpreter&gt;) that executes the operation.
     /// </summary>
+    /// <example>
+    /// Examples of primitive definitions:
+    /// <code>
+    /// DefinePrimitive("!", forth => { /* STORE operation */ });
+    /// DefinePrimitive("@", forth => { /* FETCH operation */ });
+    /// DefinePrimitive("+", forth => { /* ADD operation */ });
+    /// DefinePrimitive("DUP", forth => { /* DUP operation */ });
+    /// </code>
+    /// </example>
     private void InitializePrimitives()
     {
         throw new NotImplementedException("InitializePrimitives not yet implemented");
