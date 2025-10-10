@@ -1531,7 +1531,7 @@ public class ForthInterpreterCoreWordsTests
         var forth = new ForthInterpreter(vm);
 
         // Create a counted string manually
-        int addr = 1000;
+        const int addr = 1000;
         vm.Memory[addr] = 3;  // length
         vm.Memory[addr + 1] = (byte)'F';
         vm.Memory[addr + 2] = (byte)'O';
@@ -1554,8 +1554,8 @@ public class ForthInterpreterCoreWordsTests
         var forth = new ForthInterpreter(vm);
 
         // Create a string in memory
-        int addr = 1000;
-        string text = "TEST";
+        const int addr = 1000;
+        const string text = "TEST";
         for (int i = 0; i < text.Length; i++)
         {
             vm.Memory[addr + i] = (byte)text[i];
@@ -1633,7 +1633,7 @@ public class ForthInterpreterCoreWordsTests
         var forth = new ForthInterpreter(vm);
 
         // Store string as bytes
-        int addr = 2000;
+        const int addr = 2000;
         forth.Interpret($"{addr} 72 C!");   // 'H'
         forth.Interpret($"{addr} 1 + 69 C!");   // 'E'
         forth.Interpret($"{addr} 2 + 76 C!");   // 'L'
