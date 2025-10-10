@@ -73,26 +73,145 @@ public class VM
     private bool _halted;
 
     /// <summary>
-    /// Initializes a new instance of the VM with default stack sizes.
+    /// Initializes a new instance of the VM with default stack sizes (4MB each stack, 12MB memory).
     /// </summary>
-    public VM() : this(4, 4, 4, 12)
+    public VM() : this(
+        MemoryStack.FromMegabytes(4),
+        MemoryStack.FromMegabytes(4),
+        MemoryStack.FromMegabytes(4),
+        MemoryStack.FromMegabytes(12))
     {
     }
 
     /// <summary>
-    /// Initializes a new instance of the VM with custom stack sizes.
+    /// Initializes a new instance of the VM with custom stack sizes in megabytes.
     /// </summary>
     /// <param name="dataStackMB">Data stack size in megabytes.</param>
     /// <param name="floatStackMB">Float stack size in megabytes.</param>
     /// <param name="returnStackMB">Return stack size in megabytes.</param>
     /// <param name="memoryMB">Memory size in megabytes.</param>
     public VM(int dataStackMB, int floatStackMB, int returnStackMB, int memoryMB)
+        : this(
+            MemoryStack.FromMegabytes(dataStackMB),
+            MemoryStack.FromMegabytes(floatStackMB),
+            MemoryStack.FromMegabytes(returnStackMB),
+            MemoryStack.FromMegabytes(memoryMB))
     {
-        DataStack = MemoryStack.FromMegabytes(dataStackMB);
-        FloatStack = MemoryStack.FromMegabytes(floatStackMB);
-        ReturnStack = MemoryStack.FromMegabytes(returnStackMB);
-        Memory = MemoryStack.FromMegabytes(memoryMB);
     }
+
+    /// <summary>
+    /// Initializes a new instance of the VM with explicitly provided MemoryStack instances.
+    /// This constructor provides maximum flexibility for custom stack configurations.
+    /// </summary>
+    /// <param name="dataStack">The data stack for integer/cell operations.</param>
+    /// <param name="floatStack">The float stack for floating-point operations.</param>
+    /// <param name="returnStack">The return stack for return addresses and temporary values.</param>
+    /// <param name="memory">The VM memory for FETCH/STORE operations.</param>
+    public VM(MemoryStack dataStack, MemoryStack floatStack, MemoryStack returnStack, MemoryStack memory)
+    {
+        DataStack = dataStack;
+        FloatStack = floatStack;
+        ReturnStack = returnStack;
+        Memory = memory;
+    }
+
+    #region Factory Methods
+
+    /// <summary>
+    /// Creates a VM with tiny stack sizes (256KB each stack, 512KB memory).
+    /// Suitable for embedded scenarios or very small programs.
+    /// </summary>
+    public static VM CreateTiny() => new(
+        MemoryStack.FromKilobytes(256),
+        MemoryStack.FromKilobytes(256),
+        MemoryStack.FromKilobytes(256),
+        MemoryStack.FromKilobytes(512));
+
+    /// <summary>
+    /// Creates a VM with small stack sizes (1MB each stack, 2MB memory).
+    /// Suitable for small programs and testing.
+    /// </summary>
+    public static VM CreateSmall() => new(
+        MemoryStack.FromMegabytes(1),
+        MemoryStack.FromMegabytes(1),
+        MemoryStack.FromMegabytes(1),
+        MemoryStack.FromMegabytes(2));
+
+    /// <summary>
+    /// Creates a VM with default/medium stack sizes (4MB each stack, 12MB memory).
+    /// This is the same as calling new VM().
+    /// </summary>
+    public static VM CreateDefault() => new VM();
+
+    /// <summary>
+    /// Creates a VM with large stack sizes (16MB each stack, 64MB memory).
+    /// Suitable for larger programs with significant memory needs.
+    /// </summary>
+    public static VM CreateLarge() => new(
+        MemoryStack.FromMegabytes(16),
+        MemoryStack.FromMegabytes(16),
+        MemoryStack.FromMegabytes(16),
+        MemoryStack.FromMegabytes(64));
+
+    /// <summary>
+    /// Creates a VM with very large stack sizes (64MB each stack, 256MB memory).
+    /// Suitable for complex programs with heavy computation or large data sets.
+    /// </summary>
+    public static VM CreateHuge() => new(
+        MemoryStack.FromMegabytes(64),
+        MemoryStack.FromMegabytes(64),
+        MemoryStack.FromMegabytes(64),
+        MemoryStack.FromMegabytes(256));
+
+    /// <summary>
+    /// Creates a VM with all stacks sized in kilobytes.
+    /// </summary>
+    /// <param name="dataStackKB">Data stack size in kilobytes.</param>
+    /// <param name="floatStackKB">Float stack size in kilobytes.</param>
+    /// <param name="returnStackKB">Return stack size in kilobytes.</param>
+    /// <param name="memoryKB">Memory size in kilobytes.</param>
+    public static VM FromKilobytes(int dataStackKB, int floatStackKB, int returnStackKB, int memoryKB) => new(
+        MemoryStack.FromKilobytes(dataStackKB),
+        MemoryStack.FromKilobytes(floatStackKB),
+        MemoryStack.FromKilobytes(returnStackKB),
+        MemoryStack.FromKilobytes(memoryKB));
+
+    /// <summary>
+    /// Creates a VM with all stacks sized in cells (64-bit/8 bytes each).
+    /// Useful for precise control over stack depth.
+    /// </summary>
+    /// <param name="dataStackCells">Data stack depth in cells.</param>
+    /// <param name="floatStackCells">Float stack depth in cells (doubles).</param>
+    /// <param name="returnStackCells">Return stack depth in cells.</param>
+    /// <param name="memoryCells">Memory size in cells.</param>
+    public static VM FromCells(int dataStackCells, int floatStackCells, int returnStackCells, int memoryCells) => new(
+        MemoryStack.FromCells(dataStackCells),
+        MemoryStack.FromCells(floatStackCells),
+        MemoryStack.FromCells(returnStackCells),
+        MemoryStack.FromCells(memoryCells));
+
+    /// <summary>
+    /// Creates a VM with uniform stack sizes in megabytes.
+    /// All stacks and memory will be the same size.
+    /// </summary>
+    /// <param name="sizeMB">Size in megabytes for all stacks and memory.</param>
+    public static VM FromUniformSize(int sizeMB) => new(sizeMB, sizeMB, sizeMB, sizeMB);
+
+    /// <summary>
+    /// Creates a VM with uniform stack sizes in kilobytes.
+    /// All stacks and memory will be the same size.
+    /// </summary>
+    /// <param name="sizeKB">Size in kilobytes for all stacks and memory.</param>
+    public static VM FromUniformKilobytes(int sizeKB) => FromKilobytes(sizeKB, sizeKB, sizeKB, sizeKB);
+
+    /// <summary>
+    /// Creates a VM with uniform stack sizes in cells.
+    /// All stacks and memory will be the same size.
+    /// </summary>
+    /// <param name="sizeCells">Size in cells for all stacks and memory.</param>
+    public static VM FromUniformCells(int sizeCells) => FromCells(sizeCells, sizeCells, sizeCells, sizeCells);
+
+    #endregion
 
     /// <summary>
     /// Initializes the instruction dispatch table with all opcode implementations.
@@ -637,10 +756,10 @@ public class VM
     {
         PC = 0;
         _halted = false;
-        DataStack = new(1024 * 8);
-        FloatStack = new(1024 * 8);
-        ReturnStack = new(1024 * 8);
-        Memory = new(1024 * 64);
+        DataStack.Clear();
+        FloatStack.Clear();
+        ReturnStack.Clear();
+        Memory.Clear();
     }
 
     // Helper methods for validation

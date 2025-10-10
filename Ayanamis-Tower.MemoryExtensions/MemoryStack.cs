@@ -271,6 +271,16 @@ public struct MemoryStack(int size)
     }
 
     /// <summary>
+    /// Resets the stack pointer to 0, allowing reuse of the allocated memory.
+    /// This is an alias for Clear() and allows you to overwrite existing data
+    /// without reallocating the underlying buffer.
+    /// </summary>
+    public void Reset()
+    {
+        _pointer = 0;
+    }
+
+    /// <summary>
     /// Creates a new MemoryStack with the specified size in bytes.
     /// </summary>
     /// <param name="bytes">The size of the stack in bytes.</param>
