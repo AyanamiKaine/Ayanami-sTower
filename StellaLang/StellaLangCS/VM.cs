@@ -630,10 +630,11 @@ public class VM
             vm.CheckDataStackDepth(1, "CELL_TO_FLOAT");
             vm.FloatStack.PushDouble(vm.DataStack.PopLong());
         };
+        // round to nearest 5.3 -> 5, 5.5 -> 6 (away from zero)
         table[(byte)OPCode.FLOAT_TO_CELL] = static vm =>
         {
             vm.CheckFloatStackDepth(1, "FLOAT_TO_CELL");
-            vm.DataStack.PushLong((long)vm.FloatStack.PopDouble());
+            vm.DataStack.PushLong((long)Math.Round(vm.FloatStack.PopDouble(), MidpointRounding.AwayFromZero));
         };
 
         // Control flow

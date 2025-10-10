@@ -340,21 +340,77 @@ public class VMInstructionTests
     }
 
     [Fact]
-    public void NOTVMInstructionTest()
+    public void NOTVMInstructionTest1()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(1)
+            .Not()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValueDataStack = vm.DataStack.PeekLong();
+        const long expectedTopValueDataStack = -2;
+
+        Assert.Equal(expectedTopValueDataStack, currentTopStackValueDataStack);
+    }
+
+    [Fact]
+    public void NOTVMInstructionTest2()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(0)
+            .Not()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValueDataStack = vm.DataStack.PeekLong();
+        const long expectedTopValueDataStack = -1;
+
+        Assert.Equal(expectedTopValueDataStack, currentTopStackValueDataStack);
     }
 
     [Fact]
     public void SHLVMInstructionTest()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(5)
+            .PushCell(9)
+            .Shl()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValueDataStack = vm.DataStack.PeekLong();
+        const long expectedTopValueDataStack = 2560;
+
+        Assert.Equal(expectedTopValueDataStack, currentTopStackValueDataStack);
     }
 
     [Fact]
     public void SHRVMInstructionTest()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(5)
+            .PushCell(9)
+            .Shr()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValueDataStack = vm.DataStack.PeekLong();
+        const long expectedTopValueDataStack = 0;
+
+        Assert.Equal(expectedTopValueDataStack, currentTopStackValueDataStack);
     }
 
     [Fact]
@@ -837,13 +893,56 @@ public class VMInstructionTests
     [Fact]
     public void CELL_TO_FLOATVMInstructionTest()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(50)
+            .CellToFloat()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.FloatStack.PeekDouble();
+        const double expectedTopValue = 50.0;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
     }
 
     [Fact]
-    public void FLOAT_TO_CELLVMInstructionTest()
+    public void FLOAT_TO_CELLVMInstructionTest1()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .FPushDouble(55.2)
+            .FloatToCell()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 55;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
+    }
+
+
+    [Fact]
+    public void FLOAT_TO_CELLVMInstructionTest2()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .FPushDouble(55.9)
+            .FloatToCell()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 56;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
     }
 
     [Fact]

@@ -226,7 +226,7 @@ public class CodeBuilder
     /// <summary>Convert cell to float.</summary>
     public CodeBuilder CellToFloat() { EmitOpCode(OPCode.CELL_TO_FLOAT); return this; }
 
-    /// <summary>Convert float to cell.</summary>
+    /// <summary>Convert float to cell. Rounds to nearest. 5.4 -> 5, 5.5 -> 6</summary>
     public CodeBuilder FloatToCell() { EmitOpCode(OPCode.FLOAT_TO_CELL); return this; }
 
     // ===== Control Flow =====
