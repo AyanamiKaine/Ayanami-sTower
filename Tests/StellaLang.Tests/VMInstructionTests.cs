@@ -135,7 +135,7 @@ public class VMInstructionTests
         currentTopStackValue = vm.DataStack.PeekLong();
         expectedTopValue = 3;
         Assert.Equal(expectedTopValue, currentTopStackValue);
-        
+
         vm.Execute(new CodeBuilder()
             .Drop()
             .Build());
@@ -148,37 +148,195 @@ public class VMInstructionTests
     [Fact]
     public void TO_RVMInstructionTest()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(10)
+            .ToR()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.ReturnStack.PeekLong();
+        const long expectedTopValue = 10;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
     }
 
     [Fact]
     public void R_FROMVMInstructionTest()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(10)
+            .ToR()
+            .RFrom()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValue = vm.DataStack.PeekLong();
+        const long expectedTopValue = 10;
+
+        Assert.Equal(expectedTopValue, currentTopStackValue);
     }
 
     [Fact]
     public void R_FETCHVMInstructionTest()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(10)
+            .ToR()
+            .RFetch()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValueDataStack = vm.DataStack.PeekLong();
+        const long expectedTopValueDataStack = 10;
+
+        var currentTopStackValueReturnStack = vm.ReturnStack.PeekLong();
+        const long expectedTopValueReturnStack = 10;
+
+        Assert.Equal(expectedTopValueDataStack, currentTopStackValueDataStack);
+        Assert.Equal(expectedTopValueReturnStack, currentTopStackValueReturnStack);
+
     }
 
     [Fact]
-    public void ANDVMInstructionTest()
+    public void ANDVMInstructionTest1()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(1)
+            .PushCell(1)
+            .And()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValueDataStack = vm.DataStack.PeekLong();
+        const long expectedTopValueDataStack = 1;
+
+        Assert.Equal(expectedTopValueDataStack, currentTopStackValueDataStack);
     }
 
     [Fact]
-    public void ORVMInstructionTest()
+    public void ANDVMInstructionTest2()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(1)
+            .PushCell(0)
+            .And()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValueDataStack = vm.DataStack.PeekLong();
+        const long expectedTopValueDataStack = 0;
+
+        Assert.Equal(expectedTopValueDataStack, currentTopStackValueDataStack);
     }
 
     [Fact]
-    public void XORVMInstructionTest()
+    public void ORVMInstructionTest1()
     {
-        Assert.Fail("TEST NOT YET IMPLEMENTED");
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(1)
+            .PushCell(0)
+            .Or()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValueDataStack = vm.DataStack.PeekLong();
+        const long expectedTopValueDataStack = 1;
+
+        Assert.Equal(expectedTopValueDataStack, currentTopStackValueDataStack);
+    }
+
+    [Fact]
+    public void ORVMInstructionTest2()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(0)
+            .PushCell(0)
+            .Or()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValueDataStack = vm.DataStack.PeekLong();
+        const long expectedTopValueDataStack = 0;
+
+        Assert.Equal(expectedTopValueDataStack, currentTopStackValueDataStack);
+    }
+
+    [Fact]
+    public void XORVMInstructionTest1()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(0)
+            .PushCell(0)
+            .Xor()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValueDataStack = vm.DataStack.PeekLong();
+        const long expectedTopValueDataStack = 0;
+
+        Assert.Equal(expectedTopValueDataStack, currentTopStackValueDataStack);
+    }
+
+    [Fact]
+    public void XORVMInstructionTest2()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(0)
+            .PushCell(1)
+            .Xor()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValueDataStack = vm.DataStack.PeekLong();
+        const long expectedTopValueDataStack = 1;
+
+        Assert.Equal(expectedTopValueDataStack, currentTopStackValueDataStack);
+    }
+
+    [Fact]
+    public void XORVMInstructionTest3()
+    {
+        var vm = new VM();
+
+        var code = new CodeBuilder()
+            .PushCell(1)
+            .PushCell(0)
+            .Xor()
+            .Build();
+
+        vm.Execute(code);
+
+        var currentTopStackValueDataStack = vm.DataStack.PeekLong();
+        const long expectedTopValueDataStack = 1;
+
+        Assert.Equal(expectedTopValueDataStack, currentTopStackValueDataStack);
     }
 
     [Fact]
