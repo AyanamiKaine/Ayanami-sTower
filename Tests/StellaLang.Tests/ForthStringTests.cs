@@ -24,7 +24,7 @@ public class ForthStringTests
         {
             // WORD reads until space, creates counted string at HERE
             forth.Interpret("[CHAR] \" WORD");
-            
+
             // Now we should have address of counted string on stack
             // Let's use COUNT to get addr and len, then TYPE to print
             forth.Interpret("COUNT TYPE");
@@ -57,7 +57,7 @@ public class ForthStringTests
         {
             // Define the " word as in the MATERIAL example
             forth.Interpret(": \" ( -- addr )   [CHAR] \" WORD DUP C@ 1+ ALLOT ;");
-            
+
             // Test it by creating a string and using COUNT TYPE
             forth.Interpret(": test-str ( -- )   \" hello\" COUNT TYPE ;");
             forth.Interpret("test-str");
@@ -83,13 +83,13 @@ public class ForthStringTests
         // Store a value at HERE using comma
         forth.Interpret("HERE");
         long addr = vm.DataStack.PopLong();
-        
+
         forth.Interpret("42 ,");
-        
+
         // Fetch the value back
         forth.Interpret($"{addr} @");
         long value = vm.DataStack.PopLong();
-        
+
         Assert.Equal(42L, value);
     }
 
