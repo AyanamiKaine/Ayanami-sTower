@@ -199,14 +199,14 @@ public class ForthCompilationTests
         try
         {
             // Test each handler-based primitive in a compiled context
-            string[] testCases = new[]
-            {
+            string[] testCases =
+            [
                 ": test-dot ( n -- ) . ;",
                 ": test-emit ( c -- ) EMIT ;",
                 ": test-cr ( -- ) CR ;",
                 ": test-space ( -- ) SPACE ;",
                 ": test-here ( -- addr ) HERE ;",
-            };
+            ];
 
             foreach (var testCase in testCases)
             {
