@@ -554,7 +554,7 @@ public class ForthInterpreter
     /// <param name="text">The text to parse.</param>
     /// <param name="value">The parsed double value if successful.</param>
     /// <returns>True if parsing succeeded, false otherwise.</returns>
-    private bool TryParseFloat(string text, out double value)
+    private static bool TryParseFloat(string text, out double value)
     {
         return double.TryParse(text, System.Globalization.NumberStyles.Float,
             System.Globalization.CultureInfo.InvariantCulture, out value);
