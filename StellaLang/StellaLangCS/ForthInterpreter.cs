@@ -144,6 +144,7 @@ public class ForthInterpreter
     /// <param name="input">The line of FORTH source code to interpret.</param>
     public void Interpret(string input)
     {
+        try { Console.WriteLine($"Interpret called with: {input}"); } catch { }
         _inputBuffer = input;
         _inputPosition = 0;
 
@@ -170,6 +171,7 @@ public class ForthInterpreter
     /// <param name="word">The word to process.</param>
     private void ProcessWord(string word)
     {
+        try { Console.Error.WriteLine($"ProcessWord: '{word}' compileMode={_compileMode} pos={_inputPosition}"); } catch { }
         // Try to find word in dictionary
         var definition = FindWord(word);
 
@@ -351,6 +353,7 @@ public class ForthInterpreter
     private void AddWord(string name, WordDefinition definition)
     {
         _dictionary[name.ToUpper()] = definition;
+        try { Console.Error.WriteLine($"AddWord: '{name}' (type={definition.Type})"); } catch { }
     }
 
     /// <summary>
@@ -363,6 +366,8 @@ public class ForthInterpreter
         {
             throw new InvalidOperationException("Cannot start a colon definition while already compiling");
         }
+
+        try { Console.Error.WriteLine($"CreateColonDefinition: starting name='{name}'"); } catch { }
 
         _compileMode = true;
         _codeBuilder.Clear();
@@ -386,6 +391,8 @@ public class ForthInterpreter
         {
             throw new InvalidOperationException("Cannot finish a colon definition without starting one");
         }
+
+        try { Console.Error.WriteLine($"FinishColonDefinition: finishing name='{_currentWordName}' _doesCount={_doesCodeStartPositions?.Count}"); } catch { }
 
         // Add the exit label for EXIT to jump to
         if (_currentExitLabel != null)
@@ -995,6 +1002,7 @@ public class ForthInterpreter
             _vm.SyscallHandlers[CREATE_SYSCALL_ID] = vm =>
             {
                 string? name = ReadWord() ?? throw new InvalidOperationException("Expected word name after CREATE");
+                try { Console.WriteLine($"CREATE handler inputBuffer='{_inputBuffer}' pos={_inputPosition} nameRead='{name}'"); } catch { }
 
                 // Track this as the last created word for DOES>
                 _lastCreatedWord = name;
@@ -1538,14 +1546,15 @@ public class ForthInterpreter
 
             long charValue = word[0];
 
-            if (forth._compileMode)
-            {
-                forth.CompileLiteral(charValue);
-            }
-            else
-            {
-                forth._vm.DataStack.PushLong(charValue);
-            }
+            // Behavior note:
+            // [CHAR] is an immediate (compile-time) word. When executed while compiling
+            // we must place the character value on the VM data stack so that a following
+            // immediate word (for example our WORD handler) can consume it. Previously
+            // we compiled the literal into the current definition which prevented the
+            // following immediate WORD from seeing the delimiter at compile time.
+            // To support both compile-time execution and runtime usage we always push
+            // the character value onto the VM data stack when executed.
+            forth._vm.DataStack.PushLong(charValue);
         }, isImmediate: true);
 
         // CHAR ( "name" -- c ) Runtime: get ASCII of next character
@@ -1559,30 +1568,42 @@ public class ForthInterpreter
         });
 
         // WORD ( delimiter -- c-addr ) Parse word delimited by character
-        // Implemented as a VM syscall so it can be compiled into colon definitions
+        // Implemented as a handler so it can behave correctly both at compile-time
+        // (immediate) and at runtime. When executed during compilation it will
+        // consume the following characters from the interpreter input, allocate
+        // a counted string in data memory and then compile the resulting address
+        // as a literal into the current definition. At runtime it behaves like
+        // the previous syscall: it creates the counted string and pushes its
+        // address onto the data stack.
         {
             const long WORD_SYSCALL_ID = 1001;
 
-            // Register syscall handler bound to this interpreter instance
+            // Register a syscall handler for runtime use. It performs the raw
+            // operation of reading from the interpreter input buffer (via the
+            // captured interpreter instance) and allocating the counted string.
             _vm.SyscallHandlers[WORD_SYSCALL_ID] = vm =>
             {
+                // The syscall is invoked from the VM context; use the interpreter's
+                // fields to read from the current input buffer position.
                 long delimiter = vm.DataStack.PopLong();
                 char delim = (char)delimiter;
 
-                // Skip leading delimiters
-                while (_inputPosition < _inputBuffer.Length &&
-                       _inputBuffer[_inputPosition] == delim)
+                // Skip leading delimiter characters
+                while (_inputPosition < _inputBuffer.Length && _inputBuffer[_inputPosition] == delim)
                 {
                     _inputPosition++;
                 }
 
-                // Collect characters until delimiter
                 var sb = new System.Text.StringBuilder();
                 while (_inputPosition < _inputBuffer.Length)
                 {
                     char c = _inputBuffer[_inputPosition];
                     if (c == delim)
+                    {
+                        // consume closing delimiter and stop
+                        _inputPosition++;
                         break;
+                    }
                     sb.Append(c);
                     _inputPosition++;
                 }
@@ -1591,17 +1612,39 @@ public class ForthInterpreter
 
                 // Create counted string in memory: length byte followed by characters
                 int address = Allot(text.Length + 1);
-                _vm.Memory[(int)address] = (byte)text.Length;
+                _vm.Memory[address] = (byte)text.Length;
                 for (int i = 0; i < text.Length; i++)
                 {
-                    _vm.Memory[(int)address + 1 + i] = (byte)text[i];
+                    _vm.Memory[address + 1 + i] = (byte)text[i];
                 }
 
                 vm.DataStack.PushLong(address);
             };
 
-            // Define WORD as pushing syscall id and invoking SYSCALL
-            DefinePrimitive("WORD", new CodeBuilder().PushCell(WORD_SYSCALL_ID).Syscall().Build());
+            // Define WORD as a handler-based immediate primitive so it can be
+            // executed during compilation (to consume the quoted text) and also
+            // compiled as a syscall into definitions for runtime behavior.
+            DefinePrimitive("WORD", forth =>
+            {
+                // The delimiter should be on the VM data stack (e.g., pushed by [CHAR])
+                if (forth._vm.DataStack.Pointer < sizeof(long))
+                    throw new InvalidOperationException("WORD runtime: missing delimiter on data stack");
+
+                // Reuse the runtime syscall handler logic by invoking the registered
+                // syscall (it uses the interpreter's captured fields to access input).
+                _vm.SyscallHandlers[WORD_SYSCALL_ID](forth._vm);
+
+                // At this point the address of the created counted string is on the
+                // VM data stack. If we're compiling, we want to embed that address
+                // as a literal into the current definition so runtime execution will
+                // find the string in memory without needing to re-parse text.
+                if (forth._compileMode)
+                {
+                    long addr = forth._vm.DataStack.PopLong();
+                    try { Console.Error.WriteLine($"WORD handler: compiled-counted-string addr={addr} inputBuf='{forth._inputBuffer}' pos={forth._inputPosition}"); } catch { }
+                    forth.CompileLiteral(addr);
+                }
+            }, isImmediate: true);
         }
 
         // COUNT ( c-addr -- addr len ) Convert counted string to address and length
