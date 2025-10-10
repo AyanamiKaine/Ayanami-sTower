@@ -609,15 +609,6 @@ public class ForthInterpreter
         // Unary operations - VM opcodes
         DefinePrimitive("NEGATE", OPCode.NEG);
 
-        // ABS requires multiple opcodes (since we don't have a single ABS opcode)
-        // ABS: DUP 0 < IF NEGATE THEN - but we can use Math.Abs via handler for now
-        // TODO: Once control flow is stable, implement as bytecode sequence
-        DefinePrimitive("ABS", forth =>
-        {
-            long value = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(Math.Abs(value));
-        });
-
         // Compound operations using CodeBuilder to create bytecode sequences
         // 1+: PUSH 1, ADD
         DefinePrimitive("1+", new CodeBuilder().PushCell(1).Add().Build());
@@ -630,22 +621,6 @@ public class ForthInterpreter
 
         // 2/: PUSH 2, DIV
         DefinePrimitive("2/", new CodeBuilder().PushCell(2).Div().Build());
-
-        // Min/Max - these need conditional logic which we'll implement with handlers for now
-        // TODO: Implement as bytecode once control flow is stable
-        DefinePrimitive("MAX", forth =>
-        {
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(Math.Max(a, b));
-        });
-
-        DefinePrimitive("MIN", forth =>
-        {
-            long b = forth._vm.DataStack.PopLong();
-            long a = forth._vm.DataStack.PopLong();
-            forth._vm.DataStack.PushLong(Math.Min(a, b));
-        });
 
         // Stack manipulation - VM opcodes
         DefinePrimitive("DUP", OPCode.DUP);
@@ -777,6 +752,15 @@ public class ForthInterpreter
             // Mark this position as the target
             forth._codeBuilder.Label(label);
         }, isImmediate: true);
+
+        // Define MAX and MIN by compiling FORTH source code
+        // MAX: 2DUP < IF SWAP THEN DROP
+        // MIN: 2DUP > IF SWAP THEN DROP
+        // ABS: DUP 0 < IF NEGATE THEN
+        // This is more elegant than manually building bytecode
+        Interpret(": MAX 2DUP < IF SWAP THEN DROP ;");
+        Interpret(": MIN 2DUP > IF SWAP THEN DROP ;");
+        Interpret(": ABS DUP 0 < IF NEGATE THEN ;");
     }
 
     /// <summary>
