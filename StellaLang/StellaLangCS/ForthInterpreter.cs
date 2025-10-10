@@ -773,6 +773,7 @@ public class ForthInterpreter
         Interpret(": MAX 2DUP < IF SWAP THEN DROP ;");
         Interpret(": MIN 2DUP > IF SWAP THEN DROP ;");
         Interpret(": ABS DUP 0 < IF NEGATE THEN ;");
+        Interpret(": FABS FDUP F0< IF FNEGATE THEN ;");
     }
 
     /// <summary>
