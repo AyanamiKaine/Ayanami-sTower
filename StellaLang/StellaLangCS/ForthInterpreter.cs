@@ -1666,30 +1666,19 @@ public class ForthInterpreter
                 vm.DataStack.PushLong(address);
             };
 
-            // Define WORD as a handler-based immediate primitive so it can be
-            // executed during compilation (to consume the quoted text) and also
-            // compiled as a syscall into definitions for runtime behavior.
+            // Define WORD as a non-immediate word. It should execute at runtime,
+            // not during compilation. When used in a definition like 
+            // `: MYWORD [CHAR] A WORD ;`, the WORD will be compiled into the
+            // definition and execute when MYWORD is called.
             DefinePrimitive("WORD", forth =>
             {
                 // The delimiter should be on the VM data stack (e.g., pushed by [CHAR])
                 if (forth._vm.DataStack.Pointer < sizeof(long))
                     throw new InvalidOperationException("WORD runtime: missing delimiter on data stack");
 
-                // Reuse the runtime syscall handler logic by invoking the registered
-                // syscall (it uses the interpreter's captured fields to access input).
+                // Execute the runtime syscall handler
                 _vm.SyscallHandlers[WORD_SYSCALL_ID](forth._vm);
-
-                // At this point the address of the created counted string is on the
-                // VM data stack. If we're compiling, we want to embed that address
-                // as a literal into the current definition so runtime execution will
-                // find the string in memory without needing to re-parse text.
-                if (forth._compileMode)
-                {
-                    long addr = forth._vm.DataStack.PopLong();
-                    //try { Console.Error.WriteLine($"WORD handler: compiled-counted-string addr={addr} inputBuf='{forth._inputBuffer}' pos={forth._inputPosition}"); } catch { }
-                    forth.CompileLiteral(addr);
-                }
-            }, isImmediate: true);
+            });
         }
 
         // COUNT ( c-addr -- addr len ) Convert counted string to address and length
