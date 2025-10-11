@@ -14,30 +14,21 @@ public class ForthStringTests
     public void TestWordAndType()
     {
         var vm = new VM();
-        var forth = new ForthInterpreter(vm);
+        var testIo = new TestHostIO();
+        var forth = new ForthInterpreter(vm, testIo);
 
-        var originalOut = Console.Out;
-        using var writer = new System.IO.StringWriter();
-        Console.SetOut(writer);
+        // WORD reads until space, creates counted string at HERE
+        forth.Interpret("[CHAR] \" WORD");
 
-        try
-        {
-            // WORD reads until space, creates counted string at HERE
-            forth.Interpret("[CHAR] \" WORD");
+        // Now we should have address of counted string on stack
+        // Let's use COUNT to get addr and len, then TYPE to print
+        forth.Interpret("COUNT TYPE");
 
-            // Now we should have address of counted string on stack
-            // Let's use COUNT to get addr and len, then TYPE to print
-            forth.Interpret("COUNT TYPE");
+        string output = testIo.GetOutput();
+        // The input buffer should contain some text after the WORD call
+        // But since we're calling WORD in interpret mode, it reads from empty buffer
+        // Let's test with a proper string input
 
-            string output = writer.ToString();
-            // The input buffer should contain some text after the WORD call
-            // But since we're calling WORD in interpret mode, it reads from empty buffer
-            // Let's test with a proper string input
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
     }
 
     /// <summary>
@@ -47,28 +38,19 @@ public class ForthStringTests
     public void TestCustomQuoteWord()
     {
         var vm = new VM();
-        var forth = new ForthInterpreter(vm);
+        var testIo = new TestHostIO();
+        var forth = new ForthInterpreter(vm, testIo);
 
-        var originalOut = Console.Out;
-        using var writer = new System.IO.StringWriter();
-        Console.SetOut(writer);
 
-        try
-        {
-            // Define the " word as in the MATERIAL example
-            forth.Interpret(": \" ( -- addr )   [CHAR] \" WORD DUP C@ 1+ ALLOT ;");
+        // Define the " word as in the MATERIAL example
+        forth.Interpret(": \" ( -- addr )   [CHAR] \" WORD DUP C@ 1+ ALLOT ;");
 
-            // Test it by creating a string and using COUNT TYPE
-            forth.Interpret(": test-str ( -- )   .\" hello\" COUNT TYPE ;");
-            forth.Interpret("test-str");
+        // Test it by creating a string and using COUNT TYPE
+        forth.Interpret(": test-str ( -- )   .\" hello\" COUNT TYPE ;");
+        forth.Interpret("test-str");
 
-            string output = writer.ToString();
-            Assert.Contains("hello", output);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        string output = testIo.GetOutput();
+        Assert.Contains("hello", output);
     }
 
     /// <summary>
@@ -100,16 +82,10 @@ public class ForthStringTests
     public void TestDoesWithVariables()
     {
         var vm = new VM();
-        var forth = new ForthInterpreter(vm);
-
-        var originalOut = Console.Out;
-        using var writer = new System.IO.StringWriter();
-        Console.SetOut(writer);
-
-        try
-        {
-            // Simplified version of MATERIAL pattern
-            forth.Interpret(@"
+        var testIo = new TestHostIO();
+        var forth = new ForthInterpreter(vm, testIo);
+        // Simplified version of MATERIAL pattern
+        forth.Interpret(@"
                 VARIABLE VAR1
                 VARIABLE VAR2
                 
@@ -125,14 +101,10 @@ public class ForthStringTests
                 VAR2 @ .
             ");
 
-            string output = writer.ToString();
-            Assert.Contains("10", output);
-            Assert.Contains("20", output);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        string output = testIo.GetOutput();
+        Assert.Contains("10", output);
+        Assert.Contains("20", output);
+
     }
 
     /// <summary>
@@ -142,16 +114,11 @@ public class ForthStringTests
     public void TestStringStorage()
     {
         var vm = new VM();
-        var forth = new ForthInterpreter(vm);
+        var testIo = new TestHostIO();
+        var forth = new ForthInterpreter(vm, testIo);
 
-        var originalOut = Console.Out;
-        using var writer = new System.IO.StringWriter();
-        Console.SetOut(writer);
-
-        try
-        {
-            // Create counted string manually
-            forth.Interpret(@"
+        // Create counted string manually
+        forth.Interpret(@"
                 HERE
                 5 C,
                 [CHAR] h C,
@@ -162,12 +129,8 @@ public class ForthStringTests
                 COUNT TYPE
             ");
 
-            string output = writer.ToString();
-            Assert.Contains("hello", output);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        string output = testIo.GetOutput();
+        Assert.Contains("hello", output);
+
     }
 }

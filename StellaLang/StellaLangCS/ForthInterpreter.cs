@@ -12,6 +12,7 @@ namespace StellaLang;
 /// </summary>
 public class ForthInterpreter : IDisposable
 {
+    private readonly IHostIO _io;
     /// <summary>
     /// The underlying VM that executes the compiled bytecode.
     /// </summary>
@@ -135,6 +136,7 @@ public class ForthInterpreter : IDisposable
     public ForthInterpreter(VM vm)
     {
         _vm = vm;
+        _io = new ConsoleHostIO();
         _dictionary = new ForthDictionary();
         _dataSpace = [];
         _codeSpace = [];
@@ -156,8 +158,31 @@ public class ForthInterpreter : IDisposable
     /// <summary>
     /// Initializes a new instance of the FORTH interpreter with a default VM.
     /// </summary>
-    public ForthInterpreter() : this(new VM())
+    public ForthInterpreter() : this(new VM()) { }
+
+    /// <summary>
+    /// Initializes a new instance of the FORTH interpreter with a VM and a custom I/O host.
+    /// </summary>
+    public ForthInterpreter(VM vm, IHostIO io)
     {
+        _vm = vm;
+        _io = io ?? new ConsoleHostIO();
+        _dictionary = new ForthDictionary();
+        _dataSpace = [];
+        _codeSpace = [];
+        _codeSpaceArray = ArrayPool<byte>.Shared.Rent(1024);
+        _codeSpaceArrayLength = 0;
+        _here = 0;
+        _compileMode = false;
+        _inputBuffer = string.Empty;
+        _inputPosition = 0;
+        _base = 10;
+        _compileStack = new Stack<string>();
+        _labelCounter = 0;
+        _codeBuilder = new CodeBuilder();
+        _currentWordName = string.Empty;
+
+        InitializePrimitives();
     }
 
     #region Outer Interpreter
@@ -186,15 +211,15 @@ public class ForthInterpreter : IDisposable
     /// </summary>
     public void REPL()
     {
-        Console.WriteLine("StellaLang FORTH Interpreter");
-        Console.WriteLine("Type 'BYE' to exit");
+        _io.WriteLine("StellaLang FORTH Interpreter");
+        _io.WriteLine("Type 'BYE' to exit");
 
         while (true)
         {
             try
             {
-                Console.Write(_compileMode ? "] " : "ok ");
-                string? input = Console.ReadLine();
+                _io.Write(_compileMode ? "] " : "ok ");
+                string? input = _io.ReadLine();
                 if (string.IsNullOrEmpty(input)) continue;
 
                 if (input.Trim().Equals("BYE", StringComparison.OrdinalIgnoreCase))
@@ -203,11 +228,11 @@ public class ForthInterpreter : IDisposable
                 Interpret(input);
 
                 if (!_compileMode)
-                    Console.WriteLine(" ok");
+                    _io.WriteLine(" ok");
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Error: {ex.Message}");
+                _io.Error.WriteLine($"Error: {ex.Message}");
                 _compileMode = false;  // Reset to interpretation mode on error
             }
         }
@@ -1702,8 +1727,8 @@ public class ForthInterpreter : IDisposable
         DefinePrimitive(".", forth =>
         {
             long value = forth._vm.DataStack.PopLong();
-            Console.Write(value);
-            Console.Write(" ");
+            _io.Write(value.ToString());
+            _io.Write(" ");
         });
 
         // ." (compile-time string printing)
@@ -1743,7 +1768,7 @@ public class ForthInterpreter : IDisposable
             else
             {
                 // In interpretation mode, print immediately
-                Console.Write(text);
+                _io.Write(text);
             }
         }, isImmediate: true);
 
@@ -1751,14 +1776,14 @@ public class ForthInterpreter : IDisposable
         DefinePrimitive("EMIT", forth =>
         {
             long charCode = forth._vm.DataStack.PopLong();
-            Console.Write((char)charCode);
+            _io.Write(((char)charCode).ToString());
         });
 
         // CR ( -- ) Print newline
-        DefinePrimitive("CR", forth => Console.WriteLine());
+        DefinePrimitive("CR", forth => _io.WriteLine(string.Empty));
 
         // SPACE ( -- ) Print space
-        DefinePrimitive("SPACE", forth => Console.Write(" "));
+        DefinePrimitive("SPACE", forth => _io.Write(" "));
     }
 
     /// <summary>
@@ -1887,7 +1912,8 @@ public class ForthInterpreter : IDisposable
                 for (long i = 0; i < len; i++)
                 {
                     byte b = vm.Memory[(int)(addr + i)];
-                    Console.Write((char)b);
+                    // Write through the interpreter's I/O so tests can capture output
+                    _io.Write(((char)b).ToString());
                 }
             };
 
@@ -1904,13 +1930,13 @@ public class ForthInterpreter : IDisposable
         // WORDS ( -- ) - List all defined words
         DefinePrimitive("WORDS", forth =>
         {
-            Console.WriteLine(forth._dictionary.ListWords(6));
+            forth._io.WriteLine(forth._dictionary.ListWords(6));
         });
 
         // .DICT ( -- ) - Print detailed dictionary dump
         DefinePrimitive(".DICT", forth =>
         {
-            Console.WriteLine(forth._dictionary.DumpDictionary(includeTypes: true));
+            forth._io.WriteLine(forth._dictionary.DumpDictionary(includeTypes: true));
         });
 
         // FORGET ( "name" -- ) - Remove a word and all words defined after it
@@ -1939,13 +1965,13 @@ public class ForthInterpreter : IDisposable
             var word = forth._dictionary.Find(name);
             if (word == null)
             {
-                Console.WriteLine($"'{name}' not found in dictionary");
+                forth._io.WriteLine($"'{name}' not found in dictionary");
                 return;
             }
 
-            Console.WriteLine($": {word.Name}");
-            Console.WriteLine($"  Type: {word.Type}");
-            Console.WriteLine($"  Immediate: {word.IsImmediate}");
+            forth._io.WriteLine($": {word.Name}");
+            forth._io.WriteLine($"  Type: {word.Type}");
+            forth._io.WriteLine($"  Immediate: {word.IsImmediate}");
 
             if (word.Type == WordType.Variable)
             {
