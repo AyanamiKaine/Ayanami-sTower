@@ -340,7 +340,10 @@ public class ForthInterpreter
 
         try
         {
-            // Execute the bytecode using the VM
+            // Execute the word's compiled code directly.
+            // Note: This uses the standalone copy of bytecode stored in word.CompiledCode
+            // which allows words to execute independently without requiring the full
+            // _codeSpace context.
             _vm.Execute(word.CompiledCode);
         }
         finally
@@ -562,24 +565,40 @@ public class ForthInterpreter
         }
         else if (word.Type == WordType.ColonDefinition)
         {
-            // For colon definitions, inline the word's bytecode directly
-            // This preserves the execution context and allows nested calls to work
+            // TODO: CRITICAL ARCHITECTURE ISSUE - Implement proper CALL semantics
+            // 
+            // Current implementation: INLINING
+            // We copy the word's bytecode directly into the caller, removing the exit syscall.
+            // This works but has significant drawbacks:
+            // 1. Code bloat - each call site gets a full copy of the callee
+            // 2. No dynamic dispatch - redefining a word doesn't affect existing callers
+            // 3. Not true Forth semantics - standard Forth uses CALL/RET
+            //
+            // Desired implementation: CALL semantics
+            // _codeBuilder.Call(word.ExecutionToken);
+            //
+            // Challenges to overcome:
+            // 1. Mixed execution model: We currently execute CompiledCode independently,
+            //    but CALL addresses are absolute offsets into _codeSpace
+            // 2. Address resolution: CodeBuilder resolves labels relative to each word,
+            //    but _codeSpace requires global addresses
+            // 3. Execution context: Need to always execute from _codeSpace for CALL to work,
+            //    which means changing ExecuteColonDefinition to load _codeSpace
+            // 
+            // For now, inline the bytecode to maintain test compatibility.
+
             if (word.CompiledCode == null || word.CompiledCode.Length == 0)
             {
                 throw new CompilationException($"Word {word.Name} has no compiled code");
             }
 
             // Strip the exit syscall from the end (PUSH_CELL + SYSCALL = 10 bytes)
-            // The exit syscall is: PUSH_CELL <8-byte-syscall-id> SYSCALL
             int length = word.CompiledCode.Length;
-
-            // Check if the last instruction is the exit syscall
             if (length >= 10 && word.CompiledCode[length - 1] == (byte)OPCode.SYSCALL)
             {
-                // Verify it's the exit syscall by checking if it's a PUSH_CELL followed by SYSCALL
                 if (word.CompiledCode[length - 10] == (byte)OPCode.PUSH_CELL)
                 {
-                    length -= 10; // Strip PUSH_CELL (1 byte) + long (8 bytes) + SYSCALL (1 byte)
+                    length -= 10; // Strip exit syscall
                 }
             }
 
