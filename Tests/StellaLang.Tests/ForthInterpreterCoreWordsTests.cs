@@ -17,8 +17,8 @@ public class ForthInterpreterCoreWordsTests
     {
         var vm = new VM();
         var forth = new ForthInterpreter(vm);
-        forth.Interpret("10 20 !");
-        // Store 20 at address 10
+        forth.Interpret("20 10 !");
+        // Store 20 at address 10 (standard Forth: value addr !)
 
         long result = vm.Memory.ReadCellAt(10);
         Assert.Equal(20, result);
@@ -32,7 +32,7 @@ public class ForthInterpreterCoreWordsTests
     {
         var vm = new VM();
         var forth = new ForthInterpreter(vm);
-        forth.Interpret("10 20 !");
+        forth.Interpret("20 10 !");
         forth.Interpret("10 @");
         // fetch the value at address 10 push it to stack
 
@@ -822,8 +822,8 @@ public class ForthInterpreterCoreWordsTests
         // Create a variable
         forth.Interpret("VARIABLE V1");
 
-        // Store 123 in the variable (using address value ! convention)
-        forth.Interpret("V1 123 !");
+        // Store 123 in the variable (standard Forth: value addr !)
+        forth.Interpret("123 V1 !");
 
         // Fetch the value
         forth.Interpret("V1 @");
@@ -846,10 +846,10 @@ public class ForthInterpreterCoreWordsTests
         forth.Interpret("VARIABLE Y");
         forth.Interpret("VARIABLE Z");
 
-        // Store different values (using address value ! convention)
-        forth.Interpret("X 42 !");
-        forth.Interpret("Y 99 !");
-        forth.Interpret("Z 256 !");
+        // Store different values (standard Forth: value addr !)
+        forth.Interpret("42 X !");
+        forth.Interpret("99 Y !");
+        forth.Interpret("256 Z !");
 
         // Fetch and verify X
         forth.Interpret("X @");
@@ -879,11 +879,11 @@ public class ForthInterpreterCoreWordsTests
         // Create a variable
         forth.Interpret("VARIABLE COUNTER");
 
-        // Define a word that uses the variable (using address value ! convention)
-        forth.Interpret(": INCR COUNTER @ 1 + COUNTER SWAP ! ;");
+        // Define a word that uses the variable (standard Forth: value addr !)
+        forth.Interpret(": INCR COUNTER @ 1 + COUNTER ! ;");
 
-        // Initialize counter to 0 (using address value ! convention)
-        forth.Interpret("COUNTER 0 !");
+        // Initialize counter to 0 (standard Forth: value addr !)
+        forth.Interpret("0 COUNTER !");
 
         // Increment three times
         forth.Interpret("INCR");
@@ -1251,8 +1251,8 @@ public class ForthInterpreterCoreWordsTests
         var vm = new VM();
         var forth = new ForthInterpreter(vm);
 
-        // Store byte at address 100
-        forth.Interpret("100 65 C!");  // Store 'A' (ASCII 65)
+        // Store byte at address 100 (standard Forth: value addr C!)
+        forth.Interpret("65 100 C!");  // Store 'A' (ASCII 65)
 
         // Fetch it back
         forth.Interpret("100 C@");
@@ -1632,13 +1632,13 @@ public class ForthInterpreterCoreWordsTests
         var vm = new VM();
         var forth = new ForthInterpreter(vm);
 
-        // Store string as bytes
+        // Store string as bytes (standard Forth: value addr C!)
         const int addr = 2000;
-        forth.Interpret($"{addr} 72 C!");   // 'H'
-        forth.Interpret($"{addr} 1 + 69 C!");   // 'E'
-        forth.Interpret($"{addr} 2 + 76 C!");   // 'L'
-        forth.Interpret($"{addr} 3 + 76 C!");   // 'L'
-        forth.Interpret($"{addr} 4 + 79 C!");   // 'O'
+        forth.Interpret($"72 {addr} C!");   // 'H'
+        forth.Interpret($"69 {addr} 1 + C!");   // 'E'
+        forth.Interpret($"76 {addr} 2 + C!");   // 'L'
+        forth.Interpret($"76 {addr} 3 + C!");   // 'L'
+        forth.Interpret($"79 {addr} 4 + C!");   // 'O'
 
         // Read back and verify
         byte b1 = vm.Memory[addr];

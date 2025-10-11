@@ -778,16 +778,14 @@ public class ForthInterpreter
     /// </summary>
     private void InitializeMemoryOperations()
     {
-        // Note: Our implementation uses ( address value -- ) instead of standard FORTH ( x a-addr -- )
-        // This matches the existing tests and is more intuitive: address value !
-        // VM STORE expects address on top, value below, so we need SWAP
-        DefinePrimitive("!", new CodeBuilder().Swap().Store().Build());
+        // Standard Forth ! expects ( value addr -- )
+        // VM STORE pops addr first, then value, which matches this expectation
+        DefinePrimitive("!", OPCode.STORE);
         DefinePrimitive("@", OPCode.FETCH);
 
-        // Byte operations - use VM opcodes for compilation support
-        // Note: C! uses same convention as !: ( address value -- )
-        // VM STORE_BYTE expects address on top, value below, so we need SWAP
-        DefinePrimitive("C!", new CodeBuilder().Swap().StoreByte().Build());
+        // Byte operations  
+        // Standard Forth C! expects ( char addr -- )
+        DefinePrimitive("C!", OPCode.STORE_BYTE);
         DefinePrimitive("C@", OPCode.FETCH_BYTE);
 
         // Cell size (8 bytes in our implementation)
@@ -1099,7 +1097,7 @@ public class ForthInterpreter
                     throw new InvalidOperationException("DOES> runtime: no word currently executing or wrong type");
 
                 // DEBUG: log what snippet we're about to attach
-                //try { Console.WriteLine($"DOES> runtime: modifier={modifierWord.Name} created={_lastCreatedWord} snippetIndex={snippetIndex}"); } catch { }
+                try { Console.WriteLine($"DOES> runtime: modifier={modifierWord.Name} created={_lastCreatedWord} snippetIndex={snippetIndex}"); } catch { }
 
                 byte[]? snippet = null;
                 if (modifierWord.DoesCodeSnippets != null && snippetIndex < modifierWord.DoesCodeSnippets.Length)
@@ -1114,7 +1112,7 @@ public class ForthInterpreter
                 if (snippet == null)
                     throw new InvalidOperationException("DOES> runtime: no DOES> snippet available from modifier word");
 
-                //try { Console.WriteLine($"DOES> runtime: snippetLength={snippet.Length} dataAddr={dataFieldAddress}"); } catch { }
+                try { Console.WriteLine($"DOES> runtime: snippetLength={snippet.Length} dataAddr={dataFieldAddress}"); } catch { }
 
                 // Create new bytecode for the word:
                 // When called, it should: push data-field-address, then execute DOES> snippet

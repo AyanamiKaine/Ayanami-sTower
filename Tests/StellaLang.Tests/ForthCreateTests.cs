@@ -47,9 +47,9 @@ public class ForthCreateTests
         forth.Interpret("BUFFER");
         long bufferAddr = vm.DataStack.PopLong();
 
-        // Store values in the buffer (our ! uses address value order)
-        forth.Interpret($"{bufferAddr} 42 !");
-        forth.Interpret($"{bufferAddr} 8 + 99 !");
+        // Store values in the buffer (standard Forth: value addr !)
+        forth.Interpret($"42 {bufferAddr} !");
+        forth.Interpret($"99 {bufferAddr} 8 + !");
 
         // Read them back
         forth.Interpret($"{bufferAddr} @");
@@ -100,7 +100,7 @@ public class ForthCreateTests
 
         // Define a word that uses a created data structure
         forth.Interpret("CREATE COUNTER 0 ,");
-        forth.Interpret(": INCREMENT COUNTER @ 1+ COUNTER SWAP ! ;");
+        forth.Interpret(": INCREMENT COUNTER @ 1+ COUNTER ! ;");
         forth.Interpret(": GET-COUNT COUNTER @ ;"); ;
 
         // Initial value
@@ -183,10 +183,10 @@ public class ForthCreateTests
         forth.Interpret("MYARRAY");
         long baseAddr = vm.DataStack.PopLong();
 
-        // Fill the array
+        // Fill the array (standard Forth: value addr !)
         for (int i = 0; i < 5; i++)
         {
-            forth.Interpret($"{baseAddr + i * 8} {i * 10} !");
+            forth.Interpret($"{i * 10} {baseAddr + i * 8} !");
         }
 
         // Read back
