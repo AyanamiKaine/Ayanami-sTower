@@ -178,7 +178,7 @@ public class ForthInterpreter
     /// <param name="word">The word to process.</param>
     private void ProcessWord(string word)
     {
-        try { Console.Error.WriteLine($"ProcessWord: '{word}' compileMode={_compileMode} pos={_inputPosition}"); } catch { }
+        //try { Console.Error.WriteLine($"ProcessWord: '{word}' compileMode={_compileMode} pos={_inputPosition}"); } catch { }
         // Try to find word in dictionary
         var definition = FindWord(word);
 
@@ -372,7 +372,7 @@ public class ForthInterpreter
     private void AddWord(string name, WordDefinition definition)
     {
         _dictionary[name.ToUpper()] = definition;
-        try { Console.Error.WriteLine($"AddWord: '{name}' (type={definition.Type})"); } catch { }
+        //try { Console.Error.WriteLine($"AddWord: '{name}' (type={definition.Type})"); } catch { }
     }
 
     /// <summary>
@@ -386,7 +386,7 @@ public class ForthInterpreter
             throw new InvalidOperationException("Cannot start a colon definition while already compiling");
         }
 
-        try { Console.Error.WriteLine($"CreateColonDefinition: starting name='{name}'"); } catch { }
+        //try { Console.Error.WriteLine($"CreateColonDefinition: starting name='{name}'"); } catch { }
 
         _compileMode = true;
         _codeBuilder.Clear();
@@ -411,7 +411,7 @@ public class ForthInterpreter
             throw new InvalidOperationException("Cannot finish a colon definition without starting one");
         }
 
-        try { Console.Error.WriteLine($"FinishColonDefinition: finishing name='{_currentWordName}' _doesCount={_doesCodeStartPositions?.Count}"); } catch { }
+        //try { Console.Error.WriteLine($"FinishColonDefinition: finishing name='{_currentWordName}' _doesCount={_doesCodeStartPositions?.Count}"); } catch { }
 
         // Add the exit label for EXIT to jump to
         if (_currentExitLabel != null)
@@ -1019,7 +1019,7 @@ public class ForthInterpreter
             _vm.SyscallHandlers[CREATE_SYSCALL_ID] = vm =>
             {
                 string? name = ReadWord() ?? throw new InvalidOperationException("Expected word name after CREATE");
-                try { Console.WriteLine($"CREATE handler inputBuffer='{_inputBuffer}' pos={_inputPosition} nameRead='{name}'"); } catch { }
+                //try { Console.WriteLine($"CREATE handler inputBuffer='{_inputBuffer}' pos={_inputPosition} nameRead='{name}'"); } catch { }
 
                 // Track this as the last created word for DOES>
                 _lastCreatedWord = name;
@@ -1118,7 +1118,7 @@ public class ForthInterpreter
                     throw new InvalidOperationException("DOES> runtime: no word currently executing or wrong type");
 
                 // DEBUG: log what snippet we're about to attach
-                try { Console.WriteLine($"DOES> runtime: modifier={modifierWord.Name} created={_lastCreatedWord} snippetIndex={snippetIndex}"); } catch { }
+                //try { Console.WriteLine($"DOES> runtime: modifier={modifierWord.Name} created={_lastCreatedWord} snippetIndex={snippetIndex}"); } catch { }
 
                 byte[]? snippet = null;
                 if (modifierWord.DoesCodeSnippets != null && snippetIndex < modifierWord.DoesCodeSnippets.Length)
@@ -1133,7 +1133,7 @@ public class ForthInterpreter
                 if (snippet == null)
                     throw new InvalidOperationException("DOES> runtime: no DOES> snippet available from modifier word");
 
-                try { Console.WriteLine($"DOES> runtime: snippetLength={snippet.Length} dataAddr={dataFieldAddress}"); } catch { }
+                //try { Console.WriteLine($"DOES> runtime: snippetLength={snippet.Length} dataAddr={dataFieldAddress}"); } catch { }
 
                 // Create new bytecode for the word:
                 // When called, it should: push data-field-address, then execute DOES> snippet
@@ -1634,7 +1634,7 @@ public class ForthInterpreter
                 if (forth._compileMode)
                 {
                     long addr = forth._vm.DataStack.PopLong();
-                    try { Console.Error.WriteLine($"WORD handler: compiled-counted-string addr={addr} inputBuf='{forth._inputBuffer}' pos={forth._inputPosition}"); } catch { }
+                    //try { Console.Error.WriteLine($"WORD handler: compiled-counted-string addr={addr} inputBuf='{forth._inputBuffer}' pos={forth._inputPosition}"); } catch { }
                     forth.CompileLiteral(addr);
                 }
             }, isImmediate: true);
