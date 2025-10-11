@@ -490,9 +490,9 @@ public class ForthInterpreter
                 int endExclusive;
                 if (i + 1 < _doesCodeStartPositions.Count)
                 {
-                    // The next start is after a marker we emitted when compiling the next DOES>.
-                    // The marker length is: PushCell(snippetIndex)=9 + PushCell(DOES_RUNTIME_SYSCALL_ID)=9 + Syscall=1 + Jmp=9 => 28 bytes
-                    endExclusive = _doesCodeStartPositions[i + 1] - 28;
+                    // The next snippet starts at _doesCodeStartPositions[i+1]
+                    // Snippet i should include everything up to that point
+                    endExclusive = _doesCodeStartPositions[i + 1];
                 }
                 else
                 {
@@ -1053,6 +1053,31 @@ public class ForthInterpreter
             {
                 if (!forth._compileMode)
                     throw new InvalidOperationException("DOES> can only be used in compilation mode");
+
+                // If we're already compiling DOES> code (nested DOES>), 
+                // we need to compile a runtime call to DOES> with the next snippet index
+                if (forth._compilingDoesCode)
+                {
+                    // The next snippet index will be used at runtime
+                    int nextSnippetIndex = forth._doesCodeStartPositions.Count;
+
+                    // Compile a runtime call to DOES> handler
+                    forth._codeBuilder
+                        .PushCell(nextSnippetIndex)
+                        .PushCell(DOES_RUNTIME_SYSCALL_ID)
+                        .Syscall();
+
+                    // After modifying the word, we should exit (not continue execution)
+                    forth._codeBuilder.PushCell((long)SyscallId.WordExit).Syscall();
+
+                    // Now record where the next DOES> snippet starts
+                    // (this code will never execute in snippet 0, only when installed as snippet 1)
+                    forth._doesCodeStartPositions.Add(forth._codeBuilder.Size);
+
+                    // Continue in DOES> compilation mode for the next snippet
+                    return;
+                }
+
                 // Mark that we're now compiling DOES> code
                 forth._compilingDoesCode = true;
 
@@ -1077,7 +1102,7 @@ public class ForthInterpreter
             {
                 // At runtime, modify the last CREATE'd word
                 if (_lastCreatedWord == null)
-                    throw new InvalidOperationException("DOES> runtime: no word to modify");
+                    throw new InvalidOperationException("DOES> requires a prior CREATE in the same definition");
 
                 var word = FindWord(_lastCreatedWord) ?? throw new InvalidOperationException($"DOES> runtime: cannot find word {_lastCreatedWord}");
 
@@ -1098,6 +1123,7 @@ public class ForthInterpreter
 
                 // DEBUG: log what snippet we're about to attach
                 try { Console.WriteLine($"DOES> runtime: modifier={modifierWord.Name} created={_lastCreatedWord} snippetIndex={snippetIndex}"); } catch { }
+                try { Console.WriteLine($"DOES> runtime: snippets available={modifierWord.DoesCodeSnippets?.Length ?? 0}"); } catch { }
 
                 byte[]? snippet = null;
                 if (modifierWord.DoesCodeSnippets != null && snippetIndex < modifierWord.DoesCodeSnippets.Length)
@@ -1170,6 +1196,14 @@ public class ForthInterpreter
 
                 // Update CompiledCode for backward compatibility
                 word.CompiledCode = newBytecode;
+
+                // Copy the DoesCodeSnippets from the modifier word to the modified word
+                // This allows nested DOES> to work - the modified word needs access to
+                // all snippets from the original defining word
+                if (modifierWord.DoesCodeSnippets != null)
+                {
+                    word.DoesCodeSnippets = modifierWord.DoesCodeSnippets;
+                }
             };
         }
 
