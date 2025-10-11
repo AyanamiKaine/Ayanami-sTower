@@ -904,6 +904,108 @@ public class ForthInterpreter : IDisposable
         DefinePrimitive("ROT", OPCode.ROT);
         DefinePrimitive("2DUP", new CodeBuilder().Over().Over().Build());
 
+        // Double-cell stack operations
+        // 2DROP ( a b -- ) drops two items
+        DefinePrimitive("2DROP", new CodeBuilder().Drop().Drop().Build());
+
+        // 2SWAP ( a b c d -- c d a b ) swaps two pairs
+        DefinePrimitive("2SWAP", forth =>
+        {
+            // Stack: a b c d (d on top)
+            // Desired: c d a b
+            // Strategy: ROT >R ROT R>
+            // Or more directly using explicit stack manipulation
+            if (forth._vm.DataStack.Pointer < 32) // Need 4 cells
+                throw new StackUnderflowException("2SWAP requires 4 items on stack");
+
+            long d = forth._vm.DataStack.PopLong();
+            long c = forth._vm.DataStack.PopLong();
+            long b = forth._vm.DataStack.PopLong();
+            long a = forth._vm.DataStack.PopLong();
+
+            forth._vm.DataStack.PushLong(c);
+            forth._vm.DataStack.PushLong(d);
+            forth._vm.DataStack.PushLong(a);
+            forth._vm.DataStack.PushLong(b);
+        });
+
+        // 2OVER ( a b c d -- a b c d a b ) copies second pair to top
+        DefinePrimitive("2OVER", forth =>
+        {
+            // Stack: a b c d (d on top)
+            // Desired: a b c d a b
+            if (forth._vm.DataStack.Pointer < 32) // Need 4 cells
+                throw new StackUnderflowException("2OVER requires 4 items on stack");
+
+            // Peek at the second pair without modifying stack
+            int pointer = forth._vm.DataStack.Pointer;
+            long b = BitConverter.ToInt64(forth._vm.DataStack.Memory.Span.Slice(pointer - 24, 8));
+            long a = BitConverter.ToInt64(forth._vm.DataStack.Memory.Span.Slice(pointer - 32, 8));
+
+            forth._vm.DataStack.PushLong(a);
+            forth._vm.DataStack.PushLong(b);
+        });
+
+        // PICK ( xu ... x1 x0 u -- xu ... x1 x0 xu )
+        // Copies the u-th stack item (0-indexed from top) to the top
+        // 0 PICK is equivalent to DUP
+        // 1 PICK is equivalent to OVER
+        DefinePrimitive("PICK", forth =>
+        {
+            long index = forth._vm.DataStack.PopLong();
+
+            if (index < 0)
+                throw new InvalidOperationException($"PICK index must be non-negative, got {index}");
+
+            int offset = (int)(index + 1) * 8; // +1 because we already popped the index
+
+            if (forth._vm.DataStack.Pointer < offset)
+                throw new StackUnderflowException($"PICK requires at least {index + 1} items on stack");
+
+            long value = BitConverter.ToInt64(
+                forth._vm.DataStack.Memory.Span.Slice(forth._vm.DataStack.Pointer - offset, 8));
+            forth._vm.DataStack.PushLong(value);
+        });
+
+        // ROLL ( xu xu-1 ... x0 u -- xu-1 ... x0 xu )
+        // Removes the u-th stack item and moves it to the top
+        // 0 ROLL does nothing
+        // 1 ROLL is equivalent to SWAP
+        // 2 ROLL is equivalent to ROT
+        DefinePrimitive("ROLL", forth =>
+        {
+            long u = forth._vm.DataStack.PopLong();
+
+            if (u < 0)
+                throw new InvalidOperationException($"ROLL count must be non-negative, got {u}");
+
+            if (u == 0)
+                return; // Nothing to do
+
+            int uInt = (int)u;
+
+            if (forth._vm.DataStack.Pointer < (uInt + 1) * 8)
+                throw new StackUnderflowException($"ROLL requires at least {u + 1} items on stack");
+
+            // Get the u-th element (counting from 0 at top)
+            int pointer = forth._vm.DataStack.Pointer;
+            long xu = BitConverter.ToInt64(
+                forth._vm.DataStack.Memory.Span.Slice(pointer - (uInt + 1) * 8, 8));
+
+            // Shift all elements above xu down by one position
+            for (int i = uInt; i > 0; i--)
+            {
+                int srcOffset = pointer - i * 8;
+                int dstOffset = pointer - (i + 1) * 8;
+                long value = BitConverter.ToInt64(forth._vm.DataStack.Memory.Span.Slice(srcOffset, 8));
+                BitConverter.TryWriteBytes(forth._vm.DataStack.Memory.Span.Slice(dstOffset, 8), value);
+            }
+
+            // Put xu on top
+            BitConverter.TryWriteBytes(
+                forth._vm.DataStack.Memory.Span.Slice(pointer - 8, 8), xu);
+        });
+
         // Return stack operations
         DefinePrimitive(">R", OPCode.TO_R);
         DefinePrimitive("R>", OPCode.R_FROM);
