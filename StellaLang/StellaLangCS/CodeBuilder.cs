@@ -319,7 +319,7 @@ public class CodeBuilder
     public CodeBuilder Label(string name)
     {
         if (_labels.ContainsKey(name))
-            throw new InvalidOperationException($"Label '{name}' already defined.");
+            throw new CompilationException($"Label '{name}' already defined.");
         _labels[name] = _bytecode.Count;
         return this;
     }
@@ -335,7 +335,7 @@ public class CodeBuilder
         foreach (var (position, label) in _unresolvedJumps)
         {
             if (!_labels.TryGetValue(label, out int targetAddress))
-                throw new InvalidOperationException($"Undefined label: '{label}'");
+                throw new CompilationException($"Undefined label: '{label}'");
 
             // Write the resolved address (8 bytes for long)
             byte[] addressBytes = BitConverter.GetBytes((long)targetAddress);

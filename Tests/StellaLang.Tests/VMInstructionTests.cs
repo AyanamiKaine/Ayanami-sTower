@@ -77,7 +77,7 @@ public class VMInstructionTests
             .Dup()
             .Build();
 
-        Assert.Throws<InvalidOperationException>(() => vm.Execute(code));
+        Assert.Throws<StackUnderflowException>(() => vm.Execute(code));
     }
 
     [Fact]
@@ -1221,6 +1221,6 @@ public class VMInstructionTests
             .Build();
 
         // Should throw for unknown syscall
-        Assert.Throws<InvalidOperationException>(() => vm.Execute(code));
+        Assert.Throws<UnknownSyscallException>(() => vm.Execute(code));
     }
 }

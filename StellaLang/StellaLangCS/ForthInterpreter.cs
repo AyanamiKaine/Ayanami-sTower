@@ -206,7 +206,7 @@ public class ForthInterpreter
                     }
                     else
                     {
-                        throw new InvalidOperationException($"Primitive '{definition.Name}' has neither handler nor bytecode");
+                        throw new CompilationException($"Primitive '{definition.Name}' has neither handler nor bytecode");
                     }
                 }
                 else if (definition.Type == WordType.ColonDefinition)
@@ -256,7 +256,7 @@ public class ForthInterpreter
             }
             else
             {
-                throw new InvalidOperationException($"Unknown word: {word}");
+                throw new UnknownWordException(word, $"Unknown word: {word}");
             }
         }
     }
@@ -326,12 +326,12 @@ public class ForthInterpreter
     {
         if (word.Type != WordType.ColonDefinition)
         {
-            throw new InvalidOperationException("Can only execute colon definitions");
+            throw new CompilationException("Can only execute colon definitions");
         }
 
         if (word.CompiledCode == null || word.CompiledCode.Length == 0)
         {
-            throw new InvalidOperationException($"Word {word.Name} has no compiled code");
+            throw new CompilationException($"Word {word.Name} has no compiled code");
         }
 
         // Set the currently executing word for runtime introspection (e.g., DOES>)
@@ -383,7 +383,7 @@ public class ForthInterpreter
     {
         if (_compileMode)
         {
-            throw new InvalidOperationException("Cannot start a colon definition while already compiling");
+            throw new CompilationException("Cannot start a colon definition while already compiling");
         }
 
         //try { Console.Error.WriteLine($"CreateColonDefinition: starting name='{name}'"); } catch { }
@@ -408,7 +408,7 @@ public class ForthInterpreter
     {
         if (!_compileMode)
         {
-            throw new InvalidOperationException("Cannot finish a colon definition without starting one");
+            throw new CompilationException("Cannot finish a colon definition without starting one");
         }
 
         //try { Console.Error.WriteLine($"FinishColonDefinition: finishing name='{_currentWordName}' _doesCount={_doesCodeStartPositions?.Count}"); } catch { }
@@ -441,10 +441,7 @@ public class ForthInterpreter
             else
             {
                 // Direct execution - halt the VM
-                // We need to set the internal _halted field
-                // Since we're in a syscall lambda, we have access to VM internals
-                typeof(VM).GetField("_halted", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
-                    .SetValue(vm, true);
+                vm.Halt();
             }
         };
 
@@ -534,7 +531,7 @@ public class ForthInterpreter
     {
         if (!_compileMode)
         {
-            throw new InvalidOperationException("Cannot compile a word outside of compilation mode");
+            throw new CompilationException("Cannot compile a word outside of compilation mode");
         }
 
         if (word.Type == WordType.Primitive)
@@ -553,13 +550,13 @@ public class ForthInterpreter
             {
                 // Some primitives use handlers (like control flow words, or complex operations)
                 // These cannot be compiled inline and need special handling
-                throw new InvalidOperationException(
+                throw new CompilationException(
                     $"Primitive '{word.Name}' uses a handler and cannot be compiled inline. " +
                     $"It may require control flow or be a compile-time-only word.");
             }
             else
             {
-                throw new InvalidOperationException(
+                throw new CompilationException(
                     $"Primitive '{word.Name}' has neither bytecode nor handler");
             }
         }
@@ -569,7 +566,7 @@ public class ForthInterpreter
             // This preserves the execution context and allows nested calls to work
             if (word.CompiledCode == null || word.CompiledCode.Length == 0)
             {
-                throw new InvalidOperationException($"Word {word.Name} has no compiled code");
+                throw new CompilationException($"Word {word.Name} has no compiled code");
             }
 
             // Strip the exit syscall from the end (PUSH_CELL + SYSCALL = 10 bytes)
@@ -613,7 +610,7 @@ public class ForthInterpreter
     {
         if (!_compileMode)
         {
-            throw new InvalidOperationException("Cannot compile a literal outside of compilation mode");
+            throw new CompilationException("Cannot compile a literal outside of compilation mode");
         }
 
         _codeBuilder.PushCell(value);
@@ -627,7 +624,7 @@ public class ForthInterpreter
     {
         if (!_compileMode)
         {
-            throw new InvalidOperationException("Cannot compile a literal outside of compilation mode");
+            throw new CompilationException("Cannot compile a literal outside of compilation mode");
         }
 
         _codeBuilder.FPushDouble(value);

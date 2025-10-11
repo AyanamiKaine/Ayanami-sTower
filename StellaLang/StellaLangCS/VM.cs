@@ -696,7 +696,7 @@ public class VM
             if (vm.SyscallHandlers.TryGetValue(syscallId, out var handler))
                 handler(vm);
             else
-                throw new InvalidOperationException($"Unknown syscall: {syscallId}");
+                throw new UnknownSyscallException(syscallId, $"Unknown syscall: {syscallId}");
         };
 
         return table;
@@ -732,7 +732,7 @@ public class VM
         }
         else
         {
-            throw new InvalidOperationException($"Unknown opcode: {opcodeByte} at PC={PC - 1}");
+            throw new UnknownOpcodeException(opcodeByte, PC - 1, $"Unknown opcode: {opcodeByte} at PC={PC - 1}");
         }
     }
 
@@ -768,6 +768,15 @@ public class VM
         FloatStack.Clear();
         ReturnStack.Clear();
         Memory.Clear();
+    }
+
+    /// <summary>
+    /// Halts the VM execution.
+    /// This is the proper way for external code (like syscalls) to stop the VM.
+    /// </summary>
+    public void Halt()
+    {
+        _halted = true;
     }
 
     #region Memory Growth Methods
@@ -869,13 +878,13 @@ public class VM
     /// </summary>
     /// <param name="requiredDepth">The minimum number of elements required on the stack.</param>
     /// <param name="operation">The operation name for error reporting.</param>
-    /// <exception cref="InvalidOperationException">Thrown when stack underflow would occur.</exception>
+    /// <exception cref="StackUnderflowException">Thrown when stack underflow would occur.</exception>
     private void CheckDataStackDepth(int requiredDepth, string operation)
     {
         int currentDepth = DataStack.Pointer / sizeof(long);
         if (currentDepth < requiredDepth)
         {
-            throw new InvalidOperationException(
+            throw new StackUnderflowException(
                 $"Data stack underflow in {operation}: required {requiredDepth} elements, have {currentDepth}");
         }
     }
@@ -885,13 +894,13 @@ public class VM
     /// </summary>
     /// <param name="requiredDepth">The minimum number of elements required on the stack.</param>
     /// <param name="operation">The operation name for error reporting.</param>
-    /// <exception cref="InvalidOperationException">Thrown when stack underflow would occur.</exception>
+    /// <exception cref="StackUnderflowException">Thrown when stack underflow would occur.</exception>
     private void CheckFloatStackDepth(int requiredDepth, string operation)
     {
         int currentDepth = FloatStack.Pointer / sizeof(double);
         if (currentDepth < requiredDepth)
         {
-            throw new InvalidOperationException(
+            throw new StackUnderflowException(
                 $"Float stack underflow in {operation}: required {requiredDepth} elements, have {currentDepth}");
         }
     }
@@ -901,13 +910,13 @@ public class VM
     /// </summary>
     /// <param name="requiredDepth">The minimum number of elements required on the stack.</param>
     /// <param name="operation">The operation name for error reporting.</param>
-    /// <exception cref="InvalidOperationException">Thrown when stack underflow would occur.</exception>
+    /// <exception cref="StackUnderflowException">Thrown when stack underflow would occur.</exception>
     private void CheckReturnStackDepth(int requiredDepth, string operation)
     {
         int currentDepth = ReturnStack.Pointer / sizeof(long);
         if (currentDepth < requiredDepth)
         {
-            throw new InvalidOperationException(
+            throw new StackUnderflowException(
                 $"Return stack underflow in {operation}: required {requiredDepth} elements, have {currentDepth}");
         }
     }
@@ -918,7 +927,7 @@ public class VM
     /// <param name="address">The memory address to access.</param>
     /// <param name="size">The number of bytes to access.</param>
     /// <param name="operation">The operation name for error reporting.</param>
-    /// <exception cref="InvalidOperationException">Thrown when memory access is out of bounds.</exception>
+    /// <exception cref="MemoryAccessException">Thrown when memory access is out of bounds.</exception>
     private void ValidateMemoryAccess(long address, int size, string operation)
     {
         /*
@@ -927,14 +936,14 @@ public class VM
 
         if (address < 0 || address > int.MaxValue)
         {
-            throw new InvalidOperationException(
+            throw new MemoryAccessException(address,
                 $"Memory access violation in {operation}: address {address} out of valid range");
         }
 
         int addr = (int)address;
         if (addr + size > Memory.Memory.Length)
         {
-            throw new InvalidOperationException(
+            throw new MemoryAccessException(address,
                 $"Memory access violation in {operation}: address {address} + size {size} exceeds memory bounds ({Memory.Memory.Length})");
         }
     }
@@ -944,7 +953,7 @@ public class VM
     /// </summary>
     /// <param name="address">The jump target address.</param>
     /// <param name="operation">The operation name for error reporting.</param>
-    /// <exception cref="InvalidOperationException">Thrown when jump target is invalid.</exception>
+    /// <exception cref="InvalidJumpException">Thrown when jump target is invalid.</exception>
     private void ValidateJumpTarget(long address, string operation)
     {
         /*
@@ -953,14 +962,14 @@ public class VM
 
         if (address < 0 || address > int.MaxValue)
         {
-            throw new InvalidOperationException(
+            throw new InvalidJumpException(address,
                 $"Invalid jump target in {operation}: address {address} out of valid range");
         }
 
         int addr = (int)address;
         if (addr >= _bytecode.Length)
         {
-            throw new InvalidOperationException(
+            throw new InvalidJumpException(address,
                 $"Invalid jump target in {operation}: address {address} exceeds bytecode length ({_bytecode.Length})");
         }
     }
@@ -975,7 +984,7 @@ public class VM
     private long ReadLong()
     {
         if (PC + 8 > _bytecode.Length)
-            throw new InvalidOperationException("Unexpected end of bytecode while reading long");
+            throw new BytecodeException("Unexpected end of bytecode while reading long");
 
         long value = BitConverter.ToInt64(_bytecode, PC);
         PC += 8;
@@ -985,7 +994,7 @@ public class VM
     private double ReadDouble()
     {
         if (PC + 8 > _bytecode.Length)
-            throw new InvalidOperationException("Unexpected end of bytecode while reading double");
+            throw new BytecodeException("Unexpected end of bytecode while reading double");
 
         double value = BitConverter.ToDouble(_bytecode, PC);
         PC += 8;
