@@ -70,6 +70,12 @@ public class ForthInterpreter : IDisposable
     /// </summary>
     private int _inputPosition;
 
+    // Start index (in _inputBuffer) of the most recently read token
+    private int _lastTokenStart;
+
+    // Length of the most recently read token
+    private int _lastTokenLength;
+
     /// <summary>
     /// The current base for number conversion (10 = decimal, 16 = hexadecimal, etc.).
     /// </summary>
@@ -323,7 +329,20 @@ public class ForthInterpreter : IDisposable
             }
             else
             {
-                throw new UnknownWordException(word, $"Unknown word: {word}");
+                // Build a richer error message with context and suggestions
+                string context = FormatErrorContext(_inputBuffer, _lastTokenStart, _lastTokenLength);
+                var suggestions = SuggestSimilarWords(word, 3);
+                string suggestionText = suggestions.Count > 0 ? "\nDid you mean: " + string.Join(", ", suggestions) : string.Empty;
+
+                string hint = "";
+                // If it looks like a number but failed parsing, suggest checking BASE or number format
+                if (word.IndexOfAny(new char[] { '.', 'e', 'E' }) >= 0)
+                {
+                    hint = "\nNote: this token looks like a floating-point literal. Ensure you're using '.' as the decimal separator and the token is valid in the current BASE.";
+                }
+
+                string msg = $"Unknown word: '{word}'\n{context}{suggestionText}{hint}";
+                throw new UnknownWordException(word, msg);
             }
         }
     }
@@ -345,6 +364,10 @@ public class ForthInterpreter : IDisposable
         {
             _inputPosition++;
         }
+
+        // Record token position for better error messages later
+        _lastTokenStart = start;
+        _lastTokenLength = _inputPosition - start;
 
         return _inputBuffer[start.._inputPosition];
     }
@@ -753,6 +776,106 @@ public class ForthInterpreter : IDisposable
         if (wrapper != null)
             return wrapper;
         return null;
+    }
+
+    /// <summary>
+    /// Suggest similar visible word names for a given token using Levenshtein distance.
+    /// </summary>
+    private List<string> SuggestSimilarWords(string token, int maxSuggestions)
+    {
+        var results = new List<(string name, int dist)>();
+        if (string.IsNullOrEmpty(token))
+            return new List<string>();
+
+        foreach (var w in _dictionary.GetVisibleWords())
+        {
+            if (string.IsNullOrEmpty(w.Name))
+                continue;
+            int d = LevenshteinDistance(token.ToUpperInvariant(), w.Name.ToUpperInvariant());
+            // Only consider reasonably-similar words
+            if (d <= Math.Max(3, token.Length / 2))
+            {
+                results.Add((w.Name, d));
+            }
+        }
+
+        // Sort by distance then name
+        results.Sort((a, b) => a.dist != b.dist ? a.dist.CompareTo(b.dist) : string.Compare(a.name, b.name, StringComparison.OrdinalIgnoreCase));
+
+        var outList = new List<string>();
+        for (int i = 0; i < results.Count && i < maxSuggestions; i++)
+            outList.Add(results[i].name);
+
+        return outList;
+    }
+
+    /// <summary>
+    /// Compute the Levenshtein distance between two strings (case-sensitive as provided).
+    /// </summary>
+    private static int LevenshteinDistance(string a, string b)
+    {
+        if (a == b) return 0;
+        if (a.Length == 0) return b.Length;
+        if (b.Length == 0) return a.Length;
+
+        int[,] d = new int[a.Length + 1, b.Length + 1];
+
+        for (int i = 0; i <= a.Length; i++) d[i, 0] = i;
+        for (int j = 0; j <= b.Length; j++) d[0, j] = j;
+
+        for (int i = 1; i <= a.Length; i++)
+        {
+            for (int j = 1; j <= b.Length; j++)
+            {
+                int cost = (a[i - 1] == b[j - 1]) ? 0 : 1;
+                int min = d[i - 1, j] + 1;
+                int tmp = d[i, j - 1] + 1;
+                if (tmp < min) min = tmp;
+                tmp = d[i - 1, j - 1] + cost;
+                if (tmp < min) min = tmp;
+                d[i, j] = min;
+            }
+        }
+
+        return d[a.Length, b.Length];
+    }
+
+    /// <summary>
+    /// Format the input line and a caret/underline pointing at the token
+    /// starting at tokenStart with tokenLength characters. Similar to Rust's
+    /// compiler diagnostic context.
+    /// </summary>
+    private static string FormatErrorContext(string inputLine, int tokenStart, int tokenLength)
+    {
+        if (inputLine == null) inputLine = string.Empty;
+        tokenStart = Math.Max(0, Math.Min(tokenStart, inputLine.Length));
+        tokenLength = Math.Max(0, Math.Min(tokenLength, inputLine.Length - tokenStart));
+
+        // Trim long lines for readability but keep the token in view
+        const int maxWidth = 120;
+        string display = inputLine;
+        int displayOffset = 0;
+        if (display.Length > maxWidth)
+        {
+            // Try to center the token in the displayed slice
+            int center = tokenStart + tokenLength / 2;
+            int start = Math.Max(0, center - maxWidth / 2);
+            if (start + maxWidth > display.Length) start = display.Length - maxWidth;
+            display = display.Substring(start, maxWidth);
+            displayOffset = start;
+        }
+
+        // Build caret line
+        var caret = new System.Text.StringBuilder();
+        for (int i = 0; i < tokenStart - displayOffset; i++) caret.Append(' ');
+        if (tokenLength <= 1)
+            caret.Append('^');
+        else
+        {
+            for (int i = 0; i < tokenLength; i++) caret.Append('^');
+        }
+
+        return display + "\n" + caret.ToString() + $" (at column {tokenStart + 1})";
     }
 
     #endregion
