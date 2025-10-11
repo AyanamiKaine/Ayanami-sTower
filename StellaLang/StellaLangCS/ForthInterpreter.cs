@@ -17,8 +17,9 @@ public class ForthInterpreter
 
     /// <summary>
     /// Dictionary mapping FORTH word names to their definitions.
+    /// Uses case-insensitive lookups and maintains definition order.
     /// </summary>
-    private readonly Dictionary<string, WordDefinition> _dictionary;
+    private readonly ForthDictionary _dictionary;
 
     /// <summary>
     /// The data space for compiled definitions and variables.
@@ -127,7 +128,7 @@ public class ForthInterpreter
     public ForthInterpreter(VM vm)
     {
         _vm = vm;
-        _dictionary = [];
+        _dictionary = new ForthDictionary();
         _dataSpace = [];
         _codeSpace = [];
         _codeSpaceArray = [];
@@ -366,7 +367,7 @@ public class ForthInterpreter
     /// <returns>The word definition if found, null otherwise.</returns>
     private WordDefinition? FindWord(string name)
     {
-        return _dictionary.TryGetValue(name.ToUpper(), out var word) ? word : null;
+        return _dictionary.Find(name);
     }
 
     /// <summary>
@@ -376,7 +377,8 @@ public class ForthInterpreter
     /// <param name="definition">The word definition.</param>
     private void AddWord(string name, WordDefinition definition)
     {
-        _dictionary[name.ToUpper()] = definition;
+        definition.Name = name; // Ensure the definition has the correct name
+        _dictionary.Add(definition);
         //try { Console.Error.WriteLine($"AddWord: '{name}' (type={definition.Type})"); } catch { }
     }
 
@@ -771,6 +773,7 @@ public class ForthInterpreter
         InitializeIOWords();
         InitializeStringWords();
         InitializeStandardLibrary();
+        InitializeDictionaryWords();
     }
 
     /// <summary>
@@ -1172,7 +1175,7 @@ public class ForthInterpreter
                     int offset = newLength - oldLength;
                     if (offset != 0)
                     {
-                        foreach (var (_, otherWord) in _dictionary)
+                        foreach (var otherWord in _dictionary.GetAllWords())
                         {
                             if (otherWord.Type == WordType.ColonDefinition &&
                                 otherWord.ExecutionToken > executionToken)
@@ -1223,7 +1226,7 @@ public class ForthInterpreter
                 IsImmediate = false
             };
 
-            forth._dictionary[name] = varDef;
+            forth._dictionary.Add(varDef);
         });
 
         // ( -- Comments (immediate, skip until closing paren)
@@ -1608,7 +1611,6 @@ public class ForthInterpreter
             string? word = forth.ReadWord();
             if (string.IsNullOrEmpty(word))
                 throw new InvalidOperationException("CHAR requires a character");
-
             forth._vm.DataStack.PushLong(word[0]);
         });
 
@@ -1710,6 +1712,128 @@ public class ForthInterpreter
 
             DefinePrimitive("TYPE", new CodeBuilder().PushCell(TYPE_SYSCALL_ID).Syscall().Build());
         }
+    }
+
+    /// <summary>
+    /// Initializes dictionary management and introspection words.
+    /// These words allow examining and manipulating the FORTH dictionary.
+    /// </summary>
+    private void InitializeDictionaryWords()
+    {
+        // WORDS ( -- ) - List all defined words
+        DefinePrimitive("WORDS", forth =>
+        {
+            Console.WriteLine(forth._dictionary.ListWords(6));
+        });
+
+        // .DICT ( -- ) - Print detailed dictionary dump
+        DefinePrimitive(".DICT", forth =>
+        {
+            Console.WriteLine(forth._dictionary.DumpDictionary(includeTypes: true));
+        });
+
+        // FORGET ( "name" -- ) - Remove a word and all words defined after it
+        DefinePrimitive("FORGET", forth =>
+        {
+            string? name = forth.ReadWord();
+            if (string.IsNullOrEmpty(name))
+                throw new InvalidOperationException("FORGET requires a word name");
+
+            int removedCount = forth._dictionary.Forget(name);
+            if (removedCount == 0)
+            {
+                throw new UnknownWordException(name, $"Cannot FORGET '{name}': word not found");
+            }
+            // Note: In a full implementation, we should also reclaim code space and data space
+            // For now, we just remove from the dictionary
+        });
+
+        // SEE ( "name" -- ) - Disassemble/show a word definition
+        DefinePrimitive("SEE", forth =>
+        {
+            string? name = forth.ReadWord();
+            if (string.IsNullOrEmpty(name))
+                throw new InvalidOperationException("SEE requires a word name");
+
+            var word = forth._dictionary.Find(name);
+            if (word == null)
+            {
+                Console.WriteLine($"'{name}' not found in dictionary");
+                return;
+            }
+
+            Console.WriteLine($": {word.Name}");
+            Console.WriteLine($"  Type: {word.Type}");
+            Console.WriteLine($"  Immediate: {word.IsImmediate}");
+
+            if (word.Type == WordType.Variable)
+            {
+                Console.WriteLine($"  Data Address: {word.DataAddress}");
+            }
+            else if (word.Type == WordType.ColonDefinition)
+            {
+                Console.WriteLine($"  Execution Token: {word.ExecutionToken}");
+                if (word.CompiledCode != null)
+                {
+                    Console.WriteLine($"  Bytecode Length: {word.CompiledCode.Length} bytes");
+                }
+                if (word.DoesCodeSnippets != null && word.DoesCodeSnippets.Length > 0)
+                {
+                    Console.WriteLine($"  DOES> Snippets: {word.DoesCodeSnippets.Length}");
+                }
+            }
+            else if (word.Type == WordType.Primitive)
+            {
+                if (word.CompiledCode != null)
+                {
+                    Console.WriteLine($"  Bytecode Length: {word.CompiledCode.Length} bytes");
+                }
+                if (word.PrimitiveHandler != null)
+                {
+                    Console.WriteLine("  Handler: <native code>");
+                }
+            }
+
+            Console.WriteLine(";");
+        });
+
+        // ? ( addr -- ) - Fetch and print value at address
+        DefinePrimitive("?", forth =>
+        {
+            long addr = forth._vm.DataStack.PopLong();
+            forth._vm.DataStack.PushLong(addr);  // Put it back for @
+            forth.ProcessWord("@");  // FETCH
+            forth.ProcessWord(".");  // PRINT
+        });
+
+        // .S ( -- ) - Non-destructively print stack contents
+        DefinePrimitive(".S", forth =>
+        {
+            int depth = forth._vm.DataStack.Pointer / 8;
+            Console.Write($"<{depth}> ");
+
+            for (int i = 0; i < depth; i++)
+            {
+                int offset = i * 8;
+                long value = BitConverter.ToInt64(forth._vm.DataStack.Memory.Span.Slice(offset, 8));
+                Console.Write($"{value} ");
+            }
+            Console.WriteLine();
+        });
+
+        // DEPTH ( -- n ) - Return number of items on stack
+        DefinePrimitive("DEPTH", forth =>
+        {
+            int depth = forth._vm.DataStack.Pointer / 8;
+            forth._vm.DataStack.PushLong(depth);
+        });
+
+        // FDEPTH ( -- n ) - Return number of items on float stack
+        DefinePrimitive("FDEPTH", forth =>
+        {
+            int depth = forth._vm.FloatStack.Pointer / 8;
+            forth._vm.DataStack.PushLong(depth);
+        });
     }
 
     /// <summary>
