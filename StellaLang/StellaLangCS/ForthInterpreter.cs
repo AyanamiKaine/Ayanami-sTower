@@ -437,6 +437,161 @@ public class ForthInterpreter : IDisposable
         _codeSpaceArrayLength = requiredSize;
     }
 
+    /// <summary>
+    /// Produce a best-effort Forth-like decompilation of a word's bytecode.
+    /// This attempts to map CALL addresses to known word names and prints literals
+    /// as numbers. It's intended as a human-friendly view, not a perfect reformatter.
+    /// </summary>
+    /// <param name="word">The word to decompile (must have CompiledCode set).</param>
+    /// <returns>Multi-line string with decompiled representation.</returns>
+    private string DecompileToForth(WordDefinition word)
+    {
+        if (word.CompiledCode == null)
+            return "(no bytecode)";
+
+        var sb = new System.Text.StringBuilder();
+        sb.Append($": {word.Name} ");
+
+        byte[] code = word.CompiledCode;
+        int i = 0;
+        while (i < code.Length)
+        {
+            OPCode op = (OPCode)code[i++];
+            switch (op)
+            {
+                case OPCode.PUSH_CELL:
+                    if (i + 8 <= code.Length)
+                    {
+                        long v = BitConverter.ToInt64(code, i);
+                        i += 8;
+                        sb.Append(v).Append(' ');
+                    }
+                    else { i = code.Length; }
+                    break;
+                case OPCode.FPUSH_DOUBLE:
+                    if (i + 8 <= code.Length)
+                    {
+                        double d = BitConverter.ToDouble(code, i);
+                        i += 8;
+                        sb.Append(d.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(' ');
+                    }
+                    else { i = code.Length; }
+                    break;
+                case OPCode.CALL:
+                    if (i + 8 <= code.Length)
+                    {
+                        long addr = BitConverter.ToInt64(code, i);
+                        i += 8;
+                        // Try to map address to a word name
+                        string? name = ResolveWordByExecutionToken((int)addr);
+                        if (name != null)
+                            sb.Append(name).Append(' ');
+                        else
+                            sb.Append($"CALL({addr}) ");
+                    }
+                    else { i = code.Length; }
+                    break;
+                case OPCode.SYSCALL:
+                    // Syscall consumes a pushed id (already emitted as literal earlier)
+                    sb.Append("SYSCALL ");
+                    break;
+                case OPCode.JMP:
+                case OPCode.JZ:
+                case OPCode.JNZ:
+                    if (i + 8 <= code.Length)
+                    {
+                        long addr = BitConverter.ToInt64(code, i);
+                        i += 8;
+                        sb.Append(op.ToString()).Append('(').Append(addr).Append(") ");
+                    }
+                    else { i = code.Length; }
+                    break;
+                default:
+                    sb.Append(op.ToString()).Append(' ');
+                    break;
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Produce a detailed bytecode disassembly for debugging, including offsets,
+    /// opcode names, and literal operands. Attempts to annotate CALL targets
+    /// with word names when possible.
+    /// </summary>
+    private string DisassembleBytecode(WordDefinition word)
+    {
+        if (word.CompiledCode == null)
+            return "(no bytecode)";
+
+        var sb = new System.Text.StringBuilder();
+        byte[] code = word.CompiledCode;
+        int i = 0;
+        while (i < code.Length)
+        {
+            int offset = i;
+            OPCode op = (OPCode)code[i++];
+            sb.AppendFormat("{0:D4}: {1}", offset, op.ToString());
+
+            switch (op)
+            {
+                case OPCode.PUSH_CELL:
+                    if (i + 8 <= code.Length)
+                    {
+                        long v = BitConverter.ToInt64(code, i);
+                        sb.AppendFormat(" {0}", v);
+                        i += 8;
+                    }
+                    else { i = code.Length; }
+                    break;
+                case OPCode.FPUSH_DOUBLE:
+                    if (i + 8 <= code.Length)
+                    {
+                        double d = BitConverter.ToDouble(code, i);
+                        sb.AppendFormat(" {0}", d.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                        i += 8;
+                    }
+                    else { i = code.Length; }
+                    break;
+                case OPCode.JMP:
+                case OPCode.JZ:
+                case OPCode.JNZ:
+                case OPCode.CALL:
+                    if (i + 8 <= code.Length)
+                    {
+                        long addr = BitConverter.ToInt64(code, i);
+                        string? name = ResolveWordByExecutionToken((int)addr);
+                        sb.AppendFormat(" {0} ({1})", addr, name ?? "?");
+                        i += 8;
+                    }
+                    else { i = code.Length; }
+                    break;
+                default:
+                    // no operand
+                    break;
+            }
+
+            sb.AppendLine();
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Attempt to find a word whose ExecutionToken equals the given address.
+    /// Returns the word name if found, otherwise null.
+    /// </summary>
+    private string? ResolveWordByExecutionToken(int address)
+    {
+        foreach (var w in _dictionary.GetAllWords())
+        {
+            if (w.Type == WordType.ColonDefinition && w.ExecutionToken == address)
+                return w.Name;
+        }
+        return null;
+    }
+
     #endregion
 
     #region Dictionary Management
@@ -1958,7 +2113,32 @@ public class ForthInterpreter : IDisposable
         // SEE ( "name" -- ) - Disassemble/show a word definition
         DefinePrimitive("SEE", forth =>
         {
-            string? name = forth.ReadWord();
+            string? first = forth.ReadWord();
+            if (string.IsNullOrEmpty(first))
+                throw new InvalidOperationException("SEE requires a word name");
+
+            // Support both `SEE name [mode]` and `SEE MODE name`
+            string? name = first;
+            string? mode = null;
+
+            // If first token is a mode keyword, treat next token as name
+            if (string.Equals(first, "BYTECODE", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(first, "FORTH", StringComparison.OrdinalIgnoreCase))
+            {
+                mode = first;
+                name = forth.ReadWord();
+            }
+
+            // If name is present, there may be an optional trailing mode
+            if (!string.IsNullOrEmpty(name))
+            {
+                string? maybeMode = forth.ReadWord();
+                if (!string.IsNullOrEmpty(maybeMode) && (string.Equals(maybeMode, "BYTECODE", StringComparison.OrdinalIgnoreCase) || string.Equals(maybeMode, "FORTH", StringComparison.OrdinalIgnoreCase)))
+                {
+                    mode = maybeMode;
+                }
+            }
+
             if (string.IsNullOrEmpty(name))
                 throw new InvalidOperationException("SEE requires a word name");
 
@@ -1987,6 +2167,24 @@ public class ForthInterpreter : IDisposable
                 if (word.DoesCodeSnippets != null && word.DoesCodeSnippets.Length > 0)
                 {
                     forth._io.WriteLine($"  DOES> Snippets: {word.DoesCodeSnippets.Length}");
+                }
+
+                // If user requested BYTECODE, print detailed disassembly
+                if (!string.IsNullOrEmpty(mode) && mode.Equals("BYTECODE", StringComparison.OrdinalIgnoreCase))
+                {
+                    var dis = forth.DisassembleBytecode(word);
+                    forth._io.WriteLine(dis);
+                    forth._io.WriteLine(";");
+                    return;
+                }
+
+                // Default: show a Forth-like decompilation (attempt)
+                if (string.IsNullOrEmpty(mode) || mode.Equals("FORTH", StringComparison.OrdinalIgnoreCase))
+                {
+                    var dec = forth.DecompileToForth(word);
+                    forth._io.WriteLine(dec);
+                    forth._io.WriteLine(";");
+                    return;
                 }
             }
             else if (word.Type == WordType.Primitive)
