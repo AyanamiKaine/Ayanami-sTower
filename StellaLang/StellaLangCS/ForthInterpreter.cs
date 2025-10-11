@@ -829,10 +829,7 @@ public class ForthInterpreter
             DefinePrimitive("ALLOT", new CodeBuilder().PushCell(ALLOT_SYSCALL_ID).Syscall().Build());
         }
 
-        DefinePrimitive("HERE", forth =>
-        {
-            forth._vm.DataStack.PushLong(forth._here);
-        });
+        DefinePrimitive("HERE", forth => forth._vm.DataStack.PushLong(forth._here));
     }
 
     /// <summary>
@@ -1084,9 +1081,7 @@ public class ForthInterpreter
                 if (_lastCreatedWord == null)
                     throw new InvalidOperationException("DOES> runtime: no word to modify");
 
-                var word = FindWord(_lastCreatedWord);
-                if (word == null)
-                    throw new InvalidOperationException($"DOES> runtime: cannot find word {_lastCreatedWord}");
+                var word = FindWord(_lastCreatedWord) ?? throw new InvalidOperationException($"DOES> runtime: cannot find word {_lastCreatedWord}");
 
                 // Get the data field address from the created word
                 int dataFieldAddress = word.DataAddress;
@@ -1544,16 +1539,10 @@ public class ForthInterpreter
         });
 
         // CR ( -- ) Print newline
-        DefinePrimitive("CR", forth =>
-        {
-            Console.WriteLine();
-        });
+        DefinePrimitive("CR", forth => Console.WriteLine());
 
         // SPACE ( -- ) Print space
-        DefinePrimitive("SPACE", forth =>
-        {
-            Console.Write(" ");
-        });
+        DefinePrimitive("SPACE", forth => Console.Write(" "));
     }
 
     /// <summary>
@@ -1723,7 +1712,7 @@ public class ForthInterpreter
         // the handler. Also provide compiled bytecode that performs the syscall
         // so the compiler can inline it like any other primitive.
         long syscallId = _nextHandlerSyscallId++;
-        _vm.SyscallHandlers[syscallId] = vm => { handler(this); };
+        _vm.SyscallHandlers[syscallId] = vm => handler(this);
         word.CompiledCode = new CodeBuilder().PushCell(syscallId).Syscall().Build();
 
         AddWord(name, word);
