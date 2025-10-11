@@ -1707,6 +1707,7 @@ public class ForthInterpreter : IDisposable
         });
 
         // ." (compile-time string printing)
+        // This is an IMMEDIATE word that compiles code to print a string at runtime
         DefinePrimitive(".\"", forth =>
         {
             // Read characters until closing "
@@ -1720,8 +1721,30 @@ public class ForthInterpreter : IDisposable
             }
             string text = sb.ToString();
 
-            // For now, just print immediately (TODO: proper compile-time string handling)
-            Console.Write(text);
+            if (forth._compileMode)
+            {
+                // Compile code to print the string at runtime
+                // Strategy: For each character, push it and call EMIT
+                var emitDef = forth.FindWord("EMIT");
+                if (emitDef == null || emitDef.CompiledCode == null)
+                {
+                    throw new CompilationException("EMIT word not found or not compilable");
+                }
+
+                foreach (char ch in text)
+                {
+                    // Push the character value
+                    forth._codeBuilder.PushCell(ch);
+
+                    // Inline EMIT's bytecode
+                    forth._codeBuilder.AppendBytes(emitDef.CompiledCode);
+                }
+            }
+            else
+            {
+                // In interpretation mode, print immediately
+                Console.Write(text);
+            }
         }, isImmediate: true);
 
         // EMIT ( c -- ) Print character
