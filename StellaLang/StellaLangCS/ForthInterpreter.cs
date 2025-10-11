@@ -787,15 +787,29 @@ public class ForthInterpreter : IDisposable
         if (string.IsNullOrEmpty(token))
             return new List<string>();
 
+        // Precompute canonical forms (user-facing) and consider both dictionary name and canonical form
         foreach (var w in _dictionary.GetVisibleWords())
         {
             if (string.IsNullOrEmpty(w.Name))
                 continue;
-            int d = LevenshteinDistance(token.ToUpperInvariant(), w.Name.ToUpperInvariant());
+            string dictName = w.Name;
+            string canon = CanonicalizeWordName(dictName);
+
+            // Consider three candidates: exact dictName, canonical form, and uppercase forms
+            int d1 = LevenshteinDistance(token.ToUpperInvariant(), dictName.ToUpperInvariant());
+            int d2 = LevenshteinDistance(token.ToUpperInvariant(), canon.ToUpperInvariant());
+
+            int d = Math.Min(d1, d2);
+
             // Only consider reasonably-similar words
             if (d <= Math.Max(3, token.Length / 2))
             {
-                results.Add((w.Name, d));
+                // Prefer canonical form in the displayed name if it's different
+                string displayName = !string.Equals(canon, dictName, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(canon)
+                    ? canon
+                    : dictName;
+
+                results.Add((displayName, d));
             }
         }
 
@@ -807,6 +821,55 @@ public class ForthInterpreter : IDisposable
             outList.Add(results[i].name);
 
         return outList;
+    }
+
+    /// <summary>
+    /// Map dictionary-internal word names to a canonical, user-facing token when possible.
+    /// Examples: "FADD" -> "F+", "ADD" -> "+" (if those are the conventional user tokens)
+    /// This is best-effort and doesn't modify the dictionary.
+    /// </summary>
+    private static string CanonicalizeWordName(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return name;
+
+        // Normalize (strip common prefixes/suffixes)
+        string up = name.ToUpperInvariant();
+
+        return up switch
+        {
+            "ADD" => "+",
+            "SUB" => "-",
+            "MUL" => "*",
+            "DIV" => "/",
+            "NEG" => "NEGATE",
+            "DUP" => "DUP",
+            "DROP" => "DROP",
+            "SWAP" => "SWAP",
+            "OVER" => "OVER",
+            "EQ" => "=",
+            "NEQ" => "<>",
+            "LT" => "<",
+            "LTE" => "<=",
+            "GT" => ">",
+            "GTE" => ">=",
+            // Floating point
+            "FADD" => "F+",
+            "FSUB" => "F-",
+            "FMUL" => "F*",
+            "FDIV" => "F/",
+            "FNEG" => "FNEGATE",
+            "FDUP" => "FDUP",
+            "FDROP" => "FDROP",
+            "FSWAP" => "FSWAP",
+            "FOVER" => "FOVER",
+            "FEQ" => "F=",
+            "FNEQ" => "F<>",
+            "FLT" => "F<",
+            "FLTE" => "F<=",
+            "FGT" => "F>",
+            "FGTE" => "F>=",
+            _ => name,
+        };
     }
 
     /// <summary>
