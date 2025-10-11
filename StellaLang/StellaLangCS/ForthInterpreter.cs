@@ -1192,7 +1192,7 @@ public class ForthInterpreter
                 }
 
                 // Update cached array
-                _codeSpaceArray = _codeSpace.ToArray();
+                _codeSpaceArray = [.. _codeSpace];
 
                 // Update CompiledCode for backward compatibility
                 word.CompiledCode = newBytecode;
