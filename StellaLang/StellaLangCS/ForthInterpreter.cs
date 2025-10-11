@@ -1308,8 +1308,8 @@ public class ForthInterpreter : IDisposable
                     throw new InvalidOperationException("DOES> runtime: no word currently executing or wrong type");
 
                 // DEBUG: log what snippet we're about to attach
-                try { Console.WriteLine($"DOES> runtime: modifier={modifierWord.Name} created={_lastCreatedWord} snippetIndex={snippetIndex}"); } catch { }
-                try { Console.WriteLine($"DOES> runtime: snippets available={modifierWord.DoesCodeSnippets?.Length ?? 0}"); } catch { }
+                try { _io.WriteLine($"DOES> runtime: modifier={modifierWord.Name} created={_lastCreatedWord} snippetIndex={snippetIndex}"); } catch { }
+                try { _io.WriteLine($"DOES> runtime: snippets available={modifierWord.DoesCodeSnippets?.Length ?? 0}"); } catch { }
 
                 byte[]? snippet = null;
                 if (modifierWord.DoesCodeSnippets != null && snippetIndex < modifierWord.DoesCodeSnippets.Length)
@@ -1324,7 +1324,7 @@ public class ForthInterpreter : IDisposable
                 if (snippet == null)
                     throw new InvalidOperationException("DOES> runtime: no DOES> snippet available from modifier word");
 
-                try { Console.WriteLine($"DOES> runtime: snippetLength={snippet.Length} dataAddr={dataFieldAddress}"); } catch { }
+                try { _io.WriteLine($"DOES> runtime: snippetLength={snippet.Length} dataAddr={dataFieldAddress}"); } catch { }
 
                 // Create new bytecode for the word:
                 // When called, it should: push data-field-address, then execute DOES> snippet
@@ -1975,33 +1975,33 @@ public class ForthInterpreter : IDisposable
 
             if (word.Type == WordType.Variable)
             {
-                Console.WriteLine($"  Data Address: {word.DataAddress}");
+                forth._io.WriteLine($"  Data Address: {word.DataAddress}");
             }
             else if (word.Type == WordType.ColonDefinition)
             {
-                Console.WriteLine($"  Execution Token: {word.ExecutionToken}");
+                forth._io.WriteLine($"  Execution Token: {word.ExecutionToken}");
                 if (word.CompiledCode != null)
                 {
-                    Console.WriteLine($"  Bytecode Length: {word.CompiledCode.Length} bytes");
+                    forth._io.WriteLine($"  Bytecode Length: {word.CompiledCode.Length} bytes");
                 }
                 if (word.DoesCodeSnippets != null && word.DoesCodeSnippets.Length > 0)
                 {
-                    Console.WriteLine($"  DOES> Snippets: {word.DoesCodeSnippets.Length}");
+                    forth._io.WriteLine($"  DOES> Snippets: {word.DoesCodeSnippets.Length}");
                 }
             }
             else if (word.Type == WordType.Primitive)
             {
                 if (word.CompiledCode != null)
                 {
-                    Console.WriteLine($"  Bytecode Length: {word.CompiledCode.Length} bytes");
+                    forth._io.WriteLine($"  Bytecode Length: {word.CompiledCode.Length} bytes");
                 }
                 if (word.PrimitiveHandler != null)
                 {
-                    Console.WriteLine("  Handler: <native code>");
+                    forth._io.WriteLine("  Handler: <native code>");
                 }
             }
 
-            Console.WriteLine(";");
+            forth._io.WriteLine(";");
         });
 
         // ? ( addr -- ) - Fetch and print value at address
@@ -2017,15 +2017,15 @@ public class ForthInterpreter : IDisposable
         DefinePrimitive(".S", forth =>
         {
             int depth = forth._vm.DataStack.Pointer / 8;
-            Console.Write($"<{depth}> ");
+            forth._io.Write($"<{depth}> ");
 
             for (int i = 0; i < depth; i++)
             {
                 int offset = i * 8;
                 long value = BitConverter.ToInt64(forth._vm.DataStack.Memory.Span.Slice(offset, 8));
-                Console.Write($"{value} ");
+                forth._io.Write($"{value} ");
             }
-            Console.WriteLine();
+            forth._io.WriteLine(string.Empty);
         });
 
         // DEPTH ( -- n ) - Return number of items on stack
