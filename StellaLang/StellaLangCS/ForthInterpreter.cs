@@ -33,6 +33,13 @@ public class ForthInterpreter
     private readonly List<byte> _codeSpace;
 
     /// <summary>
+    /// Cached byte array version of _codeSpace for VM execution.
+    /// This is updated whenever _codeSpace changes (when a new word is compiled).
+    /// We keep this cached to avoid creating a new array for every word execution.
+    /// </summary>
+    private byte[] _codeSpaceArray;
+
+    /// <summary>
     /// The current compilation pointer (HERE in FORTH).
     /// Points to the next free location in data space.
     /// </summary>
@@ -123,6 +130,7 @@ public class ForthInterpreter
         _dictionary = [];
         _dataSpace = [];
         _codeSpace = [];
+        _codeSpaceArray = [];
         _here = 0;
         _compileMode = false;
         _inputBuffer = string.Empty;
@@ -337,7 +345,8 @@ public class ForthInterpreter
         {
             // Execute from the global code space using the word's execution token
             // This enables proper CALL/RET semantics for subroutines
-            _vm.ExecuteFrom(_codeSpace.ToArray(), word.ExecutionToken);
+            // Use the cached array to avoid creating a new copy for every execution
+            _vm.ExecuteFrom(_codeSpaceArray, word.ExecutionToken);
         }
         finally
         {
@@ -453,6 +462,9 @@ public class ForthInterpreter
         // Store the bytecode in the global code space for proper CALL/RET semantics
         int executionToken = _codeSpace.Count;
         _codeSpace.AddRange(bytecode);
+
+        // Update the cached array version of the code space
+        _codeSpaceArray = _codeSpace.ToArray();
 
         // Create the word definition
         var word = new WordDefinition
@@ -1007,18 +1019,22 @@ public class ForthInterpreter
                 // Note: CREATE does NOT advance HERE - that's for ALLOT or , to do
                 int dataFieldAddress = _here;
 
-                // Create bytecode that pushes the data field address
+                // Create bytecode that pushes the data field address and exits
+                // Use global address resolution for consistency
+                _codeBuilder.SetBaseOffset(_codeSpace.Count);
+
                 byte[] bytecode = new CodeBuilder()
                     .PushCell(dataFieldAddress)
-                    .Build();
-
-                // Add the exit syscall
-                const long WORD_EXIT_SYSCALL_ID = (long)SyscallId.WordExit;
-                bytecode = new CodeBuilder()
-                    .AppendBytes(bytecode)
-                    .PushCell(WORD_EXIT_SYSCALL_ID)
+                    .PushCell((long)SyscallId.WordExit)
                     .Syscall()
                     .Build();
+
+                // Store ExecutionToken (offset in global code space)
+                int executionToken = _codeSpace.Count;
+
+                // Add bytecode to global code space
+                _codeSpace.AddRange(bytecode);
+                _codeSpaceArray = _codeSpace.ToArray();
 
                 // Create the word definition
                 var wordDef = new WordDefinition
@@ -1026,7 +1042,8 @@ public class ForthInterpreter
                     Name = name,
                     Type = WordType.ColonDefinition,  // Treat as colon definition for execution
                     DataAddress = dataFieldAddress,
-                    CompiledCode = bytecode,
+                    CompiledCode = bytecode,  // Keep for backward compatibility
+                    ExecutionToken = executionToken,
                     IsImmediate = false
                 };
 
@@ -1112,11 +1129,56 @@ public class ForthInterpreter
                 byte[] newBytecode = new CodeBuilder()
                     .PushCell(dataFieldAddress)  // Push data field address onto stack
                     .AppendBytes(snippet)  // Execute the DOES> code
-                    .PushCell(1200)              // Exit syscall ID
+                    .PushCell((long)SyscallId.WordExit)
                     .Syscall()                   // Return properly
                     .Build();
 
-                // Replace the word's compiled code
+                // Update the word's bytecode in the global code space
+                // This is trickier than CREATE since we're replacing existing bytecode
+                // Strategy: Replace at the ExecutionToken position in _codeSpace
+                int executionToken = word.ExecutionToken;
+                int oldLength = word.CompiledCode?.Length ?? 0;
+                int newLength = newBytecode.Length;
+
+                if (newLength != oldLength)
+                {
+                    // Bytecode size changed - need to rebuild entire code space
+                    // This is complex and might shift other words' ExecutionTokens
+                    // For now, we'll throw an error as this shouldn't happen in practice
+                    // (CREATE generates fixed-size bytecode, DOES> should generate similar size)
+
+                    // Actually, let's handle it by rebuilding the segment
+                    // Remove old bytecode and insert new bytecode at same position
+                    _codeSpace.RemoveRange(executionToken, oldLength);
+                    _codeSpace.InsertRange(executionToken, newBytecode);
+
+                    // Recalculate ExecutionTokens for all words after this one
+                    int offset = newLength - oldLength;
+                    if (offset != 0)
+                    {
+                        foreach (var (_, otherWord) in _dictionary)
+                        {
+                            if (otherWord.Type == WordType.ColonDefinition &&
+                                otherWord.ExecutionToken > executionToken)
+                            {
+                                otherWord.ExecutionToken += offset;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Same size - can replace in place
+                    for (int i = 0; i < newLength; i++)
+                    {
+                        _codeSpace[executionToken + i] = newBytecode[i];
+                    }
+                }
+
+                // Update cached array
+                _codeSpaceArray = _codeSpace.ToArray();
+
+                // Update CompiledCode for backward compatibility
                 word.CompiledCode = newBytecode;
             };
         }
