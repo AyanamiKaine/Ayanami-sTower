@@ -24,6 +24,13 @@ public class CodeBuilder
     private readonly List<(int position, string label)> _unresolvedJumps = [];
 
     /// <summary>
+    /// Base offset for global address resolution.
+    /// When non-zero, all label addresses are resolved relative to this offset in the global code space.
+    /// This enables proper CALL semantics for subroutines in a shared code space.
+    /// </summary>
+    private int _baseOffset = 0;
+
+    /// <summary>
     /// Pushes a 64-bit integer (cell) onto the stack.
     /// </summary>
     public CodeBuilder PushCell(long value)
@@ -324,6 +331,17 @@ public class CodeBuilder
         return this;
     }
 
+    /// <summary>
+    /// Sets the base offset for global address resolution.
+    /// All labels will be resolved relative to this offset in the global code space.
+    /// </summary>
+    /// <param name="offset">The base offset in the global code space.</param>
+    public CodeBuilder SetBaseOffset(int offset)
+    {
+        _baseOffset = offset;
+        return this;
+    }
+
     // ===== Building =====
 
     /// <summary>
@@ -337,8 +355,11 @@ public class CodeBuilder
             if (!_labels.TryGetValue(label, out int targetAddress))
                 throw new CompilationException($"Undefined label: '{label}'");
 
+            // Apply base offset for global address resolution
+            int globalAddress = _baseOffset + targetAddress;
+
             // Write the resolved address (8 bytes for long)
-            byte[] addressBytes = BitConverter.GetBytes((long)targetAddress);
+            byte[] addressBytes = BitConverter.GetBytes((long)globalAddress);
             for (int i = 0; i < 8; i++)
             {
                 _bytecode[position + i] = addressBytes[i];
@@ -406,6 +427,7 @@ public class CodeBuilder
         _bytecode.Clear();
         _labels.Clear();
         _unresolvedJumps.Clear();
+        _baseOffset = 0;
         return this;
     }
 

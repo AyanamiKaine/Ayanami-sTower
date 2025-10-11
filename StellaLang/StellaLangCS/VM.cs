@@ -757,6 +757,20 @@ public class VM
     }
 
     /// <summary>
+    /// Executes bytecode from a specific starting offset until HALT or end of bytecode.
+    /// This is used for executing words from a global code space.
+    /// </summary>
+    /// <param name="bytecode">The complete bytecode (e.g., global code space).</param>
+    /// <param name="startOffset">The offset to start execution from.</param>
+    public void ExecuteFrom(byte[] bytecode, int startOffset)
+    {
+        _bytecode = bytecode;
+        PC = startOffset;
+        _halted = false;
+        Execute();
+    }
+
+    /// <summary>
     /// Resets the VM to initial state. This does not free the memory allocated for stacks and memory.
     /// It just resets the pointer of the memory to the beginning. Overwrites existing data.
     /// </summary>

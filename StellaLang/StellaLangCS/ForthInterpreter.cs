@@ -329,22 +329,15 @@ public class ForthInterpreter
             throw new CompilationException("Can only execute colon definitions");
         }
 
-        if (word.CompiledCode == null || word.CompiledCode.Length == 0)
-        {
-            throw new CompilationException($"Word {word.Name} has no compiled code");
-        }
-
         // Set the currently executing word for runtime introspection (e.g., DOES>)
         var previousWord = _vm.CurrentlyExecutingWord;
         _vm.CurrentlyExecutingWord = word;
 
         try
         {
-            // Execute the word's compiled code directly.
-            // Note: This uses the standalone copy of bytecode stored in word.CompiledCode
-            // which allows words to execute independently without requiring the full
-            // _codeSpace context.
-            _vm.Execute(word.CompiledCode);
+            // Execute from the global code space using the word's execution token
+            // This enables proper CALL/RET semantics for subroutines
+            _vm.ExecuteFrom(_codeSpace.ToArray(), word.ExecutionToken);
         }
         finally
         {
@@ -447,6 +440,10 @@ public class ForthInterpreter
                 vm.Halt();
             }
         };
+
+        // Set the base offset to the current position in _codeSpace BEFORE building
+        // This makes all labels resolve to global addresses
+        _codeBuilder.SetBaseOffset(_codeSpace.Count);
 
         byte[] bytecode = _codeBuilder
             .PushCell(WORD_EXIT_SYSCALL_ID)
@@ -565,50 +562,9 @@ public class ForthInterpreter
         }
         else if (word.Type == WordType.ColonDefinition)
         {
-            // TODO: CRITICAL ARCHITECTURE ISSUE - Implement proper CALL semantics
-            // 
-            // Current implementation: INLINING
-            // We copy the word's bytecode directly into the caller, removing the exit syscall.
-            // This works but has significant drawbacks:
-            // 1. Code bloat - each call site gets a full copy of the callee
-            // 2. No dynamic dispatch - redefining a word doesn't affect existing callers
-            // 3. Not true Forth semantics - standard Forth uses CALL/RET
-            //
-            // Desired implementation: CALL semantics
-            // _codeBuilder.Call(word.ExecutionToken);
-            //
-            // Challenges to overcome:
-            // 1. Mixed execution model: We currently execute CompiledCode independently,
-            //    but CALL addresses are absolute offsets into _codeSpace
-            // 2. Address resolution: CodeBuilder resolves labels relative to each word,
-            //    but _codeSpace requires global addresses
-            // 3. Execution context: Need to always execute from _codeSpace for CALL to work,
-            //    which means changing ExecuteColonDefinition to load _codeSpace
-            // 
-            // For now, inline the bytecode to maintain test compatibility.
-
-            if (word.CompiledCode == null || word.CompiledCode.Length == 0)
-            {
-                throw new CompilationException($"Word {word.Name} has no compiled code");
-            }
-
-            // Strip the exit syscall from the end (PUSH_CELL + SYSCALL = 10 bytes)
-            int length = word.CompiledCode.Length;
-            if (length >= 10 && word.CompiledCode[length - 1] == (byte)OPCode.SYSCALL)
-            {
-                if (word.CompiledCode[length - 10] == (byte)OPCode.PUSH_CELL)
-                {
-                    length -= 10; // Strip exit syscall
-                }
-            }
-
-            // Inline the bytecode (without the exit syscall)
-            if (length > 0)
-            {
-                byte[] codeToInline = new byte[length];
-                Array.Copy(word.CompiledCode, codeToInline, length);
-                _codeBuilder.AppendBytes(codeToInline);
-            }
+            // Use proper CALL semantics instead of inlining
+            // The ExecutionToken is an absolute offset into _codeSpace
+            _codeBuilder.Call(word.ExecutionToken);
         }
         else if (word.Type == WordType.Variable)
         {
