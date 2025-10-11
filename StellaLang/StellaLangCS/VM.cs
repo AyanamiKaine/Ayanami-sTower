@@ -148,7 +148,7 @@ public class VM
     /// Creates a VM with default/medium stack sizes (4MB each stack, 12MB memory).
     /// This is the same as calling new VM().
     /// </summary>
-    public static VM CreateDefault() => new VM();
+    public static VM CreateDefault() => new();
 
     /// <summary>
     /// Creates a VM with large stack sizes (16MB each stack, 64MB memory).

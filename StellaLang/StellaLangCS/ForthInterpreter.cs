@@ -397,7 +397,7 @@ public class ForthInterpreter
         // Add the start label at the beginning
         _codeBuilder.Label(_currentStartLabel);
         // Prepare list to record DOES> snippet start positions for this definition
-        _doesCodeStartPositions = new List<int>();
+        _doesCodeStartPositions = [];
         _createEmittedInCurrentDefinition = false;
     }
 
@@ -476,7 +476,7 @@ public class ForthInterpreter
             for (int i = 0; i < _doesCodeStartPositions.Count; i++)
             {
                 int start = _doesCodeStartPositions[i];
-                if (start >= bytecode.Length) { snippets.Add(Array.Empty<byte>()); continue; }
+                if (start >= bytecode.Length) { snippets.Add([]); continue; }
 
                 int endExclusive;
                 if (i + 1 < _doesCodeStartPositions.Count)
@@ -500,7 +500,7 @@ public class ForthInterpreter
                 }
                 else
                 {
-                    snippets.Add(Array.Empty<byte>());
+                    snippets.Add([]);
                 }
             }
             if (snippets.Count > 0)
@@ -518,7 +518,7 @@ public class ForthInterpreter
         _currentExitLabel = null;
         _currentStartLabel = null;
         _compilingDoesCode = false;
-        _doesCodeStartPositions = new List<int>();
+        _doesCodeStartPositions = [];
         _createEmittedInCurrentDefinition = false;
     }
 
@@ -1028,7 +1028,7 @@ public class ForthInterpreter
                 int remainder = _here % 8;
                 if (remainder != 0)
                 {
-                    _here += (8 - remainder);
+                    _here += 8 - remainder;
                 }
 
                 // The data field address is the current HERE
@@ -1534,7 +1534,7 @@ public class ForthInterpreter
         DefinePrimitive("[CHAR]", forth =>
         {
             string? word = forth.ReadWord();
-            if (word == null || word.Length == 0)
+            if (string.IsNullOrEmpty(word))
                 throw new InvalidOperationException("[CHAR] requires a character");
 
             long charValue = word[0];
@@ -1554,7 +1554,7 @@ public class ForthInterpreter
         DefinePrimitive("CHAR", forth =>
         {
             string? word = forth.ReadWord();
-            if (word == null || word.Length == 0)
+            if (string.IsNullOrEmpty(word))
                 throw new InvalidOperationException("CHAR requires a character");
 
             forth._vm.DataStack.PushLong(word[0]);
