@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 
 namespace StellaLang;
@@ -7,8 +8,9 @@ namespace StellaLang;
 /// <summary>
 /// A FORTH interpreter that compiles FORTH code to StellaLang VM bytecode.
 /// Implements the traditional FORTH inner and outer interpreter loops.
+/// Implements IDisposable to properly return rented arrays to the pool.
 /// </summary>
-public class ForthInterpreter
+public class ForthInterpreter : IDisposable
 {
     /// <summary>
     /// The underlying VM that executes the compiled bytecode.
@@ -35,10 +37,15 @@ public class ForthInterpreter
 
     /// <summary>
     /// Cached byte array version of _codeSpace for VM execution.
-    /// This is updated whenever _codeSpace changes (when a new word is compiled).
-    /// We keep this cached to avoid creating a new array for every word execution.
+    /// Rented from ArrayPool to reduce GC pressure.
+    /// Updated only when code space grows beyond current capacity.
     /// </summary>
     private byte[] _codeSpaceArray;
+
+    /// <summary>
+    /// The actual used length of _codeSpaceArray (may be less than array length).
+    /// </summary>
+    private int _codeSpaceArrayLength;
 
     /// <summary>
     /// The current compilation pointer (HERE in FORTH).
@@ -131,7 +138,8 @@ public class ForthInterpreter
         _dictionary = new ForthDictionary();
         _dataSpace = [];
         _codeSpace = [];
-        _codeSpaceArray = [];
+        _codeSpaceArray = ArrayPool<byte>.Shared.Rent(1024); // Initial size
+        _codeSpaceArrayLength = 0;
         _here = 0;
         _compileMode = false;
         _inputBuffer = string.Empty;
@@ -356,6 +364,29 @@ public class ForthInterpreter
         }
     }
 
+    /// <summary>
+    /// Updates the cached code space array, using ArrayPool to minimize allocations.
+    /// Only grows the array when necessary; reuses existing capacity when possible.
+    /// </summary>
+    private void UpdateCodeSpace()
+    {
+        int requiredSize = _codeSpace.Count;
+
+        // Check if we need to grow the array
+        if (_codeSpaceArray.Length < requiredSize)
+        {
+            // Return old array to pool
+            ArrayPool<byte>.Shared.Return(_codeSpaceArray, clearArray: false);
+
+            // Rent new array with enough capacity (ArrayPool may return larger)
+            _codeSpaceArray = ArrayPool<byte>.Shared.Rent(requiredSize);
+        }
+
+        // Copy current code space to array
+        _codeSpace.CopyTo(_codeSpaceArray);
+        _codeSpaceArrayLength = requiredSize;
+    }
+
     #endregion
 
     #region Dictionary Management
@@ -466,7 +497,7 @@ public class ForthInterpreter
         _codeSpace.AddRange(bytecode);
 
         // Update the cached array version of the code space
-        _codeSpaceArray = _codeSpace.ToArray();
+        UpdateCodeSpace();
 
         // Create the word definition
         var word = new WordDefinition
@@ -1029,7 +1060,7 @@ public class ForthInterpreter
 
                 // Add bytecode to global code space
                 _codeSpace.AddRange(bytecode);
-                _codeSpaceArray = _codeSpace.ToArray();
+                UpdateCodeSpace();
 
                 // Create the word definition
                 var wordDef = new WordDefinition
@@ -1195,7 +1226,7 @@ public class ForthInterpreter
                 }
 
                 // Update cached array
-                _codeSpaceArray = [.. _codeSpace];
+                UpdateCodeSpace();
 
                 // Update CompiledCode for backward compatibility
                 word.CompiledCode = newBytecode;
@@ -1910,6 +1941,52 @@ public class ForthInterpreter
     public InterpreterState GetState()
     {
         throw new NotImplementedException("GetState not yet implemented");
+    }
+
+    #endregion
+
+    #region IDisposable Implementation
+
+    private bool _disposed = false;
+
+    /// <summary>
+    /// Releases resources used by the interpreter, returning rented arrays to the pool.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Protected dispose method for subclasses.
+    /// </summary>
+    /// <param name="disposing">True if called from Dispose(), false if from finalizer.</param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // Return rented array to the pool
+                if (_codeSpaceArray != null && _codeSpaceArray.Length > 0)
+                {
+                    ArrayPool<byte>.Shared.Return(_codeSpaceArray, clearArray: false);
+                    _codeSpaceArray = Array.Empty<byte>();
+                    _codeSpaceArrayLength = 0;
+                }
+            }
+
+            _disposed = true;
+        }
+    }
+
+    /// <summary>
+    /// Finalizer to ensure rented arrays are returned even if Dispose is not called.
+    /// </summary>
+    ~ForthInterpreter()
+    {
+        Dispose(false);
     }
 
     #endregion
