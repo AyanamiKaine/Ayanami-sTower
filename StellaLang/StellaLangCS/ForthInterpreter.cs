@@ -76,7 +76,7 @@ public class ForthInterpreter
     private CodeBuilder _codeBuilder;
     // Next syscall id to allocate for primitives that use handlers but should be
     // compilable. Starts in a high range to avoid colliding with reserved ids.
-    private long _nextHandlerSyscallId = 2000;
+    private long _nextHandlerSyscallId = (long)SyscallId.DynamicHandlerBase;
 
     /// <summary>
     /// The name of the word currently being compiled.
@@ -423,7 +423,7 @@ public class ForthInterpreter
         // This allows words to work both when called recursively and when executed directly
         // Strategy: Check return stack depth. If >0, RET; else HALT
         // Use a syscall to check return stack depth and conditionally RET or HALT
-        const long WORD_EXIT_SYSCALL_ID = 1200;
+        const long WORD_EXIT_SYSCALL_ID = (long)SyscallId.WordExit;
 
         _vm.SyscallHandlers[WORD_EXIT_SYSCALL_ID] = vm =>
         {
@@ -809,9 +809,9 @@ public class ForthInterpreter
 
         // Dictionary/data-space operations via syscalls so they compile in colon definitions
         {
-            const long COMMA_SYSCALL_ID = 1101;
-            const long ALLOT_SYSCALL_ID = 1102;
-            const long C_COMMA_SYSCALL_ID = 1103;
+            const long COMMA_SYSCALL_ID = (long)SyscallId.Comma;
+            const long ALLOT_SYSCALL_ID = (long)SyscallId.Allot;
+            const long C_COMMA_SYSCALL_ID = (long)SyscallId.CComma;
 
             // , ( x -- ) store cell at HERE and advance HERE
             _vm.SyscallHandlers[COMMA_SYSCALL_ID] = vm =>
@@ -1011,7 +1011,7 @@ public class ForthInterpreter
         // CREATE - Create a new word that pushes its data field address when executed
         // Uses a syscall-based approach so it can be used in colon definitions
         {
-            const long CREATE_SYSCALL_ID = 1300;
+            const long CREATE_SYSCALL_ID = (long)SyscallId.Create;
 
             _vm.SyscallHandlers[CREATE_SYSCALL_ID] = vm =>
             {
@@ -1038,7 +1038,7 @@ public class ForthInterpreter
                     .Build();
 
                 // Add the exit syscall
-                const long WORD_EXIT_SYSCALL_ID = 1200;
+                const long WORD_EXIT_SYSCALL_ID = (long)SyscallId.WordExit;
                 bytecode = new CodeBuilder()
                     .AppendBytes(bytecode)
                     .PushCell(WORD_EXIT_SYSCALL_ID)
@@ -1063,7 +1063,7 @@ public class ForthInterpreter
 
         // DOES> - Modify the most recently CREATEd word to execute following code
         {
-            const long DOES_RUNTIME_SYSCALL_ID = 1301;
+            const long DOES_RUNTIME_SYSCALL_ID = (long)SyscallId.DoesRuntime;
 
             DefinePrimitive("DOES>", forth =>
             {
@@ -1566,7 +1566,7 @@ public class ForthInterpreter
         // the previous syscall: it creates the counted string and pushes its
         // address onto the data stack.
         {
-            const long WORD_SYSCALL_ID = 1001;
+            const long WORD_SYSCALL_ID = (long)SyscallId.Word;
 
             // Register a syscall handler for runtime use. It performs the raw
             // operation of reading from the interpreter input buffer (via the
@@ -1650,7 +1650,7 @@ public class ForthInterpreter
         // TYPE ( addr len -- ) Print string of given length
         // Implemented as a VM syscall so it can be compiled into colon definitions
         {
-            const long TYPE_SYSCALL_ID = 1002;
+            const long TYPE_SYSCALL_ID = (long)SyscallId.Type;
 
             _vm.SyscallHandlers[TYPE_SYSCALL_ID] = vm =>
             {
