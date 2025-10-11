@@ -464,7 +464,19 @@ public class ForthInterpreter : IDisposable
                     {
                         long v = BitConverter.ToInt64(code, i);
                         i += 8;
-                        sb.Append(v).Append(' ');
+                        // If this literal is immediately followed by a SYSCALL opcode, annotate it
+                        if (i < code.Length && code[i] == (byte)OPCode.SYSCALL)
+                        {
+                            string? info = ResolveSyscallInfo(v);
+                            if (!string.IsNullOrEmpty(info))
+                                sb.Append(v).Append(" [syscall: ").Append(info).Append("] ");
+                            else
+                                sb.Append(v).Append(' ');
+                        }
+                        else
+                        {
+                            sb.Append(v).Append(' ');
+                        }
                     }
                     else { i = code.Length; }
                     break;
@@ -540,7 +552,19 @@ public class ForthInterpreter : IDisposable
                     if (i + 8 <= code.Length)
                     {
                         long v = BitConverter.ToInt64(code, i);
-                        sb.AppendFormat(" {0}", v);
+                        // annotate syscall literals with known info
+                        if (i + 8 < code.Length && code[i + 8] == (byte)OPCode.SYSCALL)
+                        {
+                            string? info = ResolveSyscallInfo(v);
+                            if (!string.IsNullOrEmpty(info))
+                                sb.AppendFormat(" {0} [{1}]", v, info);
+                            else
+                                sb.AppendFormat(" {0}", v);
+                        }
+                        else
+                        {
+                            sb.AppendFormat(" {0}", v);
+                        }
                         i += 8;
                     }
                     else { i = code.Length; }
@@ -589,6 +613,48 @@ public class ForthInterpreter : IDisposable
             if (w.Type == WordType.ColonDefinition && w.ExecutionToken == address)
                 return w.Name;
         }
+        return null;
+    }
+
+    /// <summary>
+    /// Returns human-friendly info for a syscall id: the SyscallId name (if known)
+    /// and a primitive word that wraps that syscall (if any).
+    /// </summary>
+    private string? ResolveSyscallInfo(long syscallId)
+    {
+        string? enumName = null;
+        try
+        {
+            if (Enum.IsDefined(typeof(SyscallId), (long)syscallId))
+                enumName = Enum.GetName(typeof(SyscallId), (long)syscallId);
+        }
+        catch { }
+
+        // Try to find a primitive word whose compiled code is: PUSH_CELL <id> SYSCALL
+        string? wrapper = null;
+        foreach (var w in _dictionary.GetVisibleWords())
+        {
+            if (w.Type != WordType.Primitive || w.CompiledCode == null)
+                continue;
+
+            var b = w.CompiledCode;
+            if (b.Length >= 1 + 8 + 1 && b[0] == (byte)OPCode.PUSH_CELL && b[9] == (byte)OPCode.SYSCALL)
+            {
+                long v = BitConverter.ToInt64(b, 1);
+                if (v == syscallId)
+                {
+                    wrapper = w.Name;
+                    break;
+                }
+            }
+        }
+
+        if (enumName != null && wrapper != null)
+            return enumName + " -> " + wrapper;
+        if (enumName != null)
+            return enumName;
+        if (wrapper != null)
+            return wrapper;
         return null;
     }
 
