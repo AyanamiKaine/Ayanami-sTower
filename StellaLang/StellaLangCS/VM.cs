@@ -898,8 +898,20 @@ public class VM
         int currentDepth = DataStack.Pointer / sizeof(long);
         if (currentDepth < requiredDepth)
         {
+            // If the float stack has enough items, suggest the floating-point variant
+            int floatDepth = FloatStack.Pointer / sizeof(double);
+            string hint = string.Empty;
+            if (floatDepth >= requiredDepth)
+            {
+                string alt = MapToOtherStackOp(operation, toFloat: true);
+                if (!string.IsNullOrEmpty(alt))
+                    hint = $"\nHint: there are {floatDepth} item(s) on the float stack — did you mean '{alt}' (the floating-point variant)?";
+                else
+                    hint = $"\nHint: there are {floatDepth} item(s) on the float stack — you may be using floating-point values with an integer operation.";
+            }
+
             throw new StackUnderflowException(
-                $"Data stack underflow in {operation}: required {requiredDepth} elements, have {currentDepth}");
+                $"Data stack underflow in {operation}: required {requiredDepth} elements, have {currentDepth}{hint}");
         }
     }
 
@@ -914,9 +926,68 @@ public class VM
         int currentDepth = FloatStack.Pointer / sizeof(double);
         if (currentDepth < requiredDepth)
         {
+            // If the data (integer) stack has enough items, suggest the integer variant
+            int dataDepth = DataStack.Pointer / sizeof(long);
+            string hint = string.Empty;
+            if (dataDepth >= requiredDepth)
+            {
+                string alt = MapToOtherStackOp(operation, toFloat: false);
+                if (!string.IsNullOrEmpty(alt))
+                    hint = $"\nHint: there are {dataDepth} item(s) on the data stack — did you mean '{alt}' (the integer/cell variant)?";
+                else
+                    hint = $"\nHint: there are {dataDepth} item(s) on the data stack — you may be using integer values with a floating-point operation.";
+            }
+
             throw new StackUnderflowException(
-                $"Float stack underflow in {operation}: required {requiredDepth} elements, have {currentDepth}");
+                $"Float stack underflow in {operation}: required {requiredDepth} elements, have {currentDepth}{hint}");
         }
+    }
+
+    /// <summary>
+    /// Map an operation name to its counterpart on the other stack (float vs integer).
+    /// Returns a suggested operation name or empty if none known.
+    /// </summary>
+    private static string MapToOtherStackOp(string operation, bool toFloat)
+    {
+        // operation names are the short names used for diagnostics (e.g., "ADD", "SUB", "DUP", "SWAP").
+        // toFloat=true maps integer op -> float op (e.g., ADD -> FADD). toFloat=false maps float op -> integer op (e.g., FADD -> ADD).
+        return operation switch
+        {
+            // integer -> floating-point primitive names
+            "ADD" when toFloat => "F+",
+            "SUB" when toFloat => "F-",
+            "MUL" when toFloat => "F*",
+            "DIV" when toFloat => "F/",
+            "NEG" when toFloat => "FNEGATE",
+            "DUP" when toFloat => "FDUP",
+            "DROP" when toFloat => "FDROP",
+            "SWAP" when toFloat => "FSWAP",
+            "OVER" when toFloat => "FOVER",
+            "EQ" when toFloat => "F=",
+            "NEQ" when toFloat => "F<>",
+            "LT" when toFloat => "F<",
+            "LTE" when toFloat => "F<=",
+            "GT" when toFloat => "F>",
+            "GTE" when toFloat => "F>=",
+
+            // floating -> integer primitive names (user-facing symbols)
+            "FADD" when !toFloat => "+",
+            "FSUB" when !toFloat => "-",
+            "FMUL" when !toFloat => "*",
+            "FDIV" when !toFloat => "/",
+            "FNEG" when !toFloat => "NEGATE",
+            "FDUP" when !toFloat => "DUP",
+            "FDROP" when !toFloat => "DROP",
+            "FSWAP" when !toFloat => "SWAP",
+            "FOVER" when !toFloat => "OVER",
+            "FEQ" when !toFloat => "=",
+            "FNEQ" when !toFloat => "<>",
+            "FLT" when !toFloat => "<",
+            "FLTE" when !toFloat => "<=",
+            "FGT" when !toFloat => ">",
+            "FGTE" when !toFloat => ">=",
+            _ => string.Empty,
+        };
     }
 
     /// <summary>
