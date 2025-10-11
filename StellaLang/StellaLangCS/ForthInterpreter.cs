@@ -952,7 +952,7 @@ public class ForthInterpreter
     {
         DefinePrimitive(":", forth =>
         {
-            string? name = forth.ReadWord() ?? throw new InvalidOperationException("Expected word name after :");
+            string? name = forth.ReadWord() ?? throw new CompilationException("Expected word name after :");
             forth.CreateColonDefinition(name);
         });
 
@@ -962,9 +962,9 @@ public class ForthInterpreter
         DefinePrimitive("EXIT", forth =>
         {
             if (!forth._compileMode)
-                throw new InvalidOperationException("EXIT can only be used in compilation mode");
+                throw new CompilationException("EXIT can only be used in compilation mode");
             if (forth._currentExitLabel == null)
-                throw new InvalidOperationException("EXIT used outside of colon definition");
+                throw new CompilationException("EXIT used outside of colon definition");
 
             forth._codeBuilder.Jmp(forth._currentExitLabel);
         }, isImmediate: true);
@@ -974,10 +974,10 @@ public class ForthInterpreter
         DefinePrimitive("RECURSE", forth =>
         {
             if (!forth._compileMode)
-                throw new InvalidOperationException("RECURSE can only be used inside a colon definition during compilation");
+                throw new CompilationException("RECURSE can only be used inside a colon definition during compilation");
 
             if (forth._currentStartLabel is null)
-                throw new InvalidOperationException("RECURSE used outside of a colon definition");
+                throw new CompilationException("RECURSE used outside of a colon definition");
 
             // Tail call optimization: check if RECURSE is in tail position
             // A tail call is when RECURSE is the last operation before the word ends
@@ -1015,7 +1015,7 @@ public class ForthInterpreter
 
             _vm.SyscallHandlers[CREATE_SYSCALL_ID] = vm =>
             {
-                string? name = ReadWord() ?? throw new InvalidOperationException("Expected word name after CREATE");
+                string? name = ReadWord() ?? throw new CompilationException("Expected word name after CREATE");
                 //try { Console.WriteLine($"CREATE handler inputBuffer='{_inputBuffer}' pos={_inputPosition} nameRead='{name}'"); } catch { }
 
                 // Track this as the last created word for DOES>
@@ -1068,7 +1068,7 @@ public class ForthInterpreter
             DefinePrimitive("DOES>", forth =>
             {
                 if (!forth._compileMode)
-                    throw new InvalidOperationException("DOES> can only be used in compilation mode");
+                    throw new CompilationException("DOES> can only be used in compilation mode");
                 // Mark that we're now compiling DOES> code
                 forth._compilingDoesCode = true;
 
