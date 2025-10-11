@@ -739,16 +739,16 @@ public class VM
     /// <summary>
     /// Executes bytecode until HALT is encountered or end of bytecode is reached.
     /// </summary>
-    public void Execute(byte[] bytecode)
+    public void LoadAndExecute(byte[] bytecode)
     {
         Load(bytecode);
-        Execute();
+        Continue();
     }
 
     /// <summary>
     /// Continues execution from current PC until HALT or end of bytecode.
     /// </summary>
-    public void Execute()
+    public void Continue()
     {
         while (!_halted && PC < _bytecode.Length)
         {
@@ -762,12 +762,12 @@ public class VM
     /// </summary>
     /// <param name="bytecode">The complete bytecode (e.g., global code space).</param>
     /// <param name="startOffset">The offset to start execution from.</param>
-    public void ExecuteFrom(byte[] bytecode, int startOffset)
+    public void ExecuteSubroutine(byte[] bytecode, int startOffset)
     {
         _bytecode = bytecode;
         PC = startOffset;
         _halted = false;
-        Execute();
+        Continue();
     }
 
     /// <summary>

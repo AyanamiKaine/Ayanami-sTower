@@ -15,7 +15,7 @@ public class VMInstructionTests
             .PushCell(100)
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 100;
@@ -33,7 +33,7 @@ public class VMInstructionTests
             .FPushDouble(100.5)
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.FloatStack.PeekDouble();
         const double expectedTopValue = 100.5;
@@ -51,7 +51,7 @@ public class VMInstructionTests
             .Dup()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 100;
@@ -59,7 +59,7 @@ public class VMInstructionTests
         Assert.Equal(expectedTopValue, currentTopStackValue);
 
         // After duplication, the second value should also be 100
-        vm.Execute(new CodeBuilder()
+        vm.LoadAndExecute(new CodeBuilder()
             .Drop()
             .Build());
 
@@ -77,7 +77,7 @@ public class VMInstructionTests
             .Dup()
             .Build();
 
-        Assert.Throws<StackUnderflowException>(() => vm.Execute(code));
+        Assert.Throws<StackUnderflowException>(() => vm.LoadAndExecute(code));
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public class VMInstructionTests
             .Swap()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         long expectedTopValue = 100;
@@ -99,7 +99,7 @@ public class VMInstructionTests
         Assert.Equal(expectedTopValue, currentTopStackValue);
 
         // After duplication, the second value should also be 100
-        vm.Execute(new CodeBuilder()
+        vm.LoadAndExecute(new CodeBuilder()
             .Drop()
             .Build());
 
@@ -121,14 +121,14 @@ public class VMInstructionTests
             .Rot()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         long expectedTopValue = 1;
 
         Assert.Equal(expectedTopValue, currentTopStackValue);
 
-        vm.Execute(new CodeBuilder()
+        vm.LoadAndExecute(new CodeBuilder()
             .Drop()
             .Build());
 
@@ -136,7 +136,7 @@ public class VMInstructionTests
         expectedTopValue = 3;
         Assert.Equal(expectedTopValue, currentTopStackValue);
 
-        vm.Execute(new CodeBuilder()
+        vm.LoadAndExecute(new CodeBuilder()
             .Drop()
             .Build());
 
@@ -155,7 +155,7 @@ public class VMInstructionTests
             .ToR()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.ReturnStack.PeekLong();
         const long expectedTopValue = 10;
@@ -174,7 +174,7 @@ public class VMInstructionTests
             .RFrom()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 10;
@@ -193,7 +193,7 @@ public class VMInstructionTests
             .RFetch()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValueDataStack = vm.DataStack.PeekLong();
         const long expectedTopValueDataStack = 10;
@@ -217,7 +217,7 @@ public class VMInstructionTests
             .And()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValueDataStack = vm.DataStack.PeekLong();
         const long expectedTopValueDataStack = 1;
@@ -236,7 +236,7 @@ public class VMInstructionTests
             .And()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValueDataStack = vm.DataStack.PeekLong();
         const long expectedTopValueDataStack = 0;
@@ -255,7 +255,7 @@ public class VMInstructionTests
             .Or()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValueDataStack = vm.DataStack.PeekLong();
         const long expectedTopValueDataStack = 1;
@@ -274,7 +274,7 @@ public class VMInstructionTests
             .Or()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValueDataStack = vm.DataStack.PeekLong();
         const long expectedTopValueDataStack = 0;
@@ -293,7 +293,7 @@ public class VMInstructionTests
             .Xor()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValueDataStack = vm.DataStack.PeekLong();
         const long expectedTopValueDataStack = 0;
@@ -312,7 +312,7 @@ public class VMInstructionTests
             .Xor()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValueDataStack = vm.DataStack.PeekLong();
         const long expectedTopValueDataStack = 1;
@@ -331,7 +331,7 @@ public class VMInstructionTests
             .Xor()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValueDataStack = vm.DataStack.PeekLong();
         const long expectedTopValueDataStack = 1;
@@ -349,7 +349,7 @@ public class VMInstructionTests
             .Not()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValueDataStack = vm.DataStack.PeekLong();
         const long expectedTopValueDataStack = -2;
@@ -367,7 +367,7 @@ public class VMInstructionTests
             .Not()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValueDataStack = vm.DataStack.PeekLong();
         const long expectedTopValueDataStack = -1;
@@ -386,7 +386,7 @@ public class VMInstructionTests
             .Shl()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValueDataStack = vm.DataStack.PeekLong();
         const long expectedTopValueDataStack = 2560;
@@ -405,7 +405,7 @@ public class VMInstructionTests
             .Shr()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValueDataStack = vm.DataStack.PeekLong();
         const long expectedTopValueDataStack = 0;
@@ -424,7 +424,7 @@ public class VMInstructionTests
             .Add()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 142;
@@ -443,7 +443,7 @@ public class VMInstructionTests
             .Sub()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = -58;
@@ -462,7 +462,7 @@ public class VMInstructionTests
             .Mul()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 4200;
@@ -481,7 +481,7 @@ public class VMInstructionTests
             .DivMod()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         /*
         [
@@ -513,7 +513,7 @@ public class VMInstructionTests
             .FAdd()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.FloatStack.PeekDouble();
         const double expectedTopValue = 142.5;
@@ -532,7 +532,7 @@ public class VMInstructionTests
             .FMul()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.FloatStack.PeekDouble();
         const double expectedTopValue = 4250.0;
@@ -551,7 +551,7 @@ public class VMInstructionTests
             .FDiv()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         /*
         [
@@ -574,7 +574,7 @@ public class VMInstructionTests
             .Neg()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = -42;
@@ -592,7 +592,7 @@ public class VMInstructionTests
             .Neg()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 42;
@@ -612,7 +612,7 @@ public class VMInstructionTests
             .Eq()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 1;
@@ -631,7 +631,7 @@ public class VMInstructionTests
             .Eq()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 0;
@@ -650,7 +650,7 @@ public class VMInstructionTests
             .Neq()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 1;
@@ -669,7 +669,7 @@ public class VMInstructionTests
             .Neq()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 0;
@@ -688,7 +688,7 @@ public class VMInstructionTests
             .Lt()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 1;
@@ -707,7 +707,7 @@ public class VMInstructionTests
             .Lt()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 0;
@@ -726,7 +726,7 @@ public class VMInstructionTests
             .Lte()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 1;
@@ -745,7 +745,7 @@ public class VMInstructionTests
             .Lte()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 0;
@@ -764,7 +764,7 @@ public class VMInstructionTests
             .Gt()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 0;
@@ -783,7 +783,7 @@ public class VMInstructionTests
             .Gt()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 1;
@@ -802,7 +802,7 @@ public class VMInstructionTests
             .Gte()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 1;
@@ -821,7 +821,7 @@ public class VMInstructionTests
             .Gte()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 1;
@@ -840,7 +840,7 @@ public class VMInstructionTests
             .Over()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 50;
@@ -861,7 +861,7 @@ public class VMInstructionTests
             .Fetch()             // FETCH instruction
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 1234;
@@ -882,7 +882,7 @@ public class VMInstructionTests
             .FFetch()             // FETCH instruction
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.FloatStack.PeekDouble();
         const double expectedTopValue = 1234.5;
@@ -900,7 +900,7 @@ public class VMInstructionTests
             .CellToFloat()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.FloatStack.PeekDouble();
         const double expectedTopValue = 50.0;
@@ -918,7 +918,7 @@ public class VMInstructionTests
             .FloatToCell()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 55;
@@ -937,7 +937,7 @@ public class VMInstructionTests
             .FloatToCell()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         var currentTopStackValue = vm.DataStack.PeekLong();
         const long expectedTopValue = 56;
@@ -959,7 +959,7 @@ public class VMInstructionTests
             .PushCell(2)           // This should execute
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         // Stack should be: [1, 2] (top)
         // If JMP failed, it would be: [1, 999, 2]
@@ -988,7 +988,7 @@ public class VMInstructionTests
             .PushCell(42)          // This should execute
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         long topValue = vm.DataStack.PopLong();
         Assert.Equal(42, topValue);  // Should be 42 (jumped successfully)
@@ -1013,7 +1013,7 @@ public class VMInstructionTests
             .Halt()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         long topValue = vm.DataStack.PopLong();
         Assert.Equal(100, topValue);  // Should be 100 (did not jump)
@@ -1035,7 +1035,7 @@ public class VMInstructionTests
             .PushCell(42)          // This should execute
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         long topValue = vm.DataStack.PopLong();
         Assert.Equal(42, topValue);  // Should be 42 (jumped successfully)
@@ -1060,7 +1060,7 @@ public class VMInstructionTests
             .Halt()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         long topValue = vm.DataStack.PopLong();
         Assert.Equal(100, topValue);  // Should be 100 (did not jump)
@@ -1084,7 +1084,7 @@ public class VMInstructionTests
             .Ret()                 // Return to caller
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         // Stack should contain (from bottom): [10, 5, 20]
         long topValue = vm.DataStack.PopLong();
@@ -1120,7 +1120,7 @@ public class VMInstructionTests
             .Ret()                 // Return from B
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         // Stack should contain: [1, 2, 3, 4]
         long val4 = vm.DataStack.PopLong();
@@ -1148,7 +1148,7 @@ public class VMInstructionTests
             .Halt()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         const bool expectedHaltValue = true;
 
@@ -1166,7 +1166,7 @@ public class VMInstructionTests
             .Nop()
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         Assert.Throws<InvalidOperationException>(() => vm.DataStack.PeekLong());
     }
@@ -1198,7 +1198,7 @@ public class VMInstructionTests
             .Syscall()             // Invoke syscall
             .Build();
 
-        vm.Execute(code);
+        vm.LoadAndExecute(code);
 
         Assert.True(syscallWasCalled);
         Assert.Equal(999, capturedValue);
@@ -1221,6 +1221,6 @@ public class VMInstructionTests
             .Build();
 
         // Should throw for unknown syscall
-        Assert.Throws<UnknownSyscallException>(() => vm.Execute(code));
+        Assert.Throws<UnknownSyscallException>(() => vm.LoadAndExecute(code));
     }
 }

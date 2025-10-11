@@ -211,7 +211,7 @@ public class ForthInterpreter
                     else if (definition.CompiledCode != null)
                     {
                         // Execute the primitive's bytecode
-                        _vm.Execute(definition.CompiledCode);
+                        _vm.LoadAndExecute(definition.CompiledCode);
                     }
                     else
                     {
@@ -347,7 +347,7 @@ public class ForthInterpreter
             // Execute from the global code space using the word's execution token
             // This enables proper CALL/RET semantics for subroutines
             // Use the cached array to avoid creating a new copy for every execution
-            _vm.ExecuteFrom(_codeSpaceArray, word.ExecutionToken);
+            _vm.ExecuteSubroutine(_codeSpaceArray, word.ExecutionToken);
         }
         finally
         {
