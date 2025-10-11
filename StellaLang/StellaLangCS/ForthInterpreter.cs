@@ -454,9 +454,97 @@ public class ForthInterpreter : IDisposable
 
         byte[] code = word.CompiledCode;
         int i = 0;
+        // We'll do a single-pass decompilation but with a conservative pattern recognizer
+        // for simple IF ... ELSE ... THEN and IF ... THEN sequences. The VM uses
+        // JZ to jump forward over the 'then' part; an ELSE is typically compiled as
+        // JZ <elseTarget> ... JMP <thenTarget> <elseTarget>:
+        // We'll attempt to spot JZ followed eventually by a JMP that jumps past an else
+        // region and pretty-print as IF ... ELSE ... THEN when detected.
+
         while (i < code.Length)
         {
+            int opOffset = i;
             OPCode op = (OPCode)code[i++];
+
+            if (op == OPCode.JZ && i + 8 <= code.Length)
+            {
+                long target = BitConverter.ToInt64(code, i);
+                int jzTarget = (int)target;
+                i += 8;
+
+                // Try to find a JMP inside the fall-through block that jumps to after jzTarget
+                // If found, we interpret this pattern as IF ... ELSE ... THEN
+                int fallthroughStart = i;
+                int foundJmpPos = -1;
+                int foundJmpTarget = -1;
+
+                int scan = fallthroughStart;
+                while (scan < code.Length)
+                {
+                    OPCode scanOp = (OPCode)code[scan++];
+                    if (scanOp == OPCode.PUSH_CELL || scanOp == OPCode.CALL || scanOp == OPCode.JMP || scanOp == OPCode.JZ || scanOp == OPCode.JNZ || scanOp == OPCode.SYSCALL || scanOp == OPCode.FPUSH_DOUBLE)
+                    {
+                        // these ops have 8-byte operand(s)
+                        if (scan + 8 <= code.Length)
+                        {
+                            long operand = BitConverter.ToInt64(code, scan);
+                            int operandInt = (int)operand;
+                            // If this opcode is JMP and it jumps to after the jzTarget, consider it an ELSE separator
+                            if (scanOp == OPCode.JMP && operandInt >= jzTarget)
+                            {
+                                foundJmpPos = scan - 1; // opcode offset
+                                foundJmpTarget = operandInt;
+                                break;
+                            }
+                            scan += 8;
+                        }
+                        else { break; }
+                    }
+                    else
+                    {
+                        // single-byte opcode
+                    }
+                }
+
+                if (foundJmpPos != -1)
+                {
+                    // We have a JZ ... [then-block] JMP <thenTarget> [else-block] <thenTarget>:
+                    sb.Append("IF ");
+
+                    // Decompile then-block (from fallthroughStart to foundJmpPos)
+                    sb.Append(DecompileRangeToForth(code, fallthroughStart, foundJmpPos));
+                    sb.Append(" ELSE ");
+
+                    // Decompile else-block (from foundJmpPos + 9 (opcode+8) to jzTarget)
+                    int elseStart = foundJmpPos + 1 + 8;
+                    int elseEnd = jzTarget;
+                    if (elseStart < elseEnd)
+                    {
+                        sb.Append(DecompileRangeToForth(code, elseStart, elseEnd));
+                    }
+                    sb.Append(" THEN ");
+
+                    // advance i to jzTarget
+                    i = jzTarget;
+                    continue;
+                }
+                else
+                {
+                    // No ELSE pattern found; treat as simple IF ... THEN by decompiling
+                    // the fall-through (then) block up to the jzTarget.
+                    sb.Append("IF ");
+                    if (fallthroughStart < jzTarget)
+                    {
+                        sb.Append(DecompileRangeToForth(code, fallthroughStart, jzTarget));
+                    }
+                    sb.Append(" THEN ");
+
+                    // advance i to jzTarget
+                    i = jzTarget;
+                    continue;
+                }
+            }
+
             switch (op)
             {
                 case OPCode.PUSH_CELL:
@@ -508,13 +596,22 @@ public class ForthInterpreter : IDisposable
                     sb.Append("SYSCALL ");
                     break;
                 case OPCode.JMP:
-                case OPCode.JZ:
                 case OPCode.JNZ:
                     if (i + 8 <= code.Length)
                     {
                         long addr = BitConverter.ToInt64(code, i);
                         i += 8;
                         sb.Append(op.ToString()).Append('(').Append(addr).Append(") ");
+                    }
+                    else { i = code.Length; }
+                    break;
+                case OPCode.JZ:
+                    // JZ that wasn't handled above (e.g., malformed or unconditional pattern)
+                    if (i + 8 <= code.Length)
+                    {
+                        long addr = BitConverter.ToInt64(code, i);
+                        i += 8;
+                        sb.Append("JZ(").Append(addr).Append(") ");
                     }
                     else { i = code.Length; }
                     break;
@@ -891,6 +988,84 @@ public class ForthInterpreter : IDisposable
         {
             throw new NotImplementedException($"Compiling word type {word.Type} not yet supported");
         }
+    }
+
+    /// <summary>
+    /// Decompile a slice of bytecode (start inclusive, end exclusive) into a compact
+    /// Forth-like string. This is a helper used by DecompileToForth to render then/else
+    /// sub-blocks. It's conservative and only emits token names and simple literals.
+    /// </summary>
+    private string DecompileRangeToForth(byte[] code, int start, int end)
+    {
+        var sb = new System.Text.StringBuilder();
+        int i = Math.Max(0, start);
+        end = Math.Min(code.Length, end);
+
+        while (i < end)
+        {
+            OPCode op = (OPCode)code[i++];
+            switch (op)
+            {
+                case OPCode.PUSH_CELL:
+                    if (i + 8 <= end)
+                    {
+                        long v = BitConverter.ToInt64(code, i);
+                        i += 8;
+                        string? info = ResolveSyscallInfo(v);
+                        if (!string.IsNullOrEmpty(info) && i < code.Length && code[i] == (byte)OPCode.SYSCALL)
+                        {
+                            sb.Append(v).Append(" [syscall: ").Append(info).Append("] ");
+                        }
+                        else
+                        {
+                            sb.Append(v).Append(' ');
+                        }
+                    }
+                    else { i = end; }
+                    break;
+                case OPCode.FPUSH_DOUBLE:
+                    if (i + 8 <= end)
+                    {
+                        double d = BitConverter.ToDouble(code, i);
+                        i += 8;
+                        sb.Append(d.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(' ');
+                    }
+                    else { i = end; }
+                    break;
+                case OPCode.CALL:
+                    if (i + 8 <= end)
+                    {
+                        long addr = BitConverter.ToInt64(code, i);
+                        i += 8;
+                        string? name = ResolveWordByExecutionToken((int)addr);
+                        if (name != null)
+                            sb.Append(name).Append(' ');
+                        else
+                            sb.Append($"CALL({addr}) ");
+                    }
+                    else { i = end; }
+                    break;
+                case OPCode.SYSCALL:
+                    sb.Append("SYSCALL ");
+                    break;
+                case OPCode.JMP:
+                case OPCode.JZ:
+                case OPCode.JNZ:
+                    if (i + 8 <= end)
+                    {
+                        long addr = BitConverter.ToInt64(code, i);
+                        i += 8;
+                        sb.Append(op.ToString()).Append('(').Append(addr).Append(") ");
+                    }
+                    else { i = end; }
+                    break;
+                default:
+                    sb.Append(op.ToString()).Append(' ');
+                    break;
+            }
+        }
+
+        return sb.ToString();
     }
 
     /// <summary>
