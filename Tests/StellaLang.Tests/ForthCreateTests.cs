@@ -192,7 +192,7 @@ public class ForthCreateTests
         // Read back
         for (int i = 0; i < 5; i++)
         {
-            forth.Interpret($"{baseAddr + i * 8} @");
+            forth.Interpret($"{baseAddr + (i * 8)} @");
             Assert.Equal(i * 10L, vm.DataStack.PopLong());
         }
     }
