@@ -1020,9 +1020,6 @@ public class ForthInterpreter
                 int dataFieldAddress = _here;
 
                 // Create bytecode that pushes the data field address and exits
-                // Use global address resolution for consistency
-                _codeBuilder.SetBaseOffset(_codeSpace.Count);
-
                 byte[] bytecode = new CodeBuilder()
                     .PushCell(dataFieldAddress)
                     .PushCell((long)SyscallId.WordExit)
@@ -1060,7 +1057,7 @@ public class ForthInterpreter
             DefinePrimitive("DOES>", forth =>
             {
                 if (!forth._compileMode)
-                    throw new CompilationException("DOES> can only be used in compilation mode");
+                    throw new InvalidOperationException("DOES> can only be used in compilation mode");
                 // Mark that we're now compiling DOES> code
                 forth._compilingDoesCode = true;
 
