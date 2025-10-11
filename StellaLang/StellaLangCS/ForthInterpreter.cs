@@ -181,11 +181,36 @@ public class ForthInterpreter : IDisposable
 
     /// <summary>
     /// The REPL (Read-Eval-Print Loop) - continuously reads input lines and interprets them.
+    /// Displays a prompt based on the current mode (compilation or interpretation) and processes user input.
+    /// Type 'BYE' to exit the REPL.
     /// </summary>
-    /// <exception cref="NotImplementedException"></exception>
     public void REPL()
     {
-        throw new NotImplementedException("REPL not yet implemented");
+        Console.WriteLine("StellaLang FORTH Interpreter");
+        Console.WriteLine("Type 'BYE' to exit");
+
+        while (true)
+        {
+            try
+            {
+                Console.Write(_compileMode ? "] " : "ok ");
+                string? input = Console.ReadLine();
+                if (string.IsNullOrEmpty(input)) continue;
+
+                if (input.Trim().Equals("BYE", StringComparison.OrdinalIgnoreCase))
+                    break;
+
+                Interpret(input);
+
+                if (!_compileMode)
+                    Console.WriteLine(" ok");
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error: {ex.Message}");
+                _compileMode = false;  // Reset to interpretation mode on error
+            }
+        }
     }
 
     /// <summary>

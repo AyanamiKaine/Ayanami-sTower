@@ -43,6 +43,36 @@ public class ForthCompilationTests
         }
     }
 
+    [Fact]
+    public void TestWordWithConditions()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        var originalOut = Console.Out;
+        using var writer = new System.IO.StringWriter();
+        Console.SetOut(writer);
+
+        try
+        {
+            const string code = """: IS-POSITIVE? 0 > IF ." The number is positive." ELSE ." The number is not positive." THEN ;""";
+            forth.Interpret(code);
+
+            // Execute the compiled word
+            forth.Interpret("42 IS-POSITIVE?");
+
+            // Verify output
+            string output = writer.ToString();
+            Assert.Contains("positive.", output);
+            Assert.DoesNotContain("not positive.", output);
+
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
+
     /// <summary>
     /// Test that multiple handler-based primitives can be used in a single definition.
     /// </summary>
