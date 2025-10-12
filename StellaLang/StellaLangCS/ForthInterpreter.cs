@@ -96,6 +96,12 @@ public class ForthInterpreter : IDisposable
     /// The code builder used for generating bytecode.
     /// </summary>
     private CodeBuilder _codeBuilder;
+    /// <summary>
+    /// When true the interpreter runs in "floating-only" numeric mode.
+    /// All numeric operations (literals and arithmetic) will use the float
+    /// stack and floating-point opcodes where possible.
+    /// </summary>
+    private readonly bool _floatOnlyMode;
     // Next syscall id to allocate for primitives that use handlers but should be
     // compilable. Starts in a high range to avoid colliding with reserved ids.
     private long _nextHandlerSyscallId = (long)SyscallId.DynamicHandlerBase;
@@ -140,26 +146,10 @@ public class ForthInterpreter : IDisposable
     /// </summary>
     /// <param name="vm">The VM instance to use for execution.</param>
     public ForthInterpreter(VM vm)
+        : this(vm, new ConsoleHostIO(), floatOnlyMode: false)
     {
-        _vm = vm;
-        _io = new ConsoleHostIO();
-        _dictionary = new ForthDictionary();
-        _dataSpace = [];
-        _codeSpace = [];
-        _codeSpaceArray = ArrayPool<byte>.Shared.Rent(1024); // Initial size
-        _codeSpaceArrayLength = 0;
-        _here = 0;
-        _compileMode = false;
-        _inputBuffer = string.Empty;
-        _inputPosition = 0;
-        _base = 10;
-        _compileStack = new Stack<string>();
-        _labelCounter = 0;
-        _codeBuilder = new CodeBuilder();
-        _currentWordName = string.Empty;
-
-        InitializePrimitives();
     }
+
 
     /// <summary>
     /// Initializes a new instance of the FORTH interpreter with a default VM.
@@ -169,10 +159,11 @@ public class ForthInterpreter : IDisposable
     /// <summary>
     /// Initializes a new instance of the FORTH interpreter with a VM and a custom I/O host.
     /// </summary>
-    public ForthInterpreter(VM vm, IHostIO io)
+    public ForthInterpreter(VM vm, IHostIO io, bool floatOnlyMode = false)
     {
         _vm = vm;
         _io = io ?? new ConsoleHostIO();
+        _floatOnlyMode = floatOnlyMode;
         _dictionary = new ForthDictionary();
         _dataSpace = [];
         _codeSpace = [];
@@ -306,10 +297,10 @@ public class ForthInterpreter : IDisposable
             {
                 if (_compileMode)
                 {
-                    // Compile the literal
-                    if (isFloat)
+                    // Compile the literal. In float-only mode, compile everything as float literals.
+                    if (isFloat || _floatOnlyMode)
                     {
-                        CompileFloatLiteral(doubleValue);
+                        CompileFloatLiteral(isFloat ? doubleValue : intValue);
                     }
                     else
                     {
@@ -318,10 +309,10 @@ public class ForthInterpreter : IDisposable
                 }
                 else
                 {
-                    // Execute: push to stack
-                    if (isFloat)
+                    // Execute: push to appropriate stack. In float-only mode push integers as floats.
+                    if (isFloat || _floatOnlyMode)
                     {
-                        _vm.FloatStack.PushDouble(doubleValue);
+                        _vm.FloatStack.PushDouble(isFloat ? doubleValue : intValue);
                     }
                     else
                     {
@@ -747,8 +738,8 @@ public class ForthInterpreter : IDisposable
         string? enumName = null;
         try
         {
-            if (Enum.IsDefined(typeof(SyscallId), (long)syscallId))
-                enumName = Enum.GetName(typeof(SyscallId), (long)syscallId);
+            if (Enum.IsDefined(typeof(SyscallId), syscallId))
+                enumName = Enum.GetName(typeof(SyscallId), syscallId);
         }
         catch { }
 
@@ -1504,10 +1495,21 @@ public class ForthInterpreter : IDisposable
     private void InitializeArithmeticOperations()
     {
         // Basic arithmetic
-        DefinePrimitive("+", OPCode.ADD);
-        DefinePrimitive("-", OPCode.SUB);
-        DefinePrimitive("*", OPCode.MUL);
-        DefinePrimitive("/", OPCode.DIV);
+        if (_floatOnlyMode)
+        {
+            // In float-only mode, map standard arithmetic tokens to float opcodes
+            DefinePrimitive("+", OPCode.FADD);
+            DefinePrimitive("-", OPCode.FSUB);
+            DefinePrimitive("*", OPCode.FMUL);
+            DefinePrimitive("/", OPCode.FDIV);
+        }
+        else
+        {
+            DefinePrimitive("+", OPCode.ADD);
+            DefinePrimitive("-", OPCode.SUB);
+            DefinePrimitive("*", OPCode.MUL);
+            DefinePrimitive("/", OPCode.DIV);
+        }
         DefinePrimitive("MOD", OPCode.MOD);
         DefinePrimitive("/MOD", OPCode.DIVMOD);
         DefinePrimitive("NEGATE", OPCode.NEG);
