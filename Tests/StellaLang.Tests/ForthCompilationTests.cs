@@ -16,61 +16,39 @@ public class ForthCompilationTests
     public void TestDotCanBeCompiledInline()
     {
         var vm = new VM();
-        var forth = new ForthInterpreter(vm);
+        var testIo = new TestHostIO();
+        var forth = new ForthInterpreter(vm, testIo);
 
-        // Capture console output to verify behavior
-        var originalOut = Console.Out;
-        using var writer = new System.IO.StringWriter();
-        Console.SetOut(writer);
+        // Define a word that uses '.' inside it
+        // This would previously throw an exception during compilation
+        const string code = ": print-value ( n -- ) . ;";
+        forth.Interpret(code);
 
-        try
-        {
-            // Define a word that uses '.' inside it
-            // This would previously throw an exception during compilation
-            const string code = ": print-value ( n -- ) . ;";
-            forth.Interpret(code);
+        // Execute the compiled word
+        forth.Interpret("42 print-value");
 
-            // Execute the compiled word
-            forth.Interpret("42 print-value");
-
-            // Verify output
-            string output = writer.ToString();
-            Assert.Contains("42", output);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        // Verify output
+        string output = testIo.GetOutput();
+        Assert.Contains("42", output);
     }
 
     [Fact]
     public void TestWordWithConditions()
     {
         var vm = new VM();
-        var forth = new ForthInterpreter(vm);
+        var testIo = new TestHostIO();
+        var forth = new ForthInterpreter(vm, testIo);
 
-        var originalOut = Console.Out;
-        using var writer = new System.IO.StringWriter();
-        Console.SetOut(writer);
+        const string code = ": IS-POSITIVE? 0 > IF .\" The number is positive.\" ELSE .\" The number is not positive.\" THEN ;";
+        forth.Interpret(code);
 
-        try
-        {
-            const string code = """: IS-POSITIVE? 0 > IF ." The number is positive." ELSE ." The number is not positive." THEN ;""";
-            forth.Interpret(code);
+        // Execute the compiled word
+        forth.Interpret("42 IS-POSITIVE?");
 
-            // Execute the compiled word
-            forth.Interpret("42 IS-POSITIVE?");
-
-            // Verify output
-            string output = writer.ToString();
-            Assert.Contains("positive.", output);
-            Assert.DoesNotContain("not positive.", output);
-
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        // Verify output
+        string output = testIo.GetOutput();
+        Assert.Contains("positive.", output);
+        Assert.DoesNotContain("not positive.", output);
     }
 
     /// <summary>
@@ -80,29 +58,19 @@ public class ForthCompilationTests
     public void TestMultipleHandlerPrimitivesInDefinition()
     {
         var vm = new VM();
-        var forth = new ForthInterpreter(vm);
+        var testIo = new TestHostIO();
+        var forth = new ForthInterpreter(vm, testIo);
 
-        var originalOut = Console.Out;
-        using var writer = new System.IO.StringWriter();
-        Console.SetOut(writer);
+        // Define a word using multiple I/O primitives
+        const string code = ": show-sum ( a b -- ) + . CR ;";
+        forth.Interpret(code);
 
-        try
-        {
-            // Define a word using multiple I/O primitives
-            const string code = ": show-sum ( a b -- ) + . CR ;";
-            forth.Interpret(code);
+        // Execute it
+        forth.Interpret("3 4 show-sum");
 
-            // Execute it
-            forth.Interpret("3 4 show-sum");
-
-            string output = writer.ToString();
-            Assert.Contains("7", output);
-            Assert.Contains("\n", output); // CR adds newline
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        string output = testIo.GetOutput();
+        Assert.Contains("7", output);
+        Assert.Contains("\n", output); // CR adds newline
     }
 
     /// <summary>
@@ -112,28 +80,18 @@ public class ForthCompilationTests
     public void TestEmitCanBeCompiledInline()
     {
         var vm = new VM();
-        var forth = new ForthInterpreter(vm);
+        var testIo = new TestHostIO();
+        var forth = new ForthInterpreter(vm, testIo);
 
-        var originalOut = Console.Out;
-        using var writer = new System.IO.StringWriter();
-        Console.SetOut(writer);
+        // Define a word that uses EMIT
+        const string code = ": print-char ( c -- ) EMIT ;";
+        forth.Interpret(code);
 
-        try
-        {
-            // Define a word that uses EMIT
-            const string code = ": print-char ( c -- ) EMIT ;";
-            forth.Interpret(code);
+        // Print the letter 'A' (ASCII 65)
+        forth.Interpret("65 print-char");
 
-            // Print the letter 'A' (ASCII 65)
-            forth.Interpret("65 print-char");
-
-            string output = writer.ToString();
-            Assert.Contains("A", output);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        string output = testIo.GetOutput();
+        Assert.Contains("A", output);
     }
 
     /// <summary>
@@ -164,29 +122,19 @@ public class ForthCompilationTests
     public void TestMixedPrimitivesInDefinition()
     {
         var vm = new VM();
-        var forth = new ForthInterpreter(vm);
+        var testIo = new TestHostIO();
+        var forth = new ForthInterpreter(vm, testIo);
 
-        var originalOut = Console.Out;
-        using var writer = new System.IO.StringWriter();
-        Console.SetOut(writer);
+        // Mix arithmetic (bytecode), stack ops (bytecode), and I/O (handler-based)
+        const string code = ": compute-and-print ( a b -- ) + DUP . SPACE . CR ;";
+        forth.Interpret(code);
 
-        try
-        {
-            // Mix arithmetic (bytecode), stack ops (bytecode), and I/O (handler-based)
-            const string code = ": compute-and-print ( a b -- ) + DUP . SPACE . CR ;";
-            forth.Interpret(code);
+        // Should print sum twice
+        forth.Interpret("5 3 compute-and-print");
 
-            // Should print sum twice
-            forth.Interpret("5 3 compute-and-print");
-
-            string output = writer.ToString();
-            // Should contain "8 8" followed by newline
-            Assert.Contains("8", output);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        string output = testIo.GetOutput();
+        // Should contain "8 8" followed by newline
+        Assert.Contains("8", output);
     }
 
     /// <summary>
@@ -220,45 +168,34 @@ public class ForthCompilationTests
     public void TestAllHandlerPrimitivesAreCompilable()
     {
         var vm = new VM();
-        var forth = new ForthInterpreter(vm);
+        var testIo = new TestHostIO();
+        var forth = new ForthInterpreter(vm, testIo);
 
-        var originalOut = Console.Out;
-        using var writer = new System.IO.StringWriter();
-        Console.SetOut(writer);
+        // Test each handler-based primitive in a compiled context
+        string[] testCases = new string[] {
+            ": test-dot ( n -- ) . ;",
+            ": test-emit ( c -- ) EMIT ;",
+            ": test-cr ( -- ) CR ;",
+            ": test-space ( -- ) SPACE ;",
+            ": test-here ( -- addr ) HERE ;",
+        };
 
-        try
+        foreach (var testCase in testCases)
         {
-            // Test each handler-based primitive in a compiled context
-            string[] testCases =
-            [
-                ": test-dot ( n -- ) . ;",
-                ": test-emit ( c -- ) EMIT ;",
-                ": test-cr ( -- ) CR ;",
-                ": test-space ( -- ) SPACE ;",
-                ": test-here ( -- addr ) HERE ;",
-            ];
-
-            foreach (var testCase in testCases)
-            {
-                // Should not throw during compilation
-                forth.Interpret(testCase);
-            }
-
-            // Execute them to ensure they work
-            forth.Interpret("42 test-dot");
-            forth.Interpret("65 test-emit");
-            forth.Interpret("test-cr");
-            forth.Interpret("test-space");
-            forth.Interpret("test-here DROP"); // Drop the address
-
-            // Verify we got output
-            string output = writer.ToString();
-            Assert.Contains("42", output);
-            Assert.Contains("A", output); // EMIT 65 = 'A'
+            // Should not throw during compilation
+            forth.Interpret(testCase);
         }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+
+        // Execute them to ensure they work
+        forth.Interpret("42 test-dot");
+        forth.Interpret("65 test-emit");
+        forth.Interpret("test-cr");
+        forth.Interpret("test-space");
+        forth.Interpret("test-here DROP"); // Drop the address
+
+        // Verify we got output
+        string output = testIo.GetOutput();
+        Assert.Contains("42", output);
+        Assert.Contains("A", output); // EMIT 65 = 'A'
     }
 }
