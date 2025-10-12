@@ -203,6 +203,8 @@ public class ForthInterpreter : IDisposable
         _inputBuffer = input;
         _inputPosition = 0;
 
+        // TODO: I think there should be a way to better handle automatic floating point arithmetics. So we can just say 1.0 5 + instead of needing to say 1.0 5.0 F+. So we would implement a fallback mechanism that in some form. Maybe we could introduce a way to only use floating points (doubles). So every 1 2 + would actually be a 1.0 2.0 F+ internally.
+
         string? word;
         while ((word = ReadWord()) != null)
         {
