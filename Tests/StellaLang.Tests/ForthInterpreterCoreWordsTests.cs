@@ -2011,6 +2011,148 @@ public class ForthInterpreterCoreWordsTests
         long result = vm.DataStack.PopLong();
         Assert.Equal(10, result);
     }
+
+    [Fact]
+    public void MapWithZeroCountTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // No items, count 0
+        vm.DataStack.PushLong(0);
+
+        // Define INC to ensure it won't be called
+        forth.Interpret(": INC 1 + ;");
+
+        // Call MAP INC
+        forth.Interpret("MAP INC");
+
+        long count = vm.DataStack.PopLong();
+        Assert.Equal(0, count);
+    }
+
+    [Fact]
+    public void FilterWithZeroCountTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // No items, count 0
+        vm.DataStack.PushLong(0);
+
+        // Predicate (should not be called)
+        forth.Interpret(": PRED 0 = ;");
+
+        forth.Interpret("FILTER PRED");
+
+        long count = vm.DataStack.PopLong();
+        Assert.Equal(0, count);
+    }
+
+    [Fact]
+    public void ReduceWithSingleElementTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Single element 42, count 1
+        vm.DataStack.PushLong(42);
+        vm.DataStack.PushLong(1);
+
+        // Reducer should not be called; result should be the single element
+        forth.Interpret(": ADDER + ;");
+
+        forth.Interpret("REDUCE ADDER");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(42, result);
+    }
+
+    [Fact]
+    public void FilterThenMapComposeTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Items: 1 2 3 4 5 6, count 6
+        vm.DataStack.PushLong(1);
+        vm.DataStack.PushLong(2);
+        vm.DataStack.PushLong(3);
+        vm.DataStack.PushLong(4);
+        vm.DataStack.PushLong(5);
+        vm.DataStack.PushLong(6);
+        vm.DataStack.PushLong(6);
+
+        // Define predicates and helpers
+        forth.Interpret(": ODD? 2 MOD 1 = ;");
+        forth.Interpret(": INC 1 + ;");
+
+        // Keep odds then increment each: FILTER ODD? MAP INC
+        forth.Interpret("FILTER ODD? MAP INC");
+
+        long count = vm.DataStack.PopLong();
+        Assert.Equal(3, count);
+        long third = vm.DataStack.PopLong();
+        long second = vm.DataStack.PopLong();
+        long first = vm.DataStack.PopLong();
+
+        // Expect results: 2,4,6 (popped in reverse order)
+        Assert.Equal(6, third);
+        Assert.Equal(4, second);
+        Assert.Equal(2, first);
+    }
+
+    [Fact]
+    public void MapThenReduceSumOfSquaresTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Items: 1 2 3 4 5, count 5
+        vm.DataStack.PushLong(1);
+        vm.DataStack.PushLong(2);
+        vm.DataStack.PushLong(3);
+        vm.DataStack.PushLong(4);
+        vm.DataStack.PushLong(5);
+        vm.DataStack.PushLong(5);
+
+        // Define SQUARE and ADDER
+        forth.Interpret(": SQUARE DUP * ;");
+        forth.Interpret(": ADDER + ;");
+
+        // Square each then reduce by addition: MAP SQUARE REDUCE ADDER
+        forth.Interpret("MAP SQUARE REDUCE ADDER");
+
+        long result = vm.DataStack.PopLong();
+        // 1^2+2^2+3^2+4^2+5^2 = 55
+        Assert.Equal(55, result);
+    }
+
+    [Fact]
+    public void FilterThenReduceProductTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Items: 1 2 3 4 5 6, count 6
+        vm.DataStack.PushLong(1);
+        vm.DataStack.PushLong(2);
+        vm.DataStack.PushLong(3);
+        vm.DataStack.PushLong(4);
+        vm.DataStack.PushLong(5);
+        vm.DataStack.PushLong(6);
+        vm.DataStack.PushLong(6);
+
+        // Keep evens and multiply them together
+        forth.Interpret(": EVEN? 2 MOD 0 = ;");
+        forth.Interpret(": MUL * ;");
+
+        // FILTER EVEN? REDUCE MUL -> 2 * 4 * 6 = 48
+        forth.Interpret("FILTER EVEN? REDUCE MUL");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(48, result);
+    }
 }
 
 
