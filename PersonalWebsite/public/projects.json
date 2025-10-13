@@ -17,6 +17,26 @@
       }
     ]
   },
+    {
+    "title": "Stella Language",
+    "status": "In Progress",
+    "description": "A FORTH-like concatenative language interpreter in C# that compiles to WebAssembly, enabling live programming without recompilation. It demonstrates how stack-based languages can be used like Lego blocks",
+    "technologies": [
+      "C#",
+      "FORTH",
+      "WASM"
+    ],
+    "links": [
+      {
+        "name": "GitHub",
+        "url": "https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/StellaLang/StellaLangCS"
+      },
+        {
+        "name": "Preview",
+        "url": "/posts/My-Own-Interpreter/"
+      }
+    ]
+  },
   {
     "title": "Stella Fuzzy Pattern Matcher (SFPM)",
     "status": "Completed",
