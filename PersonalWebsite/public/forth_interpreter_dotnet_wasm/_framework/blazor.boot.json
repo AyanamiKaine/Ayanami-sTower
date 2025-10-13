@@ -1,0 +1,42 @@
+{
+  "mainAssemblyName": "StellaLang.REPL.dll",
+  "resources": {
+    "hash": "sha256-/auyW8+dV0YQojzKqNhq9mpClbQaPLTc62zVRgOOpSw=",
+    "jsModuleNative": {
+      "dotnet.native.js": "sha256-U+XKYoIpMNxfSqte1Yl15VbDvPYt6GyFaoz6MqwhA88="
+    },
+    "jsModuleRuntime": {
+      "dotnet.runtime.js": "sha256-oBRKHAqZUsvCRnCzkQfB7zc45cpKLNq2NKyrG10IKx8="
+    },
+    "wasmNative": {
+      "dotnet.native.wasm": "sha256-1Yy/q/rFLbcUQGDAn7i4cncsO2PcoXEiUy+7Lvc4YuY="
+    },
+    "wasmSymbols": {
+      "dotnet.native.js.symbols": "sha256-ki+9/H/1Q0Utn1GSbWtp1k6fUEqrYzQea/TCOEI9B8Y="
+    },
+    "icu": {
+      "icudt_CJK.dat": "sha256-SZLtQnRc0JkwqHab0VUVP7T3uBPSeYzxzDnpxPpUnHk=",
+      "icudt_EFIGS.dat": "sha256-8fItetYY8kQ0ww6oxwTLiT3oXlBwHKumbeP2pRF4yTc=",
+      "icudt_no_CJK.dat": "sha256-L7sV7NEYP37/Qr2FPCePo5cJqRgTXRwGHuwF5Q+0Nfs="
+    },
+    "coreAssembly": {
+      "System.Private.CoreLib.wasm": "sha256-MKYyPcCxcZVzx6bP0RxaxGXV0Jpo4bWO04YyV8+5pMg=",
+      "System.Runtime.InteropServices.JavaScript.wasm": "sha256-os6v9WmefURt6Kmxd2DCR/5jCTt4onSgd2c8QacwLt8="
+    },
+    "assembly": {
+      "AyanamisTower.MemoryExtensions.wasm": "sha256-UADz3zBu4GT8MWsyXObKflL8oYfpJbvz17RBtUTBB/E=",
+      "StellaLang.wasm": "sha256-HBcPytOCuEzHegl6h5fswZir+S+LjigECgTehWJVhy0=",
+      "StellaLang.REPL.wasm": "sha256-JMWLqrlbImnmpDRZD02KswM5W/BGm0Qx8sTZFvPbdyk=",
+      "System.Collections.wasm": "sha256-WEP9safM+Nczf02sHGpPW6QGacl1ao0IlVCums7ud+w=",
+      "System.Console.wasm": "sha256-N0kuRALdwUorGVK+zhcaZq3SNMOuDsiTgPZ/2l8RH1M=",
+      "System.Linq.wasm": "sha256-+X+pgzDAPAgt1QcN91MpPW36BcUrL9sC4QiYiMIpGYU="
+    },
+    "coreVfs": {
+      "runtimeconfig.bin": {
+        "supportFiles/0_runtimeconfig.bin": "sha256-63lTjEq7V2H7TCA4Eljv8JdkytihvlY7l95GmsQHC7k="
+      }
+    }
+  },
+  "debugLevel": 0,
+  "globalizationMode": "sharded"
+}

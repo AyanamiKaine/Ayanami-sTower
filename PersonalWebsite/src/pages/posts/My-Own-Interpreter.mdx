@@ -1,0 +1,106 @@
+---
+title: "My Own FORTH Like Interpreter"
+date: 2025-10-13
+author: "Ayanami Kaine"
+tags: ["Interpreter", "Programming", "FORTH", "Concatenative Language", "Stack Language"]
+layout: ../../layouts/PostLayout.astro
+summary: ""
+published: true
+---
+
+import StellaREPL from "../../components/StellaREPL.astro";
+
+I am quite obsessed with the idea of programming more like using Lego blocks. I want to change a running system while its running. Pausing it for a short time and simply start again at that moment. Most used programming language are a bit more like clay. You're creating something and then have to heat/compile it to finalize it.
+
+I hate it so much. What I imagine is having a GUI app and I just can write something like `MOVE PLAYBUTTON.X 20` to add 20px to the buttons X position. 
+Often we have to 
+- A: Recompile (C#, Java)
+- B: The interpreter executes the code again (JavaScript, Python).  
+
+But this usually creates a problem and that is state preservation. How do you add new fields to existing objects in memory? Or remove them? The usual answer would be: "Every problem can be solved with another indirection". We would need to define every object just as having a set of pointers to addresses that in turn point to the value. So fields can be added by just adding a new pointer to a list. But this usually conflicts with the way how we would want to program.
+
+Re-executing of newly defined statements is actually not what we want. Imagine for a moment you would need to rebuild your entire Lego set because you wanted to add something new after you finished building it. It would be ludicrous.
+
+It does not make any sense. Our computers can do so much more, but we use them in unimaginative ways. In many cases we just program like in the 70s with the main difference that punch cards are now getting typed in an IDE that can autocomplete my boilerplate.
+
+Sometimes I wonder if the need for boilerplate in a project is one of the biggest programming language smells ever or maybe having the need to define many temporarily values in functions is. But I digress.
+
+## Concatenative Languages
+
+I feel like concatenative languages are those Lego blocks I'm searching for. While reading more about FORTH a stack based concatenative language. I saw words as those Lego blocks. To better understand the inner workings of FORTH I developed my own FORTH like language in C#. Its missing many practical features like working with files. But it shows what you can do differently with a concatenative language.
+
+### Multiple Return Values
+
+What I really find interesting is that you can easily define functions that return multiple values without any problem. Any function that returns something simply puts it on the stack. If it returns 5 things, it puts 5 things on the stack.
+
+## Stella 
+
+Because we can compile C# to Wasm you can even play with it here!
+
+<StellaREPL
+    id="stellarepl-demo"
+    initialCode={"20 22 + ."}
+    wasmPath="/forth_interpreter_dotnet_wasm/_framework/dotnet.js"
+    scriptPath="/forth_interpreter_dotnet_wasm/stellalang-repl.js"
+/>
+
+### Basic Examples
+
+Try these examples in the REPL above:
+
+**Simple arithmetic:**
+```forth
+5 3 + .        \ Prints 8
+10 2 - .       \ Prints 8
+4 7 * .        \ Prints 28
+```
+
+**Stack manipulation:**
+```forth
+1 2 3 .s       \ Show stack contents
+DUP .          \ Duplicate top of stack
+SWAP .         \ Swap top two items
+```
+
+**Define your own words:**
+```forth
+: square DUP * ;
+5 square .     \ Prints 25
+```
+
+**Fibonacci (iterative):**
+```forth
+: fib ( n -- fib[n] ) 0 1 rot 0 ?do over + swap loop drop ;
+10 fib .       \ Prints 55
+```
+
+**Factorial (recursive):**
+```forth
+: factorial ( n -- n! ) DUP 1 <= IF DROP 1 EXIT THEN DUP 1- RECURSE * ;
+5 factorial .  \ Prints 120
+```
+
+**Tail-recursive countdown:**
+```forth
+: countdown ( n -- ) DUP 0= IF DROP EXIT THEN DUP . 1- RECURSE ;
+5 countdown    \ Prints 5 4 3 2 1
+```
+
+**List all available words:**
+```forth
+WORDS    \ Shows all defined words in the dictionary
+```
+
+Stella comes with a rich set of built-in words including:
+- **Arithmetic**: `+`, `-`, `*`, `/`, `MOD`, `ABS`, `MIN`, `MAX`, `CLAMP`
+- **Floating-point**: `F+`, `F-`, `F*`, `/`, `FABS`, `F=`, `F<`
+- **Stack operations**: `DUP`, `DROP`, `SWAP`, `OVER`, `ROT`, `PICK`, `ROLL`
+- **Logic**: `AND`, `OR`, `XOR`, `NOT`, `INVERT`
+- **Comparison**: `=`, `<`, `>`, `<=`, `>=`, `<>`
+- **Control flow**: `IF`, `ELSE`, `THEN`, `BEGIN` `UNTIL`, `DO`, `LOOP`, `WHILE` `REPEAT`
+- **Memory**: `@`, `!`, `C@`, `C!`, `ALLOT`, `HERE`, `CELLS`
+- **Return stack**: `>R`, `R>`, `R@`
+- **Definition**: `:`, `;`, `CREATE`, `DOES>`, `VARIABLE`, `RECURSE`
+- **Introspection**: `WORDS`, `SEE`, `.S`, `.DICT`, `DEPTH`
+
+Try `SEE <word>` to inspect the definition of any word!

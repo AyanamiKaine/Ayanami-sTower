@@ -1,0 +1,20 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import StellaREPL from "../../components/StellaREPL.astro";
+---
+
+<Layout>
+    <h1 class="mt-6">Stella REPL Demo</h1>
+
+    <p>
+        Try entering simple Stella / FORTH code below. This demo loads the
+        WebAssembly runtime from the public folder.
+    </p>
+
+    <StellaREPL
+        id="stellarepl-demo"
+        initialCode={"20 22 + ."}
+        wasmPath="/forth_interpreter_dotnet_wasm/_framework/dotnet.js"
+        scriptPath="/forth_interpreter_dotnet_wasm/stellalang-repl.js"
+    />
+</Layout>

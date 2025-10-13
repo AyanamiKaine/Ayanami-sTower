@@ -7,10 +7,18 @@
     <Nullable>enable</Nullable>
     <RootNamespace>StellaLang.REPL</RootNamespace>
     <IsAotCompatible>true</IsAotCompatible>
+
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <WasmMainJSPath>main.js</WasmMainJSPath>
+    <DefineConstants>$(DefineConstants);BROWSER</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\StellaLangCS\StellaLang.csproj" />
   </ItemGroup>
-
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="main.js" />
+    <WasmExtraFilesToDeploy Include="index.html" />
+  </ItemGroup>
 </Project>
