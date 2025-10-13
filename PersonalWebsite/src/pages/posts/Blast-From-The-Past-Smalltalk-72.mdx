@@ -30,7 +30,7 @@ match vm.GetNextInstruction():
 
 The idea never left the lab and instead was scrapped in Smalltalk-80 in favor of a complete unified Virtual Machine. Now Smalltalk had only one VM instead of every object being one. But this got me thinking.
 
-I quite like Elixir and Erlang. It also just has one unified VM but we can define [processes](https://hexdocs.pm/elixir/Process.html) (I know good naming isn't it?) that can handle messages.
+I quite like Elixir and Erlang. It also just has one unified VM, but we can define [processes](https://hexdocs.pm/elixir/Process.html) (I know good naming isn't it?) that can handle messages.
 
 ```elixir
 def server do
@@ -43,7 +43,7 @@ def server do
 end
 ```
 
-By default it looks more similar. Elixir/Erlang also provide quite the nice syntax abstraction when working with this idea more. What if messages send should invoke method calls? Wouldnt it be nice if the method interface defines what messages the server/object/process can accept?
+By default, it looks more similar. Elixir/Erlang also provide quite the nice syntax abstraction when working with this idea more. What if messages send should invoke method calls? Wouldn't it be nice if the method interface defines what messages the server/object/process can accept?
 
 ```elixir
 defmodule Stack do
@@ -77,20 +77,20 @@ defmodule Stack do
 end
 ```
 
-It all looks so similar. I wonder what if we had sticked with the idea of every object being its own interpreter? There are some reason given why they didnt. Performance and understanding where reasons given.
+It all looks so similar. I wonder what if we had stuck with the idea of every object being its own interpreter? There are some reason given why they didn't. Performance and understanding where reasons given.
 
 The last part I can understand especially to reason about an interpreter that can self modify itself. Either from the inside or the outside is far from easy to understand. Just imagine having over 1000 concurrently running of these. These are just like our cells, and they took many decades to understand (Still we have so much to learn about them).
 
-In general Smalltalk-72 seems to be much more alligned to the idea of objects being cells than later versions.
+In general Smalltalk-72 seems to be much more aligned to the idea of objects being cells than later versions.
 
 ## No Classes
 
-Smalltalk-72 didnt use any classes. It was more similar to the first prototype languages. New objects where created by cloning existing ones. There where no chains between existing and new objects. I.e. there was no automatic way to forward messages if the object didnt understand it.
+Smalltalk-72 didn't use any classes. It was more similar to the first prototype languages. New objects where created by cloning existing ones. There were no chains between existing and new objects. I.e. there was no automatic way to forward messages if the object didn't understand it.
 
 In later versions a formal way for delegation was introduced. 
 
 ## End
 
-In the end many language got inspired by Smalltalk. Many languages we know where made because Smalltalk existed. From advancements in virtual machines. To C++ ohhh god maybe we took the wrong turn here. Ohhh and C++ took many of the NOT powerful ideas of Smalltalk like compile time hierarchies of types. This cant be real.
+In the end many languages got inspired by Smalltalk. Many languages we know where made because Smalltalk existed. From advancements in virtual machines. To C++ ohhh god maybe we took the wrong turn here. Ohhh and C++ took many of the NOT powerful ideas of Smalltalk like compile time hierarchies of types. This cant be real.
 
-I wonder what would have happened when the idea was now implemented. Would performance still be an issue? Wasn't this idea made for a world of multiple cores? A world of interconnected computers? Maybe Smalltalk and Alan Kay in general where 50 years ahead. **The computer revolution hasnt happend yet**.
+I wonder what would have happened when the idea was now implemented. Would performance still be an issue? Wasn't this idea made for a world of multiple cores? A world of interconnected computers? Maybe Smalltalk and Alan Kay in general where 50 years ahead. **The computer revolution hasn't happened yet**.
