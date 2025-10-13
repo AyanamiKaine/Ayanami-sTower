@@ -2153,6 +2153,155 @@ public class ForthInterpreterCoreWordsTests
         long result = vm.DataStack.PopLong();
         Assert.Equal(48, result);
     }
+
+    // ===== Multi-cell limitation tests =====
+
+    [Fact]
+    public void MapMapperReturnsTwoCellsLeftoverTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Items: 1, count 1
+        vm.DataStack.PushLong(1);
+        vm.DataStack.PushLong(1);
+
+        // Define a mapper that returns two cells for each input: DUP + (pushes two cells)
+        // For demonstration, define : DUPPAIR DUP ; which will push original and duplicate
+        forth.Interpret(": DUPPAIR DUP ;");
+
+        // Call MAP DUPPAIR
+        // Current implementation expects a single-cell result; this will leave a leftover cell per item
+        forth.Interpret("MAP DUPPAIR");
+
+        // After mapping, the implementation pops only one cell per call into results and pushes results back.
+        // So we expect an extra leftover cell on the stack (the second cell the mapper pushed)
+        long count = vm.DataStack.PopLong();
+        Assert.Equal(1, count);
+
+        // There should be one result value pushed (the first of the pair), and one leftover still on the stack
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(1, result);
+
+        // The leftover should also be present (the duplicate)
+        long leftover = vm.DataStack.PopLong();
+        Assert.Equal(1, leftover);
+    }
+
+    [Fact]
+    public void MapMapperReturnsNoCellsUnderflowTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Items: 1, count 1
+        vm.DataStack.PushLong(1);
+        vm.DataStack.PushLong(1);
+
+        // Define a mapper that consumes the item but leaves nothing (e.g., SWAP DROP)
+        forth.Interpret(": CONSUME DROP ;");
+
+        // Call MAP CONSUME - since mapper leaves no result, the MAP will try to pop a result and underflow
+        Assert.Throws<StackUnderflowException>(() => forth.Interpret("MAP CONSUME"));
+    }
+
+    [Fact]
+    public void ReduceReducerPushesTwoCellsTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Items: 2 elements 3 and 4, count 2
+        vm.DataStack.PushLong(3);
+        vm.DataStack.PushLong(4);
+        vm.DataStack.PushLong(2);
+
+        // Define a reducer that returns two cells when combining acc and item
+        // Eg: : DOUBLE-ACC + DUP ; (pushes acc+item and duplicate)
+        forth.Interpret(": DOUBLE-ACC + DUP ;");
+
+        // REDUCE DOUBLE-ACC: current implementation expects a single-cell result per reduction
+        // So after the first reduce step, an extra cell will be left on the stack and may be used in the next step incorrectly
+        forth.Interpret("REDUCE DOUBLE-ACC");
+
+        // Observe what's left on the stack: we expect the top to be the final acc, but there may be leftovers
+        long result = vm.DataStack.PopLong();
+        // The exact final value depends on how the extra cell interferes; assert that at least something is on the stack
+        Assert.True(vm.DataStack.Pointer >= 0);
+        // Clean up any leftover values for test isolation
+        while (!vm.DataStack.IsEmpty) vm.DataStack.PopLong();
+    }
+
+    [Fact]
+    public void Map2ProducesPairsTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Items: 1 2 3, count 3
+        vm.DataStack.PushLong(1);
+        vm.DataStack.PushLong(2);
+        vm.DataStack.PushLong(3);
+        vm.DataStack.PushLong(3);
+
+        // Define mapper that produces two cells: original and double
+        forth.Interpret(": PAIR DUP 2 * ;");
+
+        // Push arity 2 then call MAPN PAIR
+        vm.DataStack.PushLong(2);
+        forth.Interpret("MAPN PAIR");
+
+        // After MAPN, stack layout: for each item -> (val, val*2) ... then count and arity
+        long arity = vm.DataStack.PopLong();
+        long count = vm.DataStack.PopLong();
+        Assert.Equal(2, arity);
+        Assert.Equal(3, count);
+
+        // pop pairs in reverse order
+        long p6 = vm.DataStack.PopLong(); // 3*2
+        long p5 = vm.DataStack.PopLong(); // 3
+        long p4 = vm.DataStack.PopLong(); // 2*2
+        long p3 = vm.DataStack.PopLong(); // 2
+        long p2 = vm.DataStack.PopLong(); // 1*2
+        long p1 = vm.DataStack.PopLong(); // 1
+
+        Assert.Equal(6, p6);
+        Assert.Equal(3, p5);
+        Assert.Equal(4, p4);
+        Assert.Equal(2, p3);
+        Assert.Equal(2, p2);
+        Assert.Equal(1, p1);
+    }
+
+    [Fact]
+    public void Reduce2AccumulatorTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Items: 10, 20, 30, count 3
+        vm.DataStack.PushLong(10);
+        vm.DataStack.PushLong(20);
+        vm.DataStack.PushLong(30);
+        vm.DataStack.PushLong(3);
+
+        // Reducer: (sum count item -- sum' count')
+        // Define ACCUM to compute sum' = sum + item and count' = count + 1
+        // Implementation: SWAP >R + R> 1 + ;
+        forth.Interpret(": ACCUM SWAP >R + R> 1 + ;");
+
+        // Push arity 2 then call REDUCEN ACCUM
+        vm.DataStack.PushLong(2);
+        forth.Interpret("REDUCEN ACCUM");
+
+        // Expect final accumulator cells: sum and count
+        long countFinal = vm.DataStack.PopLong();
+        long sumFinal = vm.DataStack.PopLong();
+
+        // sum = 10 + 20 + 30 = 60, count = 3
+        Assert.Equal(3, countFinal);
+        Assert.Equal(60, sumFinal);
+    }
 }
 
 

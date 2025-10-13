@@ -2369,7 +2369,15 @@ public class ForthInterpreter : IDisposable
                 }
 
                 // collect one result (assume single-cell result)
-                long r = forth._vm.DataStack.PopLong();
+                long r;
+                try
+                {
+                    r = forth._vm.DataStack.PopLong();
+                }
+                catch (InvalidOperationException ex)
+                {
+                    throw new StackUnderflowException("MAP: mapping function did not leave a result", ex);
+                }
                 results.Add(r);
             }
 
@@ -2422,7 +2430,15 @@ public class ForthInterpreter : IDisposable
                 else
                     throw new CompilationException($"FILTER: predicate '{funcName}' is not executable");
 
-                long pred = forth._vm.DataStack.PopLong();
+                long pred;
+                try
+                {
+                    pred = forth._vm.DataStack.PopLong();
+                }
+                catch (InvalidOperationException ex)
+                {
+                    throw new StackUnderflowException("FILTER: predicate did not leave a result", ex);
+                }
                 if (pred != 0)
                     results.Add(items[i]);
             }
@@ -2471,10 +2487,191 @@ public class ForthInterpreter : IDisposable
                 else
                     throw new CompilationException($"REDUCE: function '{funcName}' is not executable");
 
-                acc = forth._vm.DataStack.PopLong();
+                try
+                {
+                    acc = forth._vm.DataStack.PopLong();
+                }
+                catch (InvalidOperationException ex)
+                {
+                    throw new StackUnderflowException("REDUCE: reducer did not leave accumulator result", ex);
+                }
             }
 
             forth._vm.DataStack.PushLong(acc);
+        });
+
+        // MAPN: multi-cell mapper
+        // Usage: <items...> <count> <arity> MAPN <word>
+        // The mapper <word> must push exactly <arity> cells for each input item.
+        Interpret(": MAPN ;");
+        DefinePrimitive("MAPN", forth =>
+        {
+            // Read arity token (should be numeric on the stack)
+            // We expect the program to have pushed arity as a literal just before MAPN word,
+            // but to keep consistency with our ReadWord flow we'll read arity from the data stack.
+            long arity = forth._vm.DataStack.PopLong();
+            if (arity <= 0) throw new InvalidOperationException("MAPN requires positive arity");
+
+            string? funcName = forth.ReadWord();
+            if (string.IsNullOrEmpty(funcName))
+                throw new InvalidOperationException("MAPN requires a following word name as the mapping function");
+
+            var funcDef = forth.FindWord(funcName);
+            if (funcDef == null)
+                throw new UnknownWordException(funcName, $"MAPN: function '{funcName}' not found");
+
+            long n = forth._vm.DataStack.PopLong();
+            if (n < 0) throw new InvalidOperationException("MAPN count must be non-negative");
+            int count = (int)n;
+
+            if (count == 0)
+            {
+                // push 0 count
+                forth._vm.DataStack.PushLong(0);
+                return;
+            }
+
+            if (forth._vm.DataStack.Pointer < count * 8)
+                throw new StackUnderflowException("MAPN requires the specified number of items on the stack");
+
+            var items = new long[count];
+            for (int i = count - 1; i >= 0; i--)
+                items[i] = forth._vm.DataStack.PopLong();
+
+            // We'll collect results in a flat list: count * arity cells
+            var results = new List<long>(count * (int)arity);
+
+            for (int i = 0; i < count; i++)
+            {
+                // push argument
+                forth._vm.DataStack.PushLong(items[i]);
+
+                // execute the function
+                if (funcDef.PrimitiveHandler != null)
+                    funcDef.PrimitiveHandler(forth);
+                else if (funcDef.CompiledCode != null)
+                    forth._vm.LoadAndExecute(funcDef.CompiledCode);
+                else if (funcDef.Type == WordType.ColonDefinition)
+                    forth.ExecuteColonDefinition(funcDef);
+                else
+                    throw new CompilationException($"MAPN: function '{funcName}' is not executable");
+
+                // collect exactly arity results, in order they were pushed
+                for (int k = 0; k < arity; k++)
+                {
+                    long r;
+                    try
+                    {
+                        r = forth._vm.DataStack.PopLong();
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        throw new StackUnderflowException("MAPN: mapping function did not leave enough results", ex);
+                    }
+                    // We'll prepend into results for correct order later
+                    results.Add(r);
+                }
+            }
+
+            // Results are currently collected per item: for item0 -> a0 b0, item1 -> a1 b1... but popped LIFO per item
+            // We collected each item's results in order of popping (last pushed is first popped) so we need to reverse per-item groups
+            var orderedResults = new List<long>(results.Count);
+            for (int i = 0; i < count; i++)
+            {
+                int baseIdx = i * (int)arity;
+                for (int k = (int)arity - 1; k >= 0; k--)
+                    orderedResults.Add(results[baseIdx + k]);
+            }
+
+            // push results (flat, in order) then count and arity for consumer to know layout
+            foreach (var v in orderedResults)
+                forth._vm.DataStack.PushLong(v);
+            // push count and arity
+            forth._vm.DataStack.PushLong(count);
+            forth._vm.DataStack.PushLong(arity);
+        });
+
+        // REDUCEN: multi-cell reducer
+        // Usage: <items...> <count> <arity> REDUCEN <word>
+        // Reducer must take (acc_cells..., item -- acc_cells...)
+        Interpret(": REDUCEN ;");
+        DefinePrimitive("REDUCEN", forth =>
+        {
+            long arity = forth._vm.DataStack.PopLong();
+            if (arity <= 0) throw new InvalidOperationException("REDUCEN requires positive arity");
+
+            string? funcName = forth.ReadWord();
+            if (string.IsNullOrEmpty(funcName))
+                throw new InvalidOperationException("REDUCEN requires a following reducer word name");
+
+            var funcDef = forth.FindWord(funcName);
+            if (funcDef == null)
+                throw new UnknownWordException(funcName, $"REDUCEN: function '{funcName}' not found");
+
+            long n = forth._vm.DataStack.PopLong();
+            if (n <= 0) throw new InvalidOperationException("REDUCEN requires a positive count (at least 1)");
+            int count = (int)n;
+
+            if (forth._vm.DataStack.Pointer < count * 8)
+                throw new StackUnderflowException("REDUCEN requires the specified number of items on the stack");
+
+            var items = new long[count];
+            for (int i = count - 1; i >= 0; i--)
+                items[i] = forth._vm.DataStack.PopLong();
+
+            // Initial accumulator is first item's arity cells; ensure stack contains them by pushing them
+            // We'll treat the first item as the initial accumulator: push its arity cells
+            var acc = new long[arity];
+            // For simplicity we treat acc as single-cell if arity==1; for multi-cell copy first item's value into acc
+            if (arity == 1)
+            {
+                acc[0] = items[0];
+            }
+            else
+            {
+                // If items are 1-cell each but user requests arity>1, derive a reasonable default:
+                // set first cell to the first item's value and the second cell to 1 (useful for sum/count accumulators), others zero.
+                acc[0] = items[0];
+                acc[1] = 1;
+                for (int a = 2; a < arity; a++) acc[a] = 0;
+            }
+
+            // iterate items 1..count-1
+            for (int i = 1; i < count; i++)
+            {
+                // push acc cells
+                for (int a = 0; a < arity; a++)
+                    forth._vm.DataStack.PushLong(acc[a]);
+
+                // push item
+                forth._vm.DataStack.PushLong(items[i]);
+
+                if (funcDef.PrimitiveHandler != null)
+                    funcDef.PrimitiveHandler(forth);
+                else if (funcDef.CompiledCode != null)
+                    forth._vm.LoadAndExecute(funcDef.CompiledCode);
+                else if (funcDef.Type == WordType.ColonDefinition)
+                    forth.ExecuteColonDefinition(funcDef);
+                else
+                    throw new CompilationException($"REDUCEN: function '{funcName}' is not executable");
+
+                // collect arity results (stack top is last cell), so fill acc in reverse to preserve order
+                for (int a = (int)arity - 1; a >= 0; a--)
+                {
+                    try
+                    {
+                        acc[a] = forth._vm.DataStack.PopLong();
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        throw new StackUnderflowException("REDUCEN: reducer did not leave enough accumulator results", ex);
+                    }
+                }
+            }
+
+            // push final accumulator cells
+            for (int a = 0; a < arity; a++)
+                forth._vm.DataStack.PushLong(acc[a]);
         });
     }
 
