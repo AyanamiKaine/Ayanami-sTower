@@ -764,11 +764,7 @@ public class ForthInterpreter : IDisposable
 
         if (enumName != null && wrapper != null)
             return enumName + " -> " + wrapper;
-        if (enumName != null)
-            return enumName;
-        if (wrapper != null)
-            return wrapper;
-        return null;
+        return enumName ?? wrapper;
     }
 
     /// <summary>
