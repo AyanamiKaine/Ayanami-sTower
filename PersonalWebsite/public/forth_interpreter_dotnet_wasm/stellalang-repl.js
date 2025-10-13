@@ -1,18 +1,18 @@
 /**
  * StellaLang REPL - JavaScript Library
  * A WebAssembly-powered FORTH interpreter that can be embedded in any web application.
- * 
+ *
  * @example
  * ```javascript
  * import { StellaLangREPL } from './stellalang-repl.js';
- * 
+ *
  * const repl = new StellaLangREPL({
  *   wasmPath: './_framework/dotnet.js',
  *   onOutput: (text) => console.log(text),
  *   onError: (error) => console.error(error),
  *   onReady: () => console.log('REPL ready!')
  * });
- * 
+ *
  * await repl.initialize();
  * const result = await repl.execute('5 3 + .');
  * ```
@@ -30,12 +30,12 @@ export class StellaLangREPL {
      */
     constructor(options = {}) {
         this.options = {
-            wasmPath: './_framework/dotnet.js',
+            wasmPath: "./_framework/dotnet.js",
             onOutput: null,
             onError: null,
             onReady: null,
             debugMode: false,
-            ...options
+            ...options,
         };
 
         this.exports = null;
@@ -79,7 +79,8 @@ export class StellaLangREPL {
             this.exports = await getAssemblyExports(config.mainAssemblyName);
 
             // Initialize the FORTH interpreter
-            const welcomeMessage = this.exports.StellaLang.REPL.Program.InitializeInterpreter();
+            const welcomeMessage =
+                this.exports.StellaLang.REPL.Program.InitializeInterpreter();
 
             this.initialized = true;
 
@@ -89,10 +90,9 @@ export class StellaLangREPL {
             }
 
             return welcomeMessage;
-
         } catch (error) {
             const errorMsg = `Failed to initialize REPL: ${error.message}`;
-            
+
             if (this.options.onError) {
                 this.options.onError(error);
             }
@@ -109,22 +109,22 @@ export class StellaLangREPL {
      */
     async execute(input) {
         if (!this.initialized) {
-            throw new Error('REPL not initialized. Call initialize() first.');
+            throw new Error("REPL not initialized. Call initialize() first.");
         }
 
         try {
-            const result = this.exports.StellaLang.REPL.Program.ProcessInput(input);
+            const result =
+                this.exports.StellaLang.REPL.Program.ProcessInput(input);
 
             // Call output callback if provided and there's output
-            if (this.options.onOutput && result && result.trim() !== '') {
+            if (this.options.onOutput && result && result.trim() !== "") {
                 this.options.onOutput(result);
             }
 
             return result;
-
         } catch (error) {
             const errorMsg = `Execution error: ${error.message}`;
-            
+
             if (this.options.onError) {
                 this.options.onError(error);
             }
@@ -182,8 +182,8 @@ export async function createREPL(options = {}) {
 export async function createConsoleREPL() {
     return createREPL({
         onOutput: (text) => console.log(text),
-        onError: (error) => console.error('Error:', error),
-        onReady: (msg) => console.log('✓', msg)
+        onError: (error) => console.error("Error:", error),
+        onReady: (msg) => console.log("✓", msg),
     });
 }
 
