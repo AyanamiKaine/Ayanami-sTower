@@ -774,7 +774,7 @@ public class ForthInterpreter : IDisposable
     {
         var results = new List<(string name, int dist)>();
         if (string.IsNullOrEmpty(token))
-            return new List<string>();
+            return [];
 
         // Precompute canonical forms (user-facing) and consider both dictionary name and canonical form
         foreach (var w in _dictionary.GetVisibleWords())
@@ -899,7 +899,7 @@ public class ForthInterpreter : IDisposable
     /// </summary>
     private static string FormatErrorContext(string inputLine, int tokenStart, int tokenLength)
     {
-        if (inputLine == null) inputLine = string.Empty;
+        inputLine ??= string.Empty;
         tokenStart = Math.Max(0, Math.Min(tokenStart, inputLine.Length));
         tokenLength = Math.Max(0, Math.Min(tokenLength, inputLine.Length - tokenStart));
 
@@ -921,13 +921,15 @@ public class ForthInterpreter : IDisposable
         var caret = new System.Text.StringBuilder();
         for (int i = 0; i < tokenStart - displayOffset; i++) caret.Append(' ');
         if (tokenLength <= 1)
+        {
             caret.Append('^');
+        }
         else
         {
             for (int i = 0; i < tokenLength; i++) caret.Append('^');
         }
 
-        return display + "\n" + caret.ToString() + $" (at column {tokenStart + 1})";
+        return display + "\n" + caret + $" (at column {tokenStart + 1})";
     }
 
     #endregion
@@ -2362,10 +2364,10 @@ public class ForthInterpreter : IDisposable
         });
 
         // CR ( -- ) Print newline
-        DefinePrimitive("CR", forth => _io.WriteLine(string.Empty));
+        DefinePrimitive("CR", _ => _io.WriteLine(string.Empty));
 
         // SPACE ( -- ) Print space
-        DefinePrimitive("SPACE", forth => _io.Write(" "));
+        DefinePrimitive("SPACE", _ => _io.Write(" "));
     }
 
     /// <summary>
