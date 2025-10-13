@@ -61,4 +61,54 @@ public class ForthFloatOnlyModeTests
         double result = vm.FloatStack.PeekDouble();
         Assert.Equal(3.5, result, 8);
     }
+
+    [Fact]
+    public void DivisionByZeroProducesInfinityInFloatMode()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm, new TestHostIO(), floatOnlyMode: true);
+
+        // Division by zero in floats results in Infinity rather than a VM crash
+        forth.Interpret("1.0 0.0 /");
+
+        double result = vm.FloatStack.PeekDouble();
+        Assert.True(double.IsInfinity(result));
+    }
+
+    [Fact]
+    public void NestedCompiledWordsUseFloatArithmetic()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm, new TestHostIO(), floatOnlyMode: true);
+
+        // Create nested compiled words: INC increments by 1 then ADD_TWO_INC calls INC twice
+        forth.Interpret(": INC 1 + ;");
+        forth.Interpret(": ADD_TWO_INC INC INC ;");
+
+        forth.Interpret("1 ADD_TWO_INC");
+
+        double result = vm.FloatStack.PeekDouble();
+        Assert.Equal(3.0, result, 8);
+    }
+
+    [Fact]
+    public void SameDefinitionCompilesDifferentlyUnderModes()
+    {
+        // Compile and run under integer mode
+        var vmInt = new VM();
+        var intForth = new ForthInterpreter(vmInt, new TestHostIO(), floatOnlyMode: false);
+        intForth.Interpret(": SUM 1 2 + ;");
+        intForth.Interpret("SUM");
+        // Result should be on the integer/data stack
+        long intResult = vmInt.DataStack.PeekCell();
+        Assert.Equal(3, intResult);
+
+        // Compile and run the same source under float-only mode
+        var vmFloat = new VM();
+        var floatForth = new ForthInterpreter(vmFloat, new TestHostIO(), floatOnlyMode: true);
+        floatForth.Interpret(": SUM 1 2 + ;");
+        floatForth.Interpret("SUM");
+        double floatResult = vmFloat.FloatStack.PeekDouble();
+        Assert.Equal(3.0, floatResult, 8);
+    }
 }
