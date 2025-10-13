@@ -2300,6 +2300,182 @@ public class ForthInterpreter : IDisposable
         // String operations
         // COUNT ( c-addr -- addr len ) - Convert counted string to address and length
         Interpret(": COUNT DUP 1+ SWAP C@ ;");
+
+        // Higher-order collection helpers (MAP, FILTER, REDUCE)
+        // Usage conventions (simple and text-based):
+        //   <items...> <n> MAP <word>
+        //     - Reads next token as function name (runtime), pops n and n items,
+        //       applies <word> to each item (word should consume 1 arg and push 1 result),
+        //       then pushes n and resulting items in order.
+        //   <items...> <n> FILTER <word>
+        //     - Reads predicate word name; keeps items where predicate returns non-zero.
+        //       final stack: m <filtered items...>
+        //   <items...> <n> REDUCE <word>
+        //     - Uses first item as initial accumulator and reduces left-to-right using <word>
+        //       (word expected to take (acc item -- acc')). Pushes the single result.
+        Interpret(": MAP ;"); // ensure token exists in dictionary (placeholder)
+        DefinePrimitive("MAP", forth =>
+        {
+            // Read the next token as the function name
+            string? funcName = forth.ReadWord();
+            if (string.IsNullOrEmpty(funcName))
+                throw new InvalidOperationException("MAP requires a following word name as the mapping function");
+
+            var funcDef = forth.FindWord(funcName);
+            if (funcDef == null)
+                throw new UnknownWordException(funcName, $"MAP: function '{funcName}' not found");
+
+            long n = forth._vm.DataStack.PopLong();
+            if (n < 0) throw new InvalidOperationException("MAP count must be non-negative");
+
+            int count = (int)n;
+            if (count == 0)
+            {
+                forth._vm.DataStack.PushLong(0);
+                return;
+            }
+
+            if (forth._vm.DataStack.Pointer < count * 8)
+                throw new StackUnderflowException("MAP requires the specified number of items on the stack");
+
+            var items = new long[count];
+            // Pop items (top is last element) into array preserving original order
+            for (int i = count - 1; i >= 0; i--)
+                items[i] = forth._vm.DataStack.PopLong();
+
+            var results = new List<long>(count);
+
+            for (int i = 0; i < count; i++)
+            {
+                // push argument
+                forth._vm.DataStack.PushLong(items[i]);
+
+                // execute the function
+                if (funcDef.PrimitiveHandler != null)
+                {
+                    funcDef.PrimitiveHandler(forth);
+                }
+                else if (funcDef.CompiledCode != null)
+                {
+                    forth._vm.LoadAndExecute(funcDef.CompiledCode);
+                }
+                else if (funcDef.Type == WordType.ColonDefinition)
+                {
+                    forth.ExecuteColonDefinition(funcDef);
+                }
+                else
+                {
+                    throw new CompilationException($"MAP: function '{funcName}' is not executable");
+                }
+
+                // collect one result (assume single-cell result)
+                long r = forth._vm.DataStack.PopLong();
+                results.Add(r);
+            }
+
+            // Push results (in order) and then push the count on top
+            foreach (var v in results)
+                forth._vm.DataStack.PushLong(v);
+            forth._vm.DataStack.PushLong(results.Count);
+        });
+
+        Interpret(": FILTER ;");
+        DefinePrimitive("FILTER", forth =>
+        {
+            string? funcName = forth.ReadWord();
+            if (string.IsNullOrEmpty(funcName))
+                throw new InvalidOperationException("FILTER requires a following predicate word name");
+
+            var funcDef = forth.FindWord(funcName);
+            if (funcDef == null)
+                throw new UnknownWordException(funcName, $"FILTER: predicate '{funcName}' not found");
+
+            long n = forth._vm.DataStack.PopLong();
+            if (n < 0) throw new InvalidOperationException("FILTER count must be non-negative");
+            int count = (int)n;
+
+            if (count == 0)
+            {
+                forth._vm.DataStack.PushLong(0);
+                return;
+            }
+
+            if (forth._vm.DataStack.Pointer < count * 8)
+                throw new StackUnderflowException("FILTER requires the specified number of items on the stack");
+
+            var items = new long[count];
+            for (int i = count - 1; i >= 0; i--)
+                items[i] = forth._vm.DataStack.PopLong();
+
+            var results = new List<long>();
+
+            for (int i = 0; i < count; i++)
+            {
+                forth._vm.DataStack.PushLong(items[i]);
+
+                if (funcDef.PrimitiveHandler != null)
+                    funcDef.PrimitiveHandler(forth);
+                else if (funcDef.CompiledCode != null)
+                    forth._vm.LoadAndExecute(funcDef.CompiledCode);
+                else if (funcDef.Type == WordType.ColonDefinition)
+                    forth.ExecuteColonDefinition(funcDef);
+                else
+                    throw new CompilationException($"FILTER: predicate '{funcName}' is not executable");
+
+                long pred = forth._vm.DataStack.PopLong();
+                if (pred != 0)
+                    results.Add(items[i]);
+            }
+
+            // Push filtered results (in order) and then push the count on top
+            foreach (var v in results)
+                forth._vm.DataStack.PushLong(v);
+            forth._vm.DataStack.PushLong(results.Count);
+        });
+
+        Interpret(": REDUCE ;");
+        DefinePrimitive("REDUCE", forth =>
+        {
+            string? funcName = forth.ReadWord();
+            if (string.IsNullOrEmpty(funcName))
+                throw new InvalidOperationException("REDUCE requires a following reducer word name");
+
+            var funcDef = forth.FindWord(funcName);
+            if (funcDef == null)
+                throw new UnknownWordException(funcName, $"REDUCE: function '{funcName}' not found");
+
+            long n = forth._vm.DataStack.PopLong();
+            if (n <= 0) throw new InvalidOperationException("REDUCE requires a positive count (at least 1)");
+            int count = (int)n;
+
+            if (forth._vm.DataStack.Pointer < count * 8)
+                throw new StackUnderflowException("REDUCE requires the specified number of items on the stack");
+
+            var items = new long[count];
+            for (int i = count - 1; i >= 0; i--)
+                items[i] = forth._vm.DataStack.PopLong();
+
+            long acc = items[0];
+            for (int i = 1; i < count; i++)
+            {
+                // push acc and next item
+                forth._vm.DataStack.PushLong(acc);
+                forth._vm.DataStack.PushLong(items[i]);
+
+                if (funcDef.PrimitiveHandler != null)
+                    funcDef.PrimitiveHandler(forth);
+                else if (funcDef.CompiledCode != null)
+                    forth._vm.LoadAndExecute(funcDef.CompiledCode);
+                else if (funcDef.Type == WordType.ColonDefinition)
+                    forth.ExecuteColonDefinition(funcDef);
+                else
+                    throw new CompilationException($"REDUCE: function '{funcName}' is not executable");
+
+                acc = forth._vm.DataStack.PopLong();
+            }
+
+            forth._vm.DataStack.PushLong(acc);
+        });
     }
 
     /// <summary>

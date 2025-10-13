@@ -1928,6 +1928,89 @@ public class ForthInterpreterCoreWordsTests
         long result = vm.DataStack.PopLong();
         Assert.Equal(0, result);
     }
+
+    // ===== Higher-order functions tests =====
+
+    [Fact]
+    public void MapIncrementTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Prepare stack: items 1 2 3 (left-to-right), count 3
+        vm.DataStack.PushLong(1);
+        vm.DataStack.PushLong(2);
+        vm.DataStack.PushLong(3);
+        vm.DataStack.PushLong(3);
+
+        // Define INC to add 1
+        forth.Interpret(": INC 1 + ;");
+
+        // Call MAP INC
+        forth.Interpret("MAP INC");
+
+        // Expect count 3 and items 2 3 4 (popped in reverse order)
+        long count = vm.DataStack.PopLong();
+        long c = vm.DataStack.PopLong();
+        long b = vm.DataStack.PopLong();
+        long a = vm.DataStack.PopLong();
+
+        Assert.Equal(3, count);
+        Assert.Equal(4, c);
+        Assert.Equal(3, b);
+        Assert.Equal(2, a);
+    }
+
+    [Fact]
+    public void FilterEvenTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Push items 1 2 3 4 and count 4
+        vm.DataStack.PushLong(1);
+        vm.DataStack.PushLong(2);
+        vm.DataStack.PushLong(3);
+        vm.DataStack.PushLong(4);
+        vm.DataStack.PushLong(4);
+
+        // Define EVEN? (n -- flag)
+        forth.Interpret(": EVEN? 2 MOD 0 = ;");
+
+        // Call FILTER EVEN?
+        forth.Interpret("FILTER EVEN?");
+
+        long count = vm.DataStack.PopLong();
+        Assert.Equal(2, count);
+        long second = vm.DataStack.PopLong();
+        long first = vm.DataStack.PopLong();
+        // Pushed in order: first then second, but popped last in reverse
+        Assert.Equal(4, second);
+        Assert.Equal(2, first);
+    }
+
+    [Fact]
+    public void ReduceSumTest()
+    {
+        var vm = new VM();
+        var forth = new ForthInterpreter(vm);
+
+        // Push items 1 2 3 4 and count 4
+        vm.DataStack.PushLong(1);
+        vm.DataStack.PushLong(2);
+        vm.DataStack.PushLong(3);
+        vm.DataStack.PushLong(4);
+        vm.DataStack.PushLong(4);
+
+        // Define ADDER ( acc item -- acc' ) as +
+        forth.Interpret(": ADDER + ;");
+
+        // Call REDUCE ADDER
+        forth.Interpret("REDUCE ADDER");
+
+        long result = vm.DataStack.PopLong();
+        Assert.Equal(10, result);
+    }
 }
 
 
