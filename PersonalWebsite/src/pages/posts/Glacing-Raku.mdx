@@ -45,9 +45,9 @@ names are mangled by each compiler its actually possible to account for each com
 mangling. They don't say that the way the names are mangled is stable and won't guarantee
 that, but it works. 
 
-## Memoization
+## Memorization
 
-A common optimization is caching output values of a function so we dont have to recompute them over and over again. The example given is usually the fibonacci sequence. In Raku we can add the `is cached` trait to a function, to enable automatic memoization.
+A common optimization is caching output values of a function so we don't have to recompute them over and over again. The example given is usually the Fibonacci sequence. In Raku we can add the `is cached` trait to a function, to enable automatic memorization.
 
 ```raku
 sub fib(Int $n where * >= 0) is cached {
