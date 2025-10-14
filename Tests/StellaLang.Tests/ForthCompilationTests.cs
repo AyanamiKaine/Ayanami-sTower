@@ -32,6 +32,9 @@ public class ForthCompilationTests
         Assert.Contains("42", output);
     }
 
+    /// <summary>
+    /// Test that a word with conditional logic (IF...ELSE...THEN) can be compiled
+    /// </summary>
     [Fact]
     public void TestWordWithConditions()
     {
