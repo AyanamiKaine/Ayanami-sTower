@@ -2688,6 +2688,15 @@ public class ForthInterpreter : IDisposable
             _io.Write(" ");
         });
 
+        // F. ( f -- ) Print floating-point number (double)
+        DefinePrimitive("F.", forth =>
+        {
+            double value = forth._vm.FloatStack.PopDouble();
+            // Use invariant culture so decimal separator is '.' regardless of locale
+            _io.Write(value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            _io.Write(" ");
+        });
+
         // ." (compile-time string printing)
         // This is an IMMEDIATE word that compiles code to print a string at runtime
         DefinePrimitive(".\"", forth =>
