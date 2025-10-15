@@ -26,6 +26,7 @@
     <PackageVersion Include="MemoryPack" Version="1.21.4" />
     <PackageVersion Include="MessagePack" Version="3.1.4" />
     <PackageVersion Include="Microsoft.AspNetCore" Version="2.3.0" />
+    <PackageVersion Include="Mono.Cecil" Version="0.11.6" />
     <PackageVersion Include="Noesis.App" Version="3.1.0" />
     <PackageVersion Include="Noesis.GUI" Version="3.2.8" />
     <PackageVersion Include="Noesis.GUI.Extensions" Version="3.0.32" />
