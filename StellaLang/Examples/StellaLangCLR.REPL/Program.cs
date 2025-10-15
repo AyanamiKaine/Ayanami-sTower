@@ -34,7 +34,6 @@ public static class ForthJitInterpreter
         {
             string stackState = string.Join(" ", dataStack.Reverse().Select(o => o is string ? $"\"{o}\"" : (o?.ToString() ?? "null")));
             Console.ForegroundColor = ConsoleColor.Gray;
-            Console.Write($"Stack: [ {stackState} ]");
             Console.ResetColor();
             Console.Write("\n> ");
 
@@ -51,6 +50,18 @@ public static class ForthJitInterpreter
                     var words = ForthOperations.UserWords.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase).ToArray();
                     Console.WriteLine("User-defined words:");
                     foreach (var w in words) Console.WriteLine("  " + w);
+                    continue;
+                }
+                if (input.Equals(".types", StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine("Registered types:");
+                    foreach (var k in ForthOperations.RegisteredTypes.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase)) Console.WriteLine("  " + k);
+                    continue;
+                }
+                if (input.Equals(".namespaces", StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine("Registered namespaces:");
+                    foreach (var ns in ForthOperations.RegisteredNamespaces) Console.WriteLine("  " + ns);
                     continue;
                 }
                 if (input.StartsWith(".debug", StringComparison.OrdinalIgnoreCase))
@@ -115,6 +126,11 @@ public static class ForthOperations
     // Case-insensitive dictionary for user-defined words
     public static Dictionary<string, Action<Stack<object>>> UserWords = new Dictionary<string, Action<Stack<object>>>(StringComparer.OrdinalIgnoreCase);
 
+    // Cache for method invocation resolution: key is (receiverType or null for static search, methodName, providedArgCount)
+    // Value is the resolved MethodInfo (or null) to avoid repeated reflection scanning.
+    private static readonly Dictionary<(Type?, string, int), MethodInfo?> MethodInvocationCache = new Dictionary<(Type?, string, int), MethodInfo?>();
+    private static readonly object MethodInvocationCacheLock = new object();
+
     public static void Add(Stack<object> s)
     {
         if (s.Count < 2) throw new InvalidOperationException("'+' requires two values on the stack.");
@@ -124,7 +140,7 @@ public static class ForthOperations
         // Polymorphic behavior for '+'
         if (a is string || b is string)
         {
-            s.Push(a.ToString() + b.ToString());
+            s.Push(a.ToString() + b);
         }
         else
         {
@@ -189,7 +205,7 @@ public static class ForthOperations
         if (s.Count < 2) throw new InvalidOperationException("'=' requires two values on the stack.");
         var b = s.Pop();
         var a = s.Pop();
-        s.Push(object.Equals(a, b));
+        s.Push(Equals(a, b));
     }
 
     public static void Less(Stack<object> s)
@@ -312,22 +328,247 @@ public static class ForthOperations
     /// </summary>
     public static void InvokeInstanceMethod(Stack<object> s, string methodName)
     {
-        if (s.Count < 1) throw new InvalidOperationException($"Method call '.{methodName}' requires an object instance on the stack.");
+        if (s.Count < 1) throw new InvalidOperationException($"Method call '.{methodName}' requires at least one value on the stack.");
 
-        var instance = s.Pop();
-        if (instance == null) throw new NullReferenceException($"Cannot call method '.{methodName}' on a null instance.");
+        // Snapshot the stack (top-first)
+        var stackArr = s.ToArray();
 
-        var type = instance.GetType();
-        // Find a public, parameterless, case-insensitive instance method.
-        // NOTE: This version only supports parameterless methods for simplicity.
-        var methodInfo = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase, null, Type.EmptyTypes, null) ?? throw new MissingMethodException(type.Name, methodName);
-        object? result = methodInfo.Invoke(instance, null);
+        // We will try two strategies, preferring instance-method invocation semantics when
+        // the top item can act as a receiver, otherwise falling back to static invocation
+        // using the top N args. For each strategy we attempt to find a method that can be
+        // satisfied by the available stack values.
 
-        // If the method was not void, push its result back.
-        if (methodInfo.ReturnType != typeof(void) && result != null)
+        // 1) Instance method: treat stackArr[0] as receiver and use up to stackArr.Length-1 args
+        var receiver = stackArr[0];
+        // If the receiver is a System.Type, treat this as a static method invocation on that type.
+        if (receiver is Type asType)
         {
-            s.Push(result);
+            var rType = asType;
+            int providedArgs = Math.Max(0, stackArr.Length - 1);
+            var key = ((Type?)rType, methodName, providedArgs);
+            MethodInfo? resolved = null;
+            lock (MethodInvocationCacheLock)
+            {
+                MethodInvocationCache.TryGetValue(key, out resolved);
+            }
+
+            if (resolved == null)
+            {
+                var candidates = rType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase)
+                    .Where(m => string.Equals(m.Name, methodName, StringComparison.OrdinalIgnoreCase) && m.GetParameters().Length <= providedArgs)
+                    .ToArray();
+
+                foreach (var m in candidates)
+                {
+                    var pars = m.GetParameters();
+                    int n = pars.Length;
+                    var args = new object?[n];
+                    bool ok = true;
+                    for (int i = 0; i < n; i++)
+                    {
+                        var src = stackArr[i + 1]; // top-first, skip receiver
+                        int targetIndex = n - 1 - i;
+                        var pType = pars[targetIndex].ParameterType;
+                        if (!TryConvert(src, pType, out var converted)) { ok = false; break; }
+                        args[targetIndex] = converted;
+                    }
+                    if (ok) { resolved = m; break; }
+                }
+
+                lock (MethodInvocationCacheLock)
+                {
+                    MethodInvocationCache[key] = resolved; // maybe null
+                }
+            }
+
+            if (resolved != null)
+            {
+                var pars = resolved.GetParameters();
+                int n = pars.Length;
+                var args = new object?[n];
+                for (int i = 0; i < n; i++)
+                {
+                    var src = stackArr[i + 1];
+                    int targetIndex = n - 1 - i;
+                    var pType = pars[targetIndex].ParameterType;
+                    if (!TryConvert(src, pType, out var converted)) throw new InvalidOperationException($"Cannot convert argument to parameter type {pType.FullName} for method {resolved.Name}");
+                    args[targetIndex] = converted;
+                }
+
+                // Pop receiver and consumed args
+                s.Pop(); // receiver
+                for (int p = 0; p < n; p++) s.Pop();
+
+                var result = resolved.Invoke(null, args);
+                if (resolved.ReturnType != typeof(void) && result != null) s.Push(result);
+                return;
+            }
+            // otherwise fallthrough to try instance/static lookup without receiver
         }
+        if (receiver != null)
+        {
+            var rType = receiver.GetType();
+            int providedArgs = Math.Max(0, stackArr.Length - 1);
+            var key = ((Type?)rType, methodName, providedArgs);
+            MethodInfo? resolved = null;
+            lock (MethodInvocationCacheLock)
+            {
+                MethodInvocationCache.TryGetValue(key, out resolved);
+            }
+
+            if (resolved == null)
+            {
+                // Find candidate instance methods with name and parameter count <= providedArgs
+                var methods = rType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase)
+                    .Where(m => string.Equals(m.Name, methodName, StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+
+                // Scoring: prefer methods where required params <= providedArgs and fewer missing params
+                var candidates = new List<(MethodInfo m, int missing)>();
+                foreach (var m in methods)
+                {
+                    var pars = m.GetParameters();
+                    int n = pars.Length;
+                    if (n > providedArgs) continue; // not enough args
+                    int required = pars.Count(p => !p.HasDefaultValue && !p.IsOptional);
+                    if (providedArgs < required) continue;
+                    int missing = n - providedArgs; // usually <=0
+                    candidates.Add((m, Math.Max(0, -missing)));
+                }
+
+                // pick simplest candidate (fewest parameters)
+                var best = candidates.OrderBy(c => c.m.GetParameters().Length).FirstOrDefault();
+                resolved = best.m;
+
+                lock (MethodInvocationCacheLock)
+                {
+                    MethodInvocationCache[key] = resolved; // may be null
+                }
+            }
+
+            if (resolved != null)
+            {
+                var pars = resolved.GetParameters();
+                int n = pars.Length;
+                // Convert and build args from stackArr[1..]
+                var args = new object?[n];
+                bool ok = true;
+                for (int i = 0; i < n; i++)
+                {
+                    // stackArr index for provided args: i -> stackArr[1 + i_provided?]
+                    // We map top-first provided args to last parameters similarly to ctor earlier.
+                    var provided = stackArr.Length - 1; // number of provided args
+                    var val = stackArr[i + 1]; // THIS maps differently; instead reuse ctor mapping logic
+                    int targetIndex = n - 1 - i;
+                    var pType = pars[targetIndex].ParameterType;
+                    try
+                    {
+                        var src = stackArr[i + 1];
+                        if (src == null)
+                        {
+                            if (pType.IsValueType && Nullable.GetUnderlyingType(pType) == null) { ok = false; break; }
+                            args[targetIndex] = null;
+                        }
+                        else if (pType.IsInstanceOfType(src)) args[targetIndex] = src;
+                        else args[targetIndex] = Convert.ChangeType(src, pType);
+                    }
+                    catch { ok = false; break; }
+                }
+
+                if (!ok) throw new InvalidOperationException($"Provided arguments cannot be converted for instance method '{methodName}'.");
+
+                // Pop receiver and the consumed args
+                s.Pop(); // receiver
+                for (int p = 0; p < Math.Min(n, stackArr.Length - 1); p++) s.Pop();
+
+                var res = resolved.Invoke(receiver, args);
+                if (resolved.ReturnType != typeof(void) && res != null) s.Push(res);
+                return;
+            }
+        }
+
+        // 2) Static method: attempt to find a static method named methodName where parameter count <= stack length
+        int providedStaticArgs = stackArr.Length;
+        var staticKey = ((Type?)null, methodName, providedStaticArgs);
+        MethodInfo? staticResolved = null;
+        lock (MethodInvocationCacheLock)
+        {
+            MethodInvocationCache.TryGetValue(staticKey, out staticResolved);
+        }
+        if (staticResolved == null)
+        {
+            // Search loaded assemblies for static methods matching name and parameter count <= providedStaticArgs
+            var candidates = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(a => a.GetTypes())
+                .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase))
+                .Where(m => string.Equals(m.Name, methodName, StringComparison.OrdinalIgnoreCase) && m.GetParameters().Length <= providedStaticArgs)
+                .ToArray();
+
+            foreach (var m in candidates)
+            {
+                var pars = m.GetParameters();
+                int n = pars.Length;
+                // attempt to convert top-n stack items to parameters
+                var args = new object?[n];
+                bool ok = true;
+                for (int i = 0; i < n; i++)
+                {
+                    var src = stackArr[i]; // top-first
+                    int targetIndex = n - 1 - i;
+                    var pType = pars[targetIndex].ParameterType;
+                    if (!TryConvert(src, pType, out var converted)) { ok = false; break; }
+                    args[targetIndex] = converted;
+                }
+                if (ok)
+                {
+                    staticResolved = m;
+                    lock (MethodInvocationCacheLock)
+                    {
+                        MethodInvocationCache[staticKey] = staticResolved;
+                    }
+                    break;
+                }
+            }
+            lock (MethodInvocationCacheLock)
+            {
+                if (!MethodInvocationCache.ContainsKey(staticKey)) MethodInvocationCache[staticKey] = staticResolved; // maybe null
+            }
+        }
+
+        if (staticResolved != null)
+        {
+            var pars = staticResolved.GetParameters();
+            int n = pars.Length;
+            var args = new object?[n];
+            for (int i = 0; i < n; i++)
+            {
+                var src = stackArr[i];
+                int targetIndex = n - 1 - i;
+                var pType = pars[targetIndex].ParameterType;
+                if (src == null) args[targetIndex] = null;
+                else if (pType.IsInstanceOfType(src) || pType.IsAssignableFrom(src.GetType())) args[targetIndex] = src;
+                else
+                {
+                    try
+                    {
+                        args[targetIndex] = Convert.ChangeType(src, pType);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException($"Cannot convert argument {i} of type {src.GetType().FullName} to parameter type {pType.FullName} for method {staticResolved.DeclaringType?.FullName}.{staticResolved.Name}: {ex.Message}", ex);
+                    }
+                }
+            }
+
+            // Pop consumed args
+            for (int p = 0; p < n; p++) s.Pop();
+            var result = staticResolved.Invoke(null, args);
+            if (staticResolved.ReturnType != typeof(void) && result != null) s.Push(result);
+            return;
+        }
+
+        // Nothing matched
+        throw new MissingMethodException("<stack>", methodName);
     }
 
     /// <summary>
@@ -343,18 +584,394 @@ public static class ForthOperations
     }
 
     /// <summary>
+    /// Invoke a static method on a resolved type by name using values on the stack as arguments.
+    /// Token form: TypeName.MethodName (e.g. Vector2.Min). This resolves the type (using ResolveRegisteredType
+    /// which considers registered namespaces), finds a matching public static method and invokes it.
+    /// </summary>
+    public static void InvokeStaticMethod(Stack<object> s, string typeName, string methodName)
+    {
+        var t = ResolveTypeByName(typeName);
+        if (t == null) throw new InvalidOperationException($"Type '{typeName}' not found.");
+
+        var stackArr = s.ToArray(); // top-first
+        int provided = stackArr.Length;
+        var key = ((Type?)t, methodName, provided);
+        MethodInfo? resolved = null;
+        lock (MethodInvocationCacheLock)
+        {
+            MethodInvocationCache.TryGetValue(key, out resolved);
+        }
+
+        if (resolved == null)
+        {
+            var candidates = t.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase)
+                .Where(m => string.Equals(m.Name, methodName, StringComparison.OrdinalIgnoreCase) && m.GetParameters().Length <= provided)
+                .ToArray();
+
+            foreach (var m in candidates)
+            {
+                var pars = m.GetParameters();
+                int n = pars.Length;
+                var args = new object?[n];
+                bool ok = true;
+                for (int i = 0; i < n; i++)
+                {
+                    var src = stackArr[i]; // top-first
+                    int targetIndex = n - 1 - i;
+                    var pType = pars[targetIndex].ParameterType;
+                    try
+                    {
+                        if (src == null)
+                        {
+                            if (pType.IsValueType && Nullable.GetUnderlyingType(pType) == null) { ok = false; break; }
+                            args[targetIndex] = null;
+                        }
+                        else if (pType.IsInstanceOfType(src) || pType.IsAssignableFrom(src.GetType())) args[targetIndex] = src;
+                        else args[targetIndex] = Convert.ChangeType(src, pType);
+                    }
+                    catch { ok = false; break; }
+                }
+                if (ok) { resolved = m; break; }
+            }
+
+            lock (MethodInvocationCacheLock)
+            {
+                MethodInvocationCache[key] = resolved; // maybe null
+            }
+        }
+
+        if (resolved == null) throw new MissingMethodException(typeName, methodName);
+
+        var parsFinal = resolved.GetParameters();
+        int pn = parsFinal.Length;
+        var finalArgs = new object?[pn];
+        for (int i = 0; i < pn; i++)
+        {
+            var src = stackArr[i];
+            int targetIndex = pn - 1 - i;
+            var pType = parsFinal[targetIndex].ParameterType;
+            if (!TryConvert(src, pType, out var converted)) throw new InvalidOperationException($"Cannot convert argument to parameter type {pType.FullName} for method {resolved.Name}");
+            finalArgs[targetIndex] = converted;
+        }
+
+        // Pop consumed args
+        for (int p = 0; p < pn; p++) s.Pop();
+        var res = resolved.Invoke(null, finalArgs);
+        if (resolved.ReturnType != typeof(void) && res != null) s.Push(res);
+    }
+
+    // Resolve by attempting Type.GetType first, then the registered/types search we already have
+    private static Type? ResolveTypeByName(string typeName)
+    {
+        if (string.IsNullOrWhiteSpace(typeName)) return null;
+        // Try direct resolution first
+        var t = Type.GetType(typeName, false, true);
+        if (t != null) return t;
+
+        // If the name contains dots, try to find by full name in loaded assemblies
+        if (typeName.Contains('.'))
+        {
+            var found = AppDomain.CurrentDomain.GetAssemblies()
+                .Select(a => a.GetType(typeName, false, true))
+                .FirstOrDefault(x => x != null);
+            if (found != null) return found;
+        }
+
+        // Fallback to previous ResolveRegisteredType (searches RegisteredTypes and RegisteredNamespaces)
+        return ResolveRegisteredType(typeName);
+    }
+
+    // A registry of host-exposed types that can be constructed from the REPL.
+    // Keys are case-insensitive aliases used by the REPL (e.g. 'MyType').
+    public static Dictionary<string, Type> RegisteredTypes { get; } = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+
+    // A list of namespaces (and optional assembly-qualified hints) to search when
+    // resolving unregistered type names. This lets users do `using System.Numerics`
+    // and then refer to `Vector2` without registering every single type.
+    public static List<string> RegisteredNamespaces { get; } = new List<string>();
+
+    public static void RegisterNamespace(string ns)
+    {
+        if (string.IsNullOrWhiteSpace(ns)) return;
+        // Case-insensitive check to avoid duplicate namespace entries
+        if (!RegisteredNamespaces.Exists(s => string.Equals(s, ns, StringComparison.OrdinalIgnoreCase))) RegisteredNamespaces.Add(ns);
+    }
+
+    // Automatically register a set of common namespaces so the REPL can resolve
+    // commonly used CLR types without explicit registration.
+    static ForthOperations()
+    {
+        RegisterNamespace("System");
+        RegisterNamespace("System.Numerics");
+        RegisterNamespace("System.Collections");
+        RegisterNamespace("System.Collections.Generic");
+        RegisterNamespace("System.Text");
+        RegisterNamespace("System.IO");
+        RegisterNamespace("System.Linq");
+        RegisterNamespace("System.Threading");
+        RegisterNamespace("System.Threading.Tasks");
+        RegisterNamespace("System.Drawing");
+    }
+
+    public static void Namespaces(Stack<object> s)
+    {
+        Console.WriteLine("Registered namespaces:");
+        foreach (var ns in RegisteredNamespaces) Console.WriteLine("  " + ns);
+    }
+
+    // Try to convert/assign src to targetType. Returns true and sets outVal on success.
+    // This avoids calling Convert.ChangeType on non-IConvertible types like Vector2.
+    private static bool TryConvert(object? src, Type targetType, out object? outVal)
+    {
+        outVal = null;
+        if (src == null)
+        {
+            if (targetType.IsValueType && Nullable.GetUnderlyingType(targetType) == null) return false;
+            outVal = null; return true;
+        }
+        var srcType = src.GetType();
+        if (targetType.IsInstanceOfType(src) || targetType.IsAssignableFrom(srcType))
+        {
+            outVal = src; return true;
+        }
+        // Handle enums from string/int
+        if (targetType.IsEnum)
+        {
+            try
+            {
+                if (src is string ss) { outVal = Enum.Parse(targetType, ss, true); return true; }
+                outVal = Enum.ToObject(targetType, src); return true;
+            }
+            catch { return false; }
+        }
+        // Last resort: attempt Convert.ChangeType when source is IConvertible
+        if (src is IConvertible)
+        {
+            try
+            {
+                outVal = Convert.ChangeType(src, targetType);
+                return true;
+            }
+            catch { return false; }
+        }
+        return false;
+    }
+
+    // Try to resolve a type alias: first check RegisteredTypes, then try RegisteredNamespaces
+    // by combining namespace + alias and searching loaded assemblies.
+    private static Type? ResolveRegisteredType(string alias)
+    {
+        if (RegisteredTypes.TryGetValue(alias, out var t)) return t;
+
+        foreach (var ns in RegisteredNamespaces)
+        {
+            var full = ns + "." + alias;
+            var resolved = AppDomain.CurrentDomain.GetAssemblies()
+                .Select(a => a.GetType(full, false, true))
+                .FirstOrDefault(x => x != null);
+            if (resolved != null) return resolved;
+        }
+
+        // Last resort: search all loaded assemblies for a matching type name
+        var fallback = AppDomain.CurrentDomain.GetAssemblies()
+            .Select(a => a.GetTypes().FirstOrDefault(ti => string.Equals(ti.Name, alias, StringComparison.OrdinalIgnoreCase)))
+            .FirstOrDefault(x => x != null);
+        return fallback;
+    }
+
+    /// <summary>
+    /// Register a host type under an alias so the REPL can construct it via 'new:alias'.
+    /// </summary>
+    public static void RegisterType(string alias, Type t)
+    {
+        if (string.IsNullOrEmpty(alias)) throw new ArgumentException("alias");
+        RegisteredTypes[alias] = t ?? throw new ArgumentNullException(nameof(t));
+    }
+
+    // Generic helper: RegisterType("Foo", typeof(Foo)) -> RegisterType<Foo>("Foo")
+    public static void RegisterType<T>(string alias) where T : new()
+    {
+        RegisterType(alias, typeof(T));
+    }
+
+    // Called from emitted IL: create a new instance of the registered alias and push it.
+    // Uses the parameterless constructor via Activator.CreateInstance. Throws if alias is unknown.
+    public static void CreateAndPush(Stack<object> s, string alias)
+    {
+        var t = ResolveRegisteredType(alias);
+        if (t == null) throw new InvalidOperationException($"Unknown registered type or type not found '{alias}'");
+        object? inst = Activator.CreateInstance(t);
+        if (inst == null) throw new InvalidOperationException($"Failed to create instance of '{alias}'");
+        s.Push(inst);
+    }
+
+    /// <summary>
+    /// Push the Type object for the registered alias onto the stack (no instance).
+    /// Token form supported by the compiler: type:Alias
+    /// </summary>
+    public static void CreateTypeAndPush(Stack<object> s, string alias)
+    {
+        var t = ResolveRegisteredType(alias);
+        if (t == null) throw new InvalidOperationException($"Unknown registered type or type not found '{alias}'");
+        s.Push(t);
+    }
+
+    // Pop an alias string from the stack and create an instance of that registered type.
+    // Exposed as the 'new' word.
+    public static void CreateFromStack(Stack<object> s)
+    {
+        if (s.Count < 1) throw new InvalidOperationException("'new' requires a type alias string on the stack.");
+        var aliasObj = s.Pop();
+        if (aliasObj == null) throw new InvalidOperationException("Alias cannot be null");
+        CreateAndPush(s, aliasObj.ToString()!);
+    }
+
+    /// <summary>
+    /// Pop an alias string from the stack and push the resolved Type object.
+    /// Exposed as the word 'type'.
+    /// </summary>
+    public static void CreateTypeFromStack(Stack<object> s)
+    {
+        if (s.Count < 1) throw new InvalidOperationException("'type' requires a type alias string on the stack.");
+        var aliasObj = s.Pop();
+        if (aliasObj == null) throw new InvalidOperationException("Alias cannot be null");
+        var alias = aliasObj.ToString()!;
+        var t = ResolveRegisteredType(alias);
+        if (t == null) throw new InvalidOperationException($"Unknown registered type '{alias}'");
+        s.Push(t);
+    }
+
+    // Constructor helper: expects arguments followed by an alias string on top of the stack.
+    // Example usage: 1 2 "Vec2" ctor  -> will attempt to find a constructor matching (int, int)
+    public static void Ctor(Stack<object> s)
+    {
+        if (s.Count < 1) throw new InvalidOperationException("ctor requires a type alias on the stack");
+        // Peek alias (it's on top)
+        var aliasObj = s.Pop();
+        if (aliasObj == null) throw new InvalidOperationException("Alias cannot be null");
+        var alias = aliasObj.ToString()!;
+        var t = ResolveRegisteredType(alias);
+        if (t == null) throw new InvalidOperationException($"Unknown registered type '{alias}'");
+
+        // Collect constructors and determine the maximum arity we'll consider.
+        var allCtors = t.GetConstructors(BindingFlags.Public | BindingFlags.Instance).ToArray();
+        if (allCtors.Length == 0) throw new InvalidOperationException($"Type '{alias}' has no public constructors.");
+        int maxParams = allCtors.Max(c => c.GetParameters().Length);
+
+        var stackArr = s.ToArray(); // top-first
+        int providedAll = stackArr.Length;
+        // We only consider up to maxParams items from the top of the stack as ctor args.
+        int provided = Math.Min(providedAll, maxParams);
+
+        // Candidate selection: prefer ctors where provided <= n and where required params are satisfied.
+        var candidates = new List<(ConstructorInfo ctor, ParameterInfo[] pars, int missing)>();
+        foreach (var ctor in allCtors)
+        {
+            var pars = ctor.GetParameters();
+            int n = pars.Length;
+            // If caller provided more args than the ctor accepts, skip.
+            if (provided > n) continue;
+
+            // Count required parameters (no default value and not optional)
+            int required = pars.Count(p => !p.HasDefaultValue && !p.IsOptional);
+            if (provided < required) continue; // not enough provided args to satisfy required params
+
+            int missing = n - provided; // number of leading params we must fill with defaults
+
+            // Verify that missing leading params can be filled (have default or are value types)
+            bool ok = true;
+            for (int j = 0; j < missing; j++)
+            {
+                var pj = pars[j];
+                if (!pj.HasDefaultValue && !pj.IsOptional && !pj.ParameterType.IsValueType)
+                {
+                    // If it's a reference type without a default, we'll accept null as a last resort but mark as ok.
+                    // To be conservative, we still allow it; caller can detect runtime errors.
+                }
+            }
+            if (!ok) continue;
+
+            candidates.Add((ctor, pars, missing));
+        }
+
+        if (candidates.Count == 0) throw new InvalidOperationException($"No matching constructor found for '{alias}' with the provided arguments.");
+
+        // Pick the candidate with the fewest missing params (closest fit), then fewest params overall.
+        var best = candidates.OrderBy(c => c.missing).ThenBy(c => c.pars.Length).First();
+        var bestPars = best.pars;
+        int nParams = bestPars.Length;
+
+        // Build argument list of length nParams. Missing leading params get default values when available.
+        var args = new object?[nParams];
+        int missingCount = nParams - provided;
+        for (int j = 0; j < missingCount; j++)
+        {
+            var pj = bestPars[j];
+            if (pj.HasDefaultValue) args[j] = pj.DefaultValue;
+            else if (pj.ParameterType.IsValueType) args[j] = Activator.CreateInstance(pj.ParameterType);
+            else args[j] = null;
+        }
+
+        // Fill provided args from the stack (top-first -> last parameter)
+        bool convertOk = true;
+        for (int i = 0; i < provided; i++)
+        {
+            var val = stackArr[i]; // top-first
+            int targetIndex = nParams - 1 - i; // map to parameter position
+            var pType = bestPars[targetIndex].ParameterType;
+            if (val == null)
+            {
+                if (pType.IsValueType && Nullable.GetUnderlyingType(pType) == null)
+                {
+                    // can't assign null to non-nullable value type
+                    convertOk = false; break;
+                }
+                args[targetIndex] = null;
+            }
+            else if (pType.IsInstanceOfType(val))
+            {
+                args[targetIndex] = val;
+            }
+            else if (!TryConvert(val, pType, out var conv))
+            {
+                convertOk = false; break;
+            }
+            else
+            {
+                args[targetIndex] = conv;
+            }
+        }
+
+        if (!convertOk) throw new InvalidOperationException($"Provided arguments cannot be converted to constructor parameter types for '{alias}'.");
+
+        // Pop the provided arguments from the stack (only those we consumed)
+        for (int p = 0; p < provided; p++) s.Pop();
+
+        // Invoke constructor
+        var inst = best.ctor.Invoke(args);
+        s.Push(inst);
+    }
+
+    // Print registered type aliases
+    public static void Types(Stack<object> s)
+    {
+        Console.WriteLine("Registered types:");
+        foreach (var k in RegisteredTypes.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase)) Console.WriteLine("  " + k);
+    }
+
+    /// <summary>
     /// Prints the available built-in and user-defined words to the console.
     /// This is exposed as the Forth word `words` (and `.words`).
     /// </summary>
     public static void Words(Stack<object> s)
     {
-        // Built-in operations are the keys in ForthCompiler.Operations. We don't have
-        // direct access to that private dictionary here, so we hardcode the common ones
-        // for display, and then append user-defined words.
-        var builtIns = new[] { "+", "-", "*", "/", "dup", "drop", "swap", "over" };
-
+        // Dynamically query the compiler for known built-in words so this listing
+        // scales as new built-ins are added. Then append user-defined words.
         Console.WriteLine("Built-in words:");
-        foreach (var b in builtIns) Console.WriteLine("  " + b);
+        foreach (var b in ForthCompiler.GetBuiltInWords().OrderBy(k => k, StringComparer.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("  " + b);
+        }
 
         Console.WriteLine("User-defined words:");
         foreach (var w in UserWords.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase))
@@ -400,6 +1017,64 @@ public static class ForthOperations
         }
     }
 
+    // Predicate helpers: leave the stack unchanged and push a boolean indicating
+    // whether the top value is (or can be interpreted as) the requested type.
+    // These are exposed as words like '?int', '?bool', '?string', '?double'.
+    public static void IsInt(Stack<object> s)
+    {
+        if (s.Count < 1) { s.Push(false); return; }
+        var obj = s.Peek();
+        if (obj == null) { s.Push(false); return; }
+        try
+        {
+            Convert.ToInt32(obj);
+            s.Push(true);
+        }
+        catch
+        {
+            s.Push(false);
+        }
+    }
+
+    public static void IsBool(Stack<object> s)
+    {
+        if (s.Count < 1) { s.Push(false); return; }
+        var obj = s.Peek();
+        if (obj == null) { s.Push(false); return; }
+        try
+        {
+            Convert.ToBoolean(obj);
+            s.Push(true);
+        }
+        catch
+        {
+            s.Push(false);
+        }
+    }
+
+    public static void IsString(Stack<object> s)
+    {
+        if (s.Count < 1) { s.Push(false); return; }
+        var obj = s.Peek();
+        s.Push(obj is string);
+    }
+
+    public static void IsDouble(Stack<object> s)
+    {
+        if (s.Count < 1) { s.Push(false); return; }
+        var obj = s.Peek();
+        if (obj == null) { s.Push(false); return; }
+        try
+        {
+            Convert.ToDouble(obj);
+            s.Push(true);
+        }
+        catch
+        {
+            s.Push(false);
+        }
+    }
+
     public static void DebugEnter(Stack<object> s, string name)
     {
         // Only print when debug emission is enabled on the compiler side.
@@ -426,6 +1101,9 @@ public class ForthCompiler
     private static readonly MethodInfo? InvokeUserWordInfo = typeof(ForthOperations).GetMethod("InvokeUserWord");
     private static readonly MethodInfo? PopBoolMethod = typeof(ForthOperations).GetMethod("PopBool");
     private static readonly MethodInfo? PopIntMethod = typeof(ForthOperations).GetMethod("PopInt");
+    private static readonly MethodInfo? CreateAndPushInfo = typeof(ForthOperations).GetMethod("CreateAndPush");
+    private static readonly MethodInfo? CreateTypeAndPushInfo = typeof(ForthOperations).GetMethod("CreateTypeAndPush");
+    private static readonly MethodInfo? CreateTypeFromStackInfo = typeof(ForthOperations).GetMethod("CreateTypeFromStack");
 
     // A dictionary mapping Forth words to their C# implementation methods.
     private static readonly Dictionary<string, MethodInfo?> Operations = new Dictionary<string, MethodInfo?>(StringComparer.OrdinalIgnoreCase)
@@ -453,6 +1131,38 @@ public class ForthCompiler
         { "words", typeof(ForthOperations).GetMethod("Words") },
         { ".words", typeof(ForthOperations).GetMethod("Words") }
     };
+
+    // Add predicate words to the operations map
+    static ForthCompiler()
+    {
+        // Register ?int, ?bool, ?string, ?double
+        Operations["?int"] = typeof(ForthOperations).GetMethod("IsInt");
+        Operations["?bool"] = typeof(ForthOperations).GetMethod("IsBool");
+        Operations["?string"] = typeof(ForthOperations).GetMethod("IsString");
+        Operations["?double"] = typeof(ForthOperations).GetMethod("IsDouble");
+        // Register object/type helpers
+        Operations["new"] = typeof(ForthOperations).GetMethod("CreateFromStack");
+        Operations["ctor"] = typeof(ForthOperations).GetMethod("Ctor");
+        Operations["types"] = typeof(ForthOperations).GetMethod("Types");
+        Operations[".types"] = typeof(ForthOperations).GetMethod("Types");
+        // type helpers: push a Type object
+        Operations["type"] = typeof(ForthOperations).GetMethod("CreateTypeFromStack");
+        Operations[".type"] = typeof(ForthOperations).GetMethod("CreateTypeFromStack");
+        // namespace helpers
+        Operations["using"] = typeof(ForthOperations).GetMethod("RegisterNamespace");
+        Operations["namespaces"] = typeof(ForthOperations).GetMethod("Namespaces");
+        Operations[".namespaces"] = typeof(ForthOperations).GetMethod("Namespaces");
+    }
+
+    /// <summary>
+    /// Return the set of built-in word names. This allows other parts of the
+    /// program (like the Words printer) to list built-ins without depending on
+    /// the internal MethodInfo values.
+    /// </summary>
+    public static IEnumerable<string> GetBuiltInWords()
+    {
+        return Operations.Keys;
+    }
 
 
     public Action<Stack<object>> Compile(string source)
@@ -524,7 +1234,7 @@ public class ForthCompiler
     }
 
     // A simple tokenizer that respects quoted strings.
-    private List<string> Tokenize(string source)
+    private static List<string> Tokenize(string source)
     {
         // Remove parenthesis comments like ( this is a comment )
         int idx = 0;
@@ -790,7 +1500,7 @@ public class ForthCompiler
 
     // Find the matching token for control flow handling nested IFs and DOs correctly.
     // Supports matching targets: ELSE, THEN, LOOP.
-    private int FindMatching(string[] tokens, int start, int end, string target)
+    private static int FindMatching(string[] tokens, int start, int end, string target)
     {
         int ifDepth = 0;
         int doDepth = 0;
@@ -839,52 +1549,101 @@ public class ForthCompiler
     }
 
     // Emit IL for a single token into the provided ILGenerator.
-    private void EmitToken(ILGenerator il, string word)
+    private static void EmitToken(ILGenerator il, string word)
     {
+        // Numbers (int)
         if (int.TryParse(word, out int i))
         {
-            il.Emit(OpCodes.Ldarg_0);        // Load the stack
-            il.Emit(OpCodes.Ldc_I4, i);      // Load integer constant
-            il.Emit(OpCodes.Box, typeof(int)); // Box the int to an object
-            il.Emit(OpCodes.Call, PushMethod!); // Call stack.Push(object)
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldc_I4, i);
+            il.Emit(OpCodes.Box, typeof(int));
+            il.Emit(OpCodes.Call, PushMethod!);
+            return;
         }
-        else if (double.TryParse(word, out double d))
-        {
-            il.Emit(OpCodes.Ldarg_0);           // Load the stack
-            il.Emit(OpCodes.Ldc_R8, d);         // Load double constant
-            il.Emit(OpCodes.Box, typeof(double));// Box the double to an object
-            il.Emit(OpCodes.Call, PushMethod!);  // Call stack.Push(object)
-        }
-        else if (word.StartsWith("\"") && word.EndsWith("\""))
-        {
-            string str = word[1..^1];
-            il.Emit(OpCodes.Ldarg_0);        // Load the stack
-            il.Emit(OpCodes.Ldstr, str);     // Load string constant
-            il.Emit(OpCodes.Call, PushMethod!); // Call stack.Push(object)
-        }
-        else if (Operations.TryGetValue(word, out var methodInfo))
-        {
-            // Call the static helper method (Add/Subtract/etc.)
-            il.Emit(OpCodes.Ldarg_0);      // Pass the stack as the argument
-            il.Emit(OpCodes.Call, methodInfo!); // Call the static helper method
-        }
-        else if (word.StartsWith("."))
-        {
-            string methodName = word[1..];
-            il.Emit(OpCodes.Ldarg_0);               // Load the stack argument
-            il.Emit(OpCodes.Ldstr, methodName);     // Load the method name string
-            il.Emit(OpCodes.Call, InvokeInstanceMethodInfo!); // Call the helper
-        }
-        else if (ForthOperations.UserWords.ContainsKey(word))
-        {
-            il.Emit(OpCodes.Ldarg_0);          // Load the stack argument
-            il.Emit(OpCodes.Ldstr, word);      // Load the word name to look up
-            il.Emit(OpCodes.Call, InvokeUserWordInfo!); // Call the helper to execute it
-        }
-        else
-        {
 
+        // Numbers (double)
+        if (double.TryParse(word, out double d))
+        {
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldc_R8, d);
+            il.Emit(OpCodes.Box, typeof(double));
+            il.Emit(OpCodes.Call, PushMethod!);
+            return;
         }
+
+        // Quoted string
+        if (word.StartsWith("\"") && word.EndsWith("\""))
+        {
+            var s = word[1..^1];
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldstr, s);
+            il.Emit(OpCodes.Call, PushMethod!);
+            return;
+        }
+
+        // Built-in operations map
+        if (Operations.TryGetValue(word, out var opMi))
+        {
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Call, opMi!);
+            return;
+        }
+
+        // Instance method form: .MethodName
+        if (word.StartsWith("."))
+        {
+            var nm = word[1..];
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldstr, nm);
+            il.Emit(OpCodes.Call, InvokeInstanceMethodInfo!);
+            return;
+        }
+
+        // Type.StaticMethod form: TypeName.MethodName (don't treat leading '.' here)
+        if (word.Contains('.') && !word.StartsWith("."))
+        {
+            var pieces = word.Split(new[] { '.' }, 2);
+            var tname = pieces[0];
+            var mname = pieces[1];
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldstr, tname);
+            il.Emit(OpCodes.Ldstr, mname);
+            var invokeStaticMi = typeof(ForthOperations).GetMethod("InvokeStaticMethod");
+            il.Emit(OpCodes.Call, invokeStaticMi!);
+            return;
+        }
+
+        // type:Alias -> push the Type object for alias
+        if (word.StartsWith("type:", StringComparison.OrdinalIgnoreCase))
+        {
+            var alias = word.Substring(5);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldstr, alias);
+            il.Emit(OpCodes.Call, CreateTypeAndPushInfo!);
+            return;
+        }
+
+        // User-defined word
+        if (ForthOperations.UserWords.ContainsKey(word))
+        {
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldstr, word);
+            il.Emit(OpCodes.Call, InvokeUserWordInfo!);
+            return;
+        }
+
+        // new:Alias
+        if (word.StartsWith("new:", StringComparison.OrdinalIgnoreCase))
+        {
+            var alias = word.Substring(4);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldstr, alias);
+            il.Emit(OpCodes.Call, CreateAndPushInfo!);
+            return;
+        }
+
+        // Unknown token: no-op (could throw instead)
+        return;
     }
 }
 
