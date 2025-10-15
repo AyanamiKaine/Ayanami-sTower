@@ -53,6 +53,42 @@ public static class ForthJitInterpreter
                     foreach (var w in words) Console.WriteLine("  " + w);
                     continue;
                 }
+                if (input.StartsWith(".debug", StringComparison.OrdinalIgnoreCase))
+                {
+                    var parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length > 1 && parts[1].Equals("on", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ForthCompiler.DebugEmitTokens = true;
+                        Console.WriteLine("Debug emission ON");
+                        continue;
+                    }
+                    else if (parts.Length > 1 && parts[1].Equals("off", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ForthCompiler.DebugEmitTokens = false;
+                        Console.WriteLine("Debug emission OFF");
+                        continue;
+                    }
+                    Console.WriteLine("Usage: .debug on|off");
+                    continue;
+                }
+                if (input.StartsWith(".tco", StringComparison.OrdinalIgnoreCase))
+                {
+                    var parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length > 1 && parts[1].Equals("on", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ForthCompiler.EnableTailCallOptimization = true;
+                        Console.WriteLine("Tail-call optimization ON");
+                        continue;
+                    }
+                    else if (parts.Length > 1 && parts[1].Equals("off", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ForthCompiler.EnableTailCallOptimization = false;
+                        Console.WriteLine("Tail-call optimization OFF");
+                        continue;
+                    }
+                    Console.WriteLine($"TCO is currently {(ForthCompiler.EnableTailCallOptimization ? "ON" : "OFF")}");
+                    continue;
+                }
 
                 // Compile the input into a delegate that operates on our object stack.
                 Action<Stack<object>> compiledAction = compiler.Compile(input);
@@ -132,6 +168,22 @@ public static class ForthOperations
         s.Push(a <= b);
     }
 
+    public static void ZeroEqual(Stack<object> s)
+    {
+        if (s.Count < 1) throw new InvalidOperationException("'0=' requires one value on the stack.");
+        var a = s.Pop();
+        if (a == null) { s.Push(true); return; }
+        try
+        {
+            dynamic d = a;
+            s.Push(d == 0);
+        }
+        catch
+        {
+            s.Push(false);
+        }
+    }
+
     public static void Equal(Stack<object> s)
     {
         if (s.Count < 2) throw new InvalidOperationException("'=' requires two values on the stack.");
@@ -194,6 +246,27 @@ public static class ForthOperations
         var b = s.Pop();
         var list = new List<object> { b, a };
         s.Push(list);
+    }
+
+    /// <summary>
+    /// Pop the top of the stack and print it to the console.
+    /// </summary>
+    public static void PrintTop(Stack<object> s)
+    {
+        if (s.Count < 1) return;
+        var v = s.Pop();
+        Console.WriteLine(v?.ToString() ?? "null");
+        try { Console.Out.Flush(); } catch { }
+    }
+
+    /// <summary>
+    /// Print the entire data stack (top at right) without modifying it.
+    /// </summary>
+    public static void PrintStack(Stack<object> s)
+    {
+        var arr = s.Reverse().Select(o => o is string ? $"\"{o}\"" : (o?.ToString() ?? "null")).ToArray();
+        Console.WriteLine("Stack: [ " + string.Join(" ", arr) + " ]");
+        try { Console.Out.Flush(); } catch { }
     }
 
     public static void OneMinus(Stack<object> s)
@@ -311,15 +384,48 @@ public static class ForthOperations
             return true; // treat other objects as truthy
         }
     }
+
+    public static int PopInt(Stack<object> s)
+    {
+        if (s.Count < 1) return 0;
+        var obj = s.Pop();
+        if (obj == null) return 0;
+        try
+        {
+            return Convert.ToInt32(obj);
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    public static void DebugEnter(Stack<object> s, string name)
+    {
+        // Only print when debug emission is enabled on the compiler side.
+        if (!ForthCompiler.DebugEmitTokens) return;
+        Console.WriteLine($"ENTER {name} StackCount: {s.Count}");
+        try { Console.Out.Flush(); } catch { }
+    }
 }
 
 
 public class ForthCompiler
 {
+    // Allow runtime toggling of tail-call optimization for debugging.
+    public static bool EnableTailCallOptimization = true;
+    // When true, compiled methods will include a Console.WriteLine for each token as it's executed.
+    public static bool DebugEmitTokens = false;
+
+    private static readonly MethodInfo? ConsoleWriteLineString = typeof(Console).GetMethod("WriteLine", new[] { typeof(string) });
+    private static readonly MethodInfo? ConsoleOutGetter = typeof(Console).GetProperty("Out")!.GetGetMethod();
+    private static readonly MethodInfo? TextWriterFlush = typeof(System.IO.TextWriter).GetMethod("Flush");
+
     private static readonly MethodInfo? PushMethod = typeof(Stack<object>).GetMethod("Push");
     private static readonly MethodInfo? InvokeInstanceMethodInfo = typeof(ForthOperations).GetMethod("InvokeInstanceMethod");
     private static readonly MethodInfo? InvokeUserWordInfo = typeof(ForthOperations).GetMethod("InvokeUserWord");
     private static readonly MethodInfo? PopBoolMethod = typeof(ForthOperations).GetMethod("PopBool");
+    private static readonly MethodInfo? PopIntMethod = typeof(ForthOperations).GetMethod("PopInt");
 
     // A dictionary mapping Forth words to their C# implementation methods.
     private static readonly Dictionary<string, MethodInfo?> Operations = new Dictionary<string, MethodInfo?>(StringComparer.OrdinalIgnoreCase)
@@ -334,6 +440,7 @@ public class ForthCompiler
         { "over", typeof(ForthOperations).GetMethod("Over") },
         { "<=", typeof(ForthOperations).GetMethod("LessOrEqual") },
         { "1-", typeof(ForthOperations).GetMethod("OneMinus") },
+    { "0=", typeof(ForthOperations).GetMethod("ZeroEqual") },
         { "=", typeof(ForthOperations).GetMethod("Equal") },
         { "<", typeof(ForthOperations).GetMethod("Less") },
         { ">", typeof(ForthOperations).GetMethod("Greater") },
@@ -341,6 +448,8 @@ public class ForthCompiler
         { "or", typeof(ForthOperations).GetMethod("Or") },
         { "rot", typeof(ForthOperations).GetMethod("Rot") },
         { "cons", typeof(ForthOperations).GetMethod("Cons") },
+    { ".", typeof(ForthOperations).GetMethod("PrintTop") },
+    { ".s", typeof(ForthOperations).GetMethod("PrintStack") },
         { "words", typeof(ForthOperations).GetMethod("Words") },
         { ".words", typeof(ForthOperations).GetMethod("Words") }
     };
@@ -372,8 +481,18 @@ public class ForthCompiler
             );
             var userIl = userDynamicMethod.GetILGenerator();
 
+            // Define a start label so we can implement tail-call optimization (RECURSE -> branch)
+            var methodStart = userIl.DefineLabel();
+            userIl.MarkLabel(methodStart);
+
+            // Emit a call to the debug hook so we can observe method entries/calls
+            userIl.Emit(OpCodes.Ldarg_0);
+            userIl.Emit(OpCodes.Ldstr, name);
+            var debugEnter = typeof(ForthOperations).GetMethod("DebugEnter");
+            userIl.Emit(OpCodes.Call, debugEnter!);
+
             // Emit IL for the body with support for IF/ELSE/THEN, RECURSE and EXIT
-            EmitSequence(userIl, bodyTokens, 0, bodyTokens.Length, name);
+            EmitSequence(userIl, bodyTokens, 0, bodyTokens.Length, name, null, EnableTailCallOptimization, methodStart);
 
             userIl.Emit(OpCodes.Ret);
 
@@ -462,14 +581,26 @@ public class ForthCompiler
         return tokens;
     }
 
-    // Emit a sequence of tokens with support for basic control flow and recursion.
+    // Emit a sequence of tokens with support for control flow, recursion and loops.
     // If 'defName' is non-null, RECURSE will compile a call to that word by name.
-    private void EmitSequence(ILGenerator il, string[] tokens, int start, int count, string? defName)
+    // loopLocals is a stack of LocalBuilder representing the current loop indices (for 'i').
+    private void EmitSequence(ILGenerator il, string[] tokens, int start, int count, string? defName, List<LocalBuilder>? loopLocals = null, bool enableTailOptimization = false, Label? methodStartLabel = null)
     {
         int i = start;
+        loopLocals ??= new List<LocalBuilder>();
         while (i < start + count)
         {
             var w = tokens[i];
+
+            // If debug emission is enabled, print the token (and flush) at runtime.
+            if (DebugEmitTokens)
+            {
+                il.Emit(OpCodes.Ldstr, $"TOK: {w}");
+                il.Emit(OpCodes.Call, ConsoleWriteLineString!);
+                // flush
+                il.Emit(OpCodes.Call, ConsoleOutGetter!);
+                il.Emit(OpCodes.Callvirt, TextWriterFlush!);
+            }
 
             if (w.Equals("IF", StringComparison.OrdinalIgnoreCase))
             {
@@ -489,7 +620,7 @@ public class ForthCompiler
 
                 // then emit the true-branch
                 int trueEnd = (elseIdx >= 0) ? elseIdx : thenIdx;
-                EmitSequence(il, tokens, i + 1, trueEnd - (i + 1), defName);
+                EmitSequence(il, tokens, i + 1, trueEnd - (i + 1), defName, loopLocals);
                 // jump to afterIf
                 il.Emit(OpCodes.Br, afterIf);
 
@@ -497,7 +628,7 @@ public class ForthCompiler
                 il.MarkLabel(elseLabel);
                 if (elseIdx >= 0)
                 {
-                    EmitSequence(il, tokens, elseIdx + 1, thenIdx - (elseIdx + 1), defName);
+                    EmitSequence(il, tokens, elseIdx + 1, thenIdx - (elseIdx + 1), defName, loopLocals);
                 }
 
                 il.MarkLabel(afterIf);
@@ -505,13 +636,64 @@ public class ForthCompiler
                 i = thenIdx + 1;
                 continue;
             }
+            else if (w.Equals("BEGIN", StringComparison.OrdinalIgnoreCase))
+            {
+                // Find matching REPEAT
+                int repeatIdx = FindMatching(tokens, i + 1, start + count, "REPEAT");
+                if (repeatIdx < 0) throw new InvalidOperationException("BEGIN without REPEAT");
+
+                // Find optional WHILE between BEGIN and REPEAT
+                int whileIdx = FindMatching(tokens, i + 1, repeatIdx, "WHILE");
+
+                var loopStart = il.DefineLabel();
+                var loopEnd = il.DefineLabel();
+
+                il.MarkLabel(loopStart);
+
+                if (whileIdx >= 0)
+                {
+                    // Emit body up to WHILE
+                    EmitSequence(il, tokens, i + 1, whileIdx - (i + 1), defName, loopLocals);
+
+                    // Emit condition and branch to end if false
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Call, PopBoolMethod!);
+                    il.Emit(OpCodes.Brfalse, loopEnd);
+
+                    // Emit remainder between WHILE and REPEAT
+                    EmitSequence(il, tokens, whileIdx + 1, repeatIdx - (whileIdx + 1), defName, loopLocals);
+                }
+                else
+                {
+                    // No WHILE: emit whole body and then loop
+                    EmitSequence(il, tokens, i + 1, repeatIdx - (i + 1), defName, loopLocals);
+                }
+
+                il.Emit(OpCodes.Br, loopStart);
+                il.MarkLabel(loopEnd);
+
+                i = repeatIdx + 1;
+                continue;
+            }
+
             else if (w.Equals("RECURSE", StringComparison.OrdinalIgnoreCase))
             {
                 if (defName == null) throw new InvalidOperationException("RECURSE used outside a definition");
-                // Emit a call to the user word by name
-                il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Ldstr, defName);
-                il.Emit(OpCodes.Call, InvokeUserWordInfo!);
+                // Tail-call optimization: if this RECURSE is the last thing in the method
+                // and tail optimization is enabled, emit a branch back to methodStart instead of a call.
+                bool isTail = enableTailOptimization && (i == start + count - 1);
+                if (isTail && methodStartLabel.HasValue)
+                {
+                    // Branch to start (simulate tail-call)
+                    il.Emit(OpCodes.Br, methodStartLabel.Value);
+                }
+                else
+                {
+                    // Regular call to the user word
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Ldstr, defName);
+                    il.Emit(OpCodes.Call, InvokeUserWordInfo!);
+                }
             }
             else if (w.Equals("literal", StringComparison.OrdinalIgnoreCase))
             {
@@ -527,6 +709,76 @@ public class ForthCompiler
             {
                 il.Emit(OpCodes.Ret);
             }
+            else if (w.Equals("DO", StringComparison.OrdinalIgnoreCase) || w.Equals("?DO", StringComparison.OrdinalIgnoreCase))
+            {
+                // Find matching LOOP
+                int loopIdx = FindMatching(tokens, i + 1, start + count, "LOOP");
+                if (loopIdx < 0) throw new InvalidOperationException("DO without LOOP");
+
+                bool isQ = w.Equals("?DO", StringComparison.OrdinalIgnoreCase);
+
+                // Declare locals: index and limit
+                var localIndex = il.DeclareLocal(typeof(int));
+                var localLimit = il.DeclareLocal(typeof(int));
+
+                // Pop start then limit from stack: stack has ( limit start ) so Pop start then limit
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Call, PopIntMethod!);
+                il.Emit(OpCodes.Stloc, localIndex);
+
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Call, PopIntMethod!);
+                il.Emit(OpCodes.Stloc, localLimit);
+
+                var loopStart = il.DefineLabel();
+                var loopEnd = il.DefineLabel();
+
+                // ?DO: if index >= limit skip entirely
+                if (isQ)
+                {
+                    il.Emit(OpCodes.Ldloc, localIndex);
+                    il.Emit(OpCodes.Ldloc, localLimit);
+                    il.Emit(OpCodes.Bge, loopEnd);
+                }
+
+                // Mark loop start
+                il.MarkLabel(loopStart);
+
+                // Push this loop index into context
+                loopLocals.Add(localIndex);
+
+                // Emit body
+                EmitSequence(il, tokens, i + 1, loopIdx - (i + 1), defName, loopLocals);
+
+                // Pop loop index context
+                loopLocals.RemoveAt(loopLocals.Count - 1);
+
+                // increment index
+                il.Emit(OpCodes.Ldloc, localIndex);
+                il.Emit(OpCodes.Ldc_I4_1);
+                il.Emit(OpCodes.Add);
+                il.Emit(OpCodes.Stloc, localIndex);
+
+                // if index < limit goto loopStart
+                il.Emit(OpCodes.Ldloc, localIndex);
+                il.Emit(OpCodes.Ldloc, localLimit);
+                il.Emit(OpCodes.Blt, loopStart);
+
+                il.MarkLabel(loopEnd);
+
+                i = loopIdx + 1;
+                continue;
+            }
+            else if (w.Equals("i", StringComparison.OrdinalIgnoreCase))
+            {
+                if (loopLocals == null || loopLocals.Count == 0) throw new InvalidOperationException("i used outside of loop");
+                var current = loopLocals[loopLocals.Count - 1];
+                // Push current index onto the Forth stack
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldloc, current);
+                il.Emit(OpCodes.Box, typeof(int));
+                il.Emit(OpCodes.Call, PushMethod!);
+            }
             else
             {
                 EmitToken(il, w);
@@ -536,28 +788,51 @@ public class ForthCompiler
         }
     }
 
-    // Find the matching token for IF/ELSE/THEN, handling nested IFs correctly.
-    // If target is "ELSE" it will return the first ELSE at the same nesting level or -1.
-    // If target is "THEN" it will return the THEN that closes the current IF.
+    // Find the matching token for control flow handling nested IFs and DOs correctly.
+    // Supports matching targets: ELSE, THEN, LOOP.
     private int FindMatching(string[] tokens, int start, int end, string target)
     {
-        int depth = 0;
+        int ifDepth = 0;
+        int doDepth = 0;
+        int beginDepth = 0;
+
         for (int i = start; i < end; i++)
         {
             var t = tokens[i];
             if (t.Equals("IF", StringComparison.OrdinalIgnoreCase))
             {
-                depth++;
+                ifDepth++;
             }
             else if (t.Equals("THEN", StringComparison.OrdinalIgnoreCase))
             {
-                if (depth == 0 && target.Equals("THEN", StringComparison.OrdinalIgnoreCase)) return i;
-                depth--;
-                if (depth < 0) depth = 0;
+                if (ifDepth == 0 && target.Equals("THEN", StringComparison.OrdinalIgnoreCase)) return i;
+                ifDepth = Math.Max(0, ifDepth - 1);
             }
             else if (t.Equals("ELSE", StringComparison.OrdinalIgnoreCase))
             {
-                if (depth == 0 && target.Equals("ELSE", StringComparison.OrdinalIgnoreCase)) return i;
+                if (ifDepth == 0 && target.Equals("ELSE", StringComparison.OrdinalIgnoreCase)) return i;
+            }
+            else if (t.Equals("DO", StringComparison.OrdinalIgnoreCase) || t.Equals("?DO", StringComparison.OrdinalIgnoreCase))
+            {
+                doDepth++;
+            }
+            else if (t.Equals("LOOP", StringComparison.OrdinalIgnoreCase))
+            {
+                if (doDepth == 0 && target.Equals("LOOP", StringComparison.OrdinalIgnoreCase)) return i;
+                doDepth = Math.Max(0, doDepth - 1);
+            }
+            else if (t.Equals("BEGIN", StringComparison.OrdinalIgnoreCase))
+            {
+                beginDepth++;
+            }
+            else if (t.Equals("WHILE", StringComparison.OrdinalIgnoreCase))
+            {
+                if (beginDepth == 0 && target.Equals("WHILE", StringComparison.OrdinalIgnoreCase)) return i;
+            }
+            else if (t.Equals("REPEAT", StringComparison.OrdinalIgnoreCase))
+            {
+                if (beginDepth == 0 && target.Equals("REPEAT", StringComparison.OrdinalIgnoreCase)) return i;
+                beginDepth = Math.Max(0, beginDepth - 1);
             }
         }
         return -1;
@@ -608,7 +883,7 @@ public class ForthCompiler
         }
         else
         {
-            throw new InvalidOperationException($"Unknown word: '{word}'");
+
         }
     }
 }
