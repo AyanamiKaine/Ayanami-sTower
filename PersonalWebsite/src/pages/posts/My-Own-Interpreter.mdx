@@ -35,7 +35,7 @@ What I really find interesting is that you can easily define functions that retu
 
 ## Stella 
 
-Because we can compile C# to Wasm you can even play with it here!
+Because we can compile C# to Wasm you can even play with it here! Currently its just a crude implementation of FORTH compiled to a VM. I am currently researching if we can instead target the [Common-Intermediate-Language](https://en.wikipedia.org/wiki/Common_Intermediate_Language) directly. Conceptually this would be a good target because the CIL target a stacked-based instruction set not a register one.
 
 <StellaREPL
     id="stellarepl-demo"
@@ -91,7 +91,7 @@ SWAP .         \ Swap top two items
 WORDS    \ Shows all defined words in the dictionary
 ```
 
-Stella comes with a rich set of built-in words including:
+Stella comes with some set of built-in words including:
 - **Arithmetic**: `+`, `-`, `*`, `/`, `MOD`, `ABS`, `MIN`, `MAX`, `CLAMP`
 - **Floating-point**: `F+`, `F-`, `F*`, `/`, `FABS`, `F=`, `F<`
 - **Stack operations**: `DUP`, `DROP`, `SWAP`, `OVER`, `ROT`, `PICK`, `ROLL`
