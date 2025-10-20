@@ -82,6 +82,13 @@ public static class ForthJitInterpreter
                     Console.WriteLine("Usage: .debug on|off");
                     continue;
                 }
+                if (input.StartsWith(".tokens", StringComparison.OrdinalIgnoreCase))
+                {
+                    var parts = input.Substring(7).Trim();
+                    var tokens = compiler.GetTokens(parts);
+                    Console.WriteLine("Tokens: [ " + string.Join(" | ", tokens.Select(t => $"\"{t}\"")) + " ]");
+                    continue;
+                }
                 if (input.StartsWith(".tco", StringComparison.OrdinalIgnoreCase))
                 {
                     var parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -796,9 +803,7 @@ public static class ForthOperations
     /// </summary>
     public static void InvokeStaticMethod(Stack<object> s, string typeName, string methodName)
     {
-        var t = ResolveTypeByName(typeName);
-        if (t == null) throw new InvalidOperationException($"Type '{typeName}' not found.");
-
+        var t = ResolveTypeByName(typeName) ?? throw new InvalidOperationException($"Type '{typeName}' not found.");
         var stackArr = s.ToArray(); // top-first
         int provided = stackArr.Length;
         var key = ((Type?)t, methodName, provided);
@@ -1083,7 +1088,7 @@ public static class ForthOperations
     /// </summary>
     public static void RegisterType(string alias, Type t)
     {
-        if (string.IsNullOrEmpty(alias)) throw new ArgumentException("alias");
+        ArgumentException.ThrowIfNullOrEmpty(alias);
         RegisteredTypes[alias] = t ?? throw new ArgumentNullException(nameof(t));
     }
 
@@ -1097,10 +1102,8 @@ public static class ForthOperations
     // Uses the parameterless constructor via Activator.CreateInstance. Throws if alias is unknown.
     public static void CreateAndPush(Stack<object> s, string alias)
     {
-        var t = ResolveRegisteredType(alias);
-        if (t == null) throw new InvalidOperationException($"Unknown registered type or type not found '{alias}'");
-        object? inst = Activator.CreateInstance(t);
-        if (inst == null) throw new InvalidOperationException($"Failed to create instance of '{alias}'");
+        var t = ResolveRegisteredType(alias) ?? throw new InvalidOperationException($"Unknown registered type or type not found '{alias}'");
+        object? inst = Activator.CreateInstance(t) ?? throw new InvalidOperationException($"Failed to create instance of '{alias}'");
         s.Push(inst);
     }
 
@@ -1110,8 +1113,7 @@ public static class ForthOperations
     /// </summary>
     public static void CreateTypeAndPush(Stack<object> s, string alias)
     {
-        var t = ResolveRegisteredType(alias);
-        if (t == null) throw new InvalidOperationException($"Unknown registered type or type not found '{alias}'");
+        var t = ResolveRegisteredType(alias) ?? throw new InvalidOperationException($"Unknown registered type or type not found '{alias}'");
         s.Push(t);
     }
 
@@ -1120,8 +1122,7 @@ public static class ForthOperations
     public static void CreateFromStack(Stack<object> s)
     {
         if (s.Count < 1) throw new InvalidOperationException("'new' requires a type alias string on the stack.");
-        var aliasObj = s.Pop();
-        if (aliasObj == null) throw new InvalidOperationException("Alias cannot be null");
+        var aliasObj = s.Pop() ?? throw new InvalidOperationException("Alias cannot be null");
         CreateAndPush(s, aliasObj.ToString()!);
     }
 
@@ -1132,11 +1133,9 @@ public static class ForthOperations
     public static void CreateTypeFromStack(Stack<object> s)
     {
         if (s.Count < 1) throw new InvalidOperationException("'type' requires a type alias string on the stack.");
-        var aliasObj = s.Pop();
-        if (aliasObj == null) throw new InvalidOperationException("Alias cannot be null");
+        var aliasObj = s.Pop() ?? throw new InvalidOperationException("Alias cannot be null");
         var alias = aliasObj.ToString()!;
-        var t = ResolveRegisteredType(alias);
-        if (t == null) throw new InvalidOperationException($"Unknown registered type '{alias}'");
+        var t = ResolveRegisteredType(alias) ?? throw new InvalidOperationException($"Unknown registered type '{alias}'");
         s.Push(t);
     }
 
@@ -1146,11 +1145,9 @@ public static class ForthOperations
     {
         if (s.Count < 1) throw new InvalidOperationException("ctor requires a type alias on the stack");
         // Peek alias (it's on top)
-        var aliasObj = s.Pop();
-        if (aliasObj == null) throw new InvalidOperationException("Alias cannot be null");
+        var aliasObj = s.Pop() ?? throw new InvalidOperationException("Alias cannot be null");
         var alias = aliasObj.ToString()!;
-        var t = ResolveRegisteredType(alias);
-        if (t == null) throw new InvalidOperationException($"Unknown registered type '{alias}'");
+        var t = ResolveRegisteredType(alias) ?? throw new InvalidOperationException($"Unknown registered type '{alias}'");
 
         // Collect constructors and determine the maximum arity we'll consider.
         var allCtors = t.GetConstructors(BindingFlags.Public | BindingFlags.Instance).ToArray();
@@ -1463,6 +1460,10 @@ public class ForthCompiler
         return Operations.Keys;
     }
 
+    public List<string> GetTokens(string source)
+    {
+        return Tokenize(source);
+    }
 
     public Action<Stack<object>> Compile(string source)
     {
@@ -1850,8 +1851,8 @@ public class ForthCompiler
     // Emit IL for a single token into the provided ILGenerator.
     private static void EmitToken(ILGenerator il, string word)
     {
-        // Numbers (int)
-        if (int.TryParse(word, out int i))
+        // Numbers (int) - must not contain decimal point or float suffix
+        if (!word.Contains('.') && !word.EndsWith("f", StringComparison.OrdinalIgnoreCase) && int.TryParse(word, out int i))
         {
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Ldc_I4, i);
@@ -1860,8 +1861,16 @@ public class ForthCompiler
             return;
         }
 
-        // Numbers (double)
-        if (double.TryParse(word, out double d))
+        // Numbers (double) - handles 2.0, 1.5, 1.0f, 3.14F, scientific notation like 1e-5
+        // Must check BEFORE Type.Method pattern check because 2.0 contains a dot
+        string doubleCandidate = word;
+        // Strip 'f' or 'F' suffix if present (C# float literal notation)
+        if (word.EndsWith("f", StringComparison.OrdinalIgnoreCase))
+        {
+            doubleCandidate = word.Substring(0, word.Length - 1);
+        }
+        
+        if (double.TryParse(doubleCandidate, out double d))
         {
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Ldc_R8, d);
@@ -1899,6 +1908,7 @@ public class ForthCompiler
         }
 
         // Type.StaticMethod form: TypeName.MethodName (don't treat leading '.' here)
+        // This comes AFTER double parsing so 2.0 is not treated as Type.Method
         if (word.Contains('.') && !word.StartsWith("."))
         {
             var pieces = word.Split(['.'], 2);
