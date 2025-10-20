@@ -284,6 +284,11 @@ public class ForthInterpreter : IDisposable
                     // Push the variable's address onto the stack
                     _vm.DataStack.PushLong(definition.DataAddress);
                 }
+                else if (definition.Type == WordType.Constant)
+                {
+                    // Constants execute their bytecode which pushes the constant value
+                    ExecuteColonDefinition(definition);
+                }
                 else
                 {
                     throw new NotImplementedException($"Word type {definition.Type} not yet supported");
@@ -407,9 +412,9 @@ public class ForthInterpreter : IDisposable
     /// <param name="word">The word definition to execute.</param>
     private void ExecuteColonDefinition(WordDefinition word)
     {
-        if (word.Type != WordType.ColonDefinition)
+        if (word.Type != WordType.ColonDefinition && word.Type != WordType.Constant)
         {
-            throw new CompilationException("Can only execute colon definitions");
+            throw new CompilationException("Can only execute colon definitions and constants");
         }
 
         // Set the currently executing word for runtime introspection (e.g., DOES>)
@@ -1160,6 +1165,11 @@ public class ForthInterpreter : IDisposable
         {
             // When compiling a variable reference, push its address as a literal
             _codeBuilder.PushCell(word.DataAddress);
+        }
+        else if (word.Type == WordType.Constant)
+        {
+            // When compiling a constant reference, call its bytecode which pushes the value
+            _codeBuilder.Call(word.ExecutionToken);
         }
         else
         {
@@ -1996,6 +2006,44 @@ public class ForthInterpreter : IDisposable
             forth._dictionary.Add(varDef);
         });
 
+        DefinePrimitive("CONSTANT", forth =>
+        {
+            string? name = forth.ReadWord() ?? throw new InvalidOperationException("Expected constant name after CONSTANT");
+
+            // Pop the value from the stack that will be the constant's value
+            if (forth._vm.DataStack.Pointer < 8)
+                throw new StackUnderflowException("CONSTANT requires a value on the stack");
+            
+            long value = forth._vm.DataStack.PopLong();
+
+            // Create bytecode that pushes the constant value and exits
+            byte[] bytecode = new CodeBuilder()
+                .PushCell(value)
+                .PushCell((long)SyscallId.WordExit)
+                .Syscall()
+                .Build();
+
+            // Store ExecutionToken (offset in global code space)
+            int executionToken = forth._codeSpace.Count;
+
+            // Add bytecode to global code space
+            forth._codeSpace.AddRange(bytecode);
+            forth.UpdateCodeSpace();
+
+            // Create the word definition
+            var constDef = new WordDefinition
+            {
+                Name = name,
+                Type = WordType.Constant,
+                DataAddress = 0,  // Constants don't have data addresses
+                CompiledCode = bytecode,
+                ExecutionToken = executionToken,
+                IsImmediate = false
+            };
+
+            forth._dictionary.Add(constDef);
+        });
+
         // ( -- Comments (immediate, skip until closing paren)
         DefinePrimitive("(", forth =>
         {
@@ -2300,6 +2348,18 @@ public class ForthInterpreter : IDisposable
         // String operations
         // COUNT ( c-addr -- addr len ) - Convert counted string to address and length
         Interpret(": COUNT DUP 1+ SWAP C@ ;");
+
+        // Struct/Field support - syntactic sugar for structured data
+        // STRUCT ( -- 0 ) : Start a structure definition with running offset of 0
+        Interpret(": STRUCT 0 ;");
+        
+        // FIELD ( offset size -- offset+size ) : Define a field word
+        // Creates a new word that adds the current offset to an address
+        // Then advances the offset by the field size
+        // Usage: STRUCT 2 FIELD >w 4 FIELD >l 1 FIELD >b CONSTANT /foo
+        // This is equivalent to:
+        //   : >w 0 + ;  : >l 2 + ;  : >b 6 + ;  7 CONSTANT /foo
+        Interpret(": FIELD CREATE OVER , + DOES> @ + ;");
 
         // Higher-order collection helpers (MAP, FILTER, REDUCE)
         // Usage conventions (simple and text-based):
@@ -2685,6 +2745,15 @@ public class ForthInterpreter : IDisposable
         {
             long value = forth._vm.DataStack.PopLong();
             _io.Write(value.ToString());
+            _io.Write(" ");
+        });
+
+        // F. ( f -- ) Print floating-point number (double)
+        DefinePrimitive("F.", forth =>
+        {
+            double value = forth._vm.FloatStack.PopDouble();
+            // Use invariant culture so decimal separator is '.' regardless of locale
+            _io.Write(value.ToString(System.Globalization.CultureInfo.InvariantCulture));
             _io.Write(" ");
         });
 

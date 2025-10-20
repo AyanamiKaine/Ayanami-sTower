@@ -2,6 +2,7 @@ using System;
 
 namespace StellaLang.Tests;
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 public sealed class TestHostIO : StellaLang.IHostIO
 {
     private readonly System.IO.StringWriter _out = new();
