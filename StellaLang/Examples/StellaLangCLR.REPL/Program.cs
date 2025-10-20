@@ -14,7 +14,7 @@ using System.Reflection.Emit;
 /// </summary>
 public static class ForthJitInterpreter
 {
-    private static readonly Dictionary<string, Action<Stack<object>>> UserDefinedWords = new Dictionary<string, Action<Stack<object>>>(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, Action<Stack<object>>> UserDefinedWords = new(StringComparer.OrdinalIgnoreCase);
 
 
     public static void Main(string[] args)
@@ -124,12 +124,12 @@ public static class ForthJitInterpreter
 public static class ForthOperations
 {
     // Case-insensitive dictionary for user-defined words
-    public static Dictionary<string, Action<Stack<object>>> UserWords = new Dictionary<string, Action<Stack<object>>>(StringComparer.OrdinalIgnoreCase);
+    public static Dictionary<string, Action<Stack<object>>> UserWords = new(StringComparer.OrdinalIgnoreCase);
 
     // Cache for method invocation resolution: key is (receiverType or null for static search, methodName, providedArgCount)
     // Value is the resolved MethodInfo (or null) to avoid repeated reflection scanning.
-    private static readonly Dictionary<(Type?, string, int), MethodInfo?> MethodInvocationCache = new Dictionary<(Type?, string, int), MethodInfo?>();
-    private static readonly object MethodInvocationCacheLock = new object();
+    private static readonly Dictionary<(Type?, string, int), MethodInfo?> MethodInvocationCache = new();
+    private static readonly Lock MethodInvocationCacheLock = new();
 
     public static void Add(Stack<object> s)
     {
@@ -364,13 +364,13 @@ public static class ForthOperations
                 {
                     var pars = m.GetParameters();
                     int n = pars.Length;
-                    bool hasParams = n > 0 && pars[n - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Any();
+                    bool hasParams = n > 0 && pars[n - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Length != 0;
                     int fixedCount = hasParams ? n - 1 : n;
                     if (providedArgs < fixedCount) continue; // not enough args
 
                     // Build provided values bottom-to-top (so param 0 corresponds to earliest provided)
                     var providedVals = stackArr.Skip(1).Take(providedArgs).ToArray(); // top-first
-                    var providedBottomToTop = System.Linq.Enumerable.Reverse(providedVals).ToArray();
+                    var providedBottomToTop = Enumerable.Reverse(providedVals).ToArray();
 
                     var args = new object?[n];
                     bool ok = true;
@@ -436,7 +436,7 @@ public static class ForthOperations
         else if (stackArr.Length > 0)
         {
             // receiver is the bottom-most provided (last element in top-first array)
-            receiver = stackArr[stackArr.Length - 1];
+            receiver = stackArr[^1];
         }
         if (receiver != null)
         {
@@ -502,8 +502,14 @@ public static class ForthOperations
                             if (pType.IsValueType && Nullable.GetUnderlyingType(pType) == null) { ok = false; break; }
                             args[targetIndex] = null;
                         }
-                        else if (pType.IsInstanceOfType(src)) args[targetIndex] = src;
-                        else args[targetIndex] = Convert.ChangeType(src, pType);
+                        else if (pType.IsInstanceOfType(src))
+                        {
+                            args[targetIndex] = src;
+                        }
+                        else
+                        {
+                            args[targetIndex] = Convert.ChangeType(src, pType);
+                        }
                     }
                     catch { ok = false; break; }
                 }
@@ -538,7 +544,7 @@ public static class ForthOperations
                     {
                         var pars = m.GetParameters();
                         int n = pars.Length;
-                        bool methodHasParams = n > 0 && pars[n - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Any();
+                        bool methodHasParams = n > 0 && pars[n - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Length != 0;
                         int fixedCount = methodHasParams ? n - 1 : n;
                         if (providedForTypeStatic < fixedCount) continue;
 
@@ -582,7 +588,7 @@ public static class ForthOperations
                     var pars = staticOnType.GetParameters();
                     int n = pars.Length;
                     var finalArgs = new object?[n];
-                    bool methodHasParams = n > 0 && pars[n - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Any();
+                    bool methodHasParams = n > 0 && pars[n - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Length != 0;
                     if (!methodHasParams)
                     {
                         var providedVals = stackArr.Take(stackArr.Length).ToArray(); // top-first
@@ -678,13 +684,13 @@ public static class ForthOperations
             {
                 var pars = m.GetParameters();
                 int n = pars.Length;
-                bool methodHasParams = n > 0 && pars[n - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Any();
+                bool methodHasParams = n > 0 && pars[n - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Length != 0;
                 int fixedCount = methodHasParams ? n - 1 : n;
                 if (providedStaticArgs < fixedCount) continue;
 
                 // Build provided bottom-to-top
                 var providedVals = stackArr.Take(providedStaticArgs).ToArray(); // top-first
-                var providedBottomToTop = System.Linq.Enumerable.Reverse(providedVals).ToArray();
+                var providedBottomToTop = Enumerable.Reverse(providedVals).ToArray();
 
                 var args = new object?[n];
                 bool ok = true;
@@ -739,8 +745,14 @@ public static class ForthOperations
                 var src = stackArr[i];
                 int targetIndex = n - 1 - i;
                 var pType = pars[targetIndex].ParameterType;
-                if (src == null) args[targetIndex] = null;
-                else if (pType.IsInstanceOfType(src) || pType.IsAssignableFrom(src.GetType())) args[targetIndex] = src;
+                if (src == null)
+                {
+                    args[targetIndex] = null;
+                }
+                else if (pType.IsInstanceOfType(src) || pType.IsAssignableFrom(src.GetType()))
+                {
+                    args[targetIndex] = src;
+                }
                 else
                 {
                     try
@@ -795,9 +807,9 @@ public static class ForthOperations
         {
             // Build string[] from stack in bottom-to-top order so earlier pushes come first in the result.
             var providedVals = stackArr.Take(provided).ToArray(); // top-first
-            var bottomToTop = System.Linq.Enumerable.Reverse(providedVals).Select(o => o?.ToString() ?? string.Empty).ToArray();
-            var arrMi = typeof(string).GetMethod("Concat", new[] { typeof(string[]) });
-            var res = arrMi!.Invoke(null, new object[] { bottomToTop });
+            var bottomToTop = Enumerable.Reverse(providedVals).Select(o => o?.ToString() ?? string.Empty).ToArray();
+            var arrMi = typeof(string).GetMethod("Concat", [typeof(string[])]);
+            var res = arrMi!.Invoke(null, [bottomToTop]);
             // Pop consumed args
             for (int p = 0; p < provided; p++) s.Pop();
             if (res != null) s.Push(res);
@@ -819,12 +831,12 @@ public static class ForthOperations
             {
                 var pars = m.GetParameters();
                 int n = pars.Length;
-                bool methodHasParams = n > 0 && pars[n - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Any();
+                bool methodHasParams = n > 0 && pars[n - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Length != 0;
                 int fixedCount = methodHasParams ? n - 1 : n;
                 if (provided < fixedCount) continue;
 
                 var providedVals = stackArr.Take(provided).ToArray(); // top-first
-                var providedBottomToTop = System.Linq.Enumerable.Reverse(providedVals).ToArray();
+                var providedBottomToTop = Enumerable.Reverse(providedVals).ToArray();
 
                 var args = new object?[n];
                 bool ok = true;
@@ -872,12 +884,12 @@ public static class ForthOperations
         int pn = parsFinal.Length;
         var finalArgs = new object?[pn];
 
-        bool finalHasParams = pn > 0 && parsFinal[pn - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Any();
+        bool finalHasParams = pn > 0 && parsFinal[pn - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Length != 0;
         if (!finalHasParams)
         {
             // Normal mapping bottom-to-top
             var providedVals = stackArr.Take(stackArr.Length).ToArray();
-            var providedBottomToTop = System.Linq.Enumerable.Reverse(providedVals).ToArray();
+            var providedBottomToTop = Enumerable.Reverse(providedVals).ToArray();
             for (int pi = 0; pi < pn; pi++)
             {
                 var val = providedBottomToTop.ElementAtOrDefault(pi);
@@ -907,7 +919,7 @@ public static class ForthOperations
             // Params-array: pack remaining args into the last parameter
             int fixedCount = pn - 1;
             var providedVals = stackArr.Take(stackArr.Length).ToArray();
-            var providedBottomToTop = System.Linq.Enumerable.Reverse(providedVals).ToArray();
+            var providedBottomToTop = Enumerable.Reverse(providedVals).ToArray();
 
             // Fill fixed params
             for (int pi = 0; pi < fixedCount; pi++)
@@ -1379,7 +1391,7 @@ public class ForthCompiler
     // When true, compiled methods will include a Console.WriteLine for each token as it's executed.
     public static bool DebugEmitTokens = false;
 
-    private static readonly MethodInfo? ConsoleWriteLineString = typeof(Console).GetMethod("WriteLine", new[] { typeof(string) });
+    private static readonly MethodInfo? ConsoleWriteLineString = typeof(Console).GetMethod("WriteLine", [typeof(string)]);
     private static readonly MethodInfo? ConsoleOutGetter = typeof(Console).GetProperty("Out")!.GetGetMethod();
     private static readonly MethodInfo? TextWriterFlush = typeof(System.IO.TextWriter).GetMethod("Flush");
 
@@ -1393,7 +1405,7 @@ public class ForthCompiler
     private static readonly MethodInfo? CreateTypeFromStackInfo = typeof(ForthOperations).GetMethod("CreateTypeFromStack");
 
     // A dictionary mapping Forth words to their C# implementation methods.
-    private static readonly Dictionary<string, MethodInfo?> Operations = new Dictionary<string, MethodInfo?>(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, MethodInfo?> Operations = new(StringComparer.OrdinalIgnoreCase)
     {
         { "+", typeof(ForthOperations).GetMethod("Add") },
         { "-", typeof(ForthOperations).GetMethod("Subtract") },
@@ -1473,7 +1485,7 @@ public class ForthCompiler
             var userDynamicMethod = new DynamicMethod(
                 "ForthUserWord_" + name + "_" + Guid.NewGuid().ToString("N"),
                 typeof(void),
-                new[] { typeof(Stack<object>) },
+                [typeof(Stack<object>)],
                 typeof(ForthCompiler).Module
             );
             var userIl = userDynamicMethod.GetILGenerator();
@@ -1505,7 +1517,7 @@ public class ForthCompiler
         var dynamicMethod = new DynamicMethod(
             "ForthJitAction_" + Guid.NewGuid().ToString("N"),
             typeof(void),
-            new[] { typeof(Stack<object>) },
+            [typeof(Stack<object>)],
             typeof(ForthCompiler).Module
         );
 
@@ -1769,7 +1781,7 @@ public class ForthCompiler
             else if (w.Equals("i", StringComparison.OrdinalIgnoreCase))
             {
                 if (loopLocals == null || loopLocals.Count == 0) throw new InvalidOperationException("i used outside of loop");
-                var current = loopLocals[loopLocals.Count - 1];
+                var current = loopLocals[^1];
                 // Push current index onto the Forth stack
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Ldloc, current);
@@ -1889,7 +1901,7 @@ public class ForthCompiler
         // Type.StaticMethod form: TypeName.MethodName (don't treat leading '.' here)
         if (word.Contains('.') && !word.StartsWith("."))
         {
-            var pieces = word.Split(new[] { '.' }, 2);
+            var pieces = word.Split(['.'], 2);
             var tname = pieces[0];
             var mname = pieces[1];
             il.Emit(OpCodes.Ldarg_0);
