@@ -338,11 +338,12 @@ public static class ForthOperations
         // using the top N args. For each strategy we attempt to find a method that can be
         // satisfied by the available stack values.
 
-        // 1) Instance method: treat stackArr[0] as receiver and use up to stackArr.Length-1 args
-        var receiver = stackArr[0];
-        // If the receiver is a System.Type, treat this as a static method invocation on that type.
-        if (receiver is Type asType)
+        // 1) Decide receiver: if the top-of-stack is a Type we treat that as a static-on-type receiver
+        // otherwise the receiver is the bottom-most provided value (last element of the top-first array).
+        object? receiver = null;
+        if (stackArr.Length > 0 && stackArr[0] is Type asType)
         {
+            receiver = asType; // top-of-stack Type acts as receiver for static-on-type
             var rType = asType;
             int providedArgs = Math.Max(0, stackArr.Length - 1);
             var key = ((Type?)rType, methodName, providedArgs);
@@ -354,24 +355,51 @@ public static class ForthOperations
 
             if (resolved == null)
             {
-                var candidates = rType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase)
-                    .Where(m => string.Equals(m.Name, methodName, StringComparison.OrdinalIgnoreCase) && m.GetParameters().Length <= providedArgs)
+                // Candidate selection with params-array support and bottom-to-top mapping.
+                var candidateList = rType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase)
+                    .Where(m => string.Equals(m.Name, methodName, StringComparison.OrdinalIgnoreCase))
                     .ToArray();
 
-                foreach (var m in candidates)
+                foreach (var m in candidateList)
                 {
                     var pars = m.GetParameters();
                     int n = pars.Length;
+                    bool hasParams = n > 0 && pars[n - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Any();
+                    int fixedCount = hasParams ? n - 1 : n;
+                    if (providedArgs < fixedCount) continue; // not enough args
+
+                    // Build provided values bottom-to-top (so param 0 corresponds to earliest provided)
+                    var providedVals = stackArr.Skip(1).Take(providedArgs).ToArray(); // top-first
+                    var providedBottomToTop = System.Linq.Enumerable.Reverse(providedVals).ToArray();
+
                     var args = new object?[n];
                     bool ok = true;
-                    for (int i = 0; i < n; i++)
+
+                    // Fill fixed parameters
+                    for (int pi = 0; pi < fixedCount; pi++)
                     {
-                        var src = stackArr[i + 1]; // top-first, skip receiver
-                        int targetIndex = n - 1 - i;
-                        var pType = pars[targetIndex].ParameterType;
-                        if (!TryConvert(src, pType, out var converted)) { ok = false; break; }
-                        args[targetIndex] = converted;
+                        var val = providedBottomToTop.ElementAtOrDefault(pi);
+                        var pType = pars[pi].ParameterType;
+                        if (!TryConvert(val, pType, out var conv)) { ok = false; break; }
+                        args[pi] = conv;
                     }
+                    if (!ok) continue;
+
+                    if (hasParams)
+                    {
+                        var elemType = pars[n - 1].ParameterType.GetElementType() ?? typeof(object);
+                        int remaining = Math.Max(0, providedBottomToTop.Length - fixedCount);
+                        var arr = Array.CreateInstance(elemType, remaining);
+                        for (int k = 0; k < remaining; k++)
+                        {
+                            var val = providedBottomToTop[fixedCount + k];
+                            if (!TryConvert(val, elemType, out var convElem)) { ok = false; break; }
+                            arr.SetValue(convElem, k);
+                        }
+                        if (!ok) continue;
+                        args[n - 1] = arr;
+                    }
+
                     if (ok) { resolved = m; break; }
                 }
 
@@ -404,6 +432,11 @@ public static class ForthOperations
                 return;
             }
             // otherwise fallthrough to try instance/static lookup without receiver
+        }
+        else if (stackArr.Length > 0)
+        {
+            // receiver is the bottom-most provided (last element in top-first array)
+            receiver = stackArr[stackArr.Length - 1];
         }
         if (receiver != null)
         {
@@ -485,6 +518,135 @@ public static class ForthOperations
                 if (resolved.ReturnType != typeof(void) && res != null) s.Push(res);
                 return;
             }
+            // If we didn't find an instance method, try static methods declared on the receiver's type.
+            // This lets calls like <"AB"> "C" .Concat work by resolving System.String.Concat.
+            {
+                int providedForTypeStatic = stackArr.Length;
+                var key2 = ((Type?)rType, methodName, providedForTypeStatic);
+                MethodInfo? staticOnType = null;
+                lock (MethodInvocationCacheLock)
+                {
+                    MethodInvocationCache.TryGetValue(key2, out staticOnType);
+                }
+                if (staticOnType == null)
+                {
+                    var methodsStatic = rType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase)
+                        .Where(m => string.Equals(m.Name, methodName, StringComparison.OrdinalIgnoreCase))
+                        .ToArray();
+
+                    foreach (var m in methodsStatic)
+                    {
+                        var pars = m.GetParameters();
+                        int n = pars.Length;
+                        bool methodHasParams = n > 0 && pars[n - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Any();
+                        int fixedCount = methodHasParams ? n - 1 : n;
+                        if (providedForTypeStatic < fixedCount) continue;
+
+                        var providedVals = stackArr.Take(providedForTypeStatic).ToArray(); // top-first: [receiver, arg1, arg2,...]
+
+                        bool ok = true;
+                        var argsCandidate = new object?[n];
+                        for (int pi = 0; pi < fixedCount; pi++)
+                        {
+                            var val = providedVals.ElementAtOrDefault(pi);
+                            var pType = pars[pi].ParameterType;
+                            if (!TryConvert(val, pType, out var conv)) { ok = false; break; }
+                            argsCandidate[pi] = conv;
+                        }
+                        if (!ok) continue;
+                        if (methodHasParams)
+                        {
+                            var elemType = pars[n - 1].ParameterType.GetElementType() ?? typeof(object);
+                            int remaining = Math.Max(0, providedVals.Length - fixedCount);
+                            var arr = Array.CreateInstance(elemType, remaining);
+                            for (int k = 0; k < remaining; k++)
+                            {
+                                var val = providedVals[fixedCount + k];
+                                if (!TryConvert(val, elemType, out var convElem)) { ok = false; break; }
+                                arr.SetValue(convElem, k);
+                            }
+                            if (!ok) continue;
+                            argsCandidate[n - 1] = arr;
+                        }
+                        staticOnType = m; // choose first matching
+                        lock (MethodInvocationCacheLock)
+                        {
+                            MethodInvocationCache[key2] = staticOnType;
+                        }
+                        break;
+                    }
+                }
+
+                if (staticOnType != null)
+                {
+                    var pars = staticOnType.GetParameters();
+                    int n = pars.Length;
+                    var finalArgs = new object?[n];
+                    bool methodHasParams = n > 0 && pars[n - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Any();
+                    if (!methodHasParams)
+                    {
+                        var providedVals = stackArr.Take(stackArr.Length).ToArray(); // top-first
+                        for (int pi = 0; pi < n; pi++)
+                        {
+                            var val = providedVals.ElementAtOrDefault(pi);
+                            var pType = pars[pi].ParameterType;
+                            if (!TryConvert(val, pType, out var conv)) throw new InvalidOperationException($"Cannot convert argument to parameter type {pType.FullName} for method {staticOnType.Name}");
+                            finalArgs[pi] = conv;
+                        }
+
+                        if (ForthCompiler.DebugEmitTokens)
+                        {
+                            try
+                            {
+                                Console.WriteLine($"[DEBUG] static-on-type selected: {staticOnType.DeclaringType?.FullName}.{staticOnType.Name}");
+                                for (int ii = 0; ii < n; ii++) Console.WriteLine($"[DEBUG]   finalArg[{ii}] = {(finalArgs[ii] == null ? "null" : finalArgs[ii]!.ToString())}");
+                            }
+                            catch { }
+                        }
+
+                        for (int p = 0; p < n; p++) s.Pop();
+                        var r = staticOnType.Invoke(null, finalArgs);
+                        if (staticOnType.ReturnType != typeof(void) && r != null) s.Push(r);
+                        return;
+                    }
+                    else
+                    {
+                        int fixedCount = n - 1;
+                        var providedVals = stackArr.Take(stackArr.Length).ToArray(); // top-first
+                        for (int pi = 0; pi < fixedCount; pi++)
+                        {
+                            var val = providedVals.ElementAtOrDefault(pi);
+                            var pType = pars[pi].ParameterType;
+                            if (!TryConvert(val, pType, out var conv)) throw new InvalidOperationException($"Cannot convert argument to parameter type {pType.FullName} for method {staticOnType.Name}");
+                            finalArgs[pi] = conv;
+                        }
+                        var elemType = pars[n - 1].ParameterType.GetElementType() ?? typeof(object);
+                        int remaining = Math.Max(0, providedVals.Length - fixedCount);
+                        var arr = Array.CreateInstance(elemType, remaining);
+                        for (int k = 0; k < remaining; k++)
+                        {
+                            var val = providedVals[fixedCount + k];
+                            if (!TryConvert(val, elemType, out var convElem)) throw new InvalidOperationException($"Cannot convert params element to {elemType.FullName} for method {staticOnType.Name}");
+                            arr.SetValue(convElem, k);
+                        }
+                        finalArgs[n - 1] = arr;
+
+                        if (ForthCompiler.DebugEmitTokens)
+                        {
+                            try
+                            {
+                                Console.WriteLine($"[DEBUG] static-on-type selected (params): {staticOnType.DeclaringType?.FullName}.{staticOnType.Name}");
+                                for (int ii = 0; ii < n; ii++) Console.WriteLine($"[DEBUG]   finalArg[{ii}] = {(finalArgs[ii] == null ? "null" : finalArgs[ii]!.ToString())}");
+                            }
+                            catch { }
+                        }
+                        for (int p = 0; p < fixedCount + remaining; p++) s.Pop();
+                        var r = staticOnType.Invoke(null, finalArgs);
+                        if (staticOnType.ReturnType != typeof(void) && r != null) s.Push(r);
+                        return;
+                    }
+                }
+            }
         }
 
         // 2) Static method: attempt to find a static method named methodName where parameter count <= stack length
@@ -497,28 +659,60 @@ public static class ForthOperations
         }
         if (staticResolved == null)
         {
-            // Search loaded assemblies for static methods matching name and parameter count <= providedStaticArgs
-            var candidates = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(a => a.GetTypes())
-                .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase))
-                .Where(m => string.Equals(m.Name, methodName, StringComparison.OrdinalIgnoreCase) && m.GetParameters().Length <= providedStaticArgs)
+            // Search loaded assemblies for static methods matching name
+            var allMethods = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(a =>
+                {
+                    try { return a.GetTypes(); }
+                    catch { return Type.EmptyTypes; }
+                })
+                .SelectMany(t =>
+                {
+                    try { return t.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase); }
+                    catch { return []; }
+                })
+                .Where(m => string.Equals(m.Name, methodName, StringComparison.OrdinalIgnoreCase))
                 .ToArray();
 
-            foreach (var m in candidates)
+            foreach (var m in allMethods)
             {
                 var pars = m.GetParameters();
                 int n = pars.Length;
-                // attempt to convert top-n stack items to parameters
+                bool methodHasParams = n > 0 && pars[n - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Any();
+                int fixedCount = methodHasParams ? n - 1 : n;
+                if (providedStaticArgs < fixedCount) continue;
+
+                // Build provided bottom-to-top
+                var providedVals = stackArr.Take(providedStaticArgs).ToArray(); // top-first
+                var providedBottomToTop = System.Linq.Enumerable.Reverse(providedVals).ToArray();
+
                 var args = new object?[n];
                 bool ok = true;
-                for (int i = 0; i < n; i++)
+
+                for (int pi = 0; pi < fixedCount; pi++)
                 {
-                    var src = stackArr[i]; // top-first
-                    int targetIndex = n - 1 - i;
-                    var pType = pars[targetIndex].ParameterType;
-                    if (!TryConvert(src, pType, out var converted)) { ok = false; break; }
-                    args[targetIndex] = converted;
+                    var val = providedBottomToTop.ElementAtOrDefault(pi);
+                    var pType = pars[pi].ParameterType;
+                    if (!TryConvert(val, pType, out var conv)) { ok = false; break; }
+                    args[pi] = conv;
                 }
+                if (!ok) continue;
+
+                if (methodHasParams)
+                {
+                    var elemType = pars[n - 1].ParameterType.GetElementType() ?? typeof(object);
+                    int remaining = Math.Max(0, providedBottomToTop.Length - fixedCount);
+                    var arr = Array.CreateInstance(elemType, remaining);
+                    for (int k = 0; k < remaining; k++)
+                    {
+                        var val = providedBottomToTop[fixedCount + k];
+                        if (!TryConvert(val, elemType, out var convElem)) { ok = false; break; }
+                        arr.SetValue(convElem, k);
+                    }
+                    if (!ok) continue;
+                    args[n - 1] = arr;
+                }
+
                 if (ok)
                 {
                     staticResolved = m;
@@ -596,6 +790,19 @@ public static class ForthOperations
         var stackArr = s.ToArray(); // top-first
         int provided = stackArr.Length;
         var key = ((Type?)t, methodName, provided);
+        // Fast-path: common string concat helper to avoid overload resolution pitfalls.
+        if (t == typeof(string) && string.Equals(methodName, "Concat", StringComparison.OrdinalIgnoreCase))
+        {
+            // Build string[] from stack in bottom-to-top order so earlier pushes come first in the result.
+            var providedVals = stackArr.Take(provided).ToArray(); // top-first
+            var bottomToTop = System.Linq.Enumerable.Reverse(providedVals).Select(o => o?.ToString() ?? string.Empty).ToArray();
+            var arrMi = typeof(string).GetMethod("Concat", new[] { typeof(string[]) });
+            var res = arrMi!.Invoke(null, new object[] { bottomToTop });
+            // Pop consumed args
+            for (int p = 0; p < provided; p++) s.Pop();
+            if (res != null) s.Push(res);
+            return;
+        }
         MethodInfo? resolved = null;
         lock (MethodInvocationCacheLock)
         {
@@ -604,34 +811,53 @@ public static class ForthOperations
 
         if (resolved == null)
         {
-            var candidates = t.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase)
-                .Where(m => string.Equals(m.Name, methodName, StringComparison.OrdinalIgnoreCase) && m.GetParameters().Length <= provided)
+            var methods = t.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase)
+                .Where(m => string.Equals(m.Name, methodName, StringComparison.OrdinalIgnoreCase))
                 .ToArray();
 
-            foreach (var m in candidates)
+            foreach (var m in methods)
             {
                 var pars = m.GetParameters();
                 int n = pars.Length;
+                bool methodHasParams = n > 0 && pars[n - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Any();
+                int fixedCount = methodHasParams ? n - 1 : n;
+                if (provided < fixedCount) continue;
+
+                var providedVals = stackArr.Take(provided).ToArray(); // top-first
+                var providedBottomToTop = System.Linq.Enumerable.Reverse(providedVals).ToArray();
+
                 var args = new object?[n];
                 bool ok = true;
-                for (int i = 0; i < n; i++)
+
+                for (int pi = 0; pi < fixedCount; pi++)
                 {
-                    var src = stackArr[i]; // top-first
-                    int targetIndex = n - 1 - i;
-                    var pType = pars[targetIndex].ParameterType;
-                    try
-                    {
-                        if (src == null)
-                        {
-                            if (pType.IsValueType && Nullable.GetUnderlyingType(pType) == null) { ok = false; break; }
-                            args[targetIndex] = null;
-                        }
-                        else if (pType.IsInstanceOfType(src) || pType.IsAssignableFrom(src.GetType())) args[targetIndex] = src;
-                        else args[targetIndex] = Convert.ChangeType(src, pType);
-                    }
-                    catch { ok = false; break; }
+                    var val = providedBottomToTop.ElementAtOrDefault(pi);
+                    var pType = pars[pi].ParameterType;
+                    if (!TryConvert(val, pType, out var conv)) { ok = false; break; }
+                    args[pi] = conv;
                 }
-                if (ok) { resolved = m; break; }
+                if (!ok) continue;
+
+                if (methodHasParams)
+                {
+                    var elemType = pars[n - 1].ParameterType.GetElementType() ?? typeof(object);
+                    int remaining = Math.Max(0, providedBottomToTop.Length - fixedCount);
+                    var arr = Array.CreateInstance(elemType, remaining);
+                    for (int k = 0; k < remaining; k++)
+                    {
+                        var val = providedBottomToTop[fixedCount + k];
+                        if (!TryConvert(val, elemType, out var convElem)) { ok = false; break; }
+                        arr.SetValue(convElem, k);
+                    }
+                    if (!ok) continue;
+                    args[n - 1] = arr;
+                }
+
+                if (ok)
+                {
+                    resolved = m;
+                    break;
+                }
             }
 
             lock (MethodInvocationCacheLock)
@@ -645,19 +871,80 @@ public static class ForthOperations
         var parsFinal = resolved.GetParameters();
         int pn = parsFinal.Length;
         var finalArgs = new object?[pn];
-        for (int i = 0; i < pn; i++)
-        {
-            var src = stackArr[i];
-            int targetIndex = pn - 1 - i;
-            var pType = parsFinal[targetIndex].ParameterType;
-            if (!TryConvert(src, pType, out var converted)) throw new InvalidOperationException($"Cannot convert argument to parameter type {pType.FullName} for method {resolved.Name}");
-            finalArgs[targetIndex] = converted;
-        }
 
-        // Pop consumed args
-        for (int p = 0; p < pn; p++) s.Pop();
-        var res = resolved.Invoke(null, finalArgs);
-        if (resolved.ReturnType != typeof(void) && res != null) s.Push(res);
+        bool finalHasParams = pn > 0 && parsFinal[pn - 1].GetCustomAttributes(typeof(ParamArrayAttribute), false).Any();
+        if (!finalHasParams)
+        {
+            // Normal mapping bottom-to-top
+            var providedVals = stackArr.Take(stackArr.Length).ToArray();
+            var providedBottomToTop = System.Linq.Enumerable.Reverse(providedVals).ToArray();
+            for (int pi = 0; pi < pn; pi++)
+            {
+                var val = providedBottomToTop.ElementAtOrDefault(pi);
+                var pType = parsFinal[pi].ParameterType;
+                if (!TryConvert(val, pType, out var conv)) throw new InvalidOperationException($"Cannot convert argument to parameter type {pType.FullName} for method {resolved.Name}");
+                finalArgs[pi] = conv;
+            }
+
+            // Pop consumed args
+            if (ForthCompiler.DebugEmitTokens)
+            {
+                try
+                {
+                    Console.WriteLine($"Invoking {resolved.DeclaringType?.FullName}.{resolved.Name} with {pn} args");
+                    for (int ii = 0; ii < pn; ii++) Console.WriteLine($"  arg[{ii}] = {(finalArgs[ii] == null ? "null" : finalArgs[ii]!.ToString())}");
+                }
+                catch { }
+            }
+
+            for (int p = 0; p < pn; p++) s.Pop();
+            var res = resolved.Invoke(null, finalArgs);
+            if (resolved.ReturnType != typeof(void) && res != null) s.Push(res);
+            return;
+        }
+        else
+        {
+            // Params-array: pack remaining args into the last parameter
+            int fixedCount = pn - 1;
+            var providedVals = stackArr.Take(stackArr.Length).ToArray();
+            var providedBottomToTop = System.Linq.Enumerable.Reverse(providedVals).ToArray();
+
+            // Fill fixed params
+            for (int pi = 0; pi < fixedCount; pi++)
+            {
+                var val = providedBottomToTop.ElementAtOrDefault(pi);
+                var pType = parsFinal[pi].ParameterType;
+                if (!TryConvert(val, pType, out var conv)) throw new InvalidOperationException($"Cannot convert argument to parameter type {pType.FullName} for method {resolved.Name}");
+                finalArgs[pi] = conv;
+            }
+
+            // Pack params
+            var elemType = parsFinal[pn - 1].ParameterType.GetElementType() ?? typeof(object);
+            int remaining = Math.Max(0, providedBottomToTop.Length - fixedCount);
+            var arr = Array.CreateInstance(elemType, remaining);
+            for (int k = 0; k < remaining; k++)
+            {
+                var val = providedBottomToTop[fixedCount + k];
+                if (!TryConvert(val, elemType, out var convElem)) throw new InvalidOperationException($"Cannot convert params element to {elemType.FullName} for method {resolved.Name}");
+                arr.SetValue(convElem, k);
+            }
+            finalArgs[pn - 1] = arr;
+
+            // Pop consumed args
+            if (ForthCompiler.DebugEmitTokens)
+            {
+                try
+                {
+                    Console.WriteLine($"Invoking {resolved.DeclaringType?.FullName}.{resolved.Name} with params: fixed={fixedCount} extra={remaining}");
+                    for (int ii = 0; ii < pn; ii++) Console.WriteLine($"  arg[{ii}] = {(finalArgs[ii] == null ? "null" : finalArgs[ii]!.ToString())}");
+                }
+                catch { }
+            }
+            for (int p = 0; p < fixedCount + remaining; p++) s.Pop();
+            var res = resolved.Invoke(null, finalArgs);
+            if (resolved.ReturnType != typeof(void) && res != null) s.Push(res);
+            return;
+        }
     }
 
     // Resolve by attempting Type.GetType first, then the registered/types search we already have
