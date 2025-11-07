@@ -16,7 +16,7 @@ In Yu-Gi-Oh you see it when looking at the text for old cards and the text of mo
 
 # A Possible Solution
 
-We mostly want to avoid making old content obsolete. As developers we want to spend our time efficiently. So want our players. 
+We mostly want to avoid making old content obsolete. As developers, we want to spend our time efficiently. So want our players. 
 
 We need to keep in mind two aspects. Input and output. Does one option take less input for more or the same output? Then we created a type of powercreep. We made one option obsolete because there exists a better option. 
 
@@ -26,4 +26,4 @@ We need to constantly balance and keep in mind this aspect of **input** and **ou
 
 # The Worst Case
 
-The worst case of powercreep is achieved when the options have all such high output that the game become hard to get into. Before cards had only 4 to 8 mechanics. Now there are over 80-150 to learn. Not only will the quanitity of these outputs increase but their overall effect too.
+The worst case of powercreep is achieved when the options have all such high output that the game become hard to get into. Before cards had only 4 to 8 mechanics. Now there are over 80-150 to learn. Not only will the quantity of these outputs increase but their overall effect too.

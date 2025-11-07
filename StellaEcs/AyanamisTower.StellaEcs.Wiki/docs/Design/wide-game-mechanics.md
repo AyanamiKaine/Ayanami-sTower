@@ -25,4 +25,4 @@ In Victoria 3 there exist many different cultures (302!) and each culture has th
 
 # Another Example Crusader Kings III: Coronations
 
-In the new DLC for CK3, you get the ability to make an oath. basically if you fullfill mission X get Y amounts of bonuses. Around 8 can be choosen. They are all a mix out of boring, uninspired or simply broken options. Instead of 3 really interesting options we get padded out content to sell something. Paradox needs to learn how to market and sell quality. As of today paradox only has the ability to market and sell quantity.
+In the new DLC for CK3, you get the ability to make an oath. Basically if you fulfill mission X get Y amounts of bonuses. Around 8 can be chosen. They are all a mix out of boring, uninspired or simply broken options. Instead of 3 fascinating options we get padded out content to sell something. Paradox needs to learn how to market and sell quality. As of today paradox only has the ability to market and sell quantity.
