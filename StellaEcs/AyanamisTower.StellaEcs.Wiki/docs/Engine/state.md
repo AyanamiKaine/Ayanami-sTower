@@ -9,3 +9,8 @@ The game state is just a SQLite Database. This makes it possible to add custom d
 A data transformation should always just depend on the expected schema, not necessarily that a certain transformation of the data was done before.
 
 While you might think that you must depend on a certain order of execution, each update is done in hours, so in the worst case data will be "out of sync" by only one hour. This should be an acceptable trade-off. For that you don't need to depend on the order (Something that is brittle and will often break).
+
+# Visualizing Game State
+
+The game itself will just be visualized using the data found in the database. Most interactions with the game are just commands to the database. From showing specific data to updating it.
+
