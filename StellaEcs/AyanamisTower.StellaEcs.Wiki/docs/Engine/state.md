@@ -14,3 +14,4 @@ While you might think that you must depend on a certain order of execution, each
 
 The game itself will just be visualized using the data found in the database. Most interactions with the game are just commands to the database. From showing specific data to updating it.
 
+Showing new state would just be reading the database again.
