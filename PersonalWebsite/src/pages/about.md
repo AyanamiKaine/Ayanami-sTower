@@ -46,3 +46,7 @@ My personal laptop a Microsoft Surface Studio laptop runs Fedora Linux KDE, you 
 -   Evangelion
 -   Caspar David Friedrich
 -   John Singer Sargent
+
+## Social Media
+
+- [HackerNews](https://news.ycombinator.com/user?id=AyanamiKaine)
