@@ -1,0 +1,50 @@
+---
+/**
+ * Flashcard Component
+ *
+ * An Astro component for defining flashcards with front and back content.
+ * This component doesn't render anything visible - it's used to pass flashcard
+ * data to the SpacedRepetition component.
+ *
+ * Usage:
+ * <Flashcard id="card-1" front="Question?" back="Answer!" />
+ *
+ * Or with HTML content:
+ * <Flashcard id="card-2">
+ *   <Fragment slot="front">
+ *     <h3>What is FSRS?</h3>
+ *     <p>Free Spaced Repetition Scheduler</p>
+ *   </Fragment>
+ *   <Fragment slot="back">
+ *     <p>A modern spaced repetition algorithm...</p>
+ *   </Fragment>
+ * </Flashcard>
+ */
+
+interface Props {
+    id: string;
+    front?: string;
+    back?: string;
+    tags?: string[];
+}
+
+const { id, front, back, tags = [] } = Astro.props;
+---
+
+<div
+    class="flashcard-definition"
+    data-id={id}
+    data-tags={JSON.stringify(tags)}
+    style="display: none;"
+>
+    {front && <div class="front-simple" data-content={front} />}
+    {back && <div class="back-simple" data-content={back} />}
+
+    <div class="front-slot">
+        <slot name="front" />
+    </div>
+
+    <div class="back-slot">
+        <slot name="back" />
+    </div>
+</div>

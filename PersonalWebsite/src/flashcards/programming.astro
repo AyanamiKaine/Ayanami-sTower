@@ -1,0 +1,54 @@
+---
+import Flashcard from "../components/Flashcard.astro";
+import CodeBlock from "../components/CodeBlock.astro";
+---
+
+<!-- Programming Flashcards -->
+<Flashcard id="programming-1" tags={["programming", "javascript"]}>
+    <Fragment slot="front">
+        <h3>What is a closure in JavaScript?</h3>
+        <p>Explain with an example.</p>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            A closure is a function that has access to variables in its outer
+            (enclosing) lexical scope, even after the outer function has
+            returned.
+        </p>
+        <CodeBlock
+            lang="javascript"
+            code={`function outer() {
+  let count = 0;
+  return function inner() {
+    count++;
+    return count;
+  }
+}`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Flashcard id="programming-2" tags={["programming", "concepts"]}>
+    <Fragment slot="front">
+        <h3>
+            What is the difference between <code>var</code>, <code>let</code>,
+            and <code>const</code>?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <ul>
+            <li>
+                <strong>var</strong>: Function-scoped, can be redeclared,
+                hoisted
+            </li>
+            <li>
+                <strong>let</strong>: Block-scoped, cannot be redeclared, not
+                hoisted
+            </li>
+            <li>
+                <strong>const</strong>: Block-scoped, cannot be redeclared or
+                reassigned, not hoisted
+            </li>
+        </ul>
+    </Fragment>
+</Flashcard>

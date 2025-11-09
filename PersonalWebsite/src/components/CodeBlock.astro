@@ -1,0 +1,39 @@
+---
+import { codeToHtml } from "shiki";
+
+interface Props {
+    code: string;
+    lang?: string;
+    theme?: string;
+}
+
+const { code, lang = "javascript", theme = "github-light" } = Astro.props;
+
+// Generate syntax-highlighted HTML
+const html = await codeToHtml(code, {
+    lang,
+    theme,
+});
+---
+
+<Fragment set:html={html} />
+
+<style>
+    .code-block-wrapper {
+        margin: 1rem 0;
+    }
+
+    .code-block-wrapper :global(pre) {
+        border-radius: 6px !important;
+        padding: 1rem !important;
+        overflow-x: auto !important;
+        border: 1px solid #dee2e6 !important;
+        margin: 0 !important;
+    }
+
+    .code-block-wrapper :global(code) {
+        font-family: "Consolas", "Monaco", "Courier New", monospace !important;
+        font-size: 0.875rem !important;
+        line-height: 1.5 !important;
+    }
+</style>

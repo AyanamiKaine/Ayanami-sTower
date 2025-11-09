@@ -1,0 +1,129 @@
+---
+import AppLayout from "../../layouts/AppLayout.astro";
+import SpacedRepetition from "../../components/SpacedRepetition.svelte";
+
+// Dynamically import all flashcard files from the flashcards directory
+const flashcardFiles = import.meta.glob("../../flashcards/*.astro", {
+    eager: true,
+});
+const flashcardComponents = Object.values(flashcardFiles).map(
+    (mod: any) => mod.default
+);
+---
+
+<AppLayout title="Spaced Repetition Learning">
+    <div class="spaced-repetition-page">
+        <header class="page-header">
+            <h1>Spaced Repetition Learning</h1>
+            <p>
+                My personal flashcards
+            </p>
+        </header>
+
+        <!-- Dynamically render all flashcard components -->
+        {
+            flashcardComponents.map((FlashcardComponent) => (
+                <FlashcardComponent />
+            ))
+        }
+
+        <!-- The SpacedRepetition component manages all the flashcards defined above -->
+        <SpacedRepetition client:load />
+    </div>
+</AppLayout>
+
+<style>
+    .spaced-repetition-page {
+        width: 100%;
+        max-width: 100%;
+        min-height: 100vh;
+        padding: 2rem;
+    }
+
+    .page-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .page-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #4dabf7 0%, #51cf66 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        color: #fff; /* Fallback color */
+    }
+
+    .page-header p {
+        font-size: 1.125rem;
+        color: #6c757d;
+    }
+
+    /* Hide the flashcard definitions */
+    :global(.flashcard-definition) {
+        display: none !important;
+    }
+
+    /* Override prose styling for flashcard content */
+    :global(.flashcard-definition h3),
+    :global(.card-content h3) {
+        color: #212529 !important;
+        font-weight: 600;
+    }
+
+    :global(.flashcard-definition p),
+    :global(.card-content p) {
+        color: #212529 !important;
+        line-height: 1.6;
+    }
+
+    :global(.flashcard-definition ul),
+    :global(.card-content ul) {
+        color: #212529 !important;
+    }
+
+    :global(.flashcard-definition li),
+    :global(.card-content li) {
+        color: #212529 !important;
+        margin-bottom: 0.5rem;
+    }
+
+    :global(.flashcard-definition strong),
+    :global(.card-content strong) {
+        color: #212529 !important;
+        font-weight: 600;
+    }
+
+    /* Inline code styling */
+    :global(.flashcard-definition code),
+    :global(.card-content code) {
+        color: #d63384 !important;
+        background: #f8f9fa !important;
+        padding: 0.2em 0.4em !important;
+        border-radius: 4px !important;
+        font-size: 0.875em !important;
+        font-family: "Consolas", "Monaco", "Courier New", monospace !important;
+    }
+
+    /* Code block styling */
+    :global(.flashcard-definition pre),
+    :global(.card-content pre) {
+        background: #f8f9fa !important;
+        border: 1px solid #dee2e6 !important;
+        border-radius: 6px !important;
+        padding: 1rem !important;
+        overflow-x: auto !important;
+        margin: 1rem 0 !important;
+    }
+
+    :global(.flashcard-definition pre code),
+    :global(.card-content pre code) {
+        color: #212529 !important;
+        background: transparent !important;
+        padding: 0 !important;
+        font-size: 0.875rem !important;
+        line-height: 1.5 !important;
+        display: block !important;
+    }
+</style>

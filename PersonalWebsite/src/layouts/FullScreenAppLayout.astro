@@ -1,8 +1,7 @@
 ---
-// src/layouts/AppLayout.astro
+// src/layouts/FullScreenAppLayout.astro
+// Layout for apps that need the entire viewport (like Dialog Editor)
 import BaseLayout from "./BaseLayout.astro";
-import Header from "../components/Header.astro";
-import Footer from "../components/Footer.astro";
 import Notification from "../components/ui/Notification.svelte";
 
 export interface Props {
@@ -12,10 +11,6 @@ const { title } = Astro.props;
 ---
 
 <BaseLayout title={title}>
-    <Header />
     <Notification client:only="svelte" />
-    <main>
-        <slot />
-    </main>
-    <Footer />
+    <slot />
 </BaseLayout>
