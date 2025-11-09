@@ -973,21 +973,49 @@
       </div>
       
       <div class="preview-card">
-        <div class="preview-section">
-          <div class="preview-label">Front (Question)</div>
-          <div class="preview-content">
-            {@html previewCard.front}
+        {#if previewCard.type === 'quiz'}
+          <!-- Quiz Preview -->
+          <div class="preview-section">
+            <div class="preview-label">Quiz Question</div>
+            <div class="preview-content">
+              {@html previewCard.question}
+            </div>
           </div>
-        </div>
-        
-        <div class="preview-divider"></div>
-        
-        <div class="preview-section">
-          <div class="preview-label">Back (Answer)</div>
-          <div class="preview-content">
-            {@html previewCard.back}
+          
+          <div class="preview-divider"></div>
+          
+          <div class="preview-section">
+            <div class="preview-label">Answer Options</div>
+            <div class="preview-quiz-options">
+              {#each previewCard.options as option, index}
+                <div class="preview-quiz-option {index === previewCard.correctIndex ? 'preview-correct' : ''}">
+                  <span class="preview-option-letter">{String.fromCharCode(65 + index)}</span>
+                  <span class="preview-option-text">{option}</span>
+                  {#if index === previewCard.correctIndex}
+                    <span class="preview-correct-badge">✓ Correct Answer</span>
+                  {/if}
+                </div>
+              {/each}
+            </div>
           </div>
-        </div>
+        {:else}
+          <!-- Flashcard Preview -->
+          <div class="preview-section">
+            <div class="preview-label">Front (Question)</div>
+            <div class="preview-content">
+              {@html previewCard.front}
+            </div>
+          </div>
+          
+          <div class="preview-divider"></div>
+          
+          <div class="preview-section">
+            <div class="preview-label">Back (Answer)</div>
+            <div class="preview-content">
+              {@html previewCard.back}
+            </div>
+          </div>
+        {/if}
         
         {#if previewCard.tags && previewCard.tags.length > 0}
           <div class="preview-tags">
@@ -1780,6 +1808,67 @@
   .preview-ref-link:hover {
     color: #0a58ca;
     text-decoration: underline;
+  }
+
+  /* Preview Quiz Styles */
+  .preview-quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .preview-quiz-option {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .preview-quiz-option.preview-correct {
+    background: #d1e7dd;
+    border-color: #198754;
+  }
+
+  .preview-option-letter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: #e9ecef;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: #495057;
+    flex-shrink: 0;
+  }
+
+  .preview-quiz-option.preview-correct .preview-option-letter {
+    background: #198754;
+    color: white;
+  }
+
+  .preview-option-text {
+    flex: 1;
+    line-height: 1.5;
+    color: #212529;
+  }
+
+  .preview-correct-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    background: #198754;
+    color: white;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
   }
 
   /* Cloze styles */
