@@ -2,7 +2,12 @@
 import Flashcard from "../components/Flashcard.astro";
 ---
 
-<Flashcard id="video-1" tags={["video", "example"]} source="programming.astro">
+<Flashcard
+    id="video-1"
+    tags={["video", "example"]}
+    source="programming.astro"
+    priority={1000}
+>
     <Fragment slot="front">
         <h3>What is a great video?</h3>
     </Fragment>
