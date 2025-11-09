@@ -22,6 +22,7 @@
   let cramMode = $state(false);
   let cramCards = $state([]);
   let cramIndex = $state(0);
+  let cramAgainCards = $state([]); // Cards marked as "Again" to review again
   let viewMode = $state('review'); // 'review' or 'manage'
   let sortColumn = $state('due');
   let sortDirection = $state('asc');
@@ -105,11 +106,16 @@
    */
   function loadNextCard() {
     if (cramMode) {
-      // In cram mode, load from the cram cards array
+      // In cram mode: first check if we have cards in the main deck
       if (cramIndex < cramCards.length) {
         currentCard = cramCards[cramIndex];
         showAnswer = false;
+      } else if (cramAgainCards.length > 0) {
+        // Main deck is done, now review "Again" cards
+        currentCard = cramAgainCards.shift();
+        showAnswer = false;
       } else {
+        // Everything is done
         currentCard = null;
       }
     } else {
@@ -134,12 +140,14 @@
       // Entering cram mode: load all cards
       cramCards = queue.getAllCards();
       cramIndex = 0;
+      cramAgainCards = [];
       // Shuffle the cards for variety
       shuffleArray(cramCards);
     } else {
       // Exiting cram mode: reset to normal
       cramCards = [];
       cramIndex = 0;
+      cramAgainCards = [];
     }
     
     loadNextCard();
@@ -162,8 +170,15 @@
     if (!currentCard) return;
     
     if (cramMode) {
-      // In cram mode: don't update FSRS scheduling, just move to next card
-      cramIndex++;
+      // In cram mode: don't update FSRS scheduling
+      if (rating === 1) {
+        // Rating is "Again" - add card to the end of the "Again" pile to review later
+        cramAgainCards.push(currentCard);
+        // Don't increment cramIndex - this card doesn't count as "completed"
+      } else {
+        // Card was reviewed successfully (Hard/Good/Easy) - move to next card
+        cramIndex++;
+      }
       loadNextCard();
     } else {
       // Normal mode: update FSRS scheduling
@@ -441,6 +456,12 @@
         <span class="stat-label">Cram Progress:</span>
         <span class="stat-value">{cramIndex} / {cramCards.length}</span>
       </div>
+      {#if cramAgainCards.length > 0}
+        <div class="stat again">
+          <span class="stat-label">Review Again:</span>
+          <span class="stat-value">{cramAgainCards.length}</span>
+        </div>
+      {/if}
     {/if}
     <button 
       class="view-toggle-btn {viewMode === 'manage' ? 'active' : ''}" 
@@ -691,6 +712,20 @@
 
   .stat.cram .stat-value {
     color: #6f42c1;
+  }
+
+  .stat.again .stat-value {
+    color: #fd7e14;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
   }
 
   .mode-btn {
