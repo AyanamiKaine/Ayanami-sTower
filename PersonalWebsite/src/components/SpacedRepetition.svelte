@@ -10,7 +10,12 @@
    * Uses FSRS algorithm and a priority queue to manage flashcard reviews.
    */
 
+  // Props
+  let { isDev = false } = $props();
+
   const STORAGE_KEY = 'spaced-repetition-data';
+  const SYNC_PASSWORD_KEY = 'spaced-repetition-sync-password';
+  const SYNC_ENABLED_KEY = 'spaced-repetition-sync-enabled';
   
   let queue = $state(new PriorityQueue());
   // Initialize FSRS with fuzzing enabled
@@ -36,8 +41,22 @@
     review: 0
   });
 
+  // Sync-related state
+  let showSyncModal = $state(false);
+  let syncPassword = $state('');
+  let syncEnabled = $state(false);
+  let syncStatus = $state(''); // 'syncing', 'success', 'error', ''
+  let syncMessage = $state('');
+  let lastSyncTime = $state(null);
+
   onMount(() => {
     initializeCards();
+    loadSyncSettings();
+    
+    // If sync is enabled, do initial sync
+    if (syncEnabled) {
+      syncFromServer();
+    }
   });
 
   /**
@@ -264,7 +283,7 @@
   }
 
   /**
-   * Save progress to localStorage
+   * Save progress to localStorage and sync to server if enabled
    */
   function saveProgress() {
     const data = queue.getAllCards().map(card => ({
@@ -280,6 +299,11 @@
     
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      
+      // Background sync to server if enabled
+      if (syncEnabled) {
+        syncToServer();
+      }
     } catch (e) {
       console.error('Failed to save progress:', e);
     }
@@ -450,6 +474,171 @@
     const states = ['New', 'Learning', 'Review', 'Relearning'];
     return states[state] || 'Unknown';
   }
+
+  /**
+   * Load sync settings from localStorage
+   */
+  function loadSyncSettings() {
+    try {
+      const enabled = localStorage.getItem(SYNC_ENABLED_KEY);
+      const password = localStorage.getItem(SYNC_PASSWORD_KEY);
+      
+      if (enabled === 'true' && password) {
+        syncEnabled = true;
+        syncPassword = password;
+      }
+    } catch (e) {
+      console.error('Failed to load sync settings:', e);
+    }
+  }
+
+  /**
+   * Save sync settings to localStorage
+   */
+  function saveSyncSettings() {
+    try {
+      localStorage.setItem(SYNC_ENABLED_KEY, syncEnabled.toString());
+      if (syncEnabled && syncPassword) {
+        localStorage.setItem(SYNC_PASSWORD_KEY, syncPassword);
+      } else {
+        localStorage.removeItem(SYNC_PASSWORD_KEY);
+      }
+    } catch (e) {
+      console.error('Failed to save sync settings:', e);
+    }
+  }
+
+  /**
+   * Sync data from server
+   */
+  async function syncFromServer() {
+    if (!syncPassword) return;
+
+    try {
+      syncStatus = 'syncing';
+      syncMessage = 'Downloading from server...';
+
+      const response = await fetch(`/api/sync.json?password=${encodeURIComponent(syncPassword)}`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Sync failed');
+      }
+
+      if (result.data) {
+        // Server has data, merge with local
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(result.data));
+        queue = new PriorityQueue();
+        initializeCards();
+        lastSyncTime = new Date(result.lastSync);
+        syncStatus = 'success';
+        syncMessage = 'Synced from server successfully!';
+      } else {
+        // Server has no data, upload local data
+        await syncToServer();
+      }
+
+      setTimeout(() => {
+        syncStatus = '';
+        syncMessage = '';
+      }, 3000);
+
+    } catch (error) {
+      console.error('Sync from server error:', error);
+      syncStatus = 'error';
+      syncMessage = error.message || 'Failed to sync from server';
+      
+      setTimeout(() => {
+        syncStatus = '';
+        syncMessage = '';
+      }, 5000);
+    }
+  }
+
+  /**
+   * Sync data to server
+   */
+  async function syncToServer() {
+    if (!syncPassword || !syncEnabled) return;
+
+    try {
+      const data = loadFromStorage();
+      if (!data) return;
+
+      const response = await fetch('/api/sync.json', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          password: syncPassword,
+          data: data
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Upload failed');
+      }
+
+      lastSyncTime = new Date(result.lastSync);
+      
+    } catch (error) {
+      console.error('Sync to server error:', error);
+      // Don't show error to user for background syncs
+    }
+  }
+
+  /**
+   * Enable sync with password
+   */
+  async function enableSync() {
+    if (!syncPassword) {
+      syncMessage = 'Please enter a password';
+      syncStatus = 'error';
+      return;
+    }
+
+    syncEnabled = true;
+    saveSyncSettings();
+    
+    // Do initial sync
+    await syncFromServer();
+    
+    if (syncStatus !== 'error') {
+      showSyncModal = false;
+    }
+  }
+
+  /**
+   * Disable sync
+   */
+  function disableSync() {
+    syncEnabled = false;
+    syncPassword = '';
+    lastSyncTime = null;
+    saveSyncSettings();
+    showSyncModal = false;
+    syncMessage = 'Sync disabled';
+    syncStatus = 'success';
+    
+    setTimeout(() => {
+      syncStatus = '';
+      syncMessage = '';
+    }, 3000);
+  }
+
+  /**
+   * Toggle sync modal
+   */
+  function toggleSyncModal() {
+    showSyncModal = !showSyncModal;
+    if (!showSyncModal) {
+      syncStatus = '';
+      syncMessage = '';
+    }
+  }
 </script>
 
 <div class="spaced-repetition-container">
@@ -503,8 +692,26 @@
         {cramMode ? '📚 Exit Cram' : '📖 Cram Mode'}
       </button>
     {/if}
-    <button class="reset-btn" onclick={resetProgress}>Reset Progress</button>
+    <button 
+      class="sync-btn {syncEnabled ? 'active' : ''}" 
+      onclick={toggleSyncModal}
+      title={syncEnabled ? `Sync enabled - Last sync: ${lastSyncTime ? lastSyncTime.toLocaleString() : 'Never'}` : "Enable sync to backup your progress"}
+    >
+      {syncEnabled ? '☁️ Synced' : '☁️ Sync'}
+    </button>
+    {#if isDev}
+      <button class="reset-btn" onclick={resetProgress} title="⚠️ Development only - Resets all progress">
+        Reset Progress
+      </button>
+    {/if}
   </div>
+
+  <!-- Sync Status Message -->
+  {#if syncMessage}
+    <div class="sync-status {syncStatus}">
+      {syncMessage}
+    </div>
+  {/if}
 
   {#if viewMode === 'manage'}
     <!-- Manage View - Table of all cards -->
@@ -714,6 +921,61 @@
       </div>
     {/if}
   {/if}
+
+  <!-- Sync Modal -->
+  {#if showSyncModal}
+    <div class="modal-overlay" onclick={toggleSyncModal}>
+      <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+        <div class="modal-header">
+          <h2>☁️ Sync Settings</h2>
+          <button class="modal-close" onclick={toggleSyncModal}>✕</button>
+        </div>
+        
+        <div class="modal-body">
+          {#if !syncEnabled}
+            <p class="modal-description">
+              Enable sync to backup your learning progress across devices. 
+              Enter your personal sync password below.
+            </p>
+            
+            <div class="form-group">
+              <label for="sync-password">Sync Password</label>
+              <input 
+                id="sync-password"
+                type="password" 
+                bind:value={syncPassword}
+                placeholder="Enter your sync password"
+                class="password-input"
+              />
+            </div>
+
+            <button class="enable-sync-btn" onclick={enableSync}>
+              Enable Sync
+            </button>
+          {:else}
+            <div class="sync-info">
+              <p class="sync-enabled">✅ Sync is enabled</p>
+              {#if lastSyncTime}
+                <p class="last-sync">Last synced: {lastSyncTime.toLocaleString()}</p>
+              {/if}
+              <p class="sync-note">
+                Your progress is automatically synced after each review.
+              </p>
+            </div>
+
+            <div class="sync-actions">
+              <button class="manual-sync-btn" onclick={syncFromServer}>
+                🔄 Sync Now
+              </button>
+              <button class="disable-sync-btn" onclick={disableSync}>
+                Disable Sync
+              </button>
+            </div>
+          {/if}
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -854,6 +1116,261 @@
   .reset-btn:hover {
     background: #dc3545;
     color: #fff;
+    border-color: #dc3545;
+  }
+
+  .sync-btn {
+    padding: 0.5rem 1rem;
+    background: #f8f9fa;
+    color: #212529;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+  }
+
+  .sync-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+  }
+
+  .sync-btn.active {
+    background: #198754;
+    color: #fff;
+    border-color: #198754;
+  }
+
+  .sync-btn.active:hover {
+    background: #157347;
+  }
+
+  .sync-status {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    text-align: center;
+  }
+
+  .sync-status.syncing {
+    background: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+    border: 1px solid rgba(13, 110, 253, 0.2);
+  }
+
+  .sync-status.success {
+    background: rgba(25, 135, 84, 0.1);
+    color: #198754;
+    border: 1px solid rgba(25, 135, 84, 0.2);
+  }
+
+  .sync-status.error {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+  }
+
+  /* Modal Styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .modal-content {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  .modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #212529;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  .modal-close:hover {
+    background: #f8f9fa;
+    color: #212529;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-description {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #212529;
+    font-size: 0.875rem;
+  }
+
+  .password-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+  }
+
+  .password-input:focus {
+    outline: none;
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+  }
+
+  .enable-sync-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: #198754;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .enable-sync-btn:hover {
+    background: #157347;
+  }
+
+  .sync-info {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+  }
+
+  .sync-enabled {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #198754;
+    margin-bottom: 0.5rem;
+  }
+
+  .last-sync {
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .sync-note {
+    color: #6c757d;
+    font-size: 0.875rem;
+    font-style: italic;
+    margin: 0;
+  }
+
+  .sync-actions {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .manual-sync-btn {
+    flex: 1;
+    padding: 0.75rem;
+    background: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .manual-sync-btn:hover {
+    background: #0b5ed7;
+  }
+
+  .disable-sync-btn {
+    flex: 1;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    color: #dc3545;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .disable-sync-btn:hover {
+    background: #dc3545;
+    color: white;
     border-color: #dc3545;
   }
 
@@ -1335,6 +1852,7 @@
 
     .view-toggle-btn,
     .mode-btn,
+    .sync-btn,
     .reset-btn {
       padding: 0.375rem 0.625rem;
       font-size: 0.75rem;
@@ -1349,6 +1867,7 @@
 
       .view-toggle-btn,
       .mode-btn,
+      .sync-btn,
       .reset-btn {
         flex: 1;
         min-width: 0;
