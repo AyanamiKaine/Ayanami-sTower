@@ -9,8 +9,12 @@
  * Usage:
  * <Flashcard id="card-1" front="Question?" back="Answer!" />
  *
+ * With priority (higher number = higher priority, shown first):
+ * <Flashcard id="card-important" front="Critical concept" back="Must learn first!" priority={100} />
+ * <Flashcard id="card-normal" front="Regular concept" back="Learn this second" priority={10} />
+ *
  * Or with HTML content:
- * <Flashcard id="card-2">
+ * <Flashcard id="card-2" priority={50}>
  *   <Fragment slot="front">
  *     <h3>What is FSRS?</h3>
  *     <p>Free Spaced Repetition Scheduler</p>
@@ -28,9 +32,18 @@ interface Props {
     tags?: string[];
     source?: string;
     references?: string[];
+    priority?: number; // Custom priority (higher = higher priority, default = 0)
 }
 
-const { id, front, back, tags = [], source, references = [] } = Astro.props;
+const {
+    id,
+    front,
+    back,
+    tags = [],
+    source,
+    references = [],
+    priority = 0,
+} = Astro.props;
 
 // Auto-detect source filename if not provided
 let sourceFile = source;
@@ -48,6 +61,7 @@ if (!sourceFile) {
     data-tags={JSON.stringify(tags)}
     data-source={sourceFile}
     data-references={JSON.stringify(references)}
+    data-priority={priority}
     style="display: none;"
 >
     {front && <div class="front-simple" data-content={front} />}

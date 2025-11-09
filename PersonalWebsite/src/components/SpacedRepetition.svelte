@@ -53,6 +53,7 @@
       const id = el.dataset.id;
       const tags = JSON.parse(el.dataset.tags || '[]');
       const references = JSON.parse(el.dataset.references || '[]');
+      const priority = parseInt(el.dataset.priority || '0', 10);
       let source = el.dataset.source || '';
       
       // If no source is provided, try to get it from the parent wrapper
@@ -107,7 +108,8 @@
         card: fsrsCard,
         due,
         source,
-        references
+        references,
+        priority
       };
       
       queue.enqueue(cardData);
@@ -158,8 +160,8 @@
       cramCards = queue.getAllCards();
       cramIndex = 0;
       cramAgainCards = [];
-      // Shuffle the cards for variety
-      shuffleArray(cramCards);
+      // Apply priority-based shuffle with ±20% variance
+      priorityShuffleArray(cramCards);
     } else {
       // Exiting cram mode: reset to normal
       cramCards = [];
@@ -171,13 +173,35 @@
   }
   
   /**
-   * Shuffle array in place (Fisher-Yates algorithm)
+   * Shuffle array with priority awareness - each card can move ±20% from its priority position
+   * Higher priority cards (earlier in sorted order) stay roughly at the front
    */
-  function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
+  function priorityShuffleArray(array) {
+    const totalCards = array.length;
+    
+    // Create array of objects with original index and random offset
+    const indexedArray = array.map((card, index) => {
+      // Calculate ±20% range for this position
+      const variance = Math.floor(totalCards * 0.2);
+      
+      // Generate random offset within ±20% of current position
+      const minOffset = Math.max(0, index - variance);
+      const maxOffset = Math.min(totalCards - 1, index + variance);
+      const randomPosition = Math.floor(Math.random() * (maxOffset - minOffset + 1)) + minOffset;
+      
+      return {
+        card,
+        originalIndex: index,
+        randomPosition
+      };
+    });
+    
+    // Sort by the random position
+    indexedArray.sort((a, b) => a.randomPosition - b.randomPosition);
+    
+    // Replace array contents with shuffled cards
+    array.length = 0;
+    indexedArray.forEach(item => array.push(item.card));
   }
 
   /**
@@ -277,7 +301,8 @@
       back: card.back,
       tags: card.tags,
       source: card.source,
-      references: card.references
+      references: card.references,
+      priority: card.priority
     }));
     
     try {
@@ -675,6 +700,7 @@
             </div>
           {/if}
           <div class="card-info">
+            <span>Priority: {currentCard.priority ?? 0}</span>
             <span>Difficulty: {currentCard.card.difficulty.toFixed(2)}</span>
             <span>Stability: {currentCard.card.stability.toFixed(2)} days</span>
             <span>Reviews: {currentCard.card.reps}</span>
