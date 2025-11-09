@@ -1,0 +1,40 @@
+---
+title: "Data and Behavior Tears Me Apart"
+date: 2025-11-09
+author: "Ayanami Kaine"
+tags: ["Programming"]
+layout: ../../layouts/PostLayout.astro
+summary: "What is more important data or behavior?"
+published: true
+---
+
+All love relational databases like SQL. Its such a nice way to associate data with each other. A `has` relationship is always nice to work with then a `It's a` relationship. BUT there is something bothersome. While I love working with SQL introducing behavior to the data is not as nice. 
+
+In reality behavior would just be something that updates the database. But the data itself can't do jack shit. What is more important what a human is? Or what a human can do? On one hand what is behavior without data or data without behavior?
+
+An object that does nothing is not interesting, an object that is nothing can do what? In some form the entire idea of splitting data and behavior is probably misguided. Data is behavior and behavior is data.
+
+The question is what do we gain by not splitting these two ideas? Now we don't have JSON but just JavaScript? One reason why we just don't share program snippets is security, just imagine every website on the planet being able to delete folders on your computer.
+
+You can't imagine how much I just want everything to be just programs to execute.
+- JSON = program
+- HTML = program
+- PNG = program
+- MP4 = program
+- Everything = (you guessed it) program
+
+Sadly from a security perspective this idea would be absolutely brain-dead.
+
+## Permission Based Security
+
+If we introduced permissions that the user has to give every website before it can do anything on your computer it just results in the same mess as on Android. Here the user gets bombarded with *"The Deluxe Super Calculator needs 100 permissions"* and the user just accepts it blindly.
+
+Most users will never understand what some permissions actually allow. **"WHAT MY PHOTO FOLDER WAS DELETED!, yea you gave it file permissions. YEA TO BUT NOT TO DELETE MY PHOTOS!"**
+
+## Sandboxing
+
+Many people advocate for strict sandboxing. I wonder if this is a perfect idea. All lifeforms are in some way effected by other living creatures that invade their body. Parasites, bacteria, viruses; But those lifeforms have multiple working redundant systems to protect them, and we don't even have a good useful antivirus program.
+
+Lately more programs ask me to exclude them from Windows Defender because of the performance impact of it.[^1] Because of the lack of real innovations some antivirus software just say fuck it lets scan every new file, every file that gets executed etc. The last part I hate so much on Windows. When I created a Command Line tool in C# and the startup was slow, people said: **"BECAUSE OF THE VM, JAVA AND C# HAVE SLOW START UP TIMES"**. Writing the same tool in C++ resulted in the same startup time but not on Linux. On Linux C# and C++ where nearly identical.
+
+[^1]: [Antivirus Impact on Build Speed](https://intellij-support.jetbrains.com/hc/en-us/articles/360006298560-Antivirus-Impact-on-Build-Speed)
