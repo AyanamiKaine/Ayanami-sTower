@@ -24,6 +24,7 @@ import Flashcard from "../components/Flashcard.astro";
   front="Your question here"
   back="Your answer here"
   tags={["category", "topic"]}
+  source="my-topic.astro"
 />
 ```
 
@@ -35,7 +36,7 @@ import Flashcard from "../components/Flashcard.astro";
 import CodeBlock from "../components/CodeBlock.astro";
 ---
 
-<Flashcard id="unique-id-2" tags={["programming"]}>
+<Flashcard id="unique-id-2" tags={["programming"]} source="my-topic.astro">
   <Fragment slot="front">
     <h3>What is a closure?</h3>
     <p>Explain with code examples.</p>
@@ -70,6 +71,7 @@ flashcards/
 2. **Auto-Loading**: Files are automatically loaded when you start the dev server
 3. **Syntax Highlighting**: Use the `CodeBlock` component for syntax-highlighted code
 4. **Tags**: Use tags to categorize and filter flashcards (optional but recommended)
+5. **Source Tracking**: Add `source="filename.astro"` to enable the "Edit on GitHub" button for easy editing
 
 ## Code Blocks with Syntax Highlighting
 

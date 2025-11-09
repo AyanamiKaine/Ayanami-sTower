@@ -4,7 +4,11 @@ import CodeBlock from "../components/CodeBlock.astro";
 ---
 
 <!-- Programming Flashcards -->
-<Flashcard id="programming-1" tags={["programming", "javascript"]}>
+<Flashcard
+    id="programming-1"
+    tags={["programming", "javascript"]}
+    source="programming.astro"
+>
     <Fragment slot="front">
         <h3>What is a closure in JavaScript?</h3>
         <p>Explain with an example.</p>
@@ -28,7 +32,11 @@ import CodeBlock from "../components/CodeBlock.astro";
     </Fragment>
 </Flashcard>
 
-<Flashcard id="programming-2" tags={["programming", "concepts"]}>
+<Flashcard
+    id="programming-2"
+    tags={["programming", "concepts"]}
+    source="programming.astro"
+>
     <Fragment slot="front">
         <h3>
             What is the difference between <code>var</code>, <code>let</code>,

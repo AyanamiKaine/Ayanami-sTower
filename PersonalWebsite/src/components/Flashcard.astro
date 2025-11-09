@@ -26,15 +26,26 @@ interface Props {
     front?: string;
     back?: string;
     tags?: string[];
+    source?: string;
 }
 
-const { id, front, back, tags = [] } = Astro.props;
+const { id, front, back, tags = [], source } = Astro.props;
+
+// Auto-detect source filename if not provided
+let sourceFile = source;
+if (!sourceFile) {
+    // Get the filename from the call stack (Astro provides this via import.meta.url context)
+    // Since we can't easily get the caller's filename in Astro, we'll extract it from the component's parent
+    // For now, users should provide the source manually or we can leave it empty
+    sourceFile = "";
+}
 ---
 
 <div
     class="flashcard-definition"
     data-id={id}
     data-tags={JSON.stringify(tags)}
+    data-source={sourceFile}
     style="display: none;"
 >
     {front && <div class="front-simple" data-content={front} />}

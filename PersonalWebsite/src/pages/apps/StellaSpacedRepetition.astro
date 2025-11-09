@@ -6,8 +6,17 @@ import SpacedRepetition from "../../components/SpacedRepetition.svelte";
 const flashcardFiles = import.meta.glob("../../flashcards/*.astro", {
     eager: true,
 });
-const flashcardComponents = Object.values(flashcardFiles).map(
-    (mod: any) => mod.default
+
+// Create an array of components with their filenames
+const flashcardData = Object.entries(flashcardFiles).map(
+    ([path, mod]: [string, any]) => {
+        // Extract just the filename from the path
+        const filename = path.split("/").pop() || "";
+        return {
+            component: mod.default,
+            filename: filename,
+        };
+    }
 );
 ---
 
@@ -27,8 +36,10 @@ const flashcardComponents = Object.values(flashcardFiles).map(
 
         <!-- Dynamically render all flashcard components -->
         {
-            flashcardComponents.map((FlashcardComponent) => (
-                <FlashcardComponent />
+            flashcardData.map(({ component: FlashcardComponent, filename }) => (
+                <div data-flashcard-file={filename}>
+                    <FlashcardComponent />
+                </div>
             ))
         }
 

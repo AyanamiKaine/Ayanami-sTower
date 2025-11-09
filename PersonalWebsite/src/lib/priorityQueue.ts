@@ -12,6 +12,7 @@ export interface FlashcardData {
   tags: string[];
   card: any; // FSRS Card object
   due: Date;
+  source?: string; // Optional source filename for GitHub edit link
 }
 
 export class PriorityQueue {

@@ -50,6 +50,15 @@
     cardElements.forEach(el => {
       const id = el.dataset.id;
       const tags = JSON.parse(el.dataset.tags || '[]');
+      let source = el.dataset.source || '';
+      
+      // If no source is provided, try to get it from the parent wrapper
+      if (!source) {
+        const wrapper = el.closest('[data-flashcard-file]');
+        if (wrapper) {
+          source = wrapper.dataset.flashcardFile || '';
+        }
+      }
       
       // Get front content
       let front = '';
@@ -87,14 +96,18 @@
         due = new Date(); // New cards are due immediately
       }
       
-      queue.enqueue({
+      const cardData = {
         id,
         front,
         back,
         tags,
         card: fsrsCard,
-        due
-      });
+        due,
+        source
+      };
+      
+      console.log('Enqueuing card:', id, 'with source:', source);
+      queue.enqueue(cardData);
     });
     
     updateStats();
@@ -251,7 +264,8 @@
       due: card.due.toISOString(),
       front: card.front,
       back: card.back,
-      tags: card.tags
+      tags: card.tags,
+      source: card.source
     }));
     
     try {
@@ -636,6 +650,17 @@
             <span>Difficulty: {currentCard.card.difficulty.toFixed(2)}</span>
             <span>Stability: {currentCard.card.stability.toFixed(2)} days</span>
             <span>Reviews: {currentCard.card.reps}</span>
+            {#if currentCard.source}
+              <a 
+                href={`https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/PersonalWebsite/src/flashcards/${currentCard.source}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="edit-btn"
+                title="Edit this flashcard on GitHub"
+              >
+                ✏️ Edit
+              </a>
+            {/if}
           </div>
         </div>
       </div>
@@ -958,6 +983,29 @@
     gap: 1.5rem;
     font-size: 0.875rem;
     color: #6c757d;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    background: #f8f9fa;
+    color: #0d6efd;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.75rem;
+    transition: all 0.2s;
+    margin-left: auto;
+  }
+
+  .edit-btn:hover {
+    background: #0d6efd;
+    color: #fff;
+    border-color: #0d6efd;
   }
 
   .no-cards {
