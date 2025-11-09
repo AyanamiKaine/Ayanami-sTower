@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { createEmptyCard, FSRS, Rating } from 'ts-fsrs';
   import { PriorityQueue } from '../lib/priorityQueue';
 
@@ -40,6 +40,17 @@
 
   onMount(() => {
     initializeCards();
+    // Register global keyboard shortcuts for review (guard for SSR)
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', handleShortcutKey);
+    }
+  });
+
+  // Cleanup listener on destroy
+  onDestroy(() => {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('keydown', handleShortcutKey);
+    }
   });
 
   /**
@@ -273,6 +284,57 @@
    */
   function toggleReferences() {
     showReferences = !showReferences;
+  }
+
+  /**
+   * Global keyboard handler for review shortcuts
+   * S -> show answer
+   * A -> Again (1)
+   * H -> Hard (2)
+   * G -> Good (3)
+   * E -> Easy (4)
+   * Shortcuts are ignored when an input/textarea/select is focused or when a modal/preview is open.
+   */
+  function handleShortcutKey(e) {
+    try {
+      // Ignore if user is typing in an input, textarea, select, or contenteditable
+      const active = document.activeElement;
+      if (active) {
+        const tag = active.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || active.isContentEditable) return;
+      }
+
+      // Ignore when preview modal is open or not in review mode
+      if (showPreview) return;
+      if (viewMode !== 'review') return;
+      if (!currentCard) return;
+
+      const key = (e.key || '').toLowerCase();
+
+      // Show answer
+      if (key === 's') {
+        e.preventDefault();
+        showAnswer = true;
+        return;
+      }
+
+      const mapping = { 'a': 1, 'h': 2, 'g': 3, 'e': 4 };
+      if (mapping[key]) {
+        e.preventDefault();
+        // If the answer is not yet shown, reveal it first and don't rate immediately.
+        if (!showAnswer) {
+          showAnswer = true;
+          return;
+        }
+
+        // Answer already visible -> record rating
+        // Small defer to allow UI to update (smoother)
+        setTimeout(() => handleRating(mapping[key]), 0);
+      }
+    } catch (err) {
+      // swallow errors to avoid breaking app
+      console.error('Shortcut handler error', err);
+    }
   }
 
   /**
