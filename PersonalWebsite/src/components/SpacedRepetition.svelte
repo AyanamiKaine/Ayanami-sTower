@@ -1317,7 +1317,54 @@
 
   @media (max-width: 640px) {
     .stats-bar {
-      gap: 1rem;
+      gap: 0.75rem;
+      padding: 0.75rem;
+    }
+
+    .stat {
+      min-width: fit-content;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+    }
+
+    .stat-value {
+      font-size: 1.125rem;
+    }
+
+    .view-toggle-btn,
+    .mode-btn,
+    .reset-btn {
+      padding: 0.375rem 0.625rem;
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
+
+    /* Stack buttons on their own row on very small screens */
+    @media (max-width: 480px) {
+      .stats-bar {
+        gap: 0.5rem;
+      }
+
+      .view-toggle-btn,
+      .mode-btn,
+      .reset-btn {
+        flex: 1;
+        min-width: 0;
+        padding: 0.5rem 0.375rem;
+        font-size: 0.7rem;
+      }
+
+      /* Make stats wrap better */
+      .stat {
+        flex: 0 0 auto;
+      }
+
+      /* Ensure buttons take full width after stats */
+      .view-toggle-btn {
+        flex-basis: 100%;
+      }
     }
 
     .rating-buttons {
