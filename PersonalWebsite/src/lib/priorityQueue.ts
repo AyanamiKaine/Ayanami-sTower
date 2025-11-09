@@ -15,6 +15,10 @@ export interface FlashcardData {
   source?: string; // Optional source filename for GitHub edit link
   references?: string[]; // Optional references to support the answer
   priority?: number; // Custom priority (higher = higher priority, default = 0)
+  type?: 'flashcard' | 'quiz'; // Item type (default: flashcard)
+  question?: string; // Quiz question
+  options?: string[]; // Quiz answer options
+  correctIndex?: number; // Quiz correct answer index
 }
 
 export class PriorityQueue {

@@ -25,6 +25,8 @@
   let cramIndex = $state(0);
   let cramAgainCards = $state([]); // Cards marked as "Again" to review again
   let viewMode = $state('review'); // 'review' or 'manage'
+  let selectedQuizOption = $state(null); // Selected quiz answer index
+  let quizAnswered = $state(false); // Whether quiz has been answered
   let sortColumn = $state('due');
   let sortDirection = $state('asc');
   let searchQuery = $state('');
@@ -54,12 +56,14 @@
   });
 
   /**
-   * Initialize flashcards from the HTML definitions
+   * Initialize flashcards and quizzes from the HTML definitions
    */
   function initializeCards() {
     const cardElements = document.querySelectorAll('.flashcard-definition');
+    const quizElements = document.querySelectorAll('.quiz-definition');
     const existingData = loadFromStorage();
     
+    // Process flashcards
     cardElements.forEach(el => {
       const id = el.dataset.id;
       const tags = JSON.parse(el.dataset.tags || '[]');
@@ -134,6 +138,7 @@
       
       const cardData = {
         id,
+        type: 'flashcard',
         front,
         back,
         tags,
@@ -147,6 +152,52 @@
       
       queue.enqueue(cardData);
     });
+
+    // Process quizzes
+    quizElements.forEach(el => {
+      const id = el.dataset.id;
+      const question = el.dataset.question || '';
+      const options = JSON.parse(el.dataset.options || '[]');
+      const correctIndex = parseInt(el.dataset.correctIndex || '0', 10);
+      const tags = JSON.parse(el.dataset.tags || '[]');
+      const references = JSON.parse(el.dataset.references || '[]');
+      const priority = parseInt(el.dataset.priority || '0', 10);
+      let source = el.dataset.source || '';
+
+      // Check if we have existing progress for this quiz
+      const existingCard = existingData?.find(c => c.id === id);
+      
+      let fsrsCard;
+      let due;
+      
+      if (existingCard && existingCard.card) {
+        // Restore existing card
+        fsrsCard = existingCard.card;
+        due = new Date(existingCard.due);
+      } else {
+        // Create new card
+        fsrsCard = createEmptyCard();
+        due = new Date(); // New cards are due immediately
+      }
+
+      const quizData = {
+        id,
+        type: 'quiz',
+        front: question, // Use question as front for consistency
+        back: '', // Empty for quizzes
+        question,
+        options,
+        correctIndex,
+        tags,
+        card: fsrsCard,
+        due,
+        source,
+        references,
+        priority
+      };
+
+      queue.enqueue(quizData);
+    });
     
     updateStats();
     loadNextCard();
@@ -159,6 +210,8 @@
     // Reset UI state when loading new card
     showAnswer = false;
     showReferences = false;
+    selectedQuizOption = null;
+    quizAnswered = false;
     
     if (cramMode) {
       // In cram mode: first check if we have cards in the main deck
@@ -302,6 +355,17 @@
   }
 
   /**
+   * Handle quiz option selection
+   */
+  function handleQuizSelection(index) {
+    if (quizAnswered) return; // Already answered
+    selectedQuizOption = index;
+    quizAnswered = true;
+    // Auto-reveal answer state for rating buttons
+    showAnswer = true;
+  }
+
+  /**
    * Toggle references visibility
    */
   function toggleReferences() {
@@ -379,6 +443,7 @@
   function saveProgress() {
     const data = queue.getAllCards().map(card => ({
       id: card.id,
+      type: card.type,
       card: card.card,
       due: card.due.toISOString(),
       front: card.front,
@@ -386,7 +451,11 @@
       tags: card.tags,
       source: card.source,
       references: card.references,
-      priority: card.priority
+      priority: card.priority,
+      // Quiz-specific fields
+      question: card.question,
+      options: card.options,
+      correctIndex: card.correctIndex
     }));
     
     try {
@@ -710,14 +779,57 @@
     {#if currentCard}
     <div class="card-container">
       <div class="card">
-        <div class="card-front">
-          <div class="card-label">Question</div>
-          <div class="card-content">
-            {@html currentCard.front}
+        {#if currentCard.type === 'quiz'}
+          <!-- Quiz Display -->
+          <div class="quiz-question">
+            <div class="card-label">Quiz Question</div>
+            <div class="card-content">
+              {@html currentCard.question}
+            </div>
           </div>
-        </div>
 
-        {#if showAnswer}
+          <div class="quiz-options">
+            {#each currentCard.options as option, index}
+              <button
+                class="quiz-option {selectedQuizOption === index ? 'selected' : ''} {quizAnswered ? (index === currentCard.correctIndex ? 'correct' : selectedQuizOption === index ? 'incorrect' : '') : ''}"
+                onclick={() => handleQuizSelection(index)}
+                disabled={quizAnswered}
+              >
+                <span class="option-letter">{String.fromCharCode(65 + index)}</span>
+                <span class="option-text">{option}</span>
+                {#if quizAnswered}
+                  {#if index === currentCard.correctIndex}
+                    <span class="option-icon">✓</span>
+                  {:else if selectedQuizOption === index}
+                    <span class="option-icon">✗</span>
+                  {/if}
+                {/if}
+              </button>
+            {/each}
+          </div>
+
+          {#if quizAnswered}
+            <!-- Show feedback and rating buttons after quiz is answered -->
+            <div class="quiz-feedback {selectedQuizOption === currentCard.correctIndex ? 'correct' : 'incorrect'}">
+              {#if selectedQuizOption === currentCard.correctIndex}
+                <span class="feedback-icon">🎉</span>
+                <span class="feedback-text">Correct!</span>
+              {:else}
+                <span class="feedback-icon">❌</span>
+                <span class="feedback-text">Incorrect. The correct answer is {String.fromCharCode(65 + currentCard.correctIndex)}: {currentCard.options[currentCard.correctIndex]}</span>
+              {/if}
+            </div>
+          {/if}
+        {:else}
+          <!-- Flashcard Display -->
+          <div class="card-front">
+            <div class="card-label">Question</div>
+            <div class="card-content">
+              {@html currentCard.front}
+            </div>
+          </div>
+
+          {#if showAnswer}
           <div class="card-back">
             <div class="card-label">Answer</div>
             <div class="card-content">
@@ -725,7 +837,18 @@
             </div>
           </div>
 
-          <!-- Rating Buttons -->
+          {/if}
+          
+          <!-- Show answer button for flashcards only -->
+          {#if !showAnswer}
+            <button class="show-answer-btn" onclick={toggleAnswer}>
+              Show Answer
+            </button>
+          {/if}
+        {/if}
+
+        <!-- Rating Buttons (shown for both flashcards and quizzes after answer is revealed) -->
+        {#if showAnswer}
           {#if cramMode}
             <div class="cram-notice">
               ⚠️ Cram Mode: Reviews won't affect scheduling
@@ -768,10 +891,6 @@
               </button>
             </div>
           {/if}
-        {:else}
-          <button class="show-answer-btn" onclick={toggleAnswer}>
-            Show Answer
-          </button>
         {/if}
 
         <!-- Card Metadata -->
@@ -1699,6 +1818,136 @@
     width: 100%;
     height: 100%;
     border: 0;
+  }
+
+  /* Quiz styles */
+  .quiz-question {
+    margin-bottom: 1.5rem;
+  }
+
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+  }
+
+  .quiz-option {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: #ffffff;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    font-size: 1rem;
+  }
+
+  .quiz-option:hover:not(:disabled) {
+    border-color: #0d6efd;
+    background: #f8f9fa;
+    transform: translateX(4px);
+  }
+
+  .quiz-option:disabled {
+    cursor: not-allowed;
+  }
+
+  .quiz-option.selected {
+    border-color: #0d6efd;
+    background: #e7f1ff;
+  }
+
+  .quiz-option.correct {
+    border-color: #198754;
+    background: #d1e7dd;
+  }
+
+  .quiz-option.incorrect {
+    border-color: #dc3545;
+    background: #f8d7da;
+  }
+
+  .option-letter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: #e9ecef;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: #495057;
+    flex-shrink: 0;
+  }
+
+  .quiz-option.selected .option-letter {
+    background: #0d6efd;
+    color: white;
+  }
+
+  .quiz-option.correct .option-letter {
+    background: #198754;
+    color: white;
+  }
+
+  .quiz-option.incorrect .option-letter {
+    background: #dc3545;
+    color: white;
+  }
+
+  .option-text {
+    flex: 1;
+    line-height: 1.5;
+  }
+
+  .option-icon {
+    font-size: 1.25rem;
+    font-weight: bold;
+  }
+
+  .quiz-option.correct .option-icon {
+    color: #198754;
+  }
+
+  .quiz-option.incorrect .option-icon {
+    color: #dc3545;
+  }
+
+  .quiz-feedback {
+    margin: 1.5rem 0;
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  .quiz-feedback.correct {
+    background: #d1e7dd;
+    border: 1px solid #198754;
+    color: #0f5132;
+  }
+
+  .quiz-feedback.incorrect {
+    background: #f8d7da;
+    border: 1px solid #dc3545;
+    color: #842029;
+  }
+
+  .feedback-icon {
+    font-size: 1.5rem;
+  }
+
+  .feedback-text {
+    flex: 1;
+    line-height: 1.5;
   }
 
   @media (max-width: 640px) {

@@ -1,0 +1,60 @@
+---
+import Quiz from "../components/Quiz.astro";
+---
+
+<!-- Example Quiz Questions -->
+<Quiz
+    id="quiz-capitals-1"
+    question="What is the capital of France?"
+    options={["London", "Paris", "Berlin", "Madrid"]}
+    correctIndex={1}
+    tags={["geography", "europe", "capitals"]}
+    priority={5}
+    source="quiz-example.astro"
+    references={["https://en.wikipedia.org/wiki/Paris"]}
+/>
+
+<Quiz
+    id="quiz-programming-1"
+    question="Which of the following is NOT a JavaScript data type?"
+    options={["String", "Boolean", "Character", "Number"]}
+    correctIndex={2}
+    tags={["programming", "javascript", "fundamentals"]}
+    priority={7}
+    source="quiz-example.astro"
+    references={[
+        "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures",
+    ]}
+/>
+
+<Quiz
+    id="quiz-math-1"
+    question="What is the value of π (pi) rounded to 2 decimal places?"
+    options={["3.12", "3.14", "3.16", "3.18"]}
+    correctIndex={1}
+    tags={["math", "constants"]}
+    priority={3}
+    source="quiz-example.astro"
+/>
+
+<Quiz
+    id="quiz-history-1"
+    question="In which year did World War II end?"
+    options={["1943", "1944", "1945", "1946"]}
+    correctIndex={2}
+    tags={["history", "world-war-2"]}
+    priority={4}
+    source="quiz-example.astro"
+    references={["https://en.wikipedia.org/wiki/End_of_World_War_II_in_Europe"]}
+/>
+
+<Quiz
+    id="quiz-science-1"
+    question="What is the chemical symbol for gold?"
+    options={["Go", "Gd", "Au", "Ag"]}
+    correctIndex={2}
+    tags={["science", "chemistry", "elements"]}
+    priority={6}
+    source="quiz-example.astro"
+    references={["https://en.wikipedia.org/wiki/Gold"]}
+/>
