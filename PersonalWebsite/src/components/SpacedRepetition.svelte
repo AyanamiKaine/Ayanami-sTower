@@ -65,6 +65,7 @@
       const tags = JSON.parse(el.dataset.tags || '[]');
       const references = JSON.parse(el.dataset.references || '[]');
       const priority = parseInt(el.dataset.priority || '0', 10);
+      const cloze = el.dataset.cloze || '';
       let source = el.dataset.source || '';
       
       // If no source is provided, try to get it from the parent wrapper
@@ -94,6 +95,26 @@
       } else if (backSlot && backSlot.innerHTML.trim()) {
         back = backSlot.innerHTML;
       }
+
+      // If this is a cloze card, highlight the cloze word in the back and optionally mark the blank in front
+      if (cloze) {
+        try {
+          // escape for regex
+          const esc = cloze.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const re = new RegExp(esc);
+          if (back && re.test(back)) {
+            back = back.replace(re, `<span class="cloze-highlight">${cloze}</span>`);
+          }
+
+          if (front && front.includes('...')) {
+            // mark blank with a class so it can be styled
+            front = front.replace('...', '<span class="cloze-blank">...</span>');
+          }
+        } catch (e) {
+          // ignore any replacement errors
+          console.error('Cloze processing error', e);
+        }
+      }
       
       // Check if we have existing progress for this card
       const existingCard = existingData?.find(c => c.id === id);
@@ -120,7 +141,8 @@
         due,
         source,
         references,
-        priority
+        priority,
+        cloze
       };
       
       queue.enqueue(cardData);
@@ -1639,6 +1661,23 @@
   .preview-ref-link:hover {
     color: #0a58ca;
     text-decoration: underline;
+  }
+
+  /* Cloze styles */
+  .cloze-highlight {
+    background: #fff3bf; /* soft yellow */
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    color: #6b4f00;
+    font-weight: 600;
+  }
+
+  .cloze-blank {
+    background: #f1f5f9;
+    color: #6c757d;
+    padding: 0.05rem 0.2rem;
+    border-radius: 3px;
+    font-weight: 600;
   }
 
   @media (max-width: 640px) {

@@ -13,15 +13,16 @@
  * <Flashcard id="card-important" front="Critical concept" back="Must learn first!" priority={100} />
  * <Flashcard id="card-normal" front="Regular concept" back="Learn this second" priority={10} />
  *
- * Or with HTML content:
- * <Flashcard id="card-2" priority={50}>
- *   <Fragment slot="front">
- *     <h3>What is FSRS?</h3>
- *     <p>Free Spaced Repetition Scheduler</p>
- *   </Fragment>
- *   <Fragment slot="back">
- *     <p>A modern spaced repetition algorithm...</p>
- *   </Fragment>
+ * Cloze usage (minimal):
+ * Front: "The mitochondria is the ... of the cell"
+ * Back:  "The mitochondria is the powerhouse of the cell"
+ * Specify the cloze answer so the back will highlight it:
+ * <Flashcard id="cloze-1" front="The mitochondria is the ... of the cell" back="The mitochondria is the powerhouse of the cell" cloze="powerhouse" />
+ *
+ * Or with HTML content and cloze:
+ * <Flashcard id="cloze-2" cloze="powerhouse">
+ *   <Fragment slot="front">The mitochondria is the ... of the cell</Fragment>
+ *   <Fragment slot="back">The mitochondria is the <strong>powerhouse</strong> of the cell</Fragment>
  * </Flashcard>
  */
 
@@ -33,6 +34,7 @@ interface Props {
     source?: string;
     references?: string[];
     priority?: number; // Custom priority (higher = higher priority, default = 0)
+    cloze?: string; // Optional cloze answer text to highlight in the back
 }
 
 const {
@@ -43,14 +45,12 @@ const {
     source,
     references = [],
     priority = 0,
+    cloze = "",
 } = Astro.props;
 
 // Auto-detect source filename if not provided
 let sourceFile = source;
 if (!sourceFile) {
-    // Get the filename from the call stack (Astro provides this via import.meta.url context)
-    // Since we can't easily get the caller's filename in Astro, we'll extract it from the component's parent
-    // For now, users should provide the source manually or we can leave it empty
     sourceFile = "";
 }
 ---
@@ -61,6 +61,7 @@ if (!sourceFile) {
     data-tags={JSON.stringify(tags)}
     data-source={sourceFile}
     data-references={JSON.stringify(references)}
+    data-cloze={cloze}
     data-priority={priority}
     style="display: none;"
 >
