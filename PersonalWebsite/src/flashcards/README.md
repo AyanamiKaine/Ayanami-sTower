@@ -36,7 +36,16 @@ import Flashcard from "../components/Flashcard.astro";
 import CodeBlock from "../components/CodeBlock.astro";
 ---
 
-<Flashcard id="unique-id-2" tags={["programming"]} source="my-topic.astro">
+<Flashcard
+  id="unique-id-2"
+  tags={["programming"]}
+  source="my-topic.astro"
+  references={[
+    "https://developer.mozilla.org/docs/example",
+    "Book: JavaScript Patterns, Page 42",
+    "Research Paper: Understanding Closures"
+  ]}
+>
   <Fragment slot="front">
     <h3>What is a closure?</h3>
     <p>Explain with code examples.</p>
@@ -72,6 +81,30 @@ flashcards/
 3. **Syntax Highlighting**: Use the `CodeBlock` component for syntax-highlighted code
 4. **Tags**: Use tags to categorize and filter flashcards (optional but recommended)
 5. **Source Tracking**: Add `source="filename.astro"` to enable the "Edit on GitHub" button for easy editing
+6. **References**: Add `references={["link or text", ...]}` to provide supporting materials for the answer
+
+## References
+
+Add references to support your answers and provide additional learning resources:
+
+```astro
+<Flashcard
+  id="example"
+  tags={["topic"]}
+  references={[
+    "https://developer.mozilla.org/docs/example",  // URLs become clickable links
+    "Book: Clean Code by Robert Martin, Chapter 3", // Plain text for books
+    "Wikipedia: Software Design Patterns"           // Any supporting text
+  ]}
+>
+  <!-- card content -->
+</Flashcard>
+```
+
+-   URLs starting with `http://` or `https://` automatically become clickable links
+-   Other text appears as plain references (perfect for books, papers, page numbers)
+-   References are hidden by default; click "📚 References" button to expand
+-   Helps reinforce learning by pointing to authoritative sources
 
 ## Code Blocks with Syntax Highlighting
 

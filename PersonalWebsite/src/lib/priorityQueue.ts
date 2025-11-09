@@ -13,6 +13,7 @@ export interface FlashcardData {
   card: any; // FSRS Card object
   due: Date;
   source?: string; // Optional source filename for GitHub edit link
+  references?: string[]; // Optional references to support the answer
 }
 
 export class PriorityQueue {

@@ -27,9 +27,10 @@ interface Props {
     back?: string;
     tags?: string[];
     source?: string;
+    references?: string[];
 }
 
-const { id, front, back, tags = [], source } = Astro.props;
+const { id, front, back, tags = [], source, references = [] } = Astro.props;
 
 // Auto-detect source filename if not provided
 let sourceFile = source;
@@ -46,6 +47,7 @@ if (!sourceFile) {
     data-id={id}
     data-tags={JSON.stringify(tags)}
     data-source={sourceFile}
+    data-references={JSON.stringify(references)}
     style="display: none;"
 >
     {front && <div class="front-simple" data-content={front} />}

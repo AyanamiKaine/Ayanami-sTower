@@ -19,6 +19,7 @@
   }));
   let currentCard = $state(null);
   let showAnswer = $state(false);
+  let showReferences = $state(false);
   let cramMode = $state(false);
   let cramCards = $state([]);
   let cramIndex = $state(0);
@@ -37,7 +38,6 @@
 
   onMount(() => {
     initializeCards();
-    loadProgress();
   });
 
   /**
@@ -50,6 +50,7 @@
     cardElements.forEach(el => {
       const id = el.dataset.id;
       const tags = JSON.parse(el.dataset.tags || '[]');
+      const references = JSON.parse(el.dataset.references || '[]');
       let source = el.dataset.source || '';
       
       // If no source is provided, try to get it from the parent wrapper
@@ -103,10 +104,10 @@
         tags,
         card: fsrsCard,
         due,
-        source
+        source,
+        references
       };
       
-      console.log('Enqueuing card:', id, 'with source:', source);
       queue.enqueue(cardData);
     });
     
@@ -118,15 +119,17 @@
    * Load the next card due for review
    */
   function loadNextCard() {
+    // Reset UI state when loading new card
+    showAnswer = false;
+    showReferences = false;
+    
     if (cramMode) {
       // In cram mode: first check if we have cards in the main deck
       if (cramIndex < cramCards.length) {
         currentCard = cramCards[cramIndex];
-        showAnswer = false;
       } else if (cramAgainCards.length > 0) {
         // Main deck is done, now review "Again" cards
         currentCard = cramAgainCards.shift();
-        showAnswer = false;
       } else {
         // Everything is done
         currentCard = null;
@@ -136,7 +139,6 @@
       const dueCards = queue.getDueCards();
       if (dueCards.length > 0) {
         currentCard = queue.peek();
-        showAnswer = false;
       } else {
         currentCard = null;
       }
@@ -241,6 +243,13 @@
   }
 
   /**
+   * Toggle references visibility
+   */
+  function toggleReferences() {
+    showReferences = !showReferences;
+  }
+
+  /**
    * Update statistics
    */
   function updateStats() {
@@ -265,7 +274,8 @@
       front: card.front,
       back: card.back,
       tags: card.tags,
-      source: card.source
+      source: card.source,
+      references: card.references
     }));
     
     try {
@@ -662,6 +672,33 @@
               </a>
             {/if}
           </div>
+
+          <!-- References Section -->
+          {#if currentCard.references && currentCard.references.length > 0}
+            <div class="references-section">
+              <button class="references-toggle" onclick={toggleReferences}>
+                📚 References ({currentCard.references.length})
+                <span class="toggle-icon">{showReferences ? '▼' : '▶'}</span>
+              </button>
+              {#if showReferences}
+                <div class="references-content">
+                  <ul class="references-list">
+                    {#each currentCard.references as reference}
+                      <li class="reference-item">
+                        {#if reference.startsWith('http://') || reference.startsWith('https://')}
+                          <a href={reference} target="_blank" rel="noopener noreferrer" class="reference-link">
+                            🔗 {reference}
+                          </a>
+                        {:else}
+                          <span class="reference-text">📖 {reference}</span>
+                        {/if}
+                      </li>
+                    {/each}
+                  </ul>
+                </div>
+              {/if}
+            </div>
+          {/if}
         </div>
       </div>
     </div>
@@ -1006,6 +1043,77 @@
     background: #0d6efd;
     color: #fff;
     border-color: #0d6efd;
+  }
+
+  .references-section {
+    margin-top: 1rem;
+  }
+
+  .references-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    color: #495057;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .references-toggle:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+  }
+
+  .toggle-icon {
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+  }
+
+  .references-content {
+    margin-top: 0.5rem;
+    padding: 1rem;
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+  }
+
+  .references-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .reference-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f8f9fa;
+  }
+
+  .reference-item:last-child {
+    border-bottom: none;
+  }
+
+  .reference-link {
+    color: #0d6efd;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: color 0.2s;
+    word-break: break-all;
+  }
+
+  .reference-link:hover {
+    color: #0a58ca;
+    text-decoration: underline;
+  }
+
+  .reference-text {
+    color: #495057;
+    font-size: 0.875rem;
   }
 
   .no-cards {
