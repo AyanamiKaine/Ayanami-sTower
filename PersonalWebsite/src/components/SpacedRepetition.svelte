@@ -1680,6 +1680,27 @@
     font-weight: 600;
   }
 
+  /* Video embed - responsive wrapper for iframes (YouTube, Vimeo, etc.) */
+  :global(.video-wrapper) {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    height: 0;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    margin: 1rem 0;
+  }
+
+  :global(.video-wrapper iframe),
+  :global(.video-wrapper video) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
   @media (max-width: 640px) {
     .stats-bar {
       gap: 0.75rem;
