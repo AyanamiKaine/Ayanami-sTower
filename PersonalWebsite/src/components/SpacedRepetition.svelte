@@ -28,6 +28,8 @@
   let sortColumn = $state('due');
   let sortDirection = $state('asc');
   let searchQuery = $state('');
+  let previewCard = $state(null);
+  let showPreview = $state(false);
   let stats = $state({
     total: 0,
     due: 0,
@@ -378,6 +380,22 @@
   }
 
   /**
+   * Show preview modal for a card
+   */
+  function showCardPreview(card) {
+    previewCard = card;
+    showPreview = true;
+  }
+
+  /**
+   * Close preview modal
+   */
+  function closePreview() {
+    showPreview = false;
+    previewCard = null;
+  }
+
+  /**
    * Get sorted and filtered cards for table
    */
   function getSortedCards() {
@@ -550,7 +568,7 @@
           </thead>
           <tbody>
             {#each getSortedCards() as card}
-              <tr class="card-row {new Date(card.due) <= new Date() ? 'due-now' : ''}">
+              <tr class="card-row {new Date(card.due) <= new Date() ? 'due-now' : ''}" onclick={() => showCardPreview(card)}>
                 <td class="cell-front" title={stripHtml(card.front)}>
                   {stripHtml(card.front).substring(0, 50)}{stripHtml(card.front).length > 50 ? '...' : ''}
                 </td>
@@ -715,6 +733,55 @@
     {/if}
   {/if}
 </div>
+
+<!-- Preview Modal -->
+{#if showPreview && previewCard}
+  <div class="modal-overlay" onclick={closePreview} onkeydown={(e) => e.key === 'Escape' && closePreview()} role="button" tabindex="0">
+    <div class="modal-content" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" tabindex="-1">
+      <div class="modal-header">
+        <h3>Card Preview</h3>
+        <button class="modal-close" onclick={closePreview}>✕</button>
+      </div>
+      
+      <div class="preview-card">
+        <div class="preview-section">
+          <div class="preview-label">Front (Question)</div>
+          <div class="preview-content">
+            {@html previewCard.front}
+          </div>
+        </div>
+        
+        <div class="preview-divider"></div>
+        
+        <div class="preview-section">
+          <div class="preview-label">Back (Answer)</div>
+          <div class="preview-content">
+            {@html previewCard.back}
+          </div>
+        </div>
+        
+        {#if previewCard.tags && previewCard.tags.length > 0}
+          <div class="preview-tags">
+            {#each previewCard.tags as tag}
+              <span class="preview-tag">{tag}</span>
+            {/each}
+          </div>
+        {/if}
+        
+        {#if previewCard.references && previewCard.references.length > 0}
+          <div class="preview-references">
+            <div class="preview-label">References</div>
+            {#each previewCard.references as ref}
+              <a href={ref} target="_blank" rel="noopener noreferrer" class="preview-ref-link">
+                🔗 {ref}
+              </a>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   .spaced-repetition-container {
@@ -1313,6 +1380,177 @@
   .cell-reps {
     font-variant-numeric: tabular-nums;
     text-align: right;
+  }
+
+  .card-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .card-row:hover {
+    background: #f8f9fa;
+  }
+
+  /* Preview Modal Styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+  }
+
+  .modal-content {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    max-width: 800px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+    position: sticky;
+    top: 0;
+    background: #ffffff;
+    z-index: 1;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    color: #212529;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .modal-close {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .modal-close:hover {
+    background: #e9ecef;
+    color: #dc3545;
+    border-color: #dc3545;
+  }
+
+  .preview-card {
+    padding: 1.5rem;
+  }
+
+  .preview-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .preview-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .preview-content {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.25rem;
+    color: #212529;
+    line-height: 1.6;
+    font-size: 1rem;
+  }
+
+  .preview-content :global(p) {
+    margin: 0.5rem 0;
+  }
+
+  .preview-content :global(pre) {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    padding: 1rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+  }
+
+  .preview-content :global(code) {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    color: #495057;
+  }
+
+  .preview-divider {
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      #dee2e6 50%,
+      transparent
+    );
+    margin: 1.5rem 0;
+  }
+
+  .preview-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+  }
+
+  .preview-tag {
+    background: #e7f1ff;
+    border: 1px solid #b6d4fe;
+    color: #084298;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .preview-references {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+  }
+
+  .preview-ref-link {
+    display: block;
+    color: #0d6efd;
+    text-decoration: none;
+    padding: 0.5rem 0;
+    font-size: 0.875rem;
+    transition: color 0.2s ease;
+  }
+
+  .preview-ref-link:hover {
+    color: #0a58ca;
+    text-decoration: underline;
   }
 
   @media (max-width: 640px) {
