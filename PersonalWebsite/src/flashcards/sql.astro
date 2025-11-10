@@ -20,14 +20,15 @@ import Flashcard from "../components/Flashcard.astro";
     username TEXT 
 );`}
         />
-        <CodeBlock 
+        <CodeBlock
             lang="sql"
             code={`CREATE TABLE table_name (
     column1 datatype,
     column2 datatype,
     column3 datatype,
    ....
-);`}/>
+);`}
+        />
     </Fragment>
 </Flashcard>
 
@@ -67,6 +68,42 @@ import Flashcard from "../components/Flashcard.astro";
     id INT PRIMARY KEY, 
     username TEXT
 );`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="sql-3"
+    tags={["programming", "SQL"]}
+    source="sql.astro"
+    references={["https://www.w3schools.com/sql/sql_alter.asp"]}
+>
+    <Fragment slot="front">
+        <h3>How do you add a new column to an existing table in SQL?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <CodeBlock
+            lang="sql"
+            code={`ALTER TABLE table_name
+ADD column_name datatype;`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="sql-4"
+    tags={["programming", "SQL"]}
+    source="sql.astro"
+    references={["https://www.w3schools.com/sql/sql_alter.asp"]}
+>
+    <Fragment slot="front">
+        <h3>How do you insert a new row into a table?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <CodeBlock
+            lang="sql"
+            code={`INSERT INTO table_name (column1, column2, column3, ...)
+VALUES (value1, value2, value3, ...);`}
         />
     </Fragment>
 </Flashcard>
