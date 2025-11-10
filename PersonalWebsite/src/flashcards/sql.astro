@@ -1,6 +1,7 @@
 ---
 import CodeBlock from "../components/CodeBlock.astro";
 import Flashcard from "../components/Flashcard.astro";
+import Quiz from "../components/Quiz.astro";
 ---
 
 <Flashcard
@@ -128,3 +129,33 @@ VALUES
         />
     </Fragment>
 </Flashcard>
+
+<Flashcard
+    id="sql-6"
+    tags={["programming", "SQL"]}
+    source="sql.astro"
+    references={["https://www.w3schools.com/sql/sql_syntax.asp"]}
+>
+    <Fragment slot="front">
+        <h3>How can you see all rows in a table?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <CodeBlock lang="sql" code={`SELECT * FROM table_name;`} />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="sql-quiz-1"
+    question="In the SQL statement 'SELECT * FROM users;', what does the asterisk (*) mean?"
+    options={[
+        "It selects only the first column",
+        "It selects all columns from the table",
+        "It counts all rows in the table",
+        "It deletes all data from the table",
+    ]}
+    correctIndex={1}
+    tags={["programming", "SQL", "select"]}
+    priority={8}
+    source="sql.astro"
+    references={["https://www.w3schools.com/sql/sql_select.asp"]}
+/>
