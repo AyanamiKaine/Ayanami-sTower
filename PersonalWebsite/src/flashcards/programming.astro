@@ -89,3 +89,37 @@ import CodeBlock from "../components/CodeBlock.astro";
         </ul>
     </Fragment>
 </Flashcard>
+
+<Flashcard
+    id="programming-3"
+    tags={["programming", "Dynamic Programming"]}
+    source="programming.astro"
+>
+    <Fragment slot="front">
+        <h3>Explain what is dynamic programming for a technique?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            You break down a complex problem into simpler subproblems, solve
+            each subproblem just once, and often store their solutions as they
+            are used in subsequent computations.
+        </p>
+        <p>
+            Another characteristic of dynamic programming is the usage of
+            recursion.
+        </p>
+        <p>
+            The best example of dynamic programming is calculating Fibonacci
+            numbers.
+        </p>
+        <CodeBlock
+            lang="javascript"
+            code={`function fibonacci(n, memo = {}) {
+  if (n <= 1) return n;
+  if (memo[n]) return memo[n];
+  memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo);
+  return memo[n];
+}`}
+        />  
+    </Fragment>
+</Flashcard>
