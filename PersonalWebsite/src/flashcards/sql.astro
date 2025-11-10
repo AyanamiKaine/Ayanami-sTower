@@ -1,0 +1,72 @@
+---
+import CodeBlock from "../components/CodeBlock.astro";
+import Flashcard from "../components/Flashcard.astro";
+---
+
+<Flashcard
+    id="sql-1"
+    tags={["programming", "SQL"]}
+    source="sql.astro"
+    references={["https://www.w3schools.com/sql/sql_create_table.asp"]}
+>
+    <Fragment slot="front">
+        <h3>How do you create a table using SQL?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <CodeBlock
+            lang="sql"
+            code={`CREATE TABLE users (
+    id INTEGER PRIMARY KEY, 
+    username TEXT 
+);`}
+        />
+        <CodeBlock 
+            lang="sql"
+            code={`CREATE TABLE table_name (
+    column1 datatype,
+    column2 datatype,
+    column3 datatype,
+   ....
+);`}/>
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="sql-2"
+    tags={["programming", "SQL"]}
+    source="sql.astro"
+    references={[
+        "https://sqlite.org/autoinc.html#:~:text=Summary,a%2064%2Dbit%20signed%20integer.",
+    ]}
+>
+    <Fragment slot="front">
+        <h3>
+            What is the difference of INTEGER and INT in SQLite when using them
+            as a primary key?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            When we use INTERGER in a primary key it will auto increment whereas
+            INT will not. This is because INTEGER PRIMARY KEY is the special
+            alias for ROWID in SQLite.
+        </p>
+        <CodeBlock
+            lang="sql"
+            code={`CREATE TABLE users (
+    id INTEGER PRIMARY KEY, 
+    username TEXT 
+);`}
+        />
+        <p>
+            Here the entries in the "id" column will <strong>NOT</strong> auto increment.
+        </p>
+        <CodeBlock
+            lang="sql"
+            code={`CREATE TABLE users_bad (
+    id INT PRIMARY KEY, 
+    username TEXT
+);`}
+        />
+    </Fragment>
+</Flashcard>
