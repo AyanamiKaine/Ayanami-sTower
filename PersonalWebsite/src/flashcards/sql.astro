@@ -185,6 +185,28 @@ ORDER BY column1 DESC;`}
     </Fragment>
 </Flashcard>
 
+<Flashcard
+    id="sql-9"
+    tags={["programming", "SQL"]}
+    source="sql.astro"
+    references={["https://www.w3schools.com/sql/sql_distinct.asp"]}
+>
+    <Fragment slot="front">
+        <h3>How can you find unqiue values in a table?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            Use the <strong>DISTINCT</strong> keyword as part of a query that eliminates
+            duplicates and shows only unique values
+        </p>
+        <CodeBlock
+            lang="sql"
+            code={`SELECT DISTINCT column1 
+FROM table_name`}
+        />
+    </Fragment>
+</Flashcard>
+
 <Quiz
     id="sql-quiz-1"
     question="In the SQL statement 'SELECT * FROM users;', what does the asterisk (*) mean?"
