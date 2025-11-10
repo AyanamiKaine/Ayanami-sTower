@@ -100,13 +100,15 @@ import CodeBlock from "../components/CodeBlock.astro";
     </Fragment>
     <Fragment slot="back">
         <p>
-            You break down a complex problem into simpler subproblems, solve
-            each subproblem just once, and often store their solutions as they
-            are used in subsequent computations.
+            You <strong
+                ><i>break down a complex problem into simpler subproblems</i
+                ></strong
+            >, solve each subproblem just once, and often store their solutions
+            as they are used in subsequent computations.
         </p>
         <p>
             Another characteristic of dynamic programming is the usage of
-            recursion.
+            <strong>recursion</strong>.
         </p>
         <p>
             The best example of dynamic programming is calculating Fibonacci
@@ -120,6 +122,6 @@ import CodeBlock from "../components/CodeBlock.astro";
   memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo);
   return memo[n];
 }`}
-        />  
+        />
     </Fragment>
 </Flashcard>
