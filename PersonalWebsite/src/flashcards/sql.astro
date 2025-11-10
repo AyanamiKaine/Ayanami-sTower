@@ -162,6 +162,29 @@ VALUES
     </Fragment>
 </Flashcard>
 
+<Flashcard
+    id="sql-8"
+    tags={["programming", "SQL"]}
+    source="sql.astro"
+    references={["https://www.w3schools.com/sql/sql_syntax.asp"]}
+>
+    <Fragment slot="front">
+        <h3>How do you order data when querying a table?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            This would sort the table by column1 in descending order (DESC). To
+            order in ascending order, use ASC.
+        </p>
+        <CodeBlock
+            lang="sql"
+            code={`SELECT column1, column2 
+FROM table_name
+ORDER BY column1 DESC;`}
+        />
+    </Fragment>
+</Flashcard>
+
 <Quiz
     id="sql-quiz-1"
     question="In the SQL statement 'SELECT * FROM users;', what does the asterisk (*) mean?"
