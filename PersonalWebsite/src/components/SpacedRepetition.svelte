@@ -162,6 +162,7 @@
       const tags = JSON.parse(el.dataset.tags || '[]');
       const references = JSON.parse(el.dataset.references || '[]');
       const priority = parseInt(el.dataset.priority || '0', 10);
+      const explanation = el.dataset.explanation || '';
       let source = el.dataset.source || '';
 
       // Check if we have existing progress for this quiz
@@ -188,6 +189,7 @@
         question,
         options,
         correctIndex,
+        explanation,
         tags,
         card: fsrsCard,
         due,
@@ -455,7 +457,8 @@
       // Quiz-specific fields
       question: card.question,
       options: card.options,
-      correctIndex: card.correctIndex
+      correctIndex: card.correctIndex,
+      explanation: card.explanation
     }));
     
     try {
@@ -811,12 +814,19 @@
           {#if quizAnswered}
             <!-- Show feedback and rating buttons after quiz is answered -->
             <div class="quiz-feedback {selectedQuizOption === currentCard.correctIndex ? 'correct' : 'incorrect'}">
-              {#if selectedQuizOption === currentCard.correctIndex}
-                <span class="feedback-icon">🎉</span>
-                <span class="feedback-text">Correct!</span>
-              {:else}
-                <span class="feedback-icon">❌</span>
-                <span class="feedback-text">Incorrect. The correct answer is {String.fromCharCode(65 + currentCard.correctIndex)}: {currentCard.options[currentCard.correctIndex]}</span>
+              <div class="feedback-header">
+                {#if selectedQuizOption === currentCard.correctIndex}
+                  <span class="feedback-icon">🎉</span>
+                  <span class="feedback-text">Correct!</span>
+                {:else}
+                  <span class="feedback-icon">❌</span>
+                  <span class="feedback-text">Incorrect. The correct answer is {String.fromCharCode(65 + currentCard.correctIndex)}: {currentCard.options[currentCard.correctIndex]}</span>
+                {/if}
+              </div>
+              {#if currentCard.explanation}
+                <div class="quiz-explanation">
+                  <strong>Explanation:</strong> {currentCard.explanation}
+                </div>
               {/if}
             </div>
           {/if}
@@ -997,6 +1007,11 @@
                 </div>
               {/each}
             </div>
+            {#if previewCard.explanation}
+              <div class="preview-explanation">
+                <strong>Explanation:</strong> {previewCard.explanation}
+              </div>
+            {/if}
           </div>
         {:else}
           <!-- Flashcard Preview -->
@@ -1871,6 +1886,21 @@
     white-space: nowrap;
   }
 
+  .preview-explanation {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-left: 3px solid #0d6efd;
+    border-radius: 4px;
+    line-height: 1.6;
+    color: #495057;
+  }
+
+  .preview-explanation strong {
+    color: #212529;
+    font-weight: 600;
+  }
+
   /* Cloze styles */
   .cloze-highlight {
     background: #fff3bf; /* soft yellow */
@@ -2012,10 +2042,9 @@
     padding: 1rem 1.25rem;
     border-radius: 8px;
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 0.75rem;
     font-size: 1rem;
-    font-weight: 500;
   }
 
   .quiz-feedback.correct {
@@ -2030,6 +2059,13 @@
     color: #842029;
   }
 
+  .feedback-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 500;
+  }
+
   .feedback-icon {
     font-size: 1.5rem;
   }
@@ -2037,6 +2073,17 @@
   .feedback-text {
     flex: 1;
     line-height: 1.5;
+  }
+
+  .quiz-explanation {
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    line-height: 1.6;
+    font-size: 0.95rem;
+  }
+
+  .quiz-explanation strong {
+    font-weight: 600;
   }
 
   @media (max-width: 640px) {

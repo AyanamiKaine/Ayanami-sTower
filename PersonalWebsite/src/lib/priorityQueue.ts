@@ -19,6 +19,7 @@ export interface FlashcardData {
   question?: string; // Quiz question
   options?: string[]; // Quiz answer options
   correctIndex?: number; // Quiz correct answer index
+  explanation?: string; // Quiz explanation for the correct answer
 }
 
 export class PriorityQueue {

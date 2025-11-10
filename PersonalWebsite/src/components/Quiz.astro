@@ -34,6 +34,7 @@ interface Props {
     source?: string;
     references?: string[];
     priority?: number; // Custom priority (higher = higher priority, default = 0)
+    explanation?: string; // Optional explanation for why the answer is correct
 }
 
 const {
@@ -45,6 +46,7 @@ const {
     source,
     references = [],
     priority = 0,
+    explanation = "",
 } = Astro.props;
 
 // Auto-detect source filename if not provided
@@ -64,6 +66,7 @@ if (!sourceFile) {
     data-source={sourceFile}
     data-references={JSON.stringify(references)}
     data-priority={priority}
+    data-explanation={explanation}
     style="display: none;"
 >
 </div>
