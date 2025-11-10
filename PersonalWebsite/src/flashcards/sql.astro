@@ -144,6 +144,24 @@ VALUES
     </Fragment>
 </Flashcard>
 
+<Flashcard
+    id="sql-7"
+    tags={["programming", "SQL"]}
+    source="sql.astro"
+    references={["https://www.w3schools.com/sql/sql_syntax.asp"]}
+>
+    <Fragment slot="front">
+        <h3>How can you show specific columns of a table?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>This would show only column1 and column2 from the table.</p>
+        <CodeBlock
+            lang="sql"
+            code={`SELECT column1, column2 FROM table_name;`}
+        />
+    </Fragment>
+</Flashcard>
+
 <Quiz
     id="sql-quiz-1"
     question="In the SQL statement 'SELECT * FROM users;', what does the asterisk (*) mean?"
