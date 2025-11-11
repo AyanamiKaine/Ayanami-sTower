@@ -109,3 +109,25 @@ a[data-footnote-backref]::after {
     content: '↑'; /* You can change this to 'Back' or '↑' */
     font-size: 1.2rem; /* KEY FIX: Restore font size for the visible content */
 }
+
+/* Tailwind-based link styles for flashcard content injected via innerHTML
+     Use @apply so Tailwind utilities control the appearance. These target the
+     classes used by the SpacedRepetition UI: .card-content and .preview-content. */
+@layer components {
+    .card-content a,
+    .card-content a:visited,
+    .preview-content a,
+    .preview-content a:visited {
+        @apply text-blue-600 underline;
+    }
+
+    .card-content a:hover,
+    .preview-content a:hover {
+        @apply text-blue-700;
+    }
+
+    /* Slightly offset the underline for better readability */
+    .card-content a {
+        text-underline-offset: 3px;
+    }
+}

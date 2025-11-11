@@ -1,0 +1,41 @@
+---
+title: "Anonymous Objects"
+created: 2025-11-11
+edited: 2025-11-11
+author: "Ayanami Kaine"
+tags: ["Fundamentals", "Objects"]
+layout: ../../layouts/NoteLayout.astro
+published: true
+---
+
+Anonymous objects are simply objects without a defined name created at runtime.
+
+
+### Python
+
+```python
+from types import SimpleNamespace
+
+anon = SimpleNamespace(name='Alice', role='developer')
+print(anon.name)   # Alice
+print(anon.role)   # developer
+```
+
+### JavaScript
+
+```js
+// Example 1 — object literal
+const anon = { name: 'Alice', role: 'developer' };
+console.log(anon.name); // Alice
+
+// Example 2 — Using closures
+function makePerson(name, role) {
+	return {
+		name,
+		role,
+		greet() { return `Hi, I'm ${this.name}`; }
+	};
+}
+const p = makePerson('Bob', 'designer');
+console.log(p.greet()); // Hi, I'm Bob
+```
