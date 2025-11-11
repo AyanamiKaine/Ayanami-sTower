@@ -261,35 +261,45 @@
   }
   
   /**
-   * Shuffle array with priority awareness - each card can move ±20% from its priority position
-   * Higher priority cards (earlier in sorted order) stay roughly at the front
+   * Shuffle array with priority awareness
+   * Cards are first sorted by priority (high to low), then shuffled within priority groups
+   * This ensures high-priority cards always appear before low-priority cards
    */
   function priorityShuffleArray(array) {
-    const totalCards = array.length;
+    if (array.length === 0) return;
     
-    // Create array of objects with original index and random offset
-    const indexedArray = array.map((card, index) => {
-      // Calculate ±20% range for this position
-      const variance = Math.floor(totalCards * 0.2);
-      
-      // Generate random offset within ±20% of current position
-      const minOffset = Math.max(0, index - variance);
-      const maxOffset = Math.min(totalCards - 1, index + variance);
-      const randomPosition = Math.floor(Math.random() * (maxOffset - minOffset + 1)) + minOffset;
-      
-      return {
-        card,
-        originalIndex: index,
-        randomPosition
-      };
+    // First, sort by priority (higher priority first)
+    array.sort((a, b) => {
+      const priorityA = a.priority ?? 0;
+      const priorityB = b.priority ?? 0;
+      return priorityB - priorityA; // Higher priority comes first
     });
     
-    // Sort by the random position
-    indexedArray.sort((a, b) => a.randomPosition - b.randomPosition);
+    // Group cards by priority
+    const priorityGroups = new Map();
+    array.forEach(card => {
+      const priority = card.priority ?? 0;
+      if (!priorityGroups.has(priority)) {
+        priorityGroups.set(priority, []);
+      }
+      priorityGroups.get(priority).push(card);
+    });
     
-    // Replace array contents with shuffled cards
+    // Shuffle within each priority group
+    priorityGroups.forEach((cards, priority) => {
+      // Fisher-Yates shuffle for each group
+      for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+      }
+    });
+    
+    // Reconstruct the array with shuffled groups in priority order
     array.length = 0;
-    indexedArray.forEach(item => array.push(item.card));
+    const sortedPriorities = Array.from(priorityGroups.keys()).sort((a, b) => b - a);
+    sortedPriorities.forEach(priority => {
+      array.push(...priorityGroups.get(priority));
+    });
   }
 
   /**
