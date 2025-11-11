@@ -1,0 +1,70 @@
+---
+const noteImports = import.meta.glob("../pages/notes/*.mdx", { eager: true });
+let notes = Object.values(noteImports);
+
+// Sort notes by created date in descending order (newest first)
+notes.sort(
+    (a, b) =>
+        new Date(b.frontmatter.created).valueOf() -
+        new Date(a.frontmatter.created).valueOf()
+);
+
+notes = notes.filter((note) => note.frontmatter.published !== false);
+---
+
+<div class="note-list mt-10">
+    {
+        notes.map((note) => (
+            <article class="note-item">
+                <a href={note.url} class="note-link">
+                    <h2 class="note-title">{note.frontmatter.title}</h2>
+                    <p class="note-date">
+                        {new Date(note.frontmatter.created).toLocaleDateString(
+                            "en-us",
+                            {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                            }
+                        )}
+                    </p>
+                </a>
+            </article>
+        ))
+    }
+</div>
+
+<style>
+    .note-list {
+        display: grid;
+        gap: 2rem;
+    }
+    .note-item {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        transition: box-shadow 0.2s ease-in-out;
+    }
+    .note-item:hover {
+        box-shadow:
+            0 4px 6px -1px rgb(0 0 0 / 0.1),
+            0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+    .note-link {
+        display: block;
+        padding: 1.5rem;
+        text-decoration: none;
+        color: inherit;
+        height: 100%;
+    }
+    .note-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0 0 0.5rem;
+        color: #111827;
+    }
+    .note-date {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-bottom: 0.75rem;
+    }
+</style>

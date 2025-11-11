@@ -1,0 +1,55 @@
+---
+title: "Closures Explained"
+created: 2025-11-11
+edited: 2025-11-11
+author: "Ayanami Kaine"
+tags: ["Example", "Getting Started"]
+layout: ../../layouts/NoteLayout.astro
+published: true
+---
+
+Closures are conceptually simple: a function retains access to the variables in its lexical scope even after the outer function has finished executing. Below are two practical examples that make this obvious. With these functions can be used to create objects. As we can define fields and methods for them.
+
+This also allows for the creation of anonymous objects.
+
+## Example
+
+```js
+// Example 1: a counter created with a closure
+function createCounter(start = 0) {
+    let count = start; // captured by the inner function
+    return function increment() {
+        count += 1;
+        return count;
+    };
+}
+
+const counterA = createCounter(0);
+console.log(counterA()); // 1
+console.log(counterA()); // 2
+
+const counterB = createCounter(100);
+console.log(counterB()); // 101
+console.log(counterA()); // 3  (counterA and counterB have independent state)
+```
+
+```js
+// Example 2: private data on an object via closure
+function Person(name) {
+    let _name = name; // private variable not accessible from outside
+    return {
+        getName() {
+            return _name;
+        },
+        setName(newName) {
+            _name = newName;
+        }
+    };
+}
+
+const p = Person('Tom');
+console.log(p.getName()); // Tom
+p.setName('Jerry');
+console.log(p.getName()); // Jerry
+```
+
