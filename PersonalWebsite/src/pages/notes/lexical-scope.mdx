@@ -1,0 +1,47 @@
+---
+title: "Lexical Scope"
+created: 2025-11-11
+edited: 2025-11-11
+author: "Ayanami Kaine"
+tags: ["Fundamentals", "Programming"]
+layout: ../../layouts/NoteLayout.astro
+published: true
+---
+
+The lexical scope defined where names are looked up. It usually starts searching for a name in the inside and goes outside of the scope IF the name is available.
+
+```js
+function makeCounter() {
+  let count = 0;            // `count` lives in makeCounter's lexical scope
+
+  function increment() {    // increment is defined inside makeCounter
+    count += 1;             // it closes over `count`
+    console.log(count);
+  }
+
+  return increment;         // return the inner function (a closure)
+}
+
+const counter = makeCounter(); // makeCounter runs and returns `increment`
+counter(); // logs: 1
+counter(); // logs: 2
+```
+
+```js
+let x = 10;
+function show() {
+  let x = 20;   // shadows outer x
+  console.log(x); // 20 — uses the nearest (lexical) binding
+}
+show();
+console.log(x); // 10 — outer x unchanged
+```
+
+```js
+if (true) {
+  let a = 1;    // block-scoped
+  var b = 2;    // function/global-scoped
+}
+console.log(typeof a); // "undefined"
+console.log(b);        // 2
+```
