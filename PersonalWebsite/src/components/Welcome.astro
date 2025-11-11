@@ -10,9 +10,9 @@ const posts = Object.values(postImports);
 const recentPosts = posts
     .filter((post) => post.frontmatter.published)
     .sort(
-            (a, b) =>
-                new Date(b.frontmatter.date).valueOf() -
-                new Date(a.frontmatter.date).valueOf()
+        (a, b) =>
+            new Date(b.frontmatter.date).valueOf() -
+            new Date(a.frontmatter.date).valueOf()
     )
     .slice(0, 4);
 
@@ -107,6 +107,44 @@ const featuredArtworks = artworks.slice(0, 3);
                     </div>
                 ))
             }
+        </div>
+    </section>
+
+    <!-- Section: Learning Tools -->
+    <section class="mb-4 mt-24 md:mt-32">
+        <div class="text-center">
+            <h2
+                class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl"
+            >
+                My Flashcards
+            </h2>
+            <p class="mt-4 text-lg text-gray-600">
+                A learning tool I built for myself.
+            </p>
+        </div>
+        <div class="mt-12 max-w-3xl mx-auto">
+            <div
+                class="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col transition-transform hover:scale-[1.02] hover:shadow-xl"
+            >
+                <div class="p-6 flex-grow">
+                    <h3 class="text-xl font-bold text-gray-900">
+                        Spaced Repetition System
+                    </h3>
+                    <p class="mt-2 text-gray-700 text-sm leading-relaxed">
+                        Learn from my curated flashcard collection using the
+                        FSRS algorithm. The progress is saved locally in your
+                        browser.
+                    </p>
+                </div>
+                <div class="px-6 pt-4 pb-6 bg-gray-50 border-t border-gray-100">
+                    <a
+                        href="/apps/StellaSpacedRepetition"
+                        class="text-sm font-semibold text-sky-600 hover:text-sky-800"
+                    >
+                        Start learning <span aria-hidden="true">&rarr;</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </section>
 
