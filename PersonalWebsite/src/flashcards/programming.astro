@@ -2,6 +2,7 @@
 import Flashcard from "../components/Flashcard.astro";
 import CodeBlock from "../components/CodeBlock.astro";
 import NotePreview from "../components/NotePreview.svelte";
+import Quiz from "../components/Quiz.astro";
 ---
 
 <!-- Programming Flashcards -->
@@ -128,3 +129,19 @@ import NotePreview from "../components/NotePreview.svelte";
         />
     </Fragment>
 </Flashcard>
+
+<Quiz
+    id="quiz-programming-1"
+    question="What are higher-order-functions in programming?"
+    options={[
+        "Functions that operate on data structures like arrays or objects",
+        "Functions that take other functions as arguments or return functions",
+        "Variables that hold primitive values like numbers or strings",
+        "Classes that inherit from a parent class",
+    ]}
+    correctIndex={1}
+    tags={["programming", "concepts"]}
+    priority={5}
+    source="programming.astro"
+    references={["https://en.wikipedia.org/wiki/Higher-order_function"]}
+/>
