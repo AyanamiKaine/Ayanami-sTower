@@ -1,0 +1,60 @@
+---
+import Flashcard from "../components/Flashcard.astro";
+import CodeBlock from "../components/CodeBlock.astro";
+---
+
+<Flashcard id="javascript-1" tags={["javascript", "functions", "syntax"]}>
+    <Fragment slot="front">
+        <h3>how do you define a function in JavaScript?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <CodeBlock
+            lang="javascript"
+            code={`function hello_world() {
+    console.log("Hello, world!");
+}`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Flashcard id="javascript-2" tags={["javascript", "functions", "syntax"]}>
+    <Fragment slot="front">
+        <h3>
+            What is the difference between <strong>let</strong> and <strong
+                >var</strong
+            > in JavaScript
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            Let was introduced in ES6 and is block-scoped, because the scooping
+            rules of var are quite confusing.
+        </p>
+        <p>By default you should use let.</p>
+        <p>
+            Variables declared with <strong>var</strong> keyword are hoisted and
+            initialized which means they are accessible in their enclosing scope
+            even before they are declared, however their value is undefined before
+            the declaration statement is reached.
+        </p>
+        <CodeBlock
+            lang="javascript"
+            code={`
+function run() {
+  var foo = "Foo";
+  let bar = "Bar";
+
+  console.log(foo, bar); // Foo Bar
+
+  {
+    var moo = "Mooo"
+    let baz = "Bazz";
+    console.log(moo, baz); // Mooo Bazz
+  }
+
+  console.log(moo); // Mooo
+  console.log(baz); // ReferenceError
+}`}
+        />
+    </Fragment>
+</Flashcard>
