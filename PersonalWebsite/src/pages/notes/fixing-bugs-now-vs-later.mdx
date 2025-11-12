@@ -1,0 +1,52 @@
+---
+title: "Fixing Bugs Now Vs Later"
+created: 2025-11-12
+edited: 2025-11-12
+author: "Ayanami Kaine"
+tags: ["Fundamentals", "Programming", "Bugs"]
+layout: ../../layouts/NoteLayout.astro
+published: true
+---
+
+import BookQuote from "../../components/BookQuote.astro";
+
+
+This is a big question should bugs be caught and fixed before the make their way into production? There is a common myth that concludes that fixing bugs later always costs more money than fixing them before. 
+
+Just google *"Relative cost to fix an error"* or *"Cost of requirements error"* and you will see many images that show you a graph like this.
+
+Cost of defects when fixing them at stage:
+- 1x         Requirements
+- 3x  - 5x   Design
+- 7x  - 10x  Coding
+- 10  - 15x  Testing
+- 30x - 100x Deployment  
+
+If this is true then tools like statically typed programming languages, many good compiler errors and warning are better than languages that don't have that. All because they highlight bugs and possible bugs before they made their way into a release build. As well as using unit tests. All things that move bug fixing from deployment to previous phases/stages.
+
+But it is **highly questionable that this is true.**
+
+A good book on this topic is [The Leprechauns of Software Engineering](https://leanpub.com/leprechauns).
+
+
+<BookQuote
+    quote="One reason why fixing defects late can cost more is that the
+process makes it more expensive to fix defects later..."
+    author="Laurent Bossavit"
+    source="The Leprechauns of Software Engineering p.130"
+/>
+
+<BookQuote
+    quote="The causation is circular: of course if you measured the time
+to fix bugs under that process you would find the cost rising
+according to the phase when bugs are detected, because the
+process is built on this very assumption"
+    author="Laurent Bossavit"
+    source="The Leprechauns of Software Engineering p.131"
+/>
+
+If the process that is involved fixing a bug later costs more money, by assigning tickets, needing two people, etc. Then of course it will cost more money.
+
+In most cases fixing bugs is expensive because the process of fixing them is flawed. Also, no bug ever should result in catastrophic failures. We should assume that bugs will happen, but their damage is limited in some way. 
+
+For example my personal website uses green/blue deployment if the build or start of the server fails when it updates the current good working server stays online. A bug that would result in not being able to request something important on the website should always work. 
