@@ -56,6 +56,33 @@
   });
 
   /**
+   * Shuffle quiz options and return new options array with updated correctIndex
+   * Uses Fisher-Yates shuffle algorithm
+   */
+  function shuffleQuizOptions(options, correctIndex) {
+    // Create array of indices with their original values
+    const indexedOptions = options.map((option, index) => ({
+      option,
+      wasCorrect: index === correctIndex
+    }));
+    
+    // Fisher-Yates shuffle
+    for (let i = indexedOptions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indexedOptions[i], indexedOptions[j]] = [indexedOptions[j], indexedOptions[i]];
+    }
+    
+    // Extract shuffled options and find new correct index
+    const shuffledOptions = indexedOptions.map(item => item.option);
+    const newCorrectIndex = indexedOptions.findIndex(item => item.wasCorrect);
+    
+    return {
+      options: shuffledOptions,
+      correctIndex: newCorrectIndex
+    };
+  }
+
+  /**
    * Initialize flashcards and quizzes from the HTML definitions
    */
   function initializeCards() {
@@ -157,13 +184,16 @@
     quizElements.forEach(el => {
       const id = el.dataset.id;
       const question = el.dataset.question || '';
-      const options = JSON.parse(el.dataset.options || '[]');
-      const correctIndex = parseInt(el.dataset.correctIndex || '0', 10);
+      const originalOptions = JSON.parse(el.dataset.options || '[]');
+      const originalCorrectIndex = parseInt(el.dataset.correctIndex || '0', 10);
       const tags = JSON.parse(el.dataset.tags || '[]');
       const references = JSON.parse(el.dataset.references || '[]');
       const priority = parseInt(el.dataset.priority || '0', 10);
       const explanation = el.dataset.explanation || '';
       let source = el.dataset.source || '';
+
+      // Shuffle quiz options to prevent memorization by position
+      const { options, correctIndex } = shuffleQuizOptions(originalOptions, originalCorrectIndex);
 
       // Check if we have existing progress for this quiz
       const existingCard = existingData?.find(c => c.id === id);
