@@ -9,8 +9,7 @@ import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 // https://astro.build/config
 export default defineConfig({
-    integrations: [svelte(), mdx(), sitemap()
-    ],
+    integrations: [svelte(), mdx(), sitemap()],
 
     vite: {
         plugins: [tailwindcss()],

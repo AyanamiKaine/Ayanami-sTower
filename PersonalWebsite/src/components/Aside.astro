@@ -1,0 +1,113 @@
+---
+/**
+ * Aside Component (also known as Admonition or Callout)
+ *
+ * A component for highlighting important information in markdown/MDX content.
+ * Supports multiple variants with different colors and icons.
+ *
+ * Usage in MDX:
+ * <Aside variant="tip">
+ *   This is a helpful tip!
+ * </Aside>
+ *
+ * Available variants: tip, caution, danger, info
+ */
+
+interface Props {
+    variant: "tip" | "caution" | "danger" | "info";
+    title?: string; // Optional custom title (defaults to uppercase variant name)
+}
+
+const { variant, title } = Astro.props;
+
+// Define icons using Unicode/emoji (simple approach, no icon library needed)
+const icon = (() => {
+    switch (variant) {
+        case "tip":
+            return "💡"; // Light bulb
+        case "caution":
+            return "⚠️"; // Warning triangle
+        case "danger":
+            return "🔥"; // Flame
+        case "info":
+            return "ℹ️"; // Info circle
+    }
+})();
+
+const displayTitle = title || variant.toUpperCase();
+---
+
+<div
+    class:list={[
+        "aside my-4 rounded-lg border-l-4 px-4 py-3 shadow-sm",
+        {
+            "border-green-500 bg-green-50 text-green-900": variant === "tip",
+        },
+        {
+            "border-yellow-500 bg-yellow-50 text-yellow-900":
+                variant === "caution",
+        },
+        {
+            "border-red-500 bg-red-50 text-red-900": variant === "danger",
+        },
+        {
+            "border-blue-500 bg-blue-50 text-blue-900": variant === "info",
+        },
+    ]}
+>
+    <div class="mb-2 flex items-center gap-2">
+        <span class="text-xl" aria-hidden="true">{icon}</span>
+        <p class="m-0 text-sm font-bold tracking-wide">{displayTitle}</p>
+    </div>
+    <div class="aside-content text-sm leading-relaxed">
+        <slot />
+    </div>
+</div>
+
+<style>
+    /* Ensure nested content (paragraphs, code, lists) doesn't have excessive margins */
+    .aside-content :global(p) {
+        margin: 0.5rem 0;
+    }
+
+    .aside-content :global(p:first-child) {
+        margin-top: 0;
+    }
+
+    .aside-content :global(p:last-child) {
+        margin-bottom: 0;
+    }
+
+    .aside-content :global(code) {
+        padding: 0.15rem 0.35rem;
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
+
+    /* Variant-specific code backgrounds */
+    .aside:has([data-variant="tip"]) .aside-content :global(code) {
+        background-color: rgba(34, 197, 94, 0.15);
+    }
+
+    .aside:has([data-variant="caution"]) .aside-content :global(code) {
+        background-color: rgba(234, 179, 8, 0.15);
+    }
+
+    .aside:has([data-variant="danger"]) .aside-content :global(code) {
+        background-color: rgba(239, 68, 68, 0.15);
+    }
+
+    .aside:has([data-variant="info"]) .aside-content :global(code) {
+        background-color: rgba(59, 130, 246, 0.15);
+    }
+
+    .aside-content :global(ul),
+    .aside-content :global(ol) {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+    }
+
+    .aside-content :global(li) {
+        margin: 0.25rem 0;
+    }
+</style>

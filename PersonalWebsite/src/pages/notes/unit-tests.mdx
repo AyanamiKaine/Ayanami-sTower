@@ -1,0 +1,30 @@
+---
+title: "Unit Tests"
+created: 2025-11-11
+edited: 2025-11-11
+author: "Ayanami Kaine"
+tags: ["Fundamentals", "Unit Tests"]
+layout: ../../layouts/NoteLayout.astro
+published: true
+---
+
+import Aside from "../../components/Aside.astro";
+
+<Aside variant="caution">
+  Those are just my personal opinions and reasoning why I have them. **Don't believe in dogmas.**
+</Aside>
+
+
+Unit tests are great and quite simple to implement. BUT too much of anything is never good. If you thrive for a test coverage of 100% you are probably doing something wrong.
+
+## Too Many Unit Tests
+
+Covering every possible branch with a unit tests is often not feasible. Unit tests shine in two scenarios the most. Write **units tests when you want to improve the initial API**. This is using Test-Driven-Development.
+
+The second scenario is writing **unit tests for parts you really don't want to break**. This gives you the confidence to work on parts that are really problematic if they break. Loading and saving user data should never be broken by an update.
+
+There are often 10% of the code base that gets used 90% of the time here, unit tests are really great. 
+
+## An Investment
+
+Unit tests are an investment but not every investment is worth your time or money. Writing unit tests takes time. Having unit tests for things that are not that important may be a bad investment in the long run. There are no dogmas here besides that having unit tests for the important parts is my personal dogma.
