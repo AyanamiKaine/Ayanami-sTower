@@ -1,5 +1,4 @@
 export const GET= async ({ }) => {
-    // Retrieve all pages from the /pages/ directory.
     // We are looking for .md, .mdx, and .astro files.
     const allPages = await import.meta.glob(['../**/*.md', '../**/*.mdx', '../**/*.astro']);
 
