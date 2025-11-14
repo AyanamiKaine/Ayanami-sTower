@@ -1,0 +1,101 @@
+---
+title: "Source Code Generator "
+created: 2025-11-13
+edited: 2025-11-13
+author: "Ayanami Kaine"
+tags: ["C#"]
+layout: ../../layouts/NoteLayout.astro
+published: true
+---
+
+import Aside from "../../components/Aside.astro";
+
+Source code generator are something I call poor men's lisp macros. Source code generator like they are used in C# are fantastic if you don't want or can use Reflection. In reality, they are much more complex than lisp macros. 
+
+A common use cases for source code generators are:
+- Reduce boilerplate
+- Avoiding reflection
+- Creation of types based on a schema/protocol like CSV, proto-buff
+
+The thing is in every use case for source code generator you would use lisp macros.
+
+## Example: Boilerplate Reduction
+
+### C# Source Code Generator
+
+```csharp
+// Source generator that creates ToString() methods
+[Generator]
+public class ToStringGenerator : ISourceGenerator
+{
+    public void Execute(GeneratorExecutionContext context)
+    {
+        var compilation = context.Compilation;
+        var syntaxTrees = compilation.SyntaxTrees;
+        
+        foreach (var tree in syntaxTrees)
+        {
+            var root = tree.GetRoot();
+            var classDeclarations = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
+            
+            foreach (var classDecl in classDeclarations)
+            {
+                var attributes = classDecl.AttributeLists;
+                if (HasAttribute(attributes, "GenerateToString"))
+                {
+                    var generatedCode = GenerateToStringMethod(classDecl);
+                    context.AddSource($"{classDecl.Identifier}_Generated.cs", generatedCode);
+                }
+            }
+        }
+    }
+    
+    public void Initialize(GeneratorInitializationContext context) { }
+}
+
+// Usage
+[GenerateToString]
+public partial class Person
+{
+    public string Name { get; set; }
+    public int Age { get; set; }
+}
+
+// Generated code (compile-time)
+public partial class Person
+{
+    public override string ToString()
+    {
+        return $"Person {{ Name = {Name}, Age = {Age} }}";
+    }
+}
+```
+
+### Lisp Macro
+
+```lisp
+; Define a macro that generates ToString at compile-time
+(defmacro gen-to-string (class-name &rest fields)
+  `(defmethod to-string ((obj ,class-name))
+     (format nil "~a { ~{~a = ~a~^, ~} }"
+             ',class-name
+             (list ,@(mapcan (lambda (field)
+                               `(',field (slot-value obj ',field)))
+                             fields)))))
+
+; Usage (macro expands at compile-time)
+(gen-to-string person name age)
+
+; Expands to:
+(defmethod to-string ((obj person))
+  (format nil "~a { ~{~a = ~a~^, ~} }"
+          'person
+          (list 'name (slot-value obj 'name)
+                'age (slot-value obj 'age))))
+```
+
+<Aside variant="tip">
+  **Key Difference:** The Lisp macro is just a function that transforms code. The C# source generator requires reflection, syntax tree parsing, attribute analysis, and file generation—all at compile-time but with much more ceremony.
+</Aside>
+
+Notice how the Lisp macro achieves the same result with far less boilerplate. The C# approach is more powerful for runtime scenarios but unnecessarily complex for cases where Lisp macros would suffice. 
