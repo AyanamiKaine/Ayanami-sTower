@@ -145,3 +145,69 @@ import Quiz from "../components/Quiz.astro";
     source="programming.astro"
     references={["https://en.wikipedia.org/wiki/Higher-order_function"]}
 />
+
+<Flashcard
+    id="c-void-pointer-rules"
+    tags={["c", "pointers", "memory-management"]}
+    source="c-programming.astro"
+    references={[
+        "K&R C Programming Language, Chapter 5",
+        "C Standard Library documentation (malloc/qsort)",
+    ]}
+>
+    <Fragment slot="front">
+        <h3>
+            What is a <code>void*</code> (void pointer) and what are the two strict
+            restrictions on its usage?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            A <strong>void pointer</strong> is a generic pointer that can hold the
+            address of <em>any</em> data type, but has no type information itself.
+        </p>
+        <p><strong>The Two Restrictions:</strong></p>
+        <ul>
+            <li>
+                <strong>No Dereferencing:</strong> You cannot use <code
+                    >*ptr</code
+                > because the compiler doesn't know the data size (1 byte? 4 bytes?).
+            </li>
+            <li>
+                <strong>No Arithmetic:</strong> You cannot use <code>ptr++</code
+                > because the compiler doesn't know how many bytes to jump.
+            </li>
+        </ul>
+        <p>
+            You <strong>must</strong> explicitly cast it to a specific type before
+            doing either.
+        </p>
+        <CodeBlock
+            lang="c"
+            code={`int a = 10;
+void* ptr = &a;
+
+// COMPILER ERROR
+// printf("%d", *ptr); 
+
+// CORRECT (Cast first)
+printf("%d", *(int*)ptr);`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-c-void-pointer-limitations"
+    question="Which of the following operations will result in a compiler error if 'p' is defined as 'void* p'?"
+    options={[
+        "Assigning the address of an int to it (p = &my_int;)",
+        "Comparing it to NULL (if (p == NULL) ...)",
+        "Dereferencing it directly to read a value (int x = *p;)",
+        "Casting it to another pointer type (int* i = (int*)p;)",
+    ]}
+    correctIndex={2}
+    tags={["c", "pointers", "safety"]}
+    priority={10}
+    source="c-programming.astro"
+    explanation="You cannot dereference a void pointer (*p) directly because the compiler does not know the size of the data type pointed to (it could be a char, int, float, or struct). You must cast it first."
+/>
