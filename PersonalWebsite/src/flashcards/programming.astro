@@ -152,7 +152,7 @@ import Quiz from "../components/Quiz.astro";
     source="c-programming.astro"
     references={[
         "K&R C Programming Language, Chapter 5",
-        "C Standard Library documentation (malloc/qsort)",
+        "https://www.tutorialspoint.com/c_standard_library/c_function_malloc.htm",
     ]}
 >
     <Fragment slot="front">
@@ -210,4 +210,206 @@ printf("%d", *(int*)ptr);`}
     priority={10}
     source="c-programming.astro"
     explanation="You cannot dereference a void pointer (*p) directly because the compiler does not know the size of the data type pointed to (it could be a char, int, float, or struct). You must cast it first."
+/>
+
+<Flashcard
+    id="c-pointer-operators"
+    tags={["c", "pointers", "operators"]}
+    source="c-programming.astro"
+>
+    <Fragment slot="front">
+        <h3>
+            What are the two fundamental pointer operators, <code>&</code> and <code
+                >*</code
+            >, and what does each one do?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>They are the inverse of each other:</p>
+        <ul>
+            <li>
+                <strong><code>&amp;</code> (Address-of):</strong> A <em
+                    >unary</em
+                > operator that gets the memory address <strong>of</strong> a variable.
+            </li>
+            <li>
+                <strong><code>*</code> (Dereference):</strong> A <em>unary</em> operator
+                that goes to a memory address <strong>at</strong> a pointer and gets
+                the value stored there.
+            </li>
+        </ul>
+        <CodeBlock
+            lang="c"
+            code={`int value = 42;
+// Use & to get the address of 'value'
+int* pointer = &value;
+
+// Use * to get the value at 'pointer's address
+int retrievedValue = *pointer;
+
+// retrievedValue is now 42`}
+        />
+    </Fragment>
+</Flashcard>
+
+<!-- Quiz: Pass-by-Reference -->
+<Quiz
+    id="quiz-c-pass-by-reference"
+    question="How do you write a C function 'swap' that correctly swaps the values of two integer variables 'a' and 'b' from main()?"
+    options={[
+        "void swap(int a, int b) { int t=a; a=b; b=t; }",
+        "void swap(int* a_ptr, int* b_ptr) { int t = *a_ptr; *a_ptr = *b_ptr; *b_ptr = t; }",
+        "void swap(int* a_ptr, int* b_ptr) { int* t = a_ptr; a_ptr = b_ptr; b_ptr = t; }",
+        "int* swap(int a, int b) { ... }",
+    ]}
+    correctIndex={1}
+    tags={["c", "pointers", "functions"]}
+    priority={10}
+    source="c-programming.astro"
+    explanation="C is pass-by-value. To modify the original variables, you must pass pointers to them and then dereference those pointers (*) to access and change their values."
+/>
+
+<!-- Flashcard: Pointers and Arrays -->
+<Flashcard
+    id="c-pointer-array-relationship"
+    tags={["c", "pointers", "arrays", "memory"]}
+    source="c-programming.astro"
+>
+    <Fragment slot="front">
+        <h3>What is the core relationship between pointers and arrays in C?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            An array's name acts as a <strong>constant pointer</strong> to its <em
+                >first element</em
+            >.
+        </p>
+        <ol>
+            <li><code>arr</code> is equivalent to <code>&amp;arr[0]</code>.</li>
+            <li>
+                Array access <code>arr[i]</code> is just "syntactic sugar" for pointer
+                arithmetic: <code>*(arr + i)</code>.
+            </li>
+            <li>
+                When you pass an array to a function, you are actually just
+                passing a pointer to its first element.
+            </li>
+        </ol>
+        <CodeBlock
+            lang="c"
+            code={`int nums[] = {10, 20, 30};
+int* ptr = nums; // 'nums' decays to a pointer
+
+// These two lines are 100% equivalent
+printf("%d", nums[1]);    // Prints 20
+printf("%d", *(ptr + 1));  // Prints 20`}
+        />
+    </Fragment>
+</Flashcard>
+
+<!-- Quiz: Pointer Arithmetic -->
+<Quiz
+    id="quiz-c-pointer-arithmetic"
+    question="Given 'int arr[] = {100, 200, 300}; int* ptr = arr; ptr++;', what is the value of *ptr?"
+    options={["100", "101", "200", "A memory address"]}
+    correctIndex={2}
+    tags={["c", "pointers", "arrays", "arithmetic"]}
+    priority={8}
+    source="c-programming.astro"
+    explanation="Pointer arithmetic is scaled by the size of the data type. 'ptr++' on an 'int*' doesn't add 1 byte, it moves the pointer forward by 'sizeof(int)' bytes to the *next element* in the array, which is arr[1] (value 200)."
+/>
+
+<!-- Flashcard: NULL Pointers -->
+<Flashcard
+    id="c-null-pointer"
+    tags={["c", "pointers", "safety", "null"]}
+    source="c-programming.astro"
+>
+    <Fragment slot="front">
+        <h3>
+            What is a <code>NULL</code> pointer, and why is it crucial for safe programming?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            <code>NULL</code> is a special macro (usually <code>(void*)0</code>)
+            that represents a pointer that "points to nothing." It's a
+            guaranteed-invalid address.
+        </p>
+        <p>
+            <strong>Why it's crucial:</strong>
+        </p>
+        <ul>
+            <li>
+                <strong>Safety Check:</strong> You must <strong>always</strong> check
+                for <code>NULL</code> before dereferencing a pointer that *might*
+                be invalid, especially after a call to <code>malloc</code>.
+            </li>
+            <li>
+                <strong>Error-Handling:</strong> Functions like <code
+                    >malloc</code
+                > return <code>NULL</code> to signal a failure (e.g., out of memory).
+            </li>
+        </ul>
+        <CodeBlock
+            lang="c"
+            code={`int* ptr = (int*)malloc(sizeof(int) * 100);
+
+// CRITICAL: Check for NULL before using the pointer.
+if (ptr == NULL) {
+    printf("Error: Out of memory!\\n");
+    // Handle error...
+} else {
+    // It's safe to use ptr
+    ptr[0] = 5;
+}`}
+        />
+    </Fragment>
+</Flashcard>
+
+<!-- Quiz: Const Pointers -->
+<Quiz
+    id="quiz-c-const-pointers"
+    question="What is the difference between 'const int* p' and 'int* const p'?"
+    options={[
+        "No difference, they are identical.",
+        "'const int* p' is a pointer to a const int (data is const); 'int* const p' is a const pointer to an int (pointer is const).",
+        "'const int* p' is a const pointer to an int (pointer is const); 'int* const p' is a pointer to a const int (data is const).",
+        "Both are invalid syntax in C.",
+    ]}
+    correctIndex={1}
+    tags={["c", "pointers", "const"]}
+    priority={6}
+    source="c-programming.astro"
+    explanation=`Read the declaration from right to left:
+- 'const int* p' (or 'int const* p'): 'p' is a pointer (*) to an 'int' that is 'const'. The data cannot be changed (*p = 10 is an error), but the pointer can (p = &other_var is OK).
+- 'int* const p': 'p' is a 'const' pointer (*) to an 'int'. The pointer cannot be changed (p = &other_var is an error), but the data can (*p = 10 is OK).`
+/>
+
+<Quiz
+    id="quiz-c-pass-by-value-effect"
+    question=`Given this C code: 
+void changeValue(int num) { num = 100; } 
+int main() { int x = 20; changeValue(x); printf('%d', x); } 
+What is the final output?`
+    options={["100", "20", "0", "Compiler Error"]}
+    correctIndex={1}
+    tags={["c", "functions", "pass-by-value", "scope"]}
+    priority={9}
+    source="c-programming.astro"
+    explanation=`C is pass-by-value. The 'changeValue' function receives a *copy* of 'x'. Modifying the 'num' parameter only changes the local copy, not the original 'x' variable in main().`
+/>
+
+<Quiz
+    id="quiz-c-pass-by-reference-effect"
+    question=`Given this C code: 
+void changeValue(int* ptr) { *ptr = 100; } 
+int main() { int x = 20; changeValue(&x); printf('%d', x); } 
+What is the final output?`
+    options={["100", "20", "A memory address", "Compiler Error"]}
+    correctIndex={0}
+    tags={["c", "functions", "pass-by-reference", "pointers"]}
+    priority={10}
+    source="c-programming.astro"
+    explanation=`The address of 'x' (&x) is passed to the function. The function's 'ptr' parameter holds this address. By dereferencing it (*ptr), the function accesses and modifies the *original* 'x' variable in main() to 100.`
 />
