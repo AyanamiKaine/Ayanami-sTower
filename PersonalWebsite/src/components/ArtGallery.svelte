@@ -133,7 +133,7 @@
 </script>
 
 <!-- Gallery Grid -->
-<div class="grid grid-cols-3 gap-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:gap-6">
+<div class="grid grid-cols-2 gap-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:gap-6">
     {#each visibleArtworks as artwork (artwork.id)}
         {@const isLoaded = loadedImages[artwork.src]}
         <button 
