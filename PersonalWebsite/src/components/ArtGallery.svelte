@@ -133,12 +133,12 @@
 </script>
 
 <!-- Gallery Grid -->
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+<div class="grid grid-cols-3 gap-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:gap-6">
     {#each visibleArtworks as artwork (artwork.id)}
         {@const isLoaded = loadedImages[artwork.src]}
         <button 
             on:click={() => openModal(artwork)}
-            class="group relative overflow-hidden rounded-lg shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-opacity-50 h-80 cursor-pointer bg-gray-200 dark:bg-gray-800"
+            class="group relative overflow-hidden rounded-sm sm:rounded-lg shadow-sm sm:shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-opacity-50 aspect-square sm:aspect-auto sm:h-80 cursor-pointer bg-gray-200 dark:bg-gray-800"
         >
             {#if !isLoaded}
                 <div class="absolute inset-0 flex items-center justify-center">
