@@ -1,0 +1,32 @@
+---
+import FullScreenAppLayout from "../../layouts/FullScreenAppLayout.astro";
+import PlanetMapEditor from "../../components/app/PlanetMapEditor/App.svelte";
+
+const pageTitle = "Planet Map Editor";
+---
+
+<FullScreenAppLayout title={pageTitle}>
+    <div class="w-full h-full bg-gray-900">
+        <PlanetMapEditor client:load />
+    </div>
+</FullScreenAppLayout>
+
+<style>
+    .app-page {
+        /* ensure the embedded Svelte app can use full height where necessary */
+        min-height: 100vh;
+    }
+
+    /* small override: ensure app canvas using the provided classes stretches correctly */
+    .app-canvas :global(.modal-overlay),
+    .app-canvas :global(canvas) {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    /* If the app wants to be edge-to-edge, we let it take all the screen */
+    .app-canvas :global(canvas) {
+        min-height: 60vh;
+        border-radius: 8px;
+    }
+</style>
