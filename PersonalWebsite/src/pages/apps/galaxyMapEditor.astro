@@ -1,0 +1,12 @@
+---
+import FullScreenAppLayout from "../../layouts/FullScreenAppLayout.astro";
+import GalaxyForgeWrapper from "../../components/app/galaxyMapEditor/GalaxyForgeWrapper.jsx";
+
+const pageTitle = "Galaxy Map Editor";
+---
+
+<FullScreenAppLayout title={pageTitle}>
+    <div class="w-full h-full bg-slate-900">
+        <GalaxyForgeWrapper client:load />
+    </div>
+</FullScreenAppLayout>
