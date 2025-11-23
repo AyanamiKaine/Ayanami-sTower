@@ -1,0 +1,27 @@
+---
+import FullScreenAppLayout from "../../layouts/FullScreenAppLayout.astro";
+import CharacterEditor from "../../components/app/characterEditor/CharacterEditorWrapper.jsx";
+
+const pageTitle = "Character Architect";
+---
+
+<FullScreenAppLayout title={pageTitle}>
+    <div>
+        <CharacterEditor client:load />
+    </div>
+</FullScreenAppLayout>
+
+<style>
+    .app-page {
+        min-height: 100vh;
+    }
+    .app-canvas :global(.modal-overlay),
+    .app-canvas :global(canvas) {
+        width: 100% !important;
+        height: 100% !important;
+    }
+    .app-canvas :global(canvas) {
+        min-height: 60vh;
+        border-radius: 8px;
+    }
+</style>
