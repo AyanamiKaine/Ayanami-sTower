@@ -1,0 +1,46 @@
+---
+import AppLayout from "../../layouts/AppLayout.astro";
+---
+
+<AppLayout title="Apps">
+    <div class="page py-8 px-6">
+        <h1 class="text-3xl font-bold mb-4">Apps</h1>
+        <p class="text-slate-400 mb-6">
+            Interactive apps and tools embedded in the site.
+        </p>
+
+        <ul class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <li class="p-4 bg-slate-800 border border-slate-700 rounded">
+                <a href="/apps/galaxyMapEditor" class="text-lg text-slate-100"
+                    >Galaxy Map Editor</a
+                >
+            </li>
+            <li class="p-4 bg-slate-800 border border-slate-700 rounded">
+                <a href="/apps/PlanetMapEditor" class="text-lg text-slate-100"
+                    >Planet Map Editor</a
+                >
+            </li>
+            <li class="p-4 bg-slate-800 border border-slate-700 rounded">
+                <a href="/apps/StellaREPL" class="text-lg text-slate-100"
+                    >Stella REPL</a
+                >
+            </li>
+            <li class="p-4 bg-slate-800 border border-slate-700 rounded">
+                <a
+                    href="/apps/StellaSpacedRepetition"
+                    class="text-lg text-slate-100">Spaced Repetition</a
+                >
+            </li>
+            <li class="p-4 bg-slate-800 border border-slate-700 rounded">
+                <a href="/apps/DialogEditor" class="text-lg text-slate-100"
+                    >Dialog Editor</a
+                >
+            </li>
+            <li class="p-4 bg-slate-800 border border-slate-700 rounded">
+                <a href="/apps/economy" class="text-lg text-slate-100"
+                    >Economic Architect</a
+                >
+            </li>
+        </ul>
+    </div>
+</AppLayout>
