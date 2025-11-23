@@ -1,0 +1,127 @@
+{
+  "resources": [
+    { "id": "res_grain", "name": "Grain", "category": "Raw Material" },
+    { "id": "res_wood", "name": "Wood", "category": "Raw Material" },
+    { "id": "res_iron", "name": "Iron Ore", "category": "Raw Material" },
+    { "id": "res_coal", "name": "Coal", "category": "Raw Material" },
+    { "id": "res_cotton", "name": "Cotton", "category": "Raw Material" },
+    { "id": "res_oil", "name": "Crude Oil", "category": "Raw Material" },
+    { "id": "res_rubber", "name": "Rubber", "category": "Raw Material" },
+    { "id": "res_lumber", "name": "Lumber", "category": "Industrial" },
+    { "id": "res_steel", "name": "Steel", "category": "Industrial" },
+    { "id": "res_fabric", "name": "Fabric", "category": "Industrial" },
+    { "id": "res_plastic", "name": "Plastics", "category": "Industrial" },
+    { "id": "res_parts", "name": "Machine Parts", "category": "Industrial" },
+    { "id": "res_tools", "name": "Tools", "category": "Industrial" },
+    { "id": "res_clothes", "name": "Clothes", "category": "Consumer" },
+    { "id": "res_furniture", "name": "Furniture", "category": "Consumer" },
+    { "id": "res_canned_food", "name": "Canned Food", "category": "Consumer" },
+    { "id": "res_electronics", "name": "Electronics", "category": "Consumer" },
+    { "id": "res_auto", "name": "Automobiles", "category": "Consumer" },
+    { "id": "res_incense", "name": "Ritual Incense", "category": "Consumer" },
+    { "id": "res_wine", "name": "Wine", "category": "Consumer" }
+  ],
+  "recipes": [
+    {
+      "id": "rec_sawmill",
+      "name": "Sawmill",
+      "inputs": [{ "resourceId": "res_wood", "amount": 2 }],
+      "outputs": [{ "resourceId": "res_lumber", "amount": 2 }],
+      "workforce": [{ "popId": "pop_laborers", "amount": 500 }]
+    },
+    {
+      "id": "rec_foundry",
+      "name": "Steel Foundry",
+      "inputs": [
+        { "resourceId": "res_iron", "amount": 2 },
+        { "resourceId": "res_coal", "amount": 2 }
+      ],
+      "outputs": [{ "resourceId": "res_steel", "amount": 1 }],
+      "workforce": [
+        { "popId": "pop_laborers", "amount": 800 },
+        { "popId": "pop_engineers", "amount": 50 }
+      ]
+    }
+  ],
+  "popTypes": [
+    {
+      "id": "pop_laborers",
+      "name": "Laborers (Class)",
+      "needs": {
+        "life": [{ "resourceId": "res_grain", "amount": 2.0 }],
+        "everyday": [{ "resourceId": "res_clothes", "amount": 0.5 }],
+        "luxury": []
+      }
+    },
+    {
+      "id": "pop_engineers",
+      "name": "Engineers (Class)",
+      "needs": {
+        "life": [{ "resourceId": "res_canned_food", "amount": 2.0 }],
+        "everyday": [{ "resourceId": "res_furniture", "amount": 0.5 }],
+        "luxury": [{ "resourceId": "res_electronics", "amount": 0.5 }]
+      }
+    },
+    {
+      "id": "pop_aristocrats",
+      "name": "Aristocrats (Class)",
+      "needs": {
+        "life": [{ "resourceId": "res_canned_food", "amount": 2.0 }],
+        "everyday": [{ "resourceId": "res_electronics", "amount": 1.0 }],
+        "luxury": [{ "resourceId": "res_auto", "amount": 1.0 }]
+      }
+    }
+  ],
+  "species": [
+    {
+      "id": "specie_human",
+      "name": "Human",
+      "needs": { "life": [], "everyday": [], "luxury": [] }
+    },
+    {
+      "id": "specie_android",
+      "name": "Android",
+      "needs": { "life": [{ "resourceId": "res_parts", "amount": 0.1 }], "everyday": [], "luxury": [] }
+    }
+    ,
+    {
+      "id": "specie_aerith",
+      "name": "Aerial Aerie",
+      "needs": { "life": [], "everyday": [{ "resourceId": "res_grain", "amount": 1 }], "luxury": [{ "resourceId": "res_incense", "amount": 0.1 }] }
+    },
+    {
+      "id": "specie_lichen",
+      "name": "Xenolichen",
+      "needs": { "life": [{ "resourceId": "res_oil", "amount": 0.03 }], "everyday": [], "luxury": [] }
+    },
+    {
+      "id": "specie_synth",
+      "name": "Synth",
+      "needs": { "life": [{ "resourceId": "res_parts", "amount": 0.15 }], "everyday": [{ "resourceId": "res_electronics", "amount": 0.05 }], "luxury": [] }
+    },
+    {
+      "id": "specie_hive",
+      "name": "Hivekin",
+      "needs": { "life": [], "everyday": [{ "resourceId": "res_canned_food", "amount": 0.75 }], "luxury": [] }
+    },
+    {
+      "id": "specie_crystalline",
+      "name": "Crystalline",
+      "needs": { "life": [], "everyday": [{ "resourceId": "res_tools", "amount": 0.05 }], "luxury": [{ "resourceId": "res_wine", "amount": 0.05 }] }
+    }
+  ],
+  "cultures": [
+    {
+      "id": "cul_terran",
+      "name": "Terran Republic",
+      "needs": { "life": [], "everyday": [], "luxury": [{ "resourceId": "res_wine", "amount": 0.5 }] }
+    }
+  ],
+  "religions": [
+    {
+      "id": "rel_imperial",
+      "name": "Imperial Cult",
+      "needs": { "life": [], "everyday": [{ "resourceId": "res_incense", "amount": 0.2 }], "luxury": [] }
+    }
+  ]
+}

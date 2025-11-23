@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
     Landmark,
     Briefcase,
@@ -111,213 +111,31 @@ export default function PolityArchitect() {
 
     // --- Data Models ---
 
-    // 1. Polity Types (The Class of the Entity)
-    const [polityTypes, setPolityTypes] = useState([
-        {
-            id: "pt_empire",
-            name: "Sovereign Empire",
-            description: "A fully independent state controlling territory.",
-            icon: "Globe",
-        },
-        {
-            id: "pt_corp",
-            name: "Megacorporation",
-            description: "A commercial entity spanning multiple systems.",
-            icon: "Briefcase",
-        },
-        {
-            id: "pt_federation",
-            name: "Federation",
-            description:
-                "A multi-state federation sharing sovereignty under a common charter.",
-            icon: "Globe",
-        },
-        {
-            id: "pt_theocracy",
-            name: "Theocracy",
-            description:
-                "Ruled directly by religious authorities or bound by a divine mandate.",
-            icon: "Scroll",
-        },
-        {
-            id: "pt_rebels",
-            name: "Rebel Faction",
-            description:
-                "An insurgent organization contesting established authority.",
-            icon: "Flag",
-        },
-        {
-            id: "pt_citystate",
-            name: "City-State",
-            description:
-                "A single metropolitan polity with autonomy often built around a core city.",
-            icon: "Landmark",
-        },
-        {
-            id: "pt_ngo",
-            name: "NGO / Order",
-            description: "A non-governmental organization or religious order.",
-            icon: "Scale",
-        },
-        {
-            id: "pt_vassal",
-            name: "Vassal State",
-            description: "A state subservient to a higher power.",
-            icon: "Flag",
-        },
-        {
-            id: "pt_kabal",
-            name: "Shadow Kabal",
-            description: "A secretive group pulling strings from the dark.",
-            icon: "Users",
-        },
-        {
-            id: "pt_colony",
-            name: "Colony",
-            description:
-                "A polity established as an outpost of another power with limited autonomy.",
-            icon: "Globe",
-        },
-    ]);
+    // 1. Polity Types (The Class of the Entity) loaded from defaults
+    const [polityTypes, setPolityTypes] = useState([]);
 
-    // 2. Civics / Ethics (Building Blocks of Ideology)
-    const [civics, setCivics] = useState([
-        {
-            id: "civ_militarist",
-            name: "Militarist",
-            type: "Ethic",
-            description: "Might makes right.",
-            opposites: ["civ_pacifist"],
-        },
-        {
-            id: "civ_pacifist",
-            name: "Pacifist",
-            type: "Ethic",
-            description: "Violence is the last resort.",
-            opposites: ["civ_militarist"],
-        },
-        {
-            id: "civ_feudal",
-            name: "Feudal Structure",
-            type: "Civic",
-            description: "Organized through oaths of loyalty.",
-            opposites: [],
-        },
-        {
-            id: "civ_ruthless",
-            name: "Ruthless Profit",
-            type: "Civic",
-            description: "Profit above ethics.",
-            opposites: ["civ_socialist"],
-        },
-        {
-            id: "civ_technocracy",
-            name: "Technocracy",
-            type: "Civic",
-            description: "Ruled by experts and scientists.",
-            opposites: [],
-        },
-        {
-            id: "civ_hive",
-            name: "Hive Mind",
-            type: "Civic",
-            description: "A single consciousness.",
-            opposites: [],
-        },
-        {
-            id: "civ_socialist",
-            name: "Socialist",
-            type: "Civic",
-            description:
-                "Collective ownership and state-led distribution of resources.",
-            opposites: ["civ_ruthless", "civ_plutocracy", "civ_corporate"],
-        },
-        {
-            id: "civ_isolationist",
-            name: "Isolationist",
-            type: "Policy",
-            description:
-                "Minimizes external contact and foreign entanglements.",
-        },
-        {
-            id: "civ_expansionist",
-            name: "Expansionist",
-            type: "Policy",
-            description: "Prioritizes territorial expansion and colonization.",
-        },
-        {
-            id: "civ_merchant",
-            name: "Trader Guilds",
-            type: "Civic",
-            description:
-                "The economy is dominated by merchant interests and guilds.",
-        },
-        {
-            id: "civ_authoritarian",
-            name: "Authoritarian",
-            type: "Ethic",
-            description:
-                "Centralized power concentrated in a single authority or ruling class.",
-        },
-        {
-            id: "civ_religious",
-            name: "Religious Rule",
-            type: "Civic",
-            description: "Religious doctrine defines laws and governance.",
-        },
-        {
-            id: "civ_plutocracy",
-            name: "Plutocracy",
-            type: "Civic",
-            description:
-                "Rule by the wealthy where economic power drives political influence.",
-        },
-        {
-            id: "civ_democratic",
-            name: "Democratic",
-            type: "Civic",
-            description:
-                "Governance through elected representatives and popular participation.",
-        },
-        {
-            id: "civ_corporate",
-            name: "Corporate Rule",
-            type: "Civic",
-            description:
-                "Corporations control major aspects of society and governance.",
-        },
-    ]);
+    // 2. Civics / Ethics (Building Blocks of Ideology) loaded from defaults
+    const [civics, setCivics] = useState([]);
 
-    // 3. Polities (The Actual Entities)
-    const [polities, setPolities] = useState([
-        {
-            id: "pol_terran",
-            name: "Terran Dominion",
-            typeId: "pt_empire",
-            parentId: "",
-            color: "#3b82f6",
-            leaderTitle: "High Praetor",
-            civics: ["civ_militarist", "civ_feudal"],
-        },
-        {
-            id: "pol_mining",
-            name: "Orion Heavy Industries",
-            typeId: "pt_corp",
-            parentId: "pol_terran", // Subsidiary/Operating within Terran space
-            color: "#f59e0b",
-            leaderTitle: "CEO",
-            civics: ["civ_ruthless"],
-        },
-        {
-            id: "pol_cult",
-            name: "Order of the Void",
-            typeId: "pt_kabal",
-            parentId: "",
-            color: "#7c3aed",
-            leaderTitle: "Grand Master",
-            civics: ["civ_technocracy"],
-        },
-    ]);
+    // 3. Polities (The Actual Entities) loaded from defaults
+    const [polities, setPolities] = useState([]);
+    // Load defaults from public JSON
+    useEffect(() => {
+        const url = "/defaults/polity-defaults.json";
+        fetch(url)
+            .then((res) => {
+                if (!res.ok) throw new Error("Failed to fetch polity defaults");
+                return res.json();
+            })
+            .then((data) => {
+                if (data.polityTypes) setPolityTypes(data.polityTypes);
+                if (data.civics) setCivics(data.civics);
+                if (data.polities) setPolities(data.polities);
+            })
+            .catch((err) => {
+                console.warn("polity defaults fetch error", err);
+            });
+    }, []);
 
     // --- Helpers ---
     const showNotification = (msg, type = "success") => {

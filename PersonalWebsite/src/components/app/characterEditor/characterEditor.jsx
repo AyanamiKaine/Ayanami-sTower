@@ -456,135 +456,20 @@ export default function CharacterArchitect() {
     const [newCharacterName, setNewCharacterName] = useState("");
     const quickInputRef = useRef(null);
     const [traitSearchQuery, setTraitSearchQuery] = useState("");
+    // Species list loaded from economy defaults (names)
+    const [speciesList, setSpeciesList] = useState([]);
 
     // --- Data Models ---
 
-    // 1. Relationship Types
-    const [relTypes, setRelTypes] = useState([
-        {
-            id: "rt_parent",
-            name: "Biological Parent",
-            reverseName: "Biological Child",
-            color: "text-blue-400",
-            isSymmetric: false,
-            description: "Standard biological descent.",
-        },
-        {
-            id: "rt_spouse",
-            name: "Spouse",
-            reverseName: "Spouse",
-            color: "text-rose-400",
-            isSymmetric: true,
-            description: "Legal or ritual marriage bond.",
-        },
-        {
-            id: "rt_clone",
-            name: "Genetic Source",
-            reverseName: "Clone Instance",
-            color: "text-emerald-400",
-            isSymmetric: false,
-            description: "One entity is a genetic copy of another.",
-        },
-        {
-            id: "rt_rival",
-            name: "Rival",
-            reverseName: "Rival",
-            color: "text-red-500",
-            isSymmetric: true,
-            description: "Declared enemies.",
-        },
-        {
-            id: "rt_hive",
-            name: "Hive Link",
-            reverseName: "Hive Link",
-            color: "text-amber-400",
-            isSymmetric: true,
-            description: "Psionic connection between hive entities.",
-        },
-        {
-            id: "rt_friend",
-            name: "Friend",
-            reverseName: "Friend",
-            color: "text-cyan-400",
-            isSymmetric: true,
-            description:
-                "A close personal friend who offers mutual support and trust.",
-        },
-        {
-            id: "rt_soulmate",
-            name: "Soulmate",
-            reverseName: "Soulmate",
-            color: "text-pink-400",
-            isSymmetric: true,
-            description:
-                "A deep romantic or spiritual partner; often portrayed as a life partner.",
-        },
-        {
-            id: "rt_blood_sibling",
-            name: "Blood Sibling",
-            reverseName: "Blood Sibling",
-            color: "text-rose-400",
-            isSymmetric: true,
-            description:
-                "A biological sibling (blood brother or sister) sharing common parentage.",
-        },
-    ]);
+    // 1. Relationship Types (loaded from public defaults)
+    const [relTypes, setRelTypes] = useState([]);
 
     // Which relationship types are visible in the graph (array of type IDs)
     // Default: show none
     const [visibleRelTypes, setVisibleRelTypes] = useState(() => []);
 
-    // 2. Trait Definitions (New System)
-    const [traitDefs, setTraitDefs] = useState([
-        {
-            id: "t_ambitious",
-            name: "Ambitious",
-            opposites: ["t_content"],
-            description: "Seeks power at any cost.",
-        },
-        {
-            id: "t_content",
-            name: "Content",
-            opposites: ["t_ambitious"],
-            description: "Satisfied with their lot in life.",
-        },
-        {
-            id: "t_brave",
-            name: "Brave",
-            opposites: ["t_craven"],
-            description: "Fearless in the face of danger.",
-        },
-        {
-            id: "t_craven",
-            name: "Craven",
-            opposites: ["t_brave"],
-            description: "Flees when threatened.",
-        },
-        {
-            id: "t_loyal",
-            name: "Loyal",
-            opposites: ["t_treacherous"],
-            description: "Stands by their allies.",
-        },
-        {
-            id: "t_treacherous",
-            name: "Treacherous",
-            opposites: ["t_loyal"],
-            description: "Prone to betrayal.",
-        },
-        {
-            id: "t_organic",
-            name: "Organic",
-            opposites: ["t_machine"],
-            description: "Biological lifeform.",
-        },
-        {
-            id: "t_machine",
-            name: "Machine",
-            opposites: ["t_organic"],
-            description: "Inorganic lifeform.",
-        },
-    ]);
+    // 2. Trait Definitions (New System) (loaded from public defaults)
+    const [traitDefs, setTraitDefs] = useState([]);
 
     const filteredTraitDefs = useMemo(() => {
         const q = (traitSearchQuery || "").trim().toLowerCase();
@@ -597,58 +482,45 @@ export default function CharacterArchitect() {
         });
     }, [traitDefs, traitSearchQuery]);
 
-    // 3. Characters (The Nodes)
-    const [characters, setCharacters] = useState([
-        {
-            id: "char_1",
-            name: "Emperor Valerius",
-            age: 55,
-            species: "Human",
-            attributes: {
-                martial: 8,
-                diplomacy: 15,
-                stewardship: 12,
-                intrigue: 5,
-            },
-            traits: ["t_ambitious", "t_brave"], // Now storing IDs
-        },
-        {
-            id: "char_2",
-            name: "Prince Caelius",
-            age: 22,
-            species: "Human",
-            attributes: {
-                martial: 12,
-                diplomacy: 4,
-                stewardship: 6,
-                intrigue: 2,
-            },
-            traits: ["t_brave"],
-        },
-        {
-            id: "char_3",
-            name: "Unit 734",
-            age: 2,
-            species: "Android",
-            attributes: {
-                martial: 20,
-                diplomacy: 0,
-                stewardship: 10,
-                intrigue: 0,
-            },
-            traits: ["t_loyal", "t_machine"],
-        },
-    ]);
+    const [characters, setCharacters] = useState([]);
 
     // 4. Relationships (The Edges)
-    const [relationships, setRelationships] = useState([
-        {
-            id: "rel_1",
-            source: "char_1",
-            target: "char_2",
-            typeId: "rt_parent",
-        },
-    ]);
+    const [relationships, setRelationships] = useState([]);
+
+    // Fetch defaults from /defaults/character-defaults.json on mount
+    useEffect(() => {
+        const url = "/defaults/character-defaults.json";
+        fetch(url)
+            .then((res) => {
+                if (!res.ok)
+                    throw new Error("Failed to fetch character defaults");
+                return res.json();
+            })
+            .then((data) => {
+                if (data.relTypes) setRelTypes(data.relTypes);
+                if (data.traitDefs) setTraitDefs(data.traitDefs);
+                if (data.characters) setCharacters(data.characters);
+                if (data.relationships) setRelationships(data.relationships);
+            })
+            .catch((err) => {
+                console.warn("character defaults fetch error", err);
+            });
+
+        // Also fetch species from economy defaults so we can enforce selection
+        fetch("/defaults/economy-defaults.json")
+            .then((res) => {
+                if (!res.ok)
+                    throw new Error("Failed to fetch economy defaults");
+                return res.json();
+            })
+            .then((data) => {
+                if (data.species)
+                    setSpeciesList(data.species.map((s) => s.name));
+            })
+            .catch((err) => {
+                console.warn("economy defaults fetch error", err);
+            });
+    }, []);
 
     // --- Logic Helpers ---
 
@@ -778,7 +650,7 @@ export default function CharacterArchitect() {
                 id: generateId("char"),
                 name: name || "New Character",
                 age: 25,
-                species: "Human",
+                species: speciesList[0] || "Human",
                 attributes: {
                     martial: 5,
                     diplomacy: 5,
@@ -1348,18 +1220,41 @@ export default function CharacterArchitect() {
                                                 className="w-16 bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-xs text-slate-300"
                                                 placeholder="Age"
                                             />
-                                            <input
-                                                value={char.species}
-                                                onChange={(e) =>
-                                                    updateCharacter(
-                                                        char.id,
-                                                        "species",
-                                                        e.target.value
-                                                    )
-                                                }
-                                                className="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-xs text-slate-300"
-                                                placeholder="Species"
-                                            />
+                                            {speciesList.length > 0 ? (
+                                                <select
+                                                    value={char.species}
+                                                    onChange={(e) =>
+                                                        updateCharacter(
+                                                            char.id,
+                                                            "species",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-xs text-slate-300"
+                                                >
+                                                    {speciesList.map((s) => (
+                                                        <option
+                                                            key={s}
+                                                            value={s}
+                                                        >
+                                                            {s}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <input
+                                                    value={char.species}
+                                                    onChange={(e) =>
+                                                        updateCharacter(
+                                                            char.id,
+                                                            "species",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-xs text-slate-300"
+                                                    placeholder="Species"
+                                                />
+                                            )}
                                         </div>
                                     </div>
                                 </div>

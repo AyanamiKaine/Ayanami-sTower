@@ -117,132 +117,45 @@ export default function EconomicArchitect() {
     const [activeTab, setActiveTab] = useState("resources");
     const [notification, setNotification] = useState(null);
 
-    // 1. Resources
-    const [resources, setResources] = useState([
-        { id: "res_grain", name: "Grain", category: "Raw Material" },
-        { id: "res_wood", name: "Wood", category: "Raw Material" },
-        { id: "res_iron", name: "Iron Ore", category: "Raw Material" },
-        { id: "res_coal", name: "Coal", category: "Raw Material" },
-        { id: "res_cotton", name: "Cotton", category: "Raw Material" },
-        { id: "res_oil", name: "Crude Oil", category: "Raw Material" },
-        { id: "res_rubber", name: "Rubber", category: "Raw Material" },
-        { id: "res_lumber", name: "Lumber", category: "Industrial" },
-        { id: "res_steel", name: "Steel", category: "Industrial" },
-        { id: "res_fabric", name: "Fabric", category: "Industrial" },
-        { id: "res_plastic", name: "Plastics", category: "Industrial" },
-        { id: "res_parts", name: "Machine Parts", category: "Industrial" },
-        { id: "res_tools", name: "Tools", category: "Industrial" },
-        { id: "res_clothes", name: "Clothes", category: "Consumer" },
-        { id: "res_furniture", name: "Furniture", category: "Consumer" },
-        { id: "res_canned_food", name: "Canned Food", category: "Consumer" },
-        { id: "res_electronics", name: "Electronics", category: "Consumer" },
-        { id: "res_auto", name: "Automobiles", category: "Consumer" },
-        { id: "res_incense", name: "Ritual Incense", category: "Consumer" },
-        { id: "res_wine", name: "Wine", category: "Consumer" },
-    ]);
+    // 1. Resources (loaded from defaults)
+    const [resources, setResources] = useState([]);
 
-    // 2. Production
-    const [recipes, setRecipes] = useState([
-        {
-            id: "rec_sawmill",
-            name: "Sawmill",
-            inputs: [{ resourceId: "res_wood", amount: 2 }],
-            outputs: [{ resourceId: "res_lumber", amount: 2 }],
-            workforce: [{ popId: "pop_laborers", amount: 500 }],
-        },
-        {
-            id: "rec_foundry",
-            name: "Steel Foundry",
-            inputs: [
-                { resourceId: "res_iron", amount: 2 },
-                { resourceId: "res_coal", amount: 2 },
-            ],
-            outputs: [{ resourceId: "res_steel", amount: 1 }],
-            workforce: [
-                { popId: "pop_laborers", amount: 800 },
-                { popId: "pop_engineers", amount: 50 },
-            ],
-        },
-    ]);
+    // 2. Production (loaded from defaults)
+    const [recipes, setRecipes] = useState([]);
 
-    // 3. Social Classes (Job Types)
-    const [popTypes, setPopTypes] = useState([
-        {
-            id: "pop_laborers",
-            name: "Laborers (Class)",
-            needs: {
-                life: [{ resourceId: "res_grain", amount: 2.0 }],
-                everyday: [{ resourceId: "res_clothes", amount: 0.5 }],
-                luxury: [],
-            },
-        },
-        {
-            id: "pop_engineers",
-            name: "Engineers (Class)",
-            needs: {
-                life: [{ resourceId: "res_canned_food", amount: 2.0 }],
-                everyday: [{ resourceId: "res_furniture", amount: 0.5 }],
-                luxury: [{ resourceId: "res_electronics", amount: 0.5 }],
-            },
-        },
-        {
-            id: "pop_aristocrats",
-            name: "Aristocrats (Class)",
-            needs: {
-                life: [{ resourceId: "res_canned_food", amount: 2.0 }],
-                everyday: [{ resourceId: "res_electronics", amount: 1.0 }],
-                luxury: [{ resourceId: "res_auto", amount: 1.0 }],
-            },
-        },
-    ]);
+    // 3. Social Classes (Job Types) (loaded from defaults)
+    const [popTypes, setPopTypes] = useState([]);
 
-    // 4. Species (Biological Needs)
-    const [species, setSpecies] = useState([
-        {
-            id: "specie_human",
-            name: "Human",
-            needs: {
-                life: [], // Oxygen/Water handled by planet stats? Or add specific resources
-                everyday: [],
-                luxury: [],
-            },
-        },
-        {
-            id: "specie_android",
-            name: "Android",
-            needs: {
-                life: [{ resourceId: "res_parts", amount: 0.1 }], // Maintenance
-                everyday: [],
-                luxury: [],
-            },
-        },
-    ]);
+    // 4. Species (Biological Needs) (loaded from defaults)
+    const [species, setSpecies] = useState([]);
 
-    // 5. Cultures (Social/Cultural Preferences)
-    const [cultures, setCultures] = useState([
-        {
-            id: "cul_terran",
-            name: "Terran Republic",
-            needs: {
-                life: [],
-                everyday: [],
-                luxury: [{ resourceId: "res_wine", amount: 0.5 }],
-            },
-        },
-    ]);
+    // 5. Cultures (Social/Cultural Preferences) (loaded from defaults)
+    const [cultures, setCultures] = useState([]);
 
-    // 6. Religions (Spiritual Needs)
-    const [religions, setReligions] = useState([
-        {
-            id: "rel_imperial",
-            name: "Imperial Cult",
-            needs: {
-                life: [],
-                everyday: [{ resourceId: "res_incense", amount: 0.2 }],
-                luxury: [],
-            },
-        },
-    ]);
+    // 6. Religions (Spiritual Needs) (loaded from defaults)
+    const [religions, setReligions] = useState([]);
+
+    // Load defaults from public JSON
+    useEffect(() => {
+        const url = "/defaults/economy-defaults.json";
+        fetch(url)
+            .then((res) => {
+                if (!res.ok)
+                    throw new Error("Failed to fetch economy defaults");
+                return res.json();
+            })
+            .then((data) => {
+                if (data.resources) setResources(data.resources);
+                if (data.recipes) setRecipes(data.recipes);
+                if (data.popTypes) setPopTypes(data.popTypes);
+                if (data.species) setSpecies(data.species);
+                if (data.cultures) setCultures(data.cultures);
+                if (data.religions) setReligions(data.religions);
+            })
+            .catch((err) => {
+                console.warn("economy defaults fetch error", err);
+            });
+    }, []);
 
     // --- Helpers ---
     const showNotification = (msg, type = "success") => {

@@ -1,0 +1,86 @@
+{
+  "relTypes": [
+    {
+      "id": "rt_parent",
+      "name": "Biological Parent",
+      "reverseName": "Biological Child",
+      "color": "text-blue-400",
+      "isSymmetric": false,
+      "description": "Standard biological descent."
+    },
+    {
+      "id": "rt_spouse",
+      "name": "Spouse",
+      "reverseName": "Spouse",
+      "color": "text-rose-400",
+      "isSymmetric": true,
+      "description": "Legal or ritual marriage bond."
+    },
+    {
+      "id": "rt_clone",
+      "name": "Genetic Source",
+      "reverseName": "Clone Instance",
+      "color": "text-emerald-400",
+      "isSymmetric": false,
+      "description": "One entity is a genetic copy of another."
+    },
+    {
+      "id": "rt_rival",
+      "name": "Rival",
+      "reverseName": "Rival",
+      "color": "text-red-500",
+      "isSymmetric": true,
+      "description": "Declared enemies."
+    },
+    {
+      "id": "rt_hive",
+      "name": "Hive Link",
+      "reverseName": "Hive Link",
+      "color": "text-amber-400",
+      "isSymmetric": true,
+      "description": "Psionic connection between hive entities."
+    },
+    {
+      "id": "rt_friend",
+      "name": "Friend",
+      "reverseName": "Friend",
+      "color": "text-cyan-400",
+      "isSymmetric": true,
+      "description": "A close personal friend who offers mutual support and trust."
+    },
+    {
+      "id": "rt_soulmate",
+      "name": "Soulmate",
+      "reverseName": "Soulmate",
+      "color": "text-pink-400",
+      "isSymmetric": true,
+      "description": "A deep romantic or spiritual partner; often portrayed as a life partner."
+    },
+    {
+      "id": "rt_blood_sibling",
+      "name": "Blood Sibling",
+      "reverseName": "Blood Sibling",
+      "color": "text-rose-400",
+      "isSymmetric": true,
+      "description": "A biological sibling (blood brother or sister) sharing common parentage."
+    }
+  ],
+  "traitDefs": [
+    { "id": "t_ambitious", "name": "Ambitious", "opposites": ["t_content"], "description": "Seeks power at any cost." },
+    { "id": "t_content", "name": "Content", "opposites": ["t_ambitious"], "description": "Satisfied with their lot in life." },
+    { "id": "t_brave", "name": "Brave", "opposites": ["t_craven"], "description": "Fearless in the face of danger." },
+    { "id": "t_craven", "name": "Craven", "opposites": ["t_brave"], "description": "Flees when threatened." },
+    { "id": "t_loyal", "name": "Loyal", "opposites": ["t_treacherous"], "description": "Stands by their allies." },
+    { "id": "t_treacherous", "name": "Treacherous", "opposites": ["t_loyal"], "description": "Prone to betrayal." },
+    { "id": "t_organic", "name": "Organic", "opposites": ["t_machine"], "description": "Biological lifeform." },
+    { "id": "t_machine", "name": "Machine", "opposites": ["t_organic"], "description": "Inorganic lifeform." }
+  ],
+  "characters": [
+    { "id": "char_1", "name": "Emperor Valerius", "age": 55, "species": "Human", "attributes": { "martial": 8, "diplomacy": 15, "stewardship": 12, "intrigue": 5 }, "traits": ["t_ambitious","t_brave"] },
+    { "id": "char_2", "name": "Prince Caelius", "age": 22, "species": "Human", "attributes": { "martial": 12, "diplomacy": 4, "stewardship": 6, "intrigue": 2 }, "traits": ["t_brave"] },
+    { "id": "char_3", "name": "Unit 734", "age": 2, "species": "Android", "attributes": { "martial": 20, "diplomacy": 0, "stewardship": 10, "intrigue": 0 }, "traits": ["t_loyal","t_machine"] }
+  ],
+  "relationships": [
+    { "id": "rel_1", "source": "char_1", "target": "char_2", "typeId": "rt_parent" }
+  ]
+}
