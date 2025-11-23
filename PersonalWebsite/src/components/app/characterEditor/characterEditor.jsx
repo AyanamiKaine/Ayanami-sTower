@@ -456,8 +456,10 @@ export default function CharacterArchitect() {
     const [newCharacterName, setNewCharacterName] = useState("");
     const quickInputRef = useRef(null);
     const [traitSearchQuery, setTraitSearchQuery] = useState("");
-    // Species list loaded from economy defaults (names)
+    // Species, cultures and religions loaded from economy defaults (names)
     const [speciesList, setSpeciesList] = useState([]);
+    const [culturesList, setCulturesList] = useState([]);
+    const [religionsList, setReligionsList] = useState([]);
 
     // --- Data Models ---
 
@@ -516,6 +518,10 @@ export default function CharacterArchitect() {
             .then((data) => {
                 if (data.species)
                     setSpeciesList(data.species.map((s) => s.name));
+                if (data.cultures)
+                    setCulturesList(data.cultures.map((c) => c.name));
+                if (data.religions)
+                    setReligionsList(data.religions.map((r) => r.name));
             })
             .catch((err) => {
                 console.warn("economy defaults fetch error", err);
@@ -651,6 +657,8 @@ export default function CharacterArchitect() {
                 name: name || "New Character",
                 age: 25,
                 species: speciesList[0] || "Human",
+                culture: culturesList[0] || "",
+                religion: religionsList[0] || "",
                 attributes: {
                     martial: 5,
                     diplomacy: 5,
@@ -1108,6 +1116,8 @@ export default function CharacterArchitect() {
         return characters.filter((c) => {
             const name = c.name?.toLowerCase() || "";
             const species = (c.species || "").toLowerCase();
+            const culture = (c.culture || "").toLowerCase();
+            const religion = (c.religion || "").toLowerCase();
             const id = (c.id || "").toLowerCase();
             const traits = (c.traits || [])
                 .map((t) => t.toLowerCase())
@@ -1115,6 +1125,8 @@ export default function CharacterArchitect() {
             return (
                 name.includes(q) ||
                 species.includes(q) ||
+                culture.includes(q) ||
+                religion.includes(q) ||
                 id.includes(q) ||
                 traits.includes(q)
             );
@@ -1253,6 +1265,86 @@ export default function CharacterArchitect() {
                                                     }
                                                     className="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-xs text-slate-300"
                                                     placeholder="Species"
+                                                />
+                                            )}
+
+                                            {/* Culture select/input */}
+                                            {culturesList.length > 0 ? (
+                                                <select
+                                                    value={char.culture || ""}
+                                                    onChange={(e) =>
+                                                        updateCharacter(
+                                                            char.id,
+                                                            "culture",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className="w-28 bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-xs text-slate-300"
+                                                >
+                                                    <option value="">
+                                                        -- Culture --
+                                                    </option>
+                                                    {culturesList.map((c) => (
+                                                        <option
+                                                            key={c}
+                                                            value={c}
+                                                        >
+                                                            {c}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <input
+                                                    value={char.culture || ""}
+                                                    onChange={(e) =>
+                                                        updateCharacter(
+                                                            char.id,
+                                                            "culture",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className="w-28 bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-xs text-slate-300"
+                                                    placeholder="Culture"
+                                                />
+                                            )}
+
+                                            {/* Religion select/input */}
+                                            {religionsList.length > 0 ? (
+                                                <select
+                                                    value={char.religion || ""}
+                                                    onChange={(e) =>
+                                                        updateCharacter(
+                                                            char.id,
+                                                            "religion",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className="w-28 bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-xs text-slate-300"
+                                                >
+                                                    <option value="">
+                                                        -- Religion --
+                                                    </option>
+                                                    {religionsList.map((r) => (
+                                                        <option
+                                                            key={r}
+                                                            value={r}
+                                                        >
+                                                            {r}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <input
+                                                    value={char.religion || ""}
+                                                    onChange={(e) =>
+                                                        updateCharacter(
+                                                            char.id,
+                                                            "religion",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className="w-28 bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-xs text-slate-300"
+                                                    placeholder="Religion"
                                                 />
                                             )}
                                         </div>

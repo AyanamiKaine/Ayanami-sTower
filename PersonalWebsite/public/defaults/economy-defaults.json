@@ -116,12 +116,59 @@
       "name": "Terran Republic",
       "needs": { "life": [], "everyday": [], "luxury": [{ "resourceId": "res_wine", "amount": 0.5 }] }
     }
+    ,
+    {
+      "id": "cul_zenith",
+      "name": "Zenith Traders",
+      "needs": { "life": [], "everyday": [{ "resourceId": "res_electronics", "amount": 0.2 }], "luxury": [{ "resourceId": "res_auto", "amount": 0.05 }] }
+    },
+    {
+      "id": "cul_nomad",
+      "name": "Nomadic Tribes",
+      "needs": { "life": [{ "resourceId": "res_canned_food", "amount": 1 }], "everyday": [{ "resourceId": "res_clothes", "amount": 0.5 }], "luxury": [] }
+    },
+    {
+      "id": "cul_caravan",
+      "name": "Caravan Guild",
+      "needs": { "life": [], "everyday": [{ "resourceId": "res_furniture", "amount": 0.2 }], "luxury": [{ "resourceId": "res_wine", "amount": 0.2 }] }
+    },
+    {
+      "id": "cul_rust",
+      "name": "Rusthand",
+      "needs": { "life": [{ "resourceId": "res_canned_food", "amount": 0.5 }], "everyday": [{ "resourceId": "res_tools", "amount": 0.3 }], "luxury": [] }
+    },
+    {
+      "id": "cul_syn",
+      "name": "Syncretic Order",
+      "needs": { "life": [], "everyday": [{ "resourceId": "res_furniture", "amount": 0.1 }], "luxury": [{ "resourceId": "res_incense", "amount": 0.2 }] }
+    }
   ],
   "religions": [
     {
       "id": "rel_imperial",
       "name": "Imperial Cult",
       "needs": { "life": [], "everyday": [{ "resourceId": "res_incense", "amount": 0.2 }], "luxury": [] }
+    }
+    ,
+    {
+      "id": "rel_solarism",
+      "name": "Solarism",
+      "needs": { "life": [], "everyday": [{ "resourceId": "res_incense", "amount": 0.1 }], "luxury": [{ "resourceId": "res_wine", "amount": 0.2 }] }
+    },
+    {
+      "id": "rel_ascendancy",
+      "name": "Machine Ascendancy",
+      "needs": { "life": [{ "resourceId": "res_parts", "amount": 0.05 }], "everyday": [{ "resourceId": "res_electronics", "amount": 0.2 }], "luxury": [] }
+    },
+    {
+      "id": "rel_worldroot",
+      "name": "Worldroot Faith",
+      "needs": { "life": [{ "resourceId": "res_grain", "amount": 0.1 }], "everyday": [], "luxury": [{ "resourceId": "res_incense", "amount": 0.2 }] }
+    },
+    {
+      "id": "rel_cognitum",
+      "name": "Cognitum",
+      "needs": { "life": [], "everyday": [{ "resourceId": "res_electronics", "amount": 0.1 }], "luxury": [] }
     }
   ]
 }
