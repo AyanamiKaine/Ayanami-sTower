@@ -1,0 +1,27 @@
+---
+import FullScreenAppLayout from "../../layouts/FullScreenAppLayout.astro";
+import PolityEditor from "../../components/app/polityEditor/PolityEditorWrapper.jsx";
+
+const pageTitle = "Polity Architect";
+---
+
+<FullScreenAppLayout title={pageTitle}>
+    <div>
+        <PolityEditor client:load />
+    </div>
+</FullScreenAppLayout>
+
+<style>
+    .app-page {
+        min-height: 100vh;
+    }
+    .app-canvas :global(.modal-overlay),
+    .app-canvas :global(canvas) {
+        width: 100% !important;
+        height: 100% !important;
+    }
+    .app-canvas :global(canvas) {
+        min-height: 60vh;
+        border-radius: 8px;
+    }
+</style>
