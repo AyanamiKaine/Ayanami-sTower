@@ -19,7 +19,13 @@
     { "id": "res_electronics", "name": "Electronics", "category": "Consumer" },
     { "id": "res_auto", "name": "Automobiles", "category": "Consumer" },
     { "id": "res_incense", "name": "Ritual Incense", "category": "Consumer" },
-    { "id": "res_wine", "name": "Wine", "category": "Consumer" }
+    { "id": "res_wine", "name": "Wine", "category": "Consumer" },
+    { "id": "res_gold", "name": "Gold", "category": "Raw Material" },
+    { "id": "res_copper", "name": "Copper Ore", "category": "Raw Material" },
+    { "id": "res_aluminum", "name": "Aluminum Ore", "category": "Raw Material" },
+    { "id": "res_nickel", "name": "Nickel Ore", "category": "Raw Material" },
+    { "id": "res_silver", "name": "Silver", "category": "Raw Material" },
+    { "id": "res_uranium", "name": "Uranium Ore", "category": "Raw Material" }
   ],
   "recipes": [
     {
