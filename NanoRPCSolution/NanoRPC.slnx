@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="NanoExample/NanoExample.csproj" />
+  <Project Path="NanoExample.Erlang/NanoExample.Erlang.csproj" />
+  <Project Path="NanoRPC.UnitTests/NanoRPC.UnitTests.csproj" />
+  <Project Path="NanoRPC/NanoRPC.csproj" />
+</Solution>
