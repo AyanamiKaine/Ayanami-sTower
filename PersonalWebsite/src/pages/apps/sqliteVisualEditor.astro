@@ -1,0 +1,12 @@
+---
+import FullScreenAppLayout from "../../layouts/FullScreenAppLayout.astro";
+import SqliteVisualEditor from "../../components/app/sqliteVisualEditor/SqliteVisualEditorWrapper.jsx";
+
+const pageTitle = "SQLite Visual Editor";
+---
+
+<FullScreenAppLayout title={pageTitle}>
+    <div class="w-full h-full bg-slate-900">
+        <SqliteVisualEditor client:load />
+    </div>
+</FullScreenAppLayout>

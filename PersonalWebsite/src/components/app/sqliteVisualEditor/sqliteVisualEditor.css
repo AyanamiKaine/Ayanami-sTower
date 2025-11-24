@@ -1,0 +1,31 @@
+.reactflow__controls, .react-flow__controls {
+  background: rgba(17, 24, 39, 0.75) !important; /* dark translucent background */
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(2,6,23,0.45) !important;
+}
+
+.reactflow__controls button, .react-flow__controls button {
+  background: rgba(255,255,255,0.04) !important; /* subtle dark-ish buttons */
+  color: #e6eef8 !important; /* light icon color */
+  border-radius: 6px !important;
+  padding: 6px !important;
+}
+
+.reactflow__controls button svg, .react-flow__controls button svg {
+  stroke: #e6eef8 !important; /* ensure icon strokes are visible */
+  fill: #e6eef8 !important; /* ensure filled icons are visible */
+}
+
+.reactflow__controls button:hover, .react-flow__controls button:hover {
+  background: rgba(255,255,255,0.08) !important;
+}
+
+/* small touch: the zoom label text color */
+.reactflow__controls-zoom, .react-flow__controls-zoom {
+  color: #e6eef8 !important;
+}
+
+/* Keep controls at higher z-index to avoid being obscured */
+.reactflow__controls, .react-flow__controls {
+  z-index: 9999 !important;
+}
