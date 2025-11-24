@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, {
+    useState,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useMemo,
+} from "react";
 import {
     ReactFlow,
     Background,
@@ -34,6 +40,12 @@ import {
     StickyNote,
     Map as MapIcon,
 } from "lucide-react";
+
+// `useLayoutEffect` triggers a server-side warning because it cannot be used during SSR.
+// Provide an isomorphic alias that falls back to `useEffect` on the server to avoid
+// hydration mismatches and keep the client-side behavior intact.
+const useIsomorphicLayoutEffect =
+    typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 /**
  * UTILITIES & CONSTANTS
@@ -301,7 +313,7 @@ const useLocalStorage = (key, initialValue) => {
     });
 
     // Keep local storage in sync when value changes on the client
-    useEffect(() => {
+    useIsomorphicLayoutEffect(() => {
         if (!isBrowser) return;
         try {
             window.localStorage.setItem(key, JSON.stringify(value));
@@ -550,6 +562,7 @@ const ColumnRow = ({ col, tables, currentTableId, onDelete, onChange }) => {
 const TableNode = ({ id, data, selected }) => {
     const table = data.table;
     const notesRef = useRef(null);
+    // No DOM refs or measurement — we rely on CSS for handle alignment
 
     useEffect(() => {
         const container = notesRef.current;
@@ -594,6 +607,8 @@ const TableNode = ({ id, data, selected }) => {
             anchors.forEach((a) => a.removeEventListener("click", handler));
         };
     }, [table.notes]);
+
+    // No measurement effect — CSS is used to place handles vertically centered.
     return (
         <div
             className={`w-64 bg-zinc-900/90 backdrop-blur-sm rounded-lg shadow-2xl overflow-hidden cursor-pointer select-none transition-colors duration-200
@@ -633,8 +648,9 @@ const TableNode = ({ id, data, selected }) => {
             <div className="p-2 space-y-1 max-h-[250px] overflow-y-auto custom-scrollbar">
                 {table.columns.map((col, idx) => (
                     <div
+                        // ADDED: make row a positioning context for absolute handles
+                        className="relative flex items-center justify-between text-xs group px-1 rounded hover:bg-zinc-800/50"
                         key={col.id}
-                        className="flex items-center justify-between text-xs group px-1 rounded hover:bg-zinc-800/50"
                     >
                         <div className="flex items-center gap-2 overflow-hidden">
                             <div className="flex w-3 flex-shrink-0 justify-center">
@@ -667,8 +683,8 @@ const TableNode = ({ id, data, selected }) => {
                                 type="target"
                                 position={Position.Left}
                                 id={`${id}-${col.id}-target`}
-                                className="bg-amber-500 w-2 h-2"
-                                style={{ top: idx * 20 + 24 }}
+                                // -left-2 pushes it slightly outside the node border; top-1/2 centers vertically
+                                className="bg-amber-500 w-2 h-2 border border-zinc-900 absolute -left-2 top-1/2 -translate-y-1/2"
                             />
                         )}
                         {/* Right side source handle for FK */}
@@ -677,8 +693,7 @@ const TableNode = ({ id, data, selected }) => {
                                 type="source"
                                 position={Position.Right}
                                 id={`${id}-${col.id}-source`}
-                                className="bg-cyan-400 w-2 h-2"
-                                style={{ top: idx * 20 + 24 }}
+                                className="bg-cyan-400 w-2 h-2 border border-zinc-900 absolute -right-2 top-1/2 -translate-y-1/2"
                             />
                         }
                     </div>
