@@ -1,0 +1,28 @@
+defmodule LocChecker.MixProject do
+  use Mix.Project
+
+  def project do
+    [
+      app: :loc_checker,
+      version: "1.0.0",
+      elixir: "~> 1.19",
+      start_permanent: Mix.env() == :prod,
+      escript: [main_module: LocChecker],
+      deps: deps()
+    ]
+  end
+
+  # Run "mix help compile.app" to learn about applications.
+  def application do
+    [
+      extra_applications: [:logger]
+    ]
+  end
+
+  # Run "mix help deps" to learn about dependencies.
+  defp deps do
+    [
+      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+    ]
+  end
+end
