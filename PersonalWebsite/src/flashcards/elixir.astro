@@ -1,0 +1,31 @@
+---
+import Flashcard from "../components/Flashcard.astro";
+import Quiz from "../components/Quiz.astro";
+import CodeBlock from "../components/CodeBlock.astro";
+---
+
+<Flashcard id="elixir-1" tags={["Elixir"]} source="elixir.astro" priority={50}>
+    <Fragment slot="front">
+        How are lower arity functions usually implemented?
+    </Fragment>
+    <Fragment slot="back">
+        Lower arity functions are usually implemented by calling higher arity
+        functions with default values for the additional arguments.
+        <CodeBlock
+            lang="elixir"
+            code={`defmodule Greeter do
+  # A lower-arity function delegates to a higher-arity one with a default value
+  def greet(name), do: greet(name, "Hello")
+
+  def greet(name, greeting), do: "#{greeting}, #{name}!"
+end
+
+# Examples
+Greeter.greet("Sam")
+# => "Hello, Sam!"
+
+Greeter.greet("Sam", "Hi")
+# => "Hi, Sam!"`}
+        />
+    </Fragment>
+</Flashcard>
