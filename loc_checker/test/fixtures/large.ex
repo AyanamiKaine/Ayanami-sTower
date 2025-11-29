@@ -7,7 +7,7 @@ defmodule Large do
   end
 
   # Additional comment lines to increase file size
-  # Below are 1200 comment lines to make the file exceed default threshold of 1000
+  # Below are comment lines to make the file exceed default threshold of 1000
 
   # line 1
   # line 2
