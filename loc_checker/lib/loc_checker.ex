@@ -1,4 +1,9 @@
 defmodule LocChecker do
+  @moduledoc """
+  Implements a lines of code checker for programming files. Its main function is
+  check_folder(folder_path). It checks by default for lines over 1000 and warns that the user should take a look at the file and think if the size should be that high.
+  """
+
   @excluded_file_extensions [
     ".txt",
     ".css",
