@@ -10,6 +10,10 @@ import { themes as prismThemes } from "prism-react-renderer";
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
+    markdown: {
+        mermaid: true,
+    },
+    themes: ["@docusaurus/theme-mermaid"],
     title: "Stella Wiki",
     tagline: "Space is cool ",
     favicon: "img/favicon.ico",
@@ -152,6 +156,13 @@ const config = {
             prism: {
                 theme: prismThemes.github,
                 darkTheme: prismThemes.dracula,
+                additionalLanguages: [
+                    "elixir",
+                    "erlang",
+                    "sql",
+                    "bash",
+                    "json",
+                ],
             },
         }),
 };

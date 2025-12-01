@@ -28,3 +28,350 @@
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
+
+/* ========== GAME DESIGN DOCUMENT STYLES ========== */
+
+/* Status badges for features */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-right: 0.5rem;
+}
+
+.badge--implemented { background: #2e8555; color: white; }
+.badge--planned { background: #6b7280; color: white; }
+.badge--in-progress { background: #d97706; color: white; }
+.badge--deprecated { background: #dc2626; color: white; }
+.badge--needs-review { background: #7c3aed; color: white; }
+
+/* Design principle callout box */
+.design-principle {
+  background: linear-gradient(135deg, #667eea11, #764ba211);
+  border-left: 4px solid #667eea;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.design-principle h4 {
+  margin-top: 0;
+  color: #667eea;
+}
+
+[data-theme='dark'] .design-principle {
+  background: linear-gradient(135deg, #667eea22, #764ba222);
+}
+
+/* Trade-off comparison boxes */
+.tradeoff-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.tradeoff-pro, .tradeoff-con {
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.tradeoff-pro {
+  background: #dcfce7;
+  border: 1px solid #22c55e;
+}
+
+.tradeoff-con {
+  background: #fef2f2;
+  border: 1px solid #ef4444;
+}
+
+[data-theme='dark'] .tradeoff-pro {
+  background: #22c55e22;
+}
+
+[data-theme='dark'] .tradeoff-con {
+  background: #ef444422;
+}
+
+/* Feature specification table styling */
+.feature-spec {
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.feature-spec h3 {
+  margin-top: 0;
+  border-bottom: 2px solid var(--ifm-color-primary);
+  padding-bottom: 0.5rem;
+}
+
+/* Priority indicators */
+.priority-high { color: #dc2626; font-weight: bold; }
+.priority-medium { color: #d97706; font-weight: bold; }
+.priority-low { color: #6b7280; }
+
+/* Game mechanic flow arrows */
+.mechanic-flow {
+  text-align: center;
+  font-size: 1.5rem;
+  color: var(--ifm-color-primary);
+  margin: 0.5rem 0;
+}
+
+/* Version/iteration markers */
+.version-tag {
+  display: inline-block;
+  background: var(--ifm-color-primary);
+  color: white;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  vertical-align: super;
+}
+
+/* Example game comparison boxes */
+.game-example {
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.game-example::before {
+  content: "🎮 ";
+}
+
+/* Blockquote styling for design rationale */
+blockquote {
+  border-left: 4px solid var(--ifm-color-primary);
+  background: var(--ifm-color-primary-lightest)11;
+  font-style: italic;
+}
+
+[data-theme='dark'] blockquote {
+  background: var(--ifm-color-primary-darkest)22;
+}
+
+/* ========== ENGINE DOCUMENTATION STYLES ========== */
+
+/* API stability indicators */
+.api-stable {
+  display: inline-block;
+  background: #2e8555;
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.api-experimental {
+  display: inline-block;
+  background: #d97706;
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.api-deprecated {
+  display: inline-block;
+  background: #dc2626;
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: line-through;
+}
+
+/* Elixir skill level badges */
+.skill-beginner {
+  display: inline-block;
+  background: #22c55e;
+  color: white;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+}
+
+.skill-intermediate {
+  display: inline-block;
+  background: #3b82f6;
+  color: white;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+}
+
+.skill-advanced {
+  display: inline-block;
+  background: #8b5cf6;
+  color: white;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+}
+
+/* Function signature box */
+.function-signature {
+  background: #1e1e1e;
+  border: 1px solid #3e3e3e;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  overflow-x: auto;
+}
+
+[data-theme='light'] .function-signature {
+  background: #f6f8fa;
+  border-color: #d0d7de;
+}
+
+/* Parameter table styling */
+.param-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.param-table th {
+  background: var(--ifm-color-primary);
+  color: white;
+  padding: 0.5rem 1rem;
+  text-align: left;
+}
+
+.param-table td {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.param-table tr:hover {
+  background: var(--ifm-color-emphasis-100);
+}
+
+/* Return type highlight */
+.return-type {
+  color: #8b5cf6;
+  font-weight: 600;
+}
+
+/* Module reference box */
+.module-ref {
+  background: linear-gradient(135deg, #8b5cf611, #6366f111);
+  border-left: 4px solid #8b5cf6;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.module-ref code {
+  background: #8b5cf622;
+  color: #8b5cf6;
+}
+
+[data-theme='dark'] .module-ref {
+  background: linear-gradient(135deg, #8b5cf622, #6366f122);
+}
+
+/* ECS component styling */
+.ecs-entity { color: #f59e0b; font-weight: 600; }
+.ecs-component { color: #3b82f6; font-weight: 600; }
+.ecs-system { color: #10b981; font-weight: 600; }
+
+/* Database schema box */
+.schema-box {
+  background: var(--ifm-background-surface-color);
+  border: 2px solid #3b82f6;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.schema-box h4 {
+  margin-top: 0;
+  color: #3b82f6;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.schema-box h4::before {
+  content: "🗃️";
+}
+
+/* REST endpoint styling */
+.endpoint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 6px;
+  margin: 0.5rem 0;
+  font-family: monospace;
+}
+
+.endpoint-method {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.method-get { background: #22c55e; color: white; }
+.method-post { background: #3b82f6; color: white; }
+.method-put { background: #f59e0b; color: white; }
+.method-delete { background: #ef4444; color: white; }
+
+/* Pipeline visualization */
+.pipeline-step {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 6px;
+  margin: 0.25rem 0;
+}
+
+.pipeline-arrow {
+  text-align: center;
+  color: var(--ifm-color-primary);
+  font-size: 1.25rem;
+  margin: 0.25rem 0;
+}
+
+/* Prerequisites box */
+.prerequisites {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.prerequisites h4 {
+  margin-top: 0;
+  color: #b45309;
+}
+
+.prerequisites h4::before {
+  content: "📋 ";
+}
+
+[data-theme='dark'] .prerequisites {
+  background: #f59e0b22;
+}
