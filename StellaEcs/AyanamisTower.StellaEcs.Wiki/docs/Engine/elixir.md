@@ -88,8 +88,8 @@ All game state transformations return new data:
 
 ```elixir
 # State is never mutated, always transformed
-new_state =
-  old_state
+game_world_turn2 =
+  game_world_turn1
   |> update_population()
   |> update_resources()
   |> update_diplomacy()
