@@ -96,8 +96,8 @@ new_state =
 ```
 
 :::info Performance & Structural Sharing
-You might wonder if immutability kills performance. In practice, Elixir uses **persistent data structures** with **structural sharing**—instead of copying the entire data structure, unchanged parts are reused by reference. Only the modified portions are actually new. This makes immutable updates efficient for most use cases.
-::: 
+You might wonder if immutability kills performance. In practice, Elixir uses **persistent data structures** with **structural sharing**—instead of copying the entire data structure, [unchanged parts are reused by reference](https://elixirforum.com/t/how-elixir-manages-memory/5989). Only the modified portions are actually new. This makes immutable updates efficient for most use cases.
+:::
 
 ## Learning Path
 
