@@ -1,3 +1,3 @@
 # Should probably be turned into a second library.
-defmodule StellaInvicta.System.HierarchicalTaskNetwork do
+defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
 end
