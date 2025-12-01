@@ -1,10 +1,8 @@
 ---
-sidebar_position: 99
-draft: true
+sidebar_position: 2
 ---
 
 # Culture
-
 
 ## Metadata
 

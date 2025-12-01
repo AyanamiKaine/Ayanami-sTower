@@ -1,6 +1,5 @@
 ---
-sidebar_position: 99
-draft: true
+sidebar_position: 3
 ---
 
 # Religion
