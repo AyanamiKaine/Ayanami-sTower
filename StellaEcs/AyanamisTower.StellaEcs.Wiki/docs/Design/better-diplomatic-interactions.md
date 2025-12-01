@@ -14,6 +14,6 @@ Long interactions like integration are not inherently terrible, they are only ba
 
 # A Solution
 
-Instead of integrating the entity of France at the end of the 300 years. Provinces should get integrated over time. So when you integrated 50% of France you actually get 50% of the provinces. So you could actually stop integrating them and still having 50% of France integrated. This reflects a long and tedious integration process much better.
+Instead of integrating the entity of France at the end of the 300 years. Provinces should get integrated over time. So when you integrated 50% of France you actually already have 50% of the provinces. So you could actually stop integrating them and still having 50% of France integrated. This reflects a long and tedious integration process much better.
 
 It gives the player a reward, it's not too OP.
