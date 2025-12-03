@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# Culture
+# Polity (DRAFT)
 
 ## Metadata
 
