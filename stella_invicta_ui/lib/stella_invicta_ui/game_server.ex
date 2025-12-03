@@ -39,11 +39,23 @@ defmodule StellaInvictaUi.GameServer do
     GenServer.call(server, :reset)
   end
 
+  def toggle_system(server \\ __MODULE__, system_module) do
+    GenServer.call(server, {:toggle_system, system_module})
+  end
+
+  def list_systems(server \\ __MODULE__) do
+    GenServer.call(server, :list_systems)
+  end
+
   # Server Callbacks
 
   @impl true
   def init(_opts) do
-    {:ok, StellaInvicta.World.new_planet_world()}
+    game_state =
+      StellaInvicta.World.new_planet_world()
+      |> StellaInvicta.Game.init()
+
+    {:ok, game_state}
   end
 
   @impl true
@@ -88,9 +100,25 @@ defmodule StellaInvictaUi.GameServer do
 
   @impl true
   def handle_call(:reset, _from, _state) do
-    new_state = StellaInvicta.World.new_planet_world()
+    new_state =
+      StellaInvicta.World.new_planet_world()
+      |> StellaInvicta.Game.init()
+
     broadcast_state_update(new_state)
     {:reply, new_state, new_state}
+  end
+
+  @impl true
+  def handle_call({:toggle_system, system_module}, _from, state) do
+    new_state = StellaInvicta.Game.toggle_system(state, system_module)
+    broadcast_state_update(new_state)
+    {:reply, new_state, new_state}
+  end
+
+  @impl true
+  def handle_call(:list_systems, _from, state) do
+    systems = StellaInvicta.Game.list_systems(state)
+    {:reply, systems, state}
   end
 
   defp broadcast_state_update(state) do

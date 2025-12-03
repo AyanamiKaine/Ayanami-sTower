@@ -66,6 +66,13 @@ defmodule StellaInvictaUiWeb.GameStateLive do
   end
 
   @impl true
+  def handle_event("toggle_system", %{"system" => system_name}, socket) do
+    system_module = String.to_existing_atom(system_name)
+    StellaInvictaUi.GameServer.toggle_system(system_module)
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_info({:game_state_updated, new_state}, socket) do
     socket =
       socket
@@ -90,6 +97,17 @@ defmodule StellaInvictaUiWeb.GameStateLive do
 
   defp get_table_data(game_state, key) do
     Map.get(game_state, key)
+  end
+
+  defp get_systems(game_state) do
+    Map.get(game_state, :systems, %{})
+    |> Enum.sort_by(fn {mod, _} -> Atom.to_string(mod) end)
+  end
+
+  defp format_system_name(module) do
+    module
+    |> Atom.to_string()
+    |> String.replace("Elixir.StellaInvicta.System.", "")
   end
 
   @impl true
@@ -152,6 +170,25 @@ defmodule StellaInvictaUiWeb.GameStateLive do
                 Reset
               </button>
             </div>
+          </div>
+        </div>
+         <%!-- Systems Panel --%>
+        <div class="card bg-base-200 p-4">
+          <h2 class="text-lg font-semibold mb-3">Systems</h2>
+          
+          <div class="flex flex-wrap gap-4">
+            <%= for {system_module, enabled} <- get_systems(@game_state) do %>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id={"system-#{format_system_name(system_module)}"}
+                  checked={enabled}
+                  phx-click="toggle_system"
+                  phx-value-system={Atom.to_string(system_module)}
+                  class="checkbox checkbox-sm checkbox-primary"
+                /> <span class="text-sm">{format_system_name(system_module)}</span>
+              </label>
+            <% end %>
           </div>
         </div>
          <%!-- Table selector tabs --%>
