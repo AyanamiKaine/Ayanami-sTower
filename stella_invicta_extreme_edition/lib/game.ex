@@ -3,6 +3,7 @@ defmodule StellaInvicta.Game do
     game_state
     |> Map.update!(:current_tick, &(&1 + 1))
     |> StellaInvicta.System.Date.run()
+    |> StellaInvicta.System.Age.run()
   end
 
   def simulate_hour(game_state) do
