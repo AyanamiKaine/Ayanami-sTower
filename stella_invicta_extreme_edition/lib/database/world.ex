@@ -15,7 +15,8 @@ defmodule StellaInvicta.World do
             relationship_types: %{},
             polity_relations: %{},
             date: %{},
-            current_tick: 0
+            current_tick: 0,
+            systems: %{}
 
   def new_galaxy_world() do
   end
