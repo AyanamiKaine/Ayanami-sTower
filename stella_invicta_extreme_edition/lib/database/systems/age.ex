@@ -17,12 +17,17 @@ defmodule StellaInvicta.System.Age do
   @impl true
   def handle_message(world, :date_events, {:new_day, _day}) do
     # Age characters when a new day starts (birthday check)
-    update_ages(world)
+    # First ensure all characters have valid birth dates
+    world
+    |> ensure_valid_birth_dates()
+    |> update_ages()
   end
 
   def handle_message(world, :date_events, {:new_year, _year}) do
     # Also check on new year
-    update_ages(world)
+    world
+    |> ensure_valid_birth_dates()
+    |> update_ages()
   end
 
   def handle_message(world, _topic, _message), do: world
@@ -35,6 +40,56 @@ defmodule StellaInvicta.System.Age do
     # Main tick logic - can be used for periodic checks
     # Most age updates happen via message handling
     world
+  end
+
+  @doc """
+  Ensures all characters have valid birth dates.
+  Characters without birth dates will be assigned a default birth date based on their current age.
+  Note: Negative birth years are valid (representing dates before year 1, like BCE).
+  """
+  def ensure_valid_birth_dates(world) do
+    current_date = Map.get(world, :date, %{day: 1, month: 1, year: 1})
+    characters = Map.get(world, :characters, %{})
+
+    updated_characters =
+      characters
+      |> Enum.map(fn {id, character} ->
+        {id, ensure_valid_birth_date(character, current_date)}
+      end)
+      |> Map.new()
+
+    %{world | characters: updated_characters}
+  end
+
+  defp ensure_valid_birth_date(%Character{birth_date: nil, age: age} = character, current_date)
+       when is_integer(age) and age >= 0 do
+    # No birth date but has valid age - create a default birth date
+    birth_date = create_birth_date(age, current_date)
+    %{character | birth_date: birth_date}
+  end
+
+  defp ensure_valid_birth_date(%Character{birth_date: nil, age: nil} = character, current_date) do
+    # No birth date and no age - default to age 0, born today
+    %{
+      character
+      | age: 0,
+        birth_date: %{day: current_date.day, month: current_date.month, year: current_date.year}
+    }
+  end
+
+  defp ensure_valid_birth_date(%Character{birth_date: nil, age: age} = character, current_date)
+       when is_integer(age) and age < 0 do
+    # Negative age is invalid - default to age 0, born today
+    %{
+      character
+      | age: 0,
+        birth_date: %{day: current_date.day, month: current_date.month, year: current_date.year}
+    }
+  end
+
+  defp ensure_valid_birth_date(character, _current_date) do
+    # Birth date exists (even if year is negative, that's valid for BCE dates), return unchanged
+    character
   end
 
   defp update_ages(world) do

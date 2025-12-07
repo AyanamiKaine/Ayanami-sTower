@@ -157,6 +157,43 @@ defmodule StellaInvicta.System.AgeTest do
       assert result.characters[2].age == 25
     end
 
+    test "handle_message correctly ages characters with negative birth years (BCE dates)" do
+      world = %{
+        date: %{day: 15, month: 6, year: 31, hour: 0},
+        message_queue: %{},
+        system_subscriptions: %{},
+        characters: %{
+          1 => %Character{
+            id: 1,
+            name: "Charlemagne",
+            age: 29,
+            birth_date: %{day: 1, month: 1, year: -29}
+          },
+          2 => %Character{
+            id: 2,
+            name: "Carloman",
+            age: 24,
+            birth_date: %{day: 1, month: 1, year: -24}
+          }
+        }
+      }
+
+      # Simulate receiving a :new_day event
+      result = Age.handle_message(world, :date_events, {:new_day, 15})
+
+      # Negative birth years are valid (BCE dates)
+      # Character 1: birth year -29, current year 31
+      # years_diff = 31 - (-29) = 60, birthday passed (month 1 < month 6), so age = 60
+      assert result.characters[1].age == 60
+      # Character 2: birth year -24, current year 31
+      # years_diff = 31 - (-24) = 55, birthday passed, so age = 55
+      assert result.characters[2].age == 55
+
+      # Birth dates should remain unchanged (negative years are valid)
+      assert result.characters[1].birth_date.year == -29
+      assert result.characters[2].birth_date.year == -24
+    end
+
     test "does not modify characters without birth dates" do
       world = %{
         date: %{day: 15, month: 6, year: 31, hour: 0},
@@ -214,6 +251,85 @@ defmodule StellaInvicta.System.AgeTest do
       result = Age.initialize_birth_dates(world)
 
       assert result.characters[1].birth_date == existing_birth_date
+    end
+  end
+
+  describe "ensure_valid_birth_dates/1" do
+    test "assigns default birth date for character with nil birth_date and valid age" do
+      world = %{
+        date: %{day: 15, month: 6, year: 31, hour: 0},
+        characters: %{
+          1 => %Character{
+            id: 1,
+            name: "Test",
+            age: 25,
+            birth_date: nil
+          }
+        }
+      }
+
+      result = Age.ensure_valid_birth_dates(world)
+
+      assert result.characters[1].birth_date != nil
+      # Birth year should be current_year - age = 31 - 25 = 6
+      assert result.characters[1].birth_date.year == 6
+    end
+
+    test "assigns default birth date and age 0 for character with nil birth_date and nil age" do
+      world = %{
+        date: %{day: 15, month: 6, year: 31, hour: 0},
+        characters: %{
+          1 => %Character{
+            id: 1,
+            name: "Test",
+            age: nil,
+            birth_date: nil
+          }
+        }
+      }
+
+      result = Age.ensure_valid_birth_dates(world)
+
+      assert result.characters[1].age == 0
+      assert result.characters[1].birth_date == %{day: 15, month: 6, year: 31}
+    end
+
+    test "does not modify characters with negative birth years (BCE dates are valid)" do
+      world = %{
+        date: %{day: 15, month: 6, year: 31, hour: 0},
+        characters: %{
+          1 => %Character{
+            id: 1,
+            name: "Test",
+            age: 20,
+            birth_date: %{day: 1, month: 1, year: -5}
+          }
+        }
+      }
+
+      result = Age.ensure_valid_birth_dates(world)
+
+      # Negative birth years are valid (BCE dates), should remain unchanged
+      assert result.characters[1].birth_date.year == -5
+    end
+
+    test "does not modify characters with valid positive birth years" do
+      world = %{
+        date: %{day: 15, month: 6, year: 31, hour: 0},
+        characters: %{
+          1 => %Character{
+            id: 1,
+            name: "Test",
+            age: 25,
+            birth_date: %{day: 10, month: 3, year: 6}
+          }
+        }
+      }
+
+      result = Age.ensure_valid_birth_dates(world)
+
+      # Birth date should remain unchanged
+      assert result.characters[1].birth_date == %{day: 10, month: 3, year: 6}
     end
   end
 end
