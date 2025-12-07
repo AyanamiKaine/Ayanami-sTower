@@ -151,16 +151,16 @@ defmodule StellaInvictaUiWeb.GameStateLive do
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h1 class="text-2xl font-bold">Game State Viewer</h1>
-              
+
               <p class="text-base-content/70">
                 <span class="font-semibold">Date:</span> {format_date(@game_state.date)}
               </p>
-              
+
               <p class="text-base-content/70">
                 <span class="font-semibold">Tick:</span> {@game_state.current_tick}
               </p>
             </div>
-            
+
             <div class="flex flex-wrap gap-2">
               <button
                 id="btn-simulate-hour"
@@ -206,7 +206,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
          <%!-- Systems Panel --%>
         <div class="card bg-base-200 p-4">
           <h2 class="text-lg font-semibold mb-3">Systems</h2>
-          
+
           <div class="flex flex-wrap gap-4">
             <%= for {system_module, enabled} <- get_systems(@game_state) do %>
               <label class="flex items-center gap-2 cursor-pointer">
@@ -300,7 +300,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
           <h2 class="text-xl font-semibold mb-4">
             {@selected_table |> Atom.to_string() |> String.replace("_", " ") |> String.capitalize()}
           </h2>
-          
+
           <.render_table_data
             data={get_table_data(@game_state, @selected_table)}
             key={@selected_table}
@@ -394,15 +394,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <thead>
           <tr>
             <th>Field</th>
-            
+
             <th>Value</th>
           </tr>
         </thead>
-        
+
         <tbody>
           <tr :for={{field, value} <- @fields}>
             <td class="font-semibold">{field}</td>
-            
+
             <td><code class="text-sm">{inspect(value)}</code></td>
           </tr>
         </tbody>
@@ -432,15 +432,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <thead>
           <tr>
             <th>ID</th>
-            
+
             <th :for={col <- @columns}>{col |> Atom.to_string() |> String.capitalize()}</th>
           </tr>
         </thead>
-        
+
         <tbody>
           <tr :for={{id, struct} <- @entries}>
             <td class="font-mono">{inspect(id)}</td>
-            
+
             <td :for={col <- @columns}><.render_cell_value value={Map.get(struct, col)} /></td>
           </tr>
         </tbody>
@@ -458,15 +458,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <thead>
           <tr>
             <th>ID</th>
-            
+
             <th>Values</th>
           </tr>
         </thead>
-        
+
         <tbody>
           <tr :for={{id, list} <- @entries}>
             <td class="font-mono">{inspect(id)}</td>
-            
+
             <td>
               <%= if list == [] do %>
                 <span class="text-base-content/50 italic">Empty</span>
@@ -492,15 +492,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <thead>
           <tr>
             <th>Key</th>
-            
+
             <th>Value</th>
           </tr>
         </thead>
-        
+
         <tbody>
           <tr :for={{key, value} <- @entries}>
             <td class="font-mono">{inspect(key)}</td>
-            
+
             <td><.render_cell_value value={value} /></td>
           </tr>
         </tbody>

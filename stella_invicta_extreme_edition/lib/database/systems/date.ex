@@ -31,7 +31,7 @@ defmodule StellaInvicta.System.Date do
   defp advance_time(%{month: month, day: day, hour: hour} = date)
        when month >= 12 and day >= 30 and hour >= 23 do
     new_date = %{date | hour: 0, day: 1, month: 1, year: date.year + 1}
-    events = [:new_hour, :new_day, :new_month, {:new_year, new_date.year}]
+    events = [{:new_day, new_date.day}, {:new_month, new_date.month}, {:new_year, new_date.year}]
     {new_date, events}
   end
 
@@ -39,7 +39,7 @@ defmodule StellaInvicta.System.Date do
   defp advance_time(%{day: day, hour: hour} = date)
        when day >= 30 and hour >= 23 do
     new_date = %{date | hour: 0, day: 1, month: date.month + 1}
-    events = [:new_hour, :new_day, {:new_month, new_date.month}]
+    events = [{:new_day, new_date.day}, {:new_month, new_date.month}]
     {new_date, events}
   end
 
@@ -47,14 +47,14 @@ defmodule StellaInvicta.System.Date do
   defp advance_time(%{hour: hour} = date)
        when hour >= 23 do
     new_date = %{date | hour: 0, day: date.day + 1}
-    events = [:new_hour, {:new_day, new_date.day}]
+    events = [{:new_day, new_date.day}]
     {new_date, events}
   end
 
   # 4. Normal Hour: Any other time
-  # Result: Just Hour + 1
+  # Result: Just Hour + 1, no events published
   defp advance_time(date) do
     new_date = %{date | hour: date.hour + 1}
-    {new_date, [:new_hour]}
+    {new_date, []}
   end
 end

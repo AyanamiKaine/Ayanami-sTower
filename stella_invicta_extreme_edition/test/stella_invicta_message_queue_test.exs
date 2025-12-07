@@ -288,7 +288,7 @@ defmodule StellaInvictaTest.MessageQueue do
   end
 
   describe "Date system publishes events" do
-    test "Date system publishes :new_hour event each tick" do
+    test "Date system does NOT publish events on normal hour tick" do
       # Register but DISABLE TestListenerSystem so it doesn't consume messages during tick
       game_state =
         World.new_planet_world()
@@ -297,20 +297,13 @@ defmodule StellaInvictaTest.MessageQueue do
         |> Game.register_system(TestListenerSystem, false)
         |> MessageQueue.subscribe_system(TestListenerSystem, :date_events)
 
-      # Run one tick to generate date events
+      # Run one tick (normal hour advance, not end of day)
       game_state = Game.run_tick(game_state)
 
-      # Since TestListenerSystem is disabled, it won't pop its messages
-      # The messages should still be in the queue
+      # Since it's just a normal hour tick, no events should be published
       messages = MessageQueue.get_messages(game_state, TestListenerSystem)
-
-      # There should be at least one date event (new_hour)
       date_events = Enum.filter(messages, fn {topic, _} -> topic == :date_events end)
-      assert length(date_events) > 0
-
-      # Verify :new_hour is in the events
-      event_types = Enum.map(date_events, fn {_, msg} -> msg end)
-      assert :new_hour in event_types
+      assert length(date_events) == 0
     end
 
     test "Date system publishes :new_day event at end of day" do
