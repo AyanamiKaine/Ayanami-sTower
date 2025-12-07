@@ -55,12 +55,14 @@ config :stella_invicta_ui, StellaInvictaUiWeb.Endpoint,
     web_console_logger: true,
     patterns: [
       # Static assets, except user uploads
-      ~r"priv/static/(?!uploads/).*\.(js|css|png|jpeg|jpg|gif|svg)$"E,
+      ~r"priv/static/(?!uploads/).*\.(js|css|png|jpeg|jpg|gif|svg)$",
       # Gettext translations
-      ~r"priv/gettext/.*\.po$"E,
+      ~r"priv/gettext/.*\.po$",
       # Router, Controllers, LiveViews and LiveComponents
-      ~r"lib/stella_invicta_ui_web/router\.ex$"E,
-      ~r"lib/stella_invicta_ui_web/(controllers|live|components)/.*\.(ex|heex)$"E
+      ~r"lib/stella_invicta_ui_web/router\.ex$",
+      ~r"lib/stella_invicta_ui_web/(controllers|live|components)/.*\.(ex|heex)$",
+      # Local library - stella_invicta
+      ~r"../stella_invicta_extreme_edition/lib/.*\.ex$"
     ]
   ]
 

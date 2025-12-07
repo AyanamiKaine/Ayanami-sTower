@@ -51,11 +51,15 @@ defmodule StellaInvicta.Game do
 
   @doc """
   Disables a system by module name.
+  Also clears any pending messages for the system to prevent queue buildup.
   """
   def disable_system(game_state, system_module) do
     systems = Map.get(game_state, :systems, %{})
     updated_systems = Map.put(systems, system_module, false)
-    Map.put(game_state, :systems, updated_systems)
+
+    game_state
+    |> Map.put(:systems, updated_systems)
+    |> MessageQueue.clear_messages(system_module)
   end
 
   @doc """
@@ -96,6 +100,7 @@ defmodule StellaInvicta.Game do
 
     game_state
     |> Map.put(:systems, updated_systems)
+    |> invalidate_system_order_cache()
     |> then(fn state ->
       Enum.reduce(subscriptions, state, fn topic, acc ->
         MessageQueue.subscribe_system(acc, system_module, topic)
@@ -105,38 +110,70 @@ defmodule StellaInvicta.Game do
 
   @doc """
   Unregisters a system.
+  Also removes all subscriptions and clears pending messages for the system.
   """
   def unregister_system(game_state, system_module) do
     systems = Map.get(game_state, :systems, %{})
     updated_systems = Map.delete(systems, system_module)
-    Map.put(game_state, :systems, updated_systems)
+
+    game_state
+    |> Map.put(:systems, updated_systems)
+    |> invalidate_system_order_cache()
+    |> MessageQueue.cleanup_system(system_module)
   end
 
   @doc """
   Runs a single game tick, executing all enabled systems in order.
   Also processes pending messages for each system.
+  Disabled systems have their message queues cleared to prevent buildup.
   """
   def run_tick(game_state) do
     game_state = Map.update!(game_state, :current_tick, &(&1 + 1))
 
+    # Use cached system order if available, otherwise compute and cache
+    {ordered_systems, game_state} = get_or_compute_system_order(game_state)
+
+    # Run each enabled system in order, processing messages first
+    # Clear messages for disabled systems to prevent queue buildup
+    systems = Map.get(game_state, :systems, %{})
+
+    Enum.reduce(ordered_systems, game_state, fn system_module, acc ->
+      if Map.get(systems, system_module, true) do
+        acc
+        |> process_system_messages(system_module)
+        |> system_module.run()
+      else
+        # Clear messages for disabled systems
+        MessageQueue.clear_messages(acc, system_module)
+      end
+    end)
+  end
+
+  # Caches the computed system order to avoid recalculating every tick
+  defp get_or_compute_system_order(game_state) do
+    case Map.get(game_state, :cached_system_order) do
+      nil ->
+        ordered = compute_system_order(game_state)
+        {ordered, Map.put(game_state, :cached_system_order, ordered)}
+
+      cached ->
+        {cached, game_state}
+    end
+  end
+
+  defp compute_system_order(game_state) do
     # Get system order from @default_systems to maintain execution order
     system_order = Enum.map(@default_systems, fn {mod, _} -> mod end)
 
     # Also include any dynamically registered systems
     all_systems = Map.get(game_state, :systems, %{}) |> Map.keys()
     additional_systems = all_systems -- system_order
-    ordered_systems = system_order ++ additional_systems
+    system_order ++ additional_systems
+  end
 
-    # Run each enabled system in order, processing messages first
-    Enum.reduce(ordered_systems, game_state, fn system_module, acc ->
-      if system_enabled?(acc, system_module) do
-        acc
-        |> process_system_messages(system_module)
-        |> system_module.run()
-      else
-        acc
-      end
-    end)
+  # Invalidate cached system order when systems change
+  defp invalidate_system_order_cache(game_state) do
+    Map.delete(game_state, :cached_system_order)
   end
 
   # Processes all pending messages for a system

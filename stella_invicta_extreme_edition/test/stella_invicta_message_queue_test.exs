@@ -175,6 +175,42 @@ defmodule StellaInvictaTest.MessageQueue do
       assert [] == MessageQueue.get_messages(game_state, TestListenerSystem)
       assert [] == MessageQueue.get_messages(game_state, TestPublisherSystem)
     end
+
+    test "queue size is limited to max_queue_size" do
+      game_state =
+        %{}
+        |> MessageQueue.init()
+        |> MessageQueue.set_max_queue_size(3)
+        |> MessageQueue.subscribe_system(TestListenerSystem, :events)
+
+      # Publish 5 messages
+      game_state =
+        Enum.reduce(1..5, game_state, fn i, acc ->
+          MessageQueue.publish(acc, :events, {:event, i})
+        end)
+
+      messages = MessageQueue.get_messages(game_state, TestListenerSystem)
+
+      # Should only have the last 3 messages (newest)
+      assert length(messages) == 3
+      assert [{:events, {:event, 3}}, {:events, {:event, 4}}, {:events, {:event, 5}}] == messages
+    end
+
+    test "get_max_queue_size returns default when not set" do
+      game_state = %{} |> MessageQueue.init()
+      assert MessageQueue.get_max_queue_size(game_state) == 100
+    end
+
+    test "queue_length returns number of pending messages" do
+      game_state =
+        %{}
+        |> MessageQueue.init()
+        |> MessageQueue.subscribe_system(TestListenerSystem, :events)
+        |> MessageQueue.publish(:events, {:event, 1})
+        |> MessageQueue.publish(:events, {:event, 2})
+
+      assert MessageQueue.queue_length(game_state, TestListenerSystem) == 2
+    end
   end
 
   describe "Game integration with message queue" do
@@ -285,6 +321,44 @@ defmodule StellaInvictaTest.MessageQueue do
       received = Map.get(game_state, :received_messages, [])
       assert received == [] or received == nil
     end
+
+    test "disabled systems have their message queues cleared during tick" do
+      game_state =
+        World.new_planet_world()
+        |> Game.init()
+        |> Game.register_system(TestListenerSystem, false)
+        |> Game.publish(:test_topic, {:test_event, "will_be_cleared"})
+
+      # Before tick, messages should be queued
+      messages_before = MessageQueue.get_messages(game_state, TestListenerSystem)
+      assert length(messages_before) > 0
+
+      # After tick, messages should be cleared for disabled systems
+      game_state = Game.run_tick(game_state)
+      messages_after = MessageQueue.get_messages(game_state, TestListenerSystem)
+      assert messages_after == []
+    end
+
+    test "unregistering a system clears its subscriptions and messages" do
+      game_state =
+        World.new_planet_world()
+        |> Game.init()
+        |> Game.register_system(TestListenerSystem, true)
+        |> Game.publish(:test_topic, {:test_event, "will_be_cleared"})
+
+      # Before unregister, system should have subscriptions and messages
+      subs_before = MessageQueue.get_subscriptions(game_state, TestListenerSystem)
+      messages_before = MessageQueue.get_messages(game_state, TestListenerSystem)
+      assert length(subs_before) > 0
+      assert length(messages_before) > 0
+
+      # After unregister, subscriptions and messages should be cleared
+      game_state = Game.unregister_system(game_state, TestListenerSystem)
+      subs_after = MessageQueue.get_subscriptions(game_state, TestListenerSystem)
+      messages_after = MessageQueue.get_messages(game_state, TestListenerSystem)
+      assert subs_after == []
+      assert messages_after == []
+    end
   end
 
   describe "Date system publishes events" do
@@ -307,6 +381,7 @@ defmodule StellaInvictaTest.MessageQueue do
     end
 
     test "Date system publishes :new_day event at end of day" do
+      # Set up state with subscriptions but don't use run_tick which clears disabled system messages
       game_state =
         %{
           date: %{hour: 23, day: 1, month: 1, year: 1},
@@ -314,10 +389,10 @@ defmodule StellaInvictaTest.MessageQueue do
           characters: %{}
         }
         |> Game.init()
-        |> Game.register_system(TestListenerSystem, false)
         |> MessageQueue.subscribe_system(TestListenerSystem, :date_events)
 
-      game_state = Game.run_tick(game_state)
+      # Run the Date system directly to publish events
+      game_state = StellaInvicta.System.Date.run(game_state)
 
       messages = MessageQueue.get_messages(game_state, TestListenerSystem)
       event_types = Enum.map(messages, fn {_, msg} -> msg end)
@@ -337,10 +412,10 @@ defmodule StellaInvictaTest.MessageQueue do
           characters: %{}
         }
         |> Game.init()
-        |> Game.register_system(TestListenerSystem, false)
         |> MessageQueue.subscribe_system(TestListenerSystem, :date_events)
 
-      game_state = Game.run_tick(game_state)
+      # Run the Date system directly to publish events
+      game_state = StellaInvicta.System.Date.run(game_state)
 
       messages = MessageQueue.get_messages(game_state, TestListenerSystem)
       event_types = Enum.map(messages, fn {_, msg} -> msg end)
@@ -360,10 +435,10 @@ defmodule StellaInvictaTest.MessageQueue do
           characters: %{}
         }
         |> Game.init()
-        |> Game.register_system(TestListenerSystem, false)
         |> MessageQueue.subscribe_system(TestListenerSystem, :date_events)
 
-      game_state = Game.run_tick(game_state)
+      # Run the Date system directly to publish events
+      game_state = StellaInvicta.System.Date.run(game_state)
 
       messages = MessageQueue.get_messages(game_state, TestListenerSystem)
       event_types = Enum.map(messages, fn {_, msg} -> msg end)
