@@ -26,6 +26,7 @@ defmodule StellaInvicta.MessageQueue do
   """
 
   alias StellaInvicta.Supervisor, as: LibSup
+  alias StellaInvicta.Metrics
 
   # Maximum number of messages per system in the queue
   # Prevents unbounded memory growth for disabled systems
@@ -118,8 +119,11 @@ defmodule StellaInvicta.MessageQueue do
   Publishes a message to a topic.
   The message will be queued for all systems subscribed to this topic.
   Also broadcasts to external PubSub subscribers if PubSub is running.
+  Tracks publish timing metrics.
   """
   def publish(game_state, topic, message) do
+    publish_start = System.monotonic_time(:microsecond)
+
     # Broadcast to external PubSub subscribers (if running)
     # Use pattern matching instead of try/rescue for better performance
     case Process.whereis(StellaInvicta.PubSub) do
@@ -131,27 +135,40 @@ defmodule StellaInvicta.MessageQueue do
     queue = Map.get(game_state, :message_queue, %{})
     topic_subscribers = Map.get(game_state, :topic_subscribers, %{})
     subscribed_systems = Map.get(topic_subscribers, topic, MapSet.new())
+    subscriber_count = MapSet.size(subscribed_systems)
 
     # Skip if no subscribers
-    if MapSet.size(subscribed_systems) == 0 do
-      game_state
-    else
-      max_size = Map.get(game_state, :max_queue_size, @default_max_queue_size)
-      message_tuple = {topic, message}
+    game_state =
+      if subscriber_count == 0 do
+        game_state
+      else
+        max_size = Map.get(game_state, :max_queue_size, @default_max_queue_size)
+        message_tuple = {topic, message}
 
-      # Add message to each system's queue (with size limiting)
-      updated_queue =
-        Enum.reduce(subscribed_systems, queue, fn system, acc ->
-          system_messages = Map.get(acc, system, [])
-          # Prepend for O(1) insertion, we'll reverse when reading if order matters
-          # But for now, append and trim efficiently
-          new_messages = [message_tuple | system_messages]
-          trimmed_messages = trim_queue_fast(new_messages, max_size)
-          Map.put(acc, system, trimmed_messages)
-        end)
+        # Add message to each system's queue (with size limiting)
+        updated_queue =
+          Enum.reduce(subscribed_systems, queue, fn system, acc ->
+            system_messages = Map.get(acc, system, [])
+            # Prepend for O(1) insertion, we'll reverse when reading if order matters
+            # But for now, append and trim efficiently
+            new_messages = [message_tuple | system_messages]
+            trimmed_messages = trim_queue_fast(new_messages, max_size)
+            Map.put(acc, system, trimmed_messages)
+          end)
 
-      Map.put(game_state, :message_queue, updated_queue)
-    end
+        # Track peak queue size
+        max_queue_len =
+          Enum.reduce(updated_queue, 0, fn {_sys, msgs}, acc -> max(acc, length(msgs)) end)
+
+        game_state
+        |> Map.put(:message_queue, updated_queue)
+        |> Metrics.record_queue_size(max_queue_len)
+      end
+
+    # Record publish metrics
+    publish_end = System.monotonic_time(:microsecond)
+    publish_time = publish_end - publish_start
+    Metrics.record_publish(game_state, publish_time, subscriber_count)
   end
 
   # Fast queue trimming - prepends so newest is at head, keeps max_size newest

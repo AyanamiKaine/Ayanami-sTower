@@ -6,6 +6,7 @@ defmodule StellaInvicta.Game do
   """
 
   alias StellaInvicta.MessageQueue
+  alias StellaInvicta.Metrics
   alias StellaInvicta.System, as: SystemBehaviour
 
   # Default systems in execution order
@@ -24,6 +25,7 @@ defmodule StellaInvicta.Game do
     game_state
     |> Map.put(:systems, systems)
     |> MessageQueue.init()
+    |> Metrics.init()
     |> setup_system_subscriptions()
   end
 
@@ -126,8 +128,10 @@ defmodule StellaInvicta.Game do
   Runs a single game tick, executing all enabled systems in order.
   Also processes pending messages for each system.
   Disabled systems have their message queues cleared to prevent buildup.
+  Tracks performance metrics for each system and the overall tick.
   """
   def run_tick(game_state) do
+    tick_start = System.monotonic_time(:microsecond)
     game_state = Map.update!(game_state, :current_tick, &(&1 + 1))
 
     # Use cached system order if available, otherwise compute and cache
@@ -136,17 +140,60 @@ defmodule StellaInvicta.Game do
     # Run each enabled system in order, processing messages first
     # Clear messages for disabled systems to prevent queue buildup
     systems = Map.get(game_state, :systems, %{})
+    metrics_enabled = Metrics.enabled?(game_state)
 
-    Enum.reduce(ordered_systems, game_state, fn system_module, acc ->
-      if Map.get(systems, system_module, true) do
-        acc
-        |> process_system_messages(system_module)
-        |> system_module.run()
-      else
-        # Clear messages for disabled systems
-        MessageQueue.clear_messages(acc, system_module)
-      end
-    end)
+    {game_state, breakdown} =
+      Enum.reduce(ordered_systems, {game_state, %{}}, fn system_module, {acc, timing} ->
+        if Map.get(systems, system_module, true) do
+          if metrics_enabled do
+            run_system_with_metrics(acc, system_module, timing)
+          else
+            updated =
+              acc
+              |> process_system_messages(system_module)
+              |> system_module.run()
+
+            {updated, timing}
+          end
+        else
+          # Clear messages for disabled systems
+          {MessageQueue.clear_messages(acc, system_module), timing}
+        end
+      end)
+
+    # Record tick metrics
+    tick_end = System.monotonic_time(:microsecond)
+    tick_time = tick_end - tick_start
+    Metrics.record_tick(game_state, tick_time, breakdown)
+  end
+
+  # Runs a system with timing metrics
+  defp run_system_with_metrics(game_state, system_module, timing) do
+    # Time message processing
+    {messages, game_state} = MessageQueue.pop_messages(game_state, system_module)
+    message_count = length(messages)
+
+    {game_state, msg_time} =
+      Metrics.measure(fn ->
+        Enum.reduce(messages, game_state, fn {topic, message}, acc ->
+          SystemBehaviour.dispatch_message(system_module, acc, topic, message)
+        end)
+      end)
+
+    # Time system run
+    {game_state, run_time} = Metrics.measure(fn -> system_module.run(game_state) end)
+
+    # Record metrics
+    game_state =
+      game_state
+      |> Metrics.record_system_run(system_module, run_time)
+      |> Metrics.record_system_messages(system_module, msg_time, message_count)
+
+    # Add to breakdown
+    system_timing = %{run_us: run_time, messages_us: msg_time, message_count: message_count}
+    updated_timing = Map.put(timing, system_module, system_timing)
+
+    {game_state, updated_timing}
   end
 
   # Caches the computed system order to avoid recalculating every tick
