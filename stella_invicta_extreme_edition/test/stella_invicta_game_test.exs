@@ -112,15 +112,22 @@ defmodule StellaInvictaTest.Game do
         |> Game.init()
 
       charlemagne_initial_age = game_state.characters[1].age
+      # Charlemagne starts at age 29 (born year -29, month 4, day 15)
+      # Game starts at year 1, month 1, day 1 (birthday hasn't passed yet)
+      assert charlemagne_initial_age == 29
 
-      # Simulate two full years to ensure birthday passes
+      # Simulate two full years plus an extra day to ensure all messages are processed
+      # (messages published in tick N are processed in tick N+1)
       game_state =
         game_state
         |> Game.simulate_year()
         |> Game.simulate_year()
+        |> Game.simulate_day()
 
-      # Charlemagne's birthday is month 4, day 15, year -29
-      # After two years, we're in year 3, birthday should have passed twice
+      # After two years + 1 day, we're in year 3, month 1, day 2
+      # Birthday (month 4, day 15) passes in year 1 -> age becomes 30
+      # Birthday passes in year 2 -> age becomes 31
+      # The extra day ensures any pending birthday messages are processed
       assert game_state.characters[1].age >= charlemagne_initial_age + 1
     end
 

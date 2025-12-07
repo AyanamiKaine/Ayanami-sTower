@@ -130,13 +130,17 @@ defmodule StellaInvicta.World do
         1 => %StellaInvicta.Model.Character{
           id: 1,
           name: "Charlemagne",
-          age: 30,
+          # Born year -29, month 4, day 15. At year 1, month 1, day 1 birthday hasn't passed yet.
+          # So age = (1 - (-29)) - 1 = 29
+          age: 29,
           birth_date: %{day: 15, month: 4, year: -29}
         },
         2 => %StellaInvicta.Model.Character{
           id: 2,
           name: "Carloman",
-          age: 25,
+          # Born year -24, month 9, day 8. At year 1, month 1, day 1 birthday hasn't passed yet.
+          # So age = (1 - (-24)) - 1 = 24
+          age: 24,
           birth_date: %{day: 8, month: 9, year: -24}
         }
       },
