@@ -1,25 +1,51 @@
 defmodule StellaInvicta.System.Age do
   @moduledoc """
   System responsible for updating character ages.
-  Should be run periodically (e.g., once per tick) to check if any character
-  should age up based on the current date and their birth date.
+  Listens to date events and updates ages on new days.
   """
 
+  @behaviour StellaInvicta.System
+
   alias StellaInvicta.Model.Character
+  alias StellaInvicta.MessageQueue
+
+  @impl true
+  def subscriptions do
+    [:date_events]
+  end
+
+  @impl true
+  def handle_message(world, :date_events, {:new_day, _day}) do
+    # Age characters when a new day starts (birthday check)
+    update_ages(world)
+  end
+
+  def handle_message(world, :date_events, {:new_year, _year}) do
+    # Also check on new year
+    update_ages(world)
+  end
+
+  def handle_message(world, _topic, _message), do: world
 
   @doc """
   Runs the age system, updating all characters whose birthday has passed.
   """
+  @impl true
   def run(world) do
+    # Main tick logic - can be used for periodic checks
+    # Most age updates happen via message handling
+    world
+  end
+
+  defp update_ages(world) do
     current_date = Map.get(world, :date, %{day: 1, month: 1, year: 1})
     characters = Map.get(world, :characters, %{})
 
-    updated_characters =
-      characters
-      |> Enum.map(fn {id, character} ->
-        {id, maybe_age_character(character, current_date)}
+    {updated_characters, world} =
+      Enum.reduce(characters, {%{}, world}, fn {id, character}, {chars_acc, world_acc} ->
+        {updated_char, world_acc} = maybe_age_character(character, current_date, world_acc)
+        {Map.put(chars_acc, id, updated_char), world_acc}
       end)
-      |> Map.new()
 
     %{world | characters: updated_characters}
   end
@@ -27,19 +53,25 @@ defmodule StellaInvicta.System.Age do
   @doc """
   Checks if a character should age up and returns the updated character.
   A character ages when the current date reaches or passes their birth date anniversary.
+  Also publishes events when a character ages.
   """
-  def maybe_age_character(%Character{birth_date: nil} = character, _current_date) do
+  def maybe_age_character(%Character{birth_date: nil} = character, _current_date, world) do
     # No birth date set, cannot calculate age
-    character
+    {character, world}
   end
 
-  def maybe_age_character(%Character{birth_date: birth_date} = character, current_date) do
+  def maybe_age_character(%Character{birth_date: birth_date} = character, current_date, world) do
     expected_age = calculate_age(birth_date, current_date)
 
     if expected_age > character.age do
-      %{character | age: expected_age}
+      updated_char = %{character | age: expected_age}
+      # Publish birthday event
+      world =
+        MessageQueue.publish(world, :character_events, {:birthday, character.id, expected_age})
+
+      {updated_char, world}
     else
-      character
+      {character, world}
     end
   end
 

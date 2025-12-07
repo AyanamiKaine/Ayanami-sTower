@@ -12,11 +12,13 @@ defmodule StellaInvictaUiWeb.GameStateLive do
     end
 
     game_state = StellaInvictaUi.GameServer.get_state()
+    message_history = StellaInvictaUi.GameServer.get_message_history()
     world_keys = get_world_keys(game_state)
 
     socket =
       socket
       |> assign(:game_state, game_state)
+      |> assign(:message_history, message_history)
       |> assign(:world_keys, world_keys)
       |> assign(:selected_table, Enum.at(world_keys, 0))
       |> assign(:page_title, "Game State Viewer")
@@ -73,10 +75,17 @@ defmodule StellaInvictaUiWeb.GameStateLive do
   end
 
   @impl true
-  def handle_info({:game_state_updated, new_state}, socket) do
+  def handle_event("clear_message_history", _params, socket) do
+    StellaInvictaUi.GameServer.clear_message_history()
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:game_state_updated, new_state, message_history}, socket) do
     socket =
       socket
       |> assign(:game_state, new_state)
+      |> assign(:message_history, message_history)
       |> assign(:world_keys, get_world_keys(new_state))
 
     {:noreply, socket}
@@ -108,6 +117,28 @@ defmodule StellaInvictaUiWeb.GameStateLive do
     module
     |> Atom.to_string()
     |> String.replace("Elixir.StellaInvicta.System.", "")
+  end
+
+  defp get_system_subscriptions(game_state, system_module) do
+    subscriptions = Map.get(game_state, :system_subscriptions, %{})
+
+    case Map.get(subscriptions, system_module) do
+      nil -> "none"
+      topics when is_struct(topics, MapSet) -> topics |> MapSet.to_list() |> Enum.join(", ")
+      topics when is_list(topics) -> Enum.join(topics, ", ")
+      _ -> "none"
+    end
+  end
+
+  defp get_pending_messages(game_state) do
+    queue = Map.get(game_state, :message_queue, %{})
+
+    queue
+    |> Enum.flat_map(fn {system, messages} ->
+      Enum.map(messages, fn {topic, msg} ->
+        %{system: system, topic: topic, message: msg}
+      end)
+    end)
   end
 
   @impl true
@@ -191,7 +222,64 @@ defmodule StellaInvictaUiWeb.GameStateLive do
             <% end %>
           </div>
         </div>
-         <%!-- Table selector tabs --%>
+
+        <%!-- Message Queue Debug Panel --%>
+        <div class="card bg-base-200 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold">Message Queue</h2>
+            <button
+              id="btn-clear-messages"
+              phx-click="clear_message_history"
+              class="btn btn-xs btn-ghost"
+            >
+              Clear History
+            </button>
+          </div>
+
+          <%!-- Subscriptions --%>
+          <div class="mb-4">
+            <h3 class="text-sm font-semibold mb-2 text-base-content/70">System Subscriptions</h3>
+            <div class="flex flex-wrap gap-2">
+              <%= for {system_module, _enabled} <- get_systems(@game_state) do %>
+                <div class="badge badge-outline badge-sm">
+                  <span class="font-semibold mr-1">{format_system_name(system_module)}:</span>
+                  <span class="text-base-content/70">
+                    {get_system_subscriptions(@game_state, system_module)}
+                  </span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+          <%!-- Pending Messages --%>
+          <div class="mb-4">
+            <h3 class="text-sm font-semibold mb-2 text-base-content/70">Pending Messages</h3>
+            <.render_pending_messages game_state={@game_state} />
+          </div>
+
+          <%!-- Message History --%>
+          <div>
+            <h3 class="text-sm font-semibold mb-2 text-base-content/70">
+              Message History ({length(@message_history)} messages)
+            </h3>
+            <div class="max-h-48 overflow-y-auto bg-base-100 rounded-box p-2">
+              <%= if @message_history == [] do %>
+                <p class="text-base-content/50 italic text-sm">No messages yet</p>
+              <% else %>
+                <ul class="space-y-1">
+                  <li :for={entry <- @message_history} class="text-xs font-mono border-b border-base-200 pb-1">
+                    <span class="text-base-content/50">
+                      [Tick {entry.tick}]
+                    </span>
+                    <span class="text-primary ml-1">{inspect(entry.message)}</span>
+                  </li>
+                </ul>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <%!-- Table selector tabs --%>
         <div class="flex flex-wrap gap-2">
           <%= for key <- @world_keys do %>
             <button
@@ -447,6 +535,38 @@ defmodule StellaInvictaUiWeb.GameStateLive do
   defp render_cell_value(assigns) do
     ~H"""
     <code class="text-sm">{inspect(@value)}</code>
+    """
+  end
+
+  attr :game_state, :map, required: true
+
+  defp render_pending_messages(assigns) do
+    pending = get_pending_messages(assigns.game_state)
+    assigns = assign(assigns, :pending, pending)
+
+    ~H"""
+    <%= if @pending == [] do %>
+      <p class="text-base-content/50 italic text-sm">No pending messages</p>
+    <% else %>
+      <div class="overflow-x-auto">
+        <table class="table table-zebra table-xs">
+          <thead>
+            <tr>
+              <th>System</th>
+              <th>Topic</th>
+              <th>Message</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr :for={entry <- @pending}>
+              <td class="font-mono text-xs">{format_system_name(entry.system)}</td>
+              <td class="text-xs">{inspect(entry.topic)}</td>
+              <td class="text-xs">{inspect(entry.message)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
     """
   end
 end

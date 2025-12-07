@@ -12,8 +12,8 @@ defmodule StellaInvictaUi.Application do
       StellaInvictaUi.Repo,
       {DNSCluster, query: Application.get_env(:stella_invicta_ui, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: StellaInvictaUi.PubSub},
-      # Start a worker by calling: StellaInvictaUi.Worker.start_link(arg)
-      # {StellaInvictaUi.Worker, arg},
+      # Start the game library's supervisor (for its internal PubSub)
+      StellaInvicta.Supervisor,
       # Game state server
       StellaInvictaUi.GameServer,
       # Start to serve requests, typically the last entry

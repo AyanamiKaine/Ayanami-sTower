@@ -1,3 +1,4 @@
 %{
   "luerl": {:hex, :luerl, "1.4.1", "0018b5002849a3ba401bc2dc5a67e45de4c404aacfd1b9d3c2fc50fde599ff12", [:rebar3], [], "hexpm", "618ff8967d23d8f8d5800a3784625aeafba7fa42648fd9af4f05fcd1383cb860"},
+  "phoenix_pubsub": {:hex, :phoenix_pubsub, "2.2.0", "ff3a5616e1bed6804de7773b92cbccfc0b0f473faf1f63d7daf1206c7aeaaa6f", [:mix], [], "hexpm", "adc313a5bf7136039f63cfd9668fde73bba0765e0614cba80c06ac9460ff3e96"},
 }

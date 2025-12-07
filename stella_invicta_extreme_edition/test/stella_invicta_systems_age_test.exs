@@ -34,7 +34,7 @@ defmodule StellaInvicta.System.AgeTest do
     end
   end
 
-  describe "maybe_age_character/2" do
+  describe "maybe_age_character/3" do
     test "ages character when expected age is greater than current age" do
       character = %Character{
         id: 1,
@@ -44,8 +44,9 @@ defmodule StellaInvicta.System.AgeTest do
       }
 
       current_date = %{day: 15, month: 6, year: 31}
+      world = %{}
 
-      result = Age.maybe_age_character(character, current_date)
+      {result, _world} = Age.maybe_age_character(character, current_date, world)
       assert result.age == 30
     end
 
@@ -58,8 +59,9 @@ defmodule StellaInvicta.System.AgeTest do
       }
 
       current_date = %{day: 15, month: 6, year: 31}
+      world = %{}
 
-      result = Age.maybe_age_character(character, current_date)
+      {result, _world} = Age.maybe_age_character(character, current_date, world)
       assert result.age == 30
     end
 
@@ -72,8 +74,9 @@ defmodule StellaInvicta.System.AgeTest do
       }
 
       current_date = %{day: 15, month: 6, year: 31}
+      world = %{}
 
-      result = Age.maybe_age_character(character, current_date)
+      {result, _world} = Age.maybe_age_character(character, current_date, world)
       assert result.age == 30
     end
   end
@@ -99,7 +102,7 @@ defmodule StellaInvicta.System.AgeTest do
   end
 
   describe "run/1" do
-    test "updates ages for all characters with birth dates" do
+    test "run/1 returns world unchanged (aging happens via message handling)" do
       world = %{
         date: %{day: 15, month: 6, year: 31, hour: 0},
         characters: %{
@@ -118,7 +121,37 @@ defmodule StellaInvicta.System.AgeTest do
         }
       }
 
+      # run/1 no longer updates ages - that happens via handle_message
       result = Age.run(world)
+
+      # Ages should be unchanged since run/1 just returns world
+      assert result.characters[1].age == 29
+      assert result.characters[2].age == 24
+    end
+
+    test "handle_message updates ages on :new_day event" do
+      world = %{
+        date: %{day: 15, month: 6, year: 31, hour: 0},
+        message_queue: %{},
+        system_subscriptions: %{},
+        characters: %{
+          1 => %Character{
+            id: 1,
+            name: "Charlemagne",
+            age: 29,
+            birth_date: %{day: 1, month: 1, year: 1}
+          },
+          2 => %Character{
+            id: 2,
+            name: "Carloman",
+            age: 24,
+            birth_date: %{day: 1, month: 1, year: 6}
+          }
+        }
+      }
+
+      # Simulate receiving a :new_day event
+      result = Age.handle_message(world, :date_events, {:new_day, 15})
 
       assert result.characters[1].age == 30
       assert result.characters[2].age == 25
