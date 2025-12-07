@@ -13,12 +13,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
 
     game_state = StellaInvictaUi.GameServer.get_state()
     message_history = StellaInvictaUi.GameServer.get_message_history()
+    sim_state = StellaInvictaUi.GameServer.get_simulation_state()
     world_keys = get_world_keys(game_state)
 
     socket =
       socket
       |> assign(:game_state, game_state)
       |> assign(:message_history, message_history)
+      |> assign(:playing, sim_state.playing)
+      |> assign(:speed, sim_state.speed)
       |> assign(:world_keys, world_keys)
       |> assign(:selected_table, Enum.at(world_keys, 0))
       |> assign(:page_title, "Game State Viewer")
@@ -81,11 +84,44 @@ defmodule StellaInvictaUiWeb.GameStateLive do
   end
 
   @impl true
-  def handle_info({:game_state_updated, new_state, message_history}, socket) do
+  def handle_event("toggle_metrics", _params, socket) do
+    StellaInvictaUi.GameServer.toggle_metrics()
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("reset_metrics", _params, socket) do
+    StellaInvictaUi.GameServer.reset_metrics()
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("play", _params, socket) do
+    StellaInvictaUi.GameServer.play()
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("pause", _params, socket) do
+    StellaInvictaUi.GameServer.pause()
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("set_speed", %{"speed" => speed}, socket) do
+    speed = String.to_integer(speed)
+    StellaInvictaUi.GameServer.set_speed(speed)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:game_state_updated, new_state, message_history, playing, speed}, socket) do
     socket =
       socket
       |> assign(:game_state, new_state)
       |> assign(:message_history, message_history)
+      |> assign(:playing, playing)
+      |> assign(:speed, speed)
       |> assign(:world_keys, get_world_keys(new_state))
 
     {:noreply, socket}
@@ -141,6 +177,24 @@ defmodule StellaInvictaUiWeb.GameStateLive do
     end)
   end
 
+  defp get_metrics_summary(game_state) do
+    StellaInvicta.Metrics.get_summary(game_state)
+  end
+
+  defp format_time_us(time_us) when is_float(time_us),
+    do: :erlang.float_to_binary(time_us, decimals: 1)
+
+  defp format_time_us(time_us) when is_integer(time_us), do: Integer.to_string(time_us)
+  defp format_time_us(_), do: "0"
+
+  defp format_time_ms(time_ms) when is_float(time_ms),
+    do: :erlang.float_to_binary(time_ms, decimals: 3)
+
+  defp format_time_ms(time_ms) when is_integer(time_ms),
+    do: :erlang.float_to_binary(time_ms / 1, decimals: 3)
+
+  defp format_time_ms(_), do: "0.000"
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -151,49 +205,100 @@ defmodule StellaInvictaUiWeb.GameStateLive do
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h1 class="text-2xl font-bold">Game State Viewer</h1>
-
+              
               <p class="text-base-content/70">
                 <span class="font-semibold">Date:</span> {format_date(@game_state.date)}
               </p>
-
+              
               <p class="text-base-content/70">
                 <span class="font-semibold">Tick:</span> {@game_state.current_tick}
               </p>
             </div>
-
+             <%!-- Real-time Simulation Controls --%>
+            <div class="flex items-center gap-3">
+              <%!-- Play/Pause Button --%>
+              <%= if @playing do %>
+                <button
+                  id="btn-pause"
+                  phx-click="pause"
+                  class="btn btn-circle btn-primary"
+                  title="Pause"
+                >
+                  <.icon name="hero-pause-solid" class="size-5" />
+                </button>
+              <% else %>
+                <button
+                  id="btn-play"
+                  phx-click="play"
+                  class="btn btn-circle btn-primary"
+                  title="Play"
+                >
+                  <.icon name="hero-play-solid" class="size-5" />
+                </button>
+              <% end %>
+               <%!-- Speed Controls --%>
+              <div class="join">
+                <%= for speed <- [1, 2, 5, 10, 20, 50, 100] do %>
+                  <button
+                    id={"btn-speed-#{speed}"}
+                    phx-click="set_speed"
+                    phx-value-speed={speed}
+                    class={[
+                      "join-item btn btn-sm",
+                      if(@speed == speed, do: "btn-primary", else: "btn-ghost")
+                    ]}
+                    title={"Speed #{speed}x"}
+                  >
+                    {speed}x
+                  </button>
+                <% end %>
+              </div>
+               <%!-- Status indicator --%>
+              <div class={[
+                "badge gap-1",
+                if(@playing, do: "badge-success", else: "badge-neutral")
+              ]}>
+                <span class={[
+                  "size-2 rounded-full",
+                  if(@playing, do: "bg-success-content animate-pulse", else: "bg-neutral-content")
+                ]}>
+                </span> {if @playing, do: "Running", else: "Paused"}
+              </div>
+            </div>
+            
             <div class="flex flex-wrap gap-2">
               <button
                 id="btn-simulate-hour"
                 phx-click="simulate_hour"
-                class="btn btn-sm btn-primary"
+                class="btn btn-sm btn-primary btn-soft"
               >
                 +1 Hour
               </button>
               <button
                 id="btn-simulate-day"
                 phx-click="simulate_day"
-                class="btn btn-sm btn-primary"
+                class="btn btn-sm btn-primary btn-soft"
               >
                 +1 Day
               </button>
               <button
                 id="btn-simulate-week"
                 phx-click="simulate_week"
-                class="btn btn-sm btn-primary"
+                class="btn btn-sm btn-primary btn-soft"
               >
                 +1 Week
               </button>
               <button
                 id="btn-simulate-month"
                 phx-click="simulate_month"
-                class="btn btn-sm btn-primary"
+                class="btn btn-sm btn-primary btn-soft"
               >
                 +1 Month
               </button>
               <button
                 id="btn-simulate-year"
                 phx-click="simulate_year"
-                class="btn btn-sm btn-primary"
+                class="btn btn-sm btn-primary btn-soft"
               >
                 +1 Year
               </button>
@@ -206,7 +311,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
          <%!-- Systems Panel --%>
         <div class="card bg-base-200 p-4">
           <h2 class="text-lg font-semibold mb-3">Systems</h2>
-
+          
           <div class="flex flex-wrap gap-4">
             <%= for {system_module, enabled} <- get_systems(@game_state) do %>
               <label class="flex items-center gap-2 cursor-pointer">
@@ -222,11 +327,12 @@ defmodule StellaInvictaUiWeb.GameStateLive do
             <% end %>
           </div>
         </div>
-
+         <%!-- Performance Metrics Panel --%> <.render_metrics_panel game_state={@game_state} />
         <%!-- Message Queue Debug Panel --%>
         <div class="card bg-base-200 p-4">
           <div class="flex items-center justify-between mb-3">
             <h2 class="text-lg font-semibold">Message Queue</h2>
+            
             <button
               id="btn-clear-messages"
               phx-click="clear_message_history"
@@ -235,10 +341,10 @@ defmodule StellaInvictaUiWeb.GameStateLive do
               Clear History
             </button>
           </div>
-
-          <%!-- Subscriptions --%>
+           <%!-- Subscriptions --%>
           <div class="mb-4">
             <h3 class="text-sm font-semibold mb-2 text-base-content/70">System Subscriptions</h3>
+            
             <div class="flex flex-wrap gap-2">
               <%= for {system_module, _enabled} <- get_systems(@game_state) do %>
                 <div class="badge badge-outline badge-sm">
@@ -250,27 +356,27 @@ defmodule StellaInvictaUiWeb.GameStateLive do
               <% end %>
             </div>
           </div>
-
-          <%!-- Pending Messages --%>
+           <%!-- Pending Messages --%>
           <div class="mb-4">
             <h3 class="text-sm font-semibold mb-2 text-base-content/70">Pending Messages</h3>
-            <.render_pending_messages game_state={@game_state} />
+             <.render_pending_messages game_state={@game_state} />
           </div>
-
-          <%!-- Message History --%>
+           <%!-- Message History --%>
           <div>
             <h3 class="text-sm font-semibold mb-2 text-base-content/70">
               Message History ({length(@message_history)} messages)
             </h3>
+            
             <div class="max-h-48 overflow-y-auto bg-base-100 rounded-box p-2">
               <%= if @message_history == [] do %>
                 <p class="text-base-content/50 italic text-sm">No messages yet</p>
               <% else %>
                 <ul class="space-y-1">
-                  <li :for={entry <- @message_history} class="text-xs font-mono border-b border-base-200 pb-1">
-                    <span class="text-base-content/50">
-                      [Tick {entry.tick}]
-                    </span>
+                  <li
+                    :for={entry <- @message_history}
+                    class="text-xs font-mono border-b border-base-200 pb-1"
+                  >
+                    <span class="text-base-content/50">[Tick {entry.tick}]</span>
                     <span class="text-primary ml-1">{inspect(entry.message)}</span>
                   </li>
                 </ul>
@@ -278,8 +384,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
             </div>
           </div>
         </div>
-
-        <%!-- Table selector tabs --%>
+         <%!-- Table selector tabs --%>
         <div class="flex flex-wrap gap-2">
           <%= for key <- @world_keys do %>
             <button
@@ -300,7 +405,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
           <h2 class="text-xl font-semibold mb-4">
             {@selected_table |> Atom.to_string() |> String.replace("_", " ") |> String.capitalize()}
           </h2>
-
+          
           <.render_table_data
             data={get_table_data(@game_state, @selected_table)}
             key={@selected_table}
@@ -394,15 +499,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <thead>
           <tr>
             <th>Field</th>
-
+            
             <th>Value</th>
           </tr>
         </thead>
-
+        
         <tbody>
           <tr :for={{field, value} <- @fields}>
             <td class="font-semibold">{field}</td>
-
+            
             <td><code class="text-sm">{inspect(value)}</code></td>
           </tr>
         </tbody>
@@ -432,15 +537,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <thead>
           <tr>
             <th>ID</th>
-
+            
             <th :for={col <- @columns}>{col |> Atom.to_string() |> String.capitalize()}</th>
           </tr>
         </thead>
-
+        
         <tbody>
           <tr :for={{id, struct} <- @entries}>
             <td class="font-mono">{inspect(id)}</td>
-
+            
             <td :for={col <- @columns}><.render_cell_value value={Map.get(struct, col)} /></td>
           </tr>
         </tbody>
@@ -458,15 +563,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <thead>
           <tr>
             <th>ID</th>
-
+            
             <th>Values</th>
           </tr>
         </thead>
-
+        
         <tbody>
           <tr :for={{id, list} <- @entries}>
             <td class="font-mono">{inspect(id)}</td>
-
+            
             <td>
               <%= if list == [] do %>
                 <span class="text-base-content/50 italic">Empty</span>
@@ -492,15 +597,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <thead>
           <tr>
             <th>Key</th>
-
+            
             <th>Value</th>
           </tr>
         </thead>
-
+        
         <tbody>
           <tr :for={{key, value} <- @entries}>
             <td class="font-mono">{inspect(key)}</td>
-
+            
             <td><.render_cell_value value={value} /></td>
           </tr>
         </tbody>
@@ -553,20 +658,181 @@ defmodule StellaInvictaUiWeb.GameStateLive do
           <thead>
             <tr>
               <th>System</th>
+              
               <th>Topic</th>
+              
               <th>Message</th>
             </tr>
           </thead>
+          
           <tbody>
             <tr :for={entry <- @pending}>
               <td class="font-mono text-xs">{format_system_name(entry.system)}</td>
+              
               <td class="text-xs">{inspect(entry.topic)}</td>
+              
               <td class="text-xs">{inspect(entry.message)}</td>
             </tr>
           </tbody>
         </table>
       </div>
     <% end %>
+    """
+  end
+
+  attr :game_state, :map, required: true
+
+  defp render_metrics_panel(assigns) do
+    metrics = get_metrics_summary(assigns.game_state)
+    assigns = assign(assigns, :metrics, metrics)
+
+    ~H"""
+    <div class="card bg-base-200 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold">Performance Metrics</h2>
+        
+        <div class="flex gap-2">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              id="metrics-enabled"
+              checked={@metrics.enabled}
+              phx-click="toggle_metrics"
+              class="checkbox checkbox-sm checkbox-primary"
+            /> <span class="text-sm">Enabled</span>
+          </label>
+          <button
+            id="btn-reset-metrics"
+            phx-click="reset_metrics"
+            class="btn btn-xs btn-ghost"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+      
+      <%= if @metrics.enabled do %>
+        <%!-- Tick Performance --%>
+        <div class="mb-4">
+          <h3 class="text-sm font-semibold mb-2 text-base-content/70">Tick Performance</h3>
+          
+          <div class="stats stats-horizontal bg-base-100 shadow-sm w-full">
+            <div class="stat py-2 px-3">
+              <div class="stat-title text-xs">Total Ticks</div>
+              
+              <div class="stat-value text-lg">{@metrics.tick.total_ticks}</div>
+            </div>
+            
+            <div class="stat py-2 px-3">
+              <div class="stat-title text-xs">Avg Tick</div>
+              
+              <div class="stat-value text-lg">{format_time_ms(@metrics.tick.average_tick_ms)} ms</div>
+            </div>
+            
+            <div class="stat py-2 px-3">
+              <div class="stat-title text-xs">Peak Tick</div>
+              
+              <div class="stat-value text-lg">{format_time_ms(@metrics.tick.peak_tick_ms)} ms</div>
+            </div>
+            
+            <div class="stat py-2 px-3">
+              <div class="stat-title text-xs">Last Tick</div>
+              
+              <div class="stat-value text-lg">{format_time_ms(@metrics.tick.last_tick_ms)} ms</div>
+            </div>
+          </div>
+        </div>
+         <%!-- System Performance --%>
+        <div class="mb-4">
+          <h3 class="text-sm font-semibold mb-2 text-base-content/70">System Performance</h3>
+          
+          <%= if map_size(@metrics.systems) == 0 do %>
+            <p class="text-base-content/50 italic text-sm">No system metrics yet</p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra table-xs">
+                <thead>
+                  <tr>
+                    <th>System</th>
+                    
+                    <th>Run Avg (µs)</th>
+                    
+                    <th>Run Peak (µs)</th>
+                    
+                    <th>Msg Avg (µs)</th>
+                    
+                    <th>Msgs Processed</th>
+                    
+                    <th>Total (µs)</th>
+                  </tr>
+                </thead>
+                
+                <tbody>
+                  <%= for {system_module, stats} <- @metrics.systems do %>
+                    <tr>
+                      <td class="font-mono text-xs">{format_system_name(system_module)}</td>
+                      
+                      <td class="text-xs">{format_time_us(stats.run_average_us)}</td>
+                      
+                      <td class="text-xs">{format_time_us(stats.run_peak_us)}</td>
+                      
+                      <td class="text-xs">{format_time_us(stats.message_average_us)}</td>
+                      
+                      <td class="text-xs">{stats.messages_processed}</td>
+                      
+                      <td class="text-xs font-semibold">{format_time_us(stats.total_average_us)}</td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+         <%!-- Last Tick Breakdown --%>
+        <%= if map_size(@metrics.tick.last_breakdown) > 0 do %>
+          <div class="mb-4">
+            <h3 class="text-sm font-semibold mb-2 text-base-content/70">Last Tick Breakdown</h3>
+            
+            <div class="flex flex-wrap gap-2">
+              <%= for {system_module, timing} <- @metrics.tick.last_breakdown do %>
+                <div class="badge badge-lg badge-ghost gap-1">
+                  <span class="font-semibold">{format_system_name(system_module)}:</span>
+                  <span>run {timing.run_us}µs</span> <span class="text-base-content/50">|</span>
+                  <span>msg {timing.messages_us}µs ({timing.message_count})</span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+         <%!-- Message Queue Stats --%>
+        <div>
+          <h3 class="text-sm font-semibold mb-2 text-base-content/70">Message Queue Stats</h3>
+          
+          <div class="flex flex-wrap gap-4 text-sm">
+            <div>
+              <span class="text-base-content/70">Published:</span>
+              <span class="font-semibold ml-1">{@metrics.message_queue.total_published}</span>
+            </div>
+            
+            <div>
+              <span class="text-base-content/70">Avg Publish:</span>
+              <span class="font-semibold ml-1">
+                {format_time_us(@metrics.message_queue.average_publish_us)} µs
+              </span>
+            </div>
+            
+            <div>
+              <span class="text-base-content/70">Peak Queue:</span>
+              <span class="font-semibold ml-1">{@metrics.message_queue.peak_queue_size}</span>
+            </div>
+          </div>
+        </div>
+      <% else %>
+        <p class="text-base-content/50 italic text-sm">
+          Metrics collection is disabled. Enable to see performance data.
+        </p>
+      <% end %>
+    </div>
     """
   end
 end
