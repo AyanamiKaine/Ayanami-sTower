@@ -2,6 +2,36 @@
 
 Your HTN AI metrics are now easily accessible through the main `StellaInvicta.Metrics` module. The UI can consume AI decision data with minimal effort.
 
+## Critical: Function Arity Requirements
+
+**All precondition, effect, and method condition functions MUST accept exactly 2 arguments: `(world, params)`**
+
+This is a breaking change that enables significant performance optimizations by removing runtime function introspection.
+
+### Correct Examples
+
+```elixir
+# ✅ CORRECT: 2 arguments
+preconditions: [
+  fn world, _params -> Map.get(world, :_character_traits, []) end
+]
+
+effects: [
+  fn world, _params -> Map.put(world, :flag, true) end
+]
+
+conditions: [
+  fn world, _params -> world.energy > 50 end
+]
+
+# ❌ WRONG: Only 1 argument
+preconditions: [
+  fn world -> Map.get(world, :_character_traits, []) end  # Will crash!
+]
+```
+
+The second argument (`params`) is useful when you need to access task parameters passed during planning.
+
 ## Quick Start
 
 ### 1. Get Overall AI Performance Summary
@@ -221,6 +251,57 @@ history = %{
 
 This makes the AI logic clearer, easier to debug, and more intuitive for both developers and UI designers.
 
+## Performance Optimizations
+
+The latest version includes critical performance improvements:
+
+### 1. **Arity Standardization**
+
+Removed all runtime `Function.info/2` checks. All functions now have fixed arity (2 arguments), eliminating introspection overhead. This provides a significant performance boost for heavily used code paths.
+
+### 2. **Memory Optimization in Metrics**
+
+The Metrics module now uses probabilistic trimming - the decision log size is only checked every 100 insertions instead of after every insertion. This eliminates O(N) list operations on the hot path while maintaining size bounds.
+
+### 3. **Depth Limiting**
+
+Added maximum decomposition depth limiting (default: 50 levels). The planner now returns `{:error, :max_depth_exceeded}` if nesting gets too deep, preventing infinite recursion that could hang the game engine.
+
+### 4. **Domain Validation**
+
+New `Domain.validate/1` function catches configuration errors at startup. Use this to validate your domain before deploying:
+
+```elixir
+domain = HTN.new_domain("my_domain")
+  |> HTN.add_task(idle_task())
+  |> HTN.add_task(work_task())
+
+# Catch typos in subtask names at startup
+case HTN.Domain.validate(domain) do
+  :ok -> {:ok, domain}
+  {:error, issues} ->
+    IO.inspect(issues)
+    {:error, "Invalid domain"}
+end
+```
+
+### 5. **Long-Running Actions Support**
+
+The `execute_step/3` function now properly handles long-running primitive tasks:
+
+```elixir
+operator: fn world, _params ->
+  # Tasks can return:
+  # - {:ok, new_world} → Task completes, advance to next step
+  # - {:running, new_world} → Task still running, stay on same step next tick
+  # - {:error, reason} → Task failed
+
+  {:running, Map.put(world, :progress, 50)}  # Task will re-execute next tick
+end
+```
+
+This is perfect for multi-tick animations, gradual state transitions, or any action that takes multiple game ticks to complete.
+
 ## Next Steps
 
 1. Display the decision log in your UI
@@ -228,3 +309,4 @@ This makes the AI logic clearer, easier to debug, and more intuitive for both de
 3. Add alerts for high backtrack counts (indicates difficult planning problems)
 4. Track success rates over time to tune task/method priorities
 5. Use world snapshots (when enabled) to debug "why did the planner choose this?"
+6. Call `Domain.validate/1` at startup to catch configuration errors early

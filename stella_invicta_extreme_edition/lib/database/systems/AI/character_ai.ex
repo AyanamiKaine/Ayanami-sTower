@@ -101,7 +101,21 @@ defmodule StellaInvicta.System.CharacterAI do
 
     case HTN.execute_step(plan, domain, world) do
       {:ok, new_plan, new_world} ->
-        store_character_plan(new_world, character_id, new_plan)
+        # Step completed - check if plan is now done
+        if new_plan.status == :completed do
+          # Plan finished after this step
+          new_world
+          |> clear_character_plan(character_id)
+          |> MessageQueue.publish(:character_events, {:plan_completed, character_id})
+        else
+          # More steps remaining, store updated plan for next tick
+          store_character_plan(new_world, character_id, new_plan)
+        end
+
+      {:running, plan, new_world} ->
+        # Task is still running (multi-tick task), keep the same plan position
+        # The same step will continue execution on the next tick
+        store_character_plan(new_world, character_id, plan)
 
       {:complete, new_world} ->
         # Plan completed - clear it and potentially request new plan
@@ -110,11 +124,178 @@ defmodule StellaInvicta.System.CharacterAI do
         |> MessageQueue.publish(:character_events, {:plan_completed, character_id})
 
       {:error, reason, _failed_plan, new_world} ->
-        # Plan failed - clear it and publish event
-        new_world
-        |> clear_character_plan(character_id)
-        |> MessageQueue.publish(:character_events, {:plan_failed, character_id, reason})
+        # Plan failed - attempt to replan if replanning is enabled
+        handle_plan_failure(new_world, character_id, plan, reason)
     end
+  end
+
+  @doc """
+  Handles a plan failure by attempting to replan or giving up.
+
+  The behavior depends on the character's replanning settings:
+  - If replanning is enabled, attempts to find a new plan with the same goal
+  - If replanning fails or is disabled, clears the plan and publishes failure event
+  """
+  def handle_plan_failure(world, character_id, failed_plan, reason) do
+    replan_settings = get_replan_settings(world, character_id)
+
+    if replan_settings.enabled do
+      attempt_replan(world, character_id, failed_plan, reason, replan_settings)
+    else
+      # Replanning disabled - just fail
+      world
+      |> clear_character_plan(character_id)
+      |> MessageQueue.publish(:character_events, {:plan_failed, character_id, reason})
+    end
+  end
+
+  defp attempt_replan(world, character_id, _failed_plan, original_reason, settings) do
+    # Check replan attempt count
+    attempts = get_replan_attempts(world, character_id)
+
+    if attempts >= settings.max_attempts do
+      # Exceeded max attempts - give up
+      world
+      |> clear_character_plan(character_id)
+      |> clear_replan_attempts(character_id)
+      |> MessageQueue.publish(
+        :character_events,
+        {:plan_failed, character_id, {:max_replan_attempts, original_reason}}
+      )
+    else
+      # Try to replan
+      {:ok, domain} = get_character_domain(world, character_id)
+      goal = get_plan_goal(world, character_id) || settings.fallback_goal
+
+      planning_context = prepare_planning_context(world, character_id)
+
+      case HTN.find_plan(domain, planning_context, goal, params: %{character_id: character_id}) do
+        {:ok, new_plan} ->
+          # Replanning succeeded
+          world
+          |> increment_replan_attempts(character_id)
+          |> store_character_plan(character_id, new_plan)
+          |> store_plan_goal(character_id, goal)
+          |> MessageQueue.publish(
+            :character_events,
+            {:plan_replanned, character_id, original_reason}
+          )
+
+        {:error, replan_reason} ->
+          # Replanning failed - try fallback or give up
+          if goal != settings.fallback_goal and settings.fallback_goal != nil do
+            # Try fallback goal
+            case HTN.find_plan(domain, planning_context, settings.fallback_goal,
+                   params: %{character_id: character_id}
+                 ) do
+              {:ok, fallback_plan} ->
+                world
+                |> clear_replan_attempts(character_id)
+                |> store_character_plan(character_id, fallback_plan)
+                |> store_plan_goal(character_id, settings.fallback_goal)
+                |> MessageQueue.publish(
+                  :character_events,
+                  {:plan_fallback, character_id, settings.fallback_goal}
+                )
+
+              {:error, _} ->
+                world
+                |> clear_character_plan(character_id)
+                |> clear_replan_attempts(character_id)
+                |> MessageQueue.publish(
+                  :character_events,
+                  {:plan_failed, character_id, {:replan_failed, replan_reason}}
+                )
+            end
+          else
+            world
+            |> clear_character_plan(character_id)
+            |> clear_replan_attempts(character_id)
+            |> MessageQueue.publish(
+              :character_events,
+              {:plan_failed, character_id, {:replan_failed, replan_reason}}
+            )
+          end
+      end
+    end
+  end
+
+  # =============================================================================
+  # Replan Settings Management
+  # =============================================================================
+
+  @doc """
+  Gets the replanning settings for a character.
+  Returns defaults if not set.
+  """
+  def get_replan_settings(world, character_id) do
+    settings = Map.get(world, :character_replan_settings, %{})
+    Map.get(settings, character_id, default_replan_settings())
+  end
+
+  @doc """
+  Sets replanning settings for a character.
+  """
+  def set_replan_settings(world, character_id, settings) do
+    all_settings = Map.get(world, :character_replan_settings, %{})
+    merged = Map.merge(default_replan_settings(), settings)
+    updated = Map.put(all_settings, character_id, merged)
+    Map.put(world, :character_replan_settings, updated)
+  end
+
+  @doc """
+  Returns default replanning settings.
+  """
+  def default_replan_settings do
+    %{
+      enabled: false,
+      max_attempts: 3,
+      fallback_goal: :idle
+    }
+  end
+
+  # Replan attempt tracking
+  defp get_replan_attempts(world, character_id) do
+    attempts = Map.get(world, :character_replan_attempts, %{})
+    Map.get(attempts, character_id, 0)
+  end
+
+  defp increment_replan_attempts(world, character_id) do
+    attempts = Map.get(world, :character_replan_attempts, %{})
+    current = Map.get(attempts, character_id, 0)
+    updated = Map.put(attempts, character_id, current + 1)
+    Map.put(world, :character_replan_attempts, updated)
+  end
+
+  defp clear_replan_attempts(world, character_id) do
+    attempts = Map.get(world, :character_replan_attempts, %{})
+    updated = Map.delete(attempts, character_id)
+    Map.put(world, :character_replan_attempts, updated)
+  end
+
+  # Plan goal tracking (so we know what to replan for)
+  defp get_plan_goal(world, character_id) do
+    goals = Map.get(world, :character_plan_goals, %{})
+    Map.get(goals, character_id)
+  end
+
+  @doc """
+  Stores the goal associated with a character's current plan.
+  Used for replanning when the plan fails.
+  """
+  def store_plan_goal(world, character_id, goal) do
+    goals = Map.get(world, :character_plan_goals, %{})
+    updated = Map.put(goals, character_id, goal)
+    Map.put(world, :character_plan_goals, updated)
+  end
+
+  @doc """
+  Clears the stored goal for a character.
+  """
+  def clear_plan_goal(world, character_id) do
+    goals = Map.get(world, :character_plan_goals, %{})
+    updated = Map.delete(goals, character_id)
+    Map.put(world, :character_plan_goals, updated)
   end
 
   # =============================================================================
