@@ -18,7 +18,9 @@ defmodule StellaInvictaUiWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
-    live "/game", GameStateLive
+    live "/manager", GameManagerLive
+    live "/login", GameLoginLive
+    live "/game/:id", GameStateLive
   end
 
   # Other scopes may use custom stacks.

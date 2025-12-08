@@ -6,16 +6,6 @@ defmodule StellaInvictaUi.GameServer do
 
   @max_message_history 100
 
-  # Time scale for each speed setting
-  # Each tick simulates this amount of in-game time
-  @speed_scales %{
-    :hour => :hour,
-    :day => :day,
-    :week => :week,
-    :month => :month,
-    :year => :year
-  }
-
   # Fixed interval (in ms) between ticks for all speeds
   @tick_interval 500
 
