@@ -191,7 +191,7 @@ defmodule StellaInvicta.System.CharacterAITest do
     end
 
     test "executes pending character plans", %{world: world} do
-      {:ok, domain} = CharacterAI.get_character_domain(world, 1)
+      {:ok, _domain} = CharacterAI.get_character_domain(world, 1)
 
       # Create a simple plan
       plan = Plan.new([{:idle, %{character_id: 1}}])

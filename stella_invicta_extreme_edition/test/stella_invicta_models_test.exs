@@ -8,7 +8,6 @@ defmodule StellaInvictaTest.Model.AllModels do
     Civic,
     Culture,
     Edge,
-    Location,
     Polity,
     Population,
     ProductionChains,

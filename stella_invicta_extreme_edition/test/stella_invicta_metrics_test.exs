@@ -66,7 +66,7 @@ defmodule StellaInvictaTest.Metrics do
 
   describe "tick metrics" do
     test "run_tick records tick timing", %{game_state: game_state} do
-      game_state = Game.run_tick(game_state)
+      game_state = Game.run_tick(game_state) |> Game.unwrap_tick_result()
       stats = Metrics.get_tick_stats(game_state)
 
       assert stats.total_ticks == 1
@@ -79,15 +79,18 @@ defmodule StellaInvictaTest.Metrics do
       game_state =
         game_state
         |> Game.run_tick()
+        |> Game.unwrap_tick_result()
         |> Game.run_tick()
+        |> Game.unwrap_tick_result()
         |> Game.run_tick()
+        |> Game.unwrap_tick_result()
 
       stats = Metrics.get_tick_stats(game_state)
       assert stats.total_ticks == 3
     end
 
     test "tick breakdown includes system timings", %{game_state: game_state} do
-      game_state = Game.run_tick(game_state)
+      game_state = Game.run_tick(game_state) |> Game.unwrap_tick_result()
       stats = Metrics.get_tick_stats(game_state)
 
       breakdown = stats.last_breakdown
@@ -103,7 +106,7 @@ defmodule StellaInvictaTest.Metrics do
 
   describe "system metrics" do
     test "system run times are recorded", %{game_state: game_state} do
-      game_state = Game.run_tick(game_state)
+      game_state = Game.run_tick(game_state) |> Game.unwrap_tick_result()
       stats = Metrics.get_system_stats(game_state, StellaInvicta.System.Date)
 
       assert stats.system == StellaInvicta.System.Date
@@ -115,15 +118,18 @@ defmodule StellaInvictaTest.Metrics do
       game_state =
         game_state
         |> Game.run_tick()
+        |> Game.unwrap_tick_result()
         |> Game.run_tick()
+        |> Game.unwrap_tick_result()
         |> Game.run_tick()
+        |> Game.unwrap_tick_result()
 
       stats = Metrics.get_system_stats(game_state, StellaInvicta.System.Date)
       assert stats.run.sample_count == 3
     end
 
     test "get_summary/1 returns all system summaries", %{game_state: game_state} do
-      game_state = Game.run_tick(game_state)
+      game_state = Game.run_tick(game_state) |> Game.unwrap_tick_result()
       summary = Metrics.get_summary(game_state)
 
       assert Map.has_key?(summary, :systems)
@@ -152,7 +158,7 @@ defmodule StellaInvictaTest.Metrics do
   describe "disabled metrics" do
     test "disabled metrics don't record anything", %{game_state: game_state} do
       game_state = Metrics.set_enabled(game_state, false)
-      game_state = Game.run_tick(game_state)
+      game_state = Game.run_tick(game_state) |> Game.unwrap_tick_result()
 
       stats = Metrics.get_tick_stats(game_state)
       # Ticks should not be recorded
@@ -164,8 +170,11 @@ defmodule StellaInvictaTest.Metrics do
         game_state
         |> Metrics.set_enabled(false)
         |> Game.run_tick()
+        |> Game.unwrap_tick_result()
         |> Game.run_tick()
+        |> Game.unwrap_tick_result()
         |> Game.run_tick()
+        |> Game.unwrap_tick_result()
 
       # Game should still work
       assert Map.get(game_state, :current_tick) == 3
@@ -178,7 +187,9 @@ defmodule StellaInvictaTest.Metrics do
       game_state =
         game_state
         |> Game.run_tick()
+        |> Game.unwrap_tick_result()
         |> Game.run_tick()
+        |> Game.unwrap_tick_result()
         |> Metrics.reset()
 
       stats = Metrics.get_tick_stats(game_state)
@@ -198,7 +209,9 @@ defmodule StellaInvictaTest.Metrics do
       game_state =
         game_state
         |> Game.run_tick()
+        |> Game.unwrap_tick_result()
         |> Game.run_tick()
+        |> Game.unwrap_tick_result()
         |> Metrics.reset_system(StellaInvicta.System.Date)
 
       date_stats = Metrics.get_system_stats(game_state, StellaInvicta.System.Date)

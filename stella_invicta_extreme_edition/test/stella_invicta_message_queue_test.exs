@@ -279,7 +279,7 @@ defmodule StellaInvictaTest.MessageQueue do
         |> Game.publish(:test_topic, {:test_event, "tick_message"})
 
       # Run a tick - the TestListenerSystem should process the message
-      game_state = Game.run_tick(game_state)
+      game_state = Game.run_tick(game_state) |> Game.unwrap_tick_result()
 
       # The message should have been processed (stored in :received_messages)
       received = Map.get(game_state, :received_messages, [])
@@ -298,10 +298,10 @@ defmodule StellaInvictaTest.MessageQueue do
         |> Game.register_system(TestListenerSystem, true)
 
       # Run a tick - TestPublisherSystem publishes, TestListenerSystem should receive
-      game_state = Game.run_tick(game_state)
+      game_state = Game.run_tick(game_state) |> Game.unwrap_tick_result()
 
       # On the next tick, TestListenerSystem will process the message
-      game_state = Game.run_tick(game_state)
+      game_state = Game.run_tick(game_state) |> Game.unwrap_tick_result()
 
       received = Map.get(game_state, :received_messages, [])
       assert {:test_event, "from_publisher"} in received
@@ -315,7 +315,7 @@ defmodule StellaInvictaTest.MessageQueue do
         |> Game.register_system(TestListenerSystem, false)
         |> Game.publish(:test_topic, {:test_event, "should_not_receive"})
 
-      game_state = Game.run_tick(game_state)
+      game_state = Game.run_tick(game_state) |> Game.unwrap_tick_result()
 
       # The message should NOT have been processed
       received = Map.get(game_state, :received_messages, [])
@@ -334,7 +334,7 @@ defmodule StellaInvictaTest.MessageQueue do
       assert length(messages_before) > 0
 
       # After tick, messages should be cleared for disabled systems
-      game_state = Game.run_tick(game_state)
+      game_state = Game.run_tick(game_state) |> Game.unwrap_tick_result()
       messages_after = MessageQueue.get_messages(game_state, TestListenerSystem)
       assert messages_after == []
     end
@@ -372,7 +372,7 @@ defmodule StellaInvictaTest.MessageQueue do
         |> MessageQueue.subscribe_system(TestListenerSystem, :date_events)
 
       # Run one tick (normal hour advance, not end of day)
-      game_state = Game.run_tick(game_state)
+      game_state = Game.run_tick(game_state) |> Game.unwrap_tick_result()
 
       # Since it's just a normal hour tick, no events should be published
       messages = MessageQueue.get_messages(game_state, TestListenerSystem)

@@ -26,6 +26,8 @@ defmodule StellaInvicta.Game do
 
     game_state
     |> Map.put(:systems, systems)
+    |> Map.put(:simulation_paused, false)
+    |> Map.put(:pause_reason, nil)
     |> MessageQueue.init()
     |> Metrics.init()
     |> setup_system_subscriptions()
@@ -92,6 +94,60 @@ defmodule StellaInvicta.Game do
   end
 
   @doc """
+  Checks if the simulation is currently paused.
+  """
+  def simulation_paused?(game_state) do
+    Map.get(game_state, :simulation_paused, false)
+  end
+
+  @doc """
+  Gets the reason why the simulation was paused.
+  Returns nil if not paused.
+  """
+  def get_pause_reason(game_state) do
+    if simulation_paused?(game_state) do
+      Map.get(game_state, :pause_reason)
+    else
+      nil
+    end
+  end
+
+  @doc """
+  Extracts the game state from a tick result tuple.
+  Useful for test helpers and legacy code that expects just the game state.
+
+  ## Example
+
+      game_state = Game.run_tick(game_state) |> Game.unwrap_tick_result()
+  """
+  def unwrap_tick_result({:ok, state}), do: state
+  def unwrap_tick_result({:paused, state, _reason}), do: state
+  def unwrap_tick_result(state) when is_map(state), do: state
+
+  @doc """
+  Pauses the simulation with an optional reason.
+  The reason is typically an event that requires player intervention.
+
+  ## Example
+
+      game_state = Game.pause_simulation(game_state, {:critical_event, :plague, %{severity: :high}})
+  """
+  def pause_simulation(game_state, reason \\ nil) do
+    game_state
+    |> Map.put(:simulation_paused, true)
+    |> Map.put(:pause_reason, reason)
+  end
+
+  @doc """
+  Resumes the simulation from a paused state.
+  """
+  def resume_simulation(game_state) do
+    game_state
+    |> Map.put(:simulation_paused, false)
+    |> Map.put(:pause_reason, nil)
+  end
+
+  @doc """
   Registers a new system. Systems are disabled by default when added.
   Also sets up the system's message subscriptions.
   """
@@ -131,42 +187,68 @@ defmodule StellaInvicta.Game do
   Also processes pending messages for each system.
   Disabled systems have their message queues cleared to prevent buildup.
   Tracks performance metrics for each system and the overall tick.
+
+  Returns:
+  - `{:ok, updated_game_state}` - Tick executed successfully
+  - `{:paused, updated_game_state, reason}` - Simulation was paused during this tick
   """
   def run_tick(game_state) do
-    tick_start = System.monotonic_time(:microsecond)
-    game_state = Map.update!(game_state, :current_tick, &(&1 + 1))
+    # Don't run tick if already paused
+    if simulation_paused?(game_state) do
+      {:ok, game_state}
+    else
+      tick_start = System.monotonic_time(:microsecond)
+      game_state = Map.update!(game_state, :current_tick, &(&1 + 1))
 
-    # Use cached system order if available, otherwise compute and cache
-    {ordered_systems, game_state} = get_or_compute_system_order(game_state)
+      # Use cached system order if available, otherwise compute and cache
+      {ordered_systems, game_state} = get_or_compute_system_order(game_state)
 
-    # Run each enabled system in order, processing messages first
-    # Clear messages for disabled systems to prevent queue buildup
-    systems = Map.get(game_state, :systems, %{})
-    metrics_enabled = Metrics.enabled?(game_state)
+      # Run each enabled system in order, processing messages first
+      # Clear messages for disabled systems to prevent queue buildup
+      systems = Map.get(game_state, :systems, %{})
+      metrics_enabled = Metrics.enabled?(game_state)
 
-    {game_state, breakdown} =
-      Enum.reduce(ordered_systems, {game_state, %{}}, fn system_module, {acc, timing} ->
-        if Map.get(systems, system_module, true) do
-          if metrics_enabled do
-            run_system_with_metrics(acc, system_module, timing)
+      {game_state, breakdown} =
+        Enum.reduce_while(ordered_systems, {game_state, %{}}, fn system_module, {acc, timing} ->
+          if Map.get(systems, system_module, true) do
+            result =
+              if metrics_enabled do
+                run_system_with_metrics(acc, system_module, timing)
+              else
+                updated =
+                  acc
+                  |> process_system_messages(system_module)
+                  |> system_module.run()
+
+                {updated, timing}
+              end
+
+            # Check if simulation was paused during system execution
+            {game_state, timing} = result
+
+            if simulation_paused?(game_state) do
+              {:halt, {game_state, timing}}
+            else
+              {:cont, {game_state, timing}}
+            end
           else
-            updated =
-              acc
-              |> process_system_messages(system_module)
-              |> system_module.run()
-
-            {updated, timing}
+            # Clear messages for disabled systems
+            {:cont, {MessageQueue.clear_messages(acc, system_module), timing}}
           end
-        else
-          # Clear messages for disabled systems
-          {MessageQueue.clear_messages(acc, system_module), timing}
-        end
-      end)
+        end)
 
-    # Record tick metrics
-    tick_end = System.monotonic_time(:microsecond)
-    tick_time = tick_end - tick_start
-    Metrics.record_tick(game_state, tick_time, breakdown)
+      # Record tick metrics
+      tick_end = System.monotonic_time(:microsecond)
+      tick_time = tick_end - tick_start
+      game_state = Metrics.record_tick(game_state, tick_time, breakdown)
+
+      # Return paused state if simulation was paused
+      if simulation_paused?(game_state) do
+        {:paused, game_state, get_pause_reason(game_state)}
+      else
+        {:ok, game_state}
+      end
+    end
   end
 
   # Runs a system with timing metrics
@@ -249,26 +331,61 @@ defmodule StellaInvicta.Game do
   end
 
   def simulate_hour(game_state) do
-    run_tick(game_state)
+    case run_tick(game_state) do
+      {:ok, state} -> state
+      {:paused, state, _reason} -> state
+    end
   end
 
   def simulate_day(game_state) do
     1..24
-    |> Enum.reduce(game_state, fn _, acc -> simulate_hour(acc) end)
+    |> Enum.reduce_while(game_state, fn _, acc ->
+      case run_tick(acc) do
+        {:ok, state} -> {:cont, state}
+        {:paused, state, _reason} -> {:halt, state}
+      end
+    end)
   end
 
   def simulate_week(game_state) do
     1..7
-    |> Enum.reduce(game_state, fn _, acc -> simulate_day(acc) end)
+    |> Enum.reduce_while(game_state, fn _, acc ->
+      case simulate_day(acc) do
+        state ->
+          if simulation_paused?(state) do
+            {:halt, state}
+          else
+            {:cont, state}
+          end
+      end
+    end)
   end
 
   def simulate_month(game_state) do
     1..30
-    |> Enum.reduce(game_state, fn _, acc -> simulate_day(acc) end)
+    |> Enum.reduce_while(game_state, fn _, acc ->
+      case simulate_day(acc) do
+        state ->
+          if simulation_paused?(state) do
+            {:halt, state}
+          else
+            {:cont, state}
+          end
+      end
+    end)
   end
 
   def simulate_year(game_state) do
     1..12
-    |> Enum.reduce(game_state, fn _, acc -> simulate_month(acc) end)
+    |> Enum.reduce_while(game_state, fn _, acc ->
+      case simulate_month(acc) do
+        state ->
+          if simulation_paused?(state) do
+            {:halt, state}
+          else
+            {:cont, state}
+          end
+      end
+    end)
   end
 end
