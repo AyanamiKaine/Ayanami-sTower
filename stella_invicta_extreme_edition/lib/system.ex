@@ -71,10 +71,12 @@ defmodule StellaInvicta.System do
   Gets the subscriptions for a system, returning empty list if not implemented.
   """
   def get_subscriptions(system_module) do
-    if function_exported?(system_module, :subscriptions, 0) do
+    # Note: function_exported? can be unreliable with optional callbacks,
+    # so we try calling the function directly and rescue if it doesn't exist
+    try do
       system_module.subscriptions()
-    else
-      []
+    rescue
+      UndefinedFunctionError -> []
     end
   end
 
@@ -82,10 +84,12 @@ defmodule StellaInvicta.System do
   Calls handle_message if the system implements it, otherwise returns state unchanged.
   """
   def dispatch_message(system_module, game_state, topic, message) do
-    if function_exported?(system_module, :handle_message, 3) do
+    # Note: function_exported? can be unreliable with optional callbacks,
+    # so we try calling the function directly and rescue if it doesn't exist
+    try do
       system_module.handle_message(game_state, topic, message)
-    else
-      game_state
+    rescue
+      UndefinedFunctionError -> game_state
     end
   end
 end

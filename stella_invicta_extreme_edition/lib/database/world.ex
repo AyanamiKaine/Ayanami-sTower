@@ -146,7 +146,7 @@ defmodule StellaInvicta.World do
           name: "Carloman",
           # Born year -24, month 9, day 8. At year 1, month 1, day 1 birthday hasn't passed yet.
           # So age = (1 - (-24)) - 1 = 24
-          age: 24,
+          age: 1,
           martial: 0,
           stewardship: 0,
           wealth: 0,

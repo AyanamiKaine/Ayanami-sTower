@@ -117,8 +117,9 @@ defmodule StellaInvicta.System.Age do
 
   def maybe_age_character(%Character{birth_date: birth_date} = character, current_date, world) do
     expected_age = calculate_age(birth_date, current_date)
+    current_char_age = character.age
 
-    if expected_age > character.age do
+    if expected_age > current_char_age do
       updated_char = %{character | age: expected_age}
       # Publish birthday event
       world =
