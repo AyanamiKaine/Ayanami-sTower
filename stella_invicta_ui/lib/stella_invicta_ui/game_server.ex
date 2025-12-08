@@ -17,7 +17,7 @@ defmodule StellaInvictaUi.GameServer do
   }
 
   # Fixed interval (in ms) between ticks for all speeds
-  @tick_interval 100
+  @tick_interval 500
 
   # Client API
 
