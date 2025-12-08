@@ -181,6 +181,24 @@ defmodule StellaInvictaUiWeb.GameStateLive do
     StellaInvicta.Metrics.get_summary(game_state)
   end
 
+  defp get_ai_entity_ids(game_state) do
+    metrics = Map.get(game_state, :metrics, %{})
+    ai_decisions = Map.get(metrics, :ai_decisions, %{})
+    Map.keys(ai_decisions)
+  end
+
+  defp get_ai_summary(game_state, entity_id) do
+    StellaInvicta.Metrics.get_ai_summary(game_state, entity_id)
+  end
+
+  defp get_ai_decisions(game_state, entity_id, opts \\ []) do
+    StellaInvicta.Metrics.get_ai_decisions(game_state, entity_id, opts)
+  end
+
+  defp format_entity_id(entity_id) when is_atom(entity_id), do: Atom.to_string(entity_id)
+  defp format_entity_id(entity_id) when is_binary(entity_id), do: entity_id
+  defp format_entity_id(entity_id), do: inspect(entity_id)
+
   defp format_time_us(time_us) when is_float(time_us),
     do: :erlang.float_to_binary(time_us, decimals: 1)
 
@@ -328,6 +346,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
           </div>
         </div>
          <%!-- Performance Metrics Panel --%> <.render_metrics_panel game_state={@game_state} />
+        <%!-- AI Decisions Panel --%> <.render_ai_panel game_state={@game_state} />
         <%!-- Message Queue Debug Panel --%>
         <div class="card bg-base-200 p-4">
           <div class="flex items-center justify-between mb-3">
@@ -834,5 +853,158 @@ defmodule StellaInvictaUiWeb.GameStateLive do
       <% end %>
     </div>
     """
+  end
+
+  attr :game_state, :map, required: true
+
+  defp render_ai_panel(assigns) do
+    entity_ids = get_ai_entity_ids(assigns.game_state)
+    assigns = assign(assigns, :entity_ids, entity_ids)
+
+    ~H"""
+    <div class="card bg-base-200 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold">AI Decision Log (HTN)</h2>
+      </div>
+      
+      <%= if @entity_ids == [] do %>
+        <p class="text-base-content/50 italic text-sm">
+          No AI entities with decision tracking. AI metrics are stored when using <code class="text-xs bg-base-300 px-1 rounded">find_plan_with_metrics/5</code>.
+        </p>
+      <% else %>
+        <div class="space-y-4">
+          <%= for entity_id <- @entity_ids do %>
+            <.render_ai_entity_panel
+              game_state={@game_state}
+              entity_id={entity_id}
+            />
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+
+  attr :game_state, :map, required: true
+  attr :entity_id, :any, required: true
+
+  defp render_ai_entity_panel(assigns) do
+    summary = get_ai_summary(assigns.game_state, assigns.entity_id)
+
+    decisions =
+      get_ai_decisions(assigns.game_state, assigns.entity_id, limit: 30, chronological: true)
+
+    assigns =
+      assigns
+      |> assign(:summary, summary)
+      |> assign(:decisions, decisions)
+
+    ~H"""
+    <div class="bg-base-100 rounded-box p-3">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold">
+          <.icon name="hero-cpu-chip" class="size-4 inline mr-1" />
+          Entity: {format_entity_id(@entity_id)}
+        </h3>
+      </div>
+      
+      <%= if @summary do %>
+        <%!-- Planning Statistics --%>
+        <div class="mb-3">
+          <div class="stats stats-horizontal bg-base-200 shadow-sm text-xs w-full">
+            <div class="stat py-1 px-2">
+              <div class="stat-title text-xs">Plans</div>
+              
+              <div class="stat-value text-sm">
+                <span class="text-success">{@summary.successful_plans}</span>
+                <span class="text-base-content/50">/</span>
+                <span class="text-error">{@summary.failed_plans}</span>
+              </div>
+              
+              <div class="stat-desc text-xs">{Float.round(@summary.success_rate, 1)}% success</div>
+            </div>
+            
+            <div class="stat py-1 px-2">
+              <div class="stat-title text-xs">Backtracks</div>
+              
+              <div class="stat-value text-sm">{@summary.total_backtracks}</div>
+            </div>
+            
+            <div class="stat py-1 px-2">
+              <div class="stat-title text-xs">Iterations</div>
+              
+              <div class="stat-value text-sm">{@summary.total_iterations}</div>
+            </div>
+            
+            <div class="stat py-1 px-2">
+              <div class="stat-title text-xs">Avg Plan Time</div>
+              
+              <div class="stat-value text-sm">{@summary.avg_planning_time_us} µs</div>
+            </div>
+          </div>
+        </div>
+         <%!-- Method Selection Counts --%>
+        <%= if map_size(@summary.method_selection_counts) > 0 do %>
+          <div class="mb-3">
+            <h4 class="text-xs font-semibold text-base-content/70 mb-1">Method Usage</h4>
+            
+            <div class="flex flex-wrap gap-1">
+              <%= for {method, count} <- @summary.method_selection_counts do %>
+                <span class="badge badge-sm badge-primary badge-outline">{method}: {count}</span>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+         <%!-- Task Execution Counts --%>
+        <%= if map_size(@summary.task_execution_counts) > 0 do %>
+          <div class="mb-3">
+            <h4 class="text-xs font-semibold text-base-content/70 mb-1">Task Execution</h4>
+            
+            <div class="flex flex-wrap gap-1">
+              <%= for {task, count} <- @summary.task_execution_counts do %>
+                <span class="badge badge-sm badge-secondary badge-outline">{task}: {count}</span>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+       <%!-- Decision Log --%>
+      <div>
+        <h4 class="text-xs font-semibold text-base-content/70 mb-1">
+          Decision Log ({length(@decisions)} entries)
+        </h4>
+        
+        <div class="max-h-48 overflow-y-auto bg-base-200 rounded-box p-2">
+          <%= if @decisions == [] do %>
+            <p class="text-base-content/50 italic text-xs">No decisions recorded</p>
+          <% else %>
+            <ul class="space-y-0.5">
+              <%= for decision <- @decisions do %>
+                <li class={[
+                  "text-xs font-mono py-0.5 px-1 rounded",
+                  get_decision_class(decision)
+                ]}>
+                  {decision}
+                </li>
+              <% end %>
+            </ul>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  defp get_decision_class(decision) do
+    cond do
+      String.starts_with?(decision, "★") -> "bg-success/20 text-success"
+      String.starts_with?(decision, "✓") -> "text-success"
+      String.starts_with?(decision, "✗") -> "bg-error/20 text-error"
+      String.starts_with?(decision, "↩") -> "bg-warning/20 text-warning"
+      String.starts_with?(decision, "→") -> "text-info"
+      String.starts_with?(decision, "←") -> "text-base-content/50"
+      String.starts_with?(decision, "▶") -> "text-primary"
+      true -> ""
+    end
   end
 end

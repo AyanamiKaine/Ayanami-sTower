@@ -11,6 +11,7 @@ defmodule StellaInvicta.Metrics do
   - **Message Processing**: Time spent processing messages per system
   - **Message Queue**: Message counts, queue sizes, publish rates
   - **Game Tick**: Total tick time, breakdown by phase
+  - **AI Decisions**: HTN planning decisions, method selections, backtracking
   - **Historical Data**: Rolling averages and peak values
 
   ## Usage
@@ -23,7 +24,12 @@ defmodule StellaInvicta.Metrics do
 
       # Get detailed system stats
       system_stats = Metrics.get_system_stats(game_state, MySystem)
+
+      # Get AI decision log for a character
+      ai_log = Metrics.get_ai_decisions(game_state, character_id)
   """
+
+  alias StellaInvicta.AI.HierarchicalTaskNetwork, as: HTN
 
   # Number of samples to keep for rolling averages
   @history_size 100
@@ -187,7 +193,8 @@ defmodule StellaInvicta.Metrics do
       enabled: Map.get(metrics, :enabled, false),
       tick: get_tick_summary(metrics),
       systems: get_all_system_summaries(metrics),
-      message_queue: get_message_queue_summary(metrics)
+      message_queue: get_message_queue_summary(metrics),
+      ai: get_ai_metrics_summary(metrics)
     }
   end
 
@@ -340,9 +347,197 @@ defmodule StellaInvicta.Metrics do
     }
   end
 
+  defp get_ai_metrics_summary(metrics) do
+    ai_metrics = Map.get(metrics, :ai_decisions, %{})
+    entity_count = map_size(ai_metrics)
+
+    if entity_count == 0 do
+      %{
+        tracked_entities: 0,
+        total_planning_attempts: 0,
+        total_successful_plans: 0,
+        total_failed_plans: 0,
+        total_backtracks: 0
+      }
+    else
+      # Aggregate stats across all entities
+      totals =
+        Enum.reduce(ai_metrics, %{attempts: 0, success: 0, failed: 0, backtracks: 0}, fn {_id,
+                                                                                          htn_metrics},
+                                                                                         acc ->
+          summary = HTN.get_planning_summary(htn_metrics)
+
+          %{
+            attempts: acc.attempts + summary.planning_attempts,
+            success: acc.success + summary.successful_plans,
+            failed: acc.failed + summary.failed_plans,
+            backtracks: acc.backtracks + summary.total_backtracks
+          }
+        end)
+
+      %{
+        tracked_entities: entity_count,
+        total_planning_attempts: totals.attempts,
+        total_successful_plans: totals.success,
+        total_failed_plans: totals.failed,
+        total_backtracks: totals.backtracks,
+        overall_success_rate:
+          if(totals.attempts > 0,
+            do: totals.success / totals.attempts * 100,
+            else: 0.0
+          )
+      }
+    end
+  end
+
   defp safe_average([]), do: 0.0
   defp safe_average(list), do: Enum.sum(list) / length(list)
 
   defp safe_max([]), do: 0
   defp safe_max(list), do: Enum.max(list)
+
+  # --- AI Decision Metrics ---
+
+  @doc """
+  Stores HTN metrics for an entity (e.g., character) in the game state.
+
+  ## Example
+
+      {:ok, plan, htn_metrics} = HTN.find_plan_with_metrics(domain, world, :goal, metrics)
+      game_state = Metrics.store_ai_metrics(game_state, character_id, htn_metrics)
+  """
+  def store_ai_metrics(game_state, entity_id, %HTN.Metrics{} = htn_metrics) do
+    if enabled?(game_state) do
+      metrics = Map.get(game_state, :metrics, %{})
+      ai_metrics = Map.get(metrics, :ai_decisions, %{})
+      updated_ai = Map.put(ai_metrics, entity_id, htn_metrics)
+      updated_metrics = Map.put(metrics, :ai_decisions, updated_ai)
+      Map.put(game_state, :metrics, updated_metrics)
+    else
+      game_state
+    end
+  end
+
+  @doc """
+  Gets HTN metrics for a specific entity.
+  Returns nil if no metrics exist for that entity.
+  """
+  def get_ai_metrics(game_state, entity_id) do
+    metrics = Map.get(game_state, :metrics, %{})
+    ai_metrics = Map.get(metrics, :ai_decisions, %{})
+    Map.get(ai_metrics, entity_id)
+  end
+
+  @doc """
+  Gets AI decision log for an entity, formatted for UI display.
+
+  ## Options
+
+  - `:limit` - Maximum decisions to return (default: 50)
+  - `:chronological` - If true, oldest first (default: true)
+  - `:types` - Filter by decision types (default: all)
+
+  ## Example
+
+      decisions = Metrics.get_ai_decisions(game_state, character_id, limit: 20)
+      # => ["▶ Planning started for task :daily_routine", "→ Method :morning selected", ...]
+  """
+  def get_ai_decisions(game_state, entity_id, opts \\ []) do
+    case get_ai_metrics(game_state, entity_id) do
+      nil -> []
+      htn_metrics -> HTN.get_formatted_log(htn_metrics, opts)
+    end
+  end
+
+  @doc """
+  Gets AI decision log as raw entries (for custom formatting by UI).
+  """
+  def get_ai_decision_log(game_state, entity_id) do
+    case get_ai_metrics(game_state, entity_id) do
+      nil -> []
+      htn_metrics -> HTN.get_decision_log(htn_metrics)
+    end
+  end
+
+  @doc """
+  Gets AI planning summary statistics for an entity.
+
+  Returns a map with:
+  - `:planning_attempts` - Total planning attempts
+  - `:successful_plans` - Number of successful plans
+  - `:failed_plans` - Number of failed plans
+  - `:success_rate` - Percentage of successful plans
+  - `:total_backtracks` - Total backtrack events
+  - `:avg_planning_time_us` - Average planning time in microseconds
+  - `:method_selection_counts` - How often each method was selected
+  - `:task_execution_counts` - How often each task was executed
+  """
+  def get_ai_summary(game_state, entity_id) do
+    case get_ai_metrics(game_state, entity_id) do
+      nil -> nil
+      htn_metrics -> HTN.get_planning_summary(htn_metrics)
+    end
+  end
+
+  @doc """
+  Gets a combined AI summary across all tracked entities.
+  Useful for overall AI performance monitoring.
+  """
+  def get_all_ai_summaries(game_state) do
+    metrics = Map.get(game_state, :metrics, %{})
+    ai_metrics = Map.get(metrics, :ai_decisions, %{})
+
+    Map.new(ai_metrics, fn {entity_id, htn_metrics} ->
+      {entity_id, HTN.get_planning_summary(htn_metrics)}
+    end)
+  end
+
+  @doc """
+  Clears AI metrics for a specific entity.
+  """
+  def clear_ai_metrics(game_state, entity_id) do
+    if enabled?(game_state) do
+      metrics = Map.get(game_state, :metrics, %{})
+      ai_metrics = Map.get(metrics, :ai_decisions, %{})
+
+      case Map.get(ai_metrics, entity_id) do
+        nil ->
+          game_state
+
+        htn_metrics ->
+          cleared = HTN.clear_metrics(htn_metrics)
+          updated_ai = Map.put(ai_metrics, entity_id, cleared)
+          updated_metrics = Map.put(metrics, :ai_decisions, updated_ai)
+          Map.put(game_state, :metrics, updated_metrics)
+      end
+    else
+      game_state
+    end
+  end
+
+  @doc """
+  Clears all AI metrics.
+  """
+  def clear_all_ai_metrics(game_state) do
+    if enabled?(game_state) do
+      metrics = Map.get(game_state, :metrics, %{})
+      updated_metrics = Map.put(metrics, :ai_decisions, %{})
+      Map.put(game_state, :metrics, updated_metrics)
+    else
+      game_state
+    end
+  end
+
+  @doc """
+  Creates a new HTN metrics tracker.
+  Convenience function to create metrics for a new AI entity.
+
+  ## Options
+
+  - `:capture_world_snapshots` - Include world state in decisions (expensive, default: false)
+  - `:max_decisions` - Maximum decisions to keep (default: 1000)
+  """
+  def new_ai_metrics(opts \\ []) do
+    HTN.new_metrics(opts)
+  end
 end

@@ -133,6 +133,12 @@ defmodule StellaInvicta.World do
           # Born year -29, month 4, day 15. At year 1, month 1, day 1 birthday hasn't passed yet.
           # So age = (1 - (-29)) - 1 = 29
           age: 29,
+          martial: 0,
+          stewardship: 0,
+          wealth: 0,
+          diplomacy: 0,
+          health: 10,
+          intrigue: 0,
           birth_date: %{day: 15, month: 4, year: -29}
         },
         2 => %StellaInvicta.Model.Character{
@@ -141,6 +147,12 @@ defmodule StellaInvicta.World do
           # Born year -24, month 9, day 8. At year 1, month 1, day 1 birthday hasn't passed yet.
           # So age = (1 - (-24)) - 1 = 24
           age: 24,
+          martial: 0,
+          stewardship: 0,
+          wealth: 0,
+          diplomacy: 0,
+          intrigue: 0,
+          health: 10,
           birth_date: %{day: 8, month: 9, year: -24}
         }
       },

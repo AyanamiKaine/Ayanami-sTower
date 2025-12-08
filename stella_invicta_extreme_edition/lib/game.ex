@@ -12,7 +12,9 @@ defmodule StellaInvicta.Game do
   # Default systems in execution order
   @default_systems [
     {StellaInvicta.System.Date, true},
-    {StellaInvicta.System.Age, true}
+    {StellaInvicta.System.Age, true},
+    # CharacterAI disabled by default - enable when AI behavior is needed
+    {StellaInvicta.System.CharacterAI, false}
   ]
 
   @doc """
