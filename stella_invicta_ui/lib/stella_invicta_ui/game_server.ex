@@ -23,7 +23,8 @@ defmodule StellaInvictaUi.GameServer do
 
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
+    game_id = Keyword.get(opts, :game_id)
+    GenServer.start_link(__MODULE__, {opts, game_id}, name: name)
   end
 
   def get_state(server \\ __MODULE__) do
@@ -97,7 +98,7 @@ defmodule StellaInvictaUi.GameServer do
   # Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init({_opts, game_id}) do
     # Subscribe to the library's PubSub for all message queue events
     subscribe_to_message_topics()
 
@@ -108,6 +109,7 @@ defmodule StellaInvictaUi.GameServer do
     # Store game state, message history, and simulation state
     {:ok,
      %{
+       game_id: game_id,
        game_state: game_state,
        message_history: [],
        playing: false,
@@ -144,7 +146,7 @@ defmodule StellaInvictaUi.GameServer do
   @impl true
   def handle_call(:clear_message_history, _from, state) do
     new_state = %{state | message_history: []}
-    broadcast_state_update(new_state.game_state, [], state.playing, state.speed)
+    broadcast_state_update(state.game_id, new_state.game_state, [], state.playing, state.speed)
     {:reply, :ok, new_state}
   end
 
@@ -152,7 +154,15 @@ defmodule StellaInvictaUi.GameServer do
   def handle_call(:simulate_hour, _from, %{game_state: game_state} = state) do
     new_game_state = StellaInvicta.Game.simulate_hour(game_state)
     new_state = %{state | game_state: new_game_state}
-    broadcast_state_update(new_game_state, state.message_history, state.playing, state.speed)
+
+    broadcast_state_update(
+      state.game_id,
+      new_game_state,
+      state.message_history,
+      state.playing,
+      state.speed
+    )
+
     {:reply, new_game_state, new_state}
   end
 
@@ -160,7 +170,15 @@ defmodule StellaInvictaUi.GameServer do
   def handle_call(:simulate_day, _from, %{game_state: game_state} = state) do
     new_game_state = StellaInvicta.Game.simulate_day(game_state)
     new_state = %{state | game_state: new_game_state}
-    broadcast_state_update(new_game_state, state.message_history, state.playing, state.speed)
+
+    broadcast_state_update(
+      state.game_id,
+      new_game_state,
+      state.message_history,
+      state.playing,
+      state.speed
+    )
+
     {:reply, new_game_state, new_state}
   end
 
@@ -168,7 +186,15 @@ defmodule StellaInvictaUi.GameServer do
   def handle_call(:simulate_week, _from, %{game_state: game_state} = state) do
     new_game_state = StellaInvicta.Game.simulate_week(game_state)
     new_state = %{state | game_state: new_game_state}
-    broadcast_state_update(new_game_state, state.message_history, state.playing, state.speed)
+
+    broadcast_state_update(
+      state.game_id,
+      new_game_state,
+      state.message_history,
+      state.playing,
+      state.speed
+    )
+
     {:reply, new_game_state, new_state}
   end
 
@@ -176,7 +202,15 @@ defmodule StellaInvictaUi.GameServer do
   def handle_call(:simulate_month, _from, %{game_state: game_state} = state) do
     new_game_state = StellaInvicta.Game.simulate_month(game_state)
     new_state = %{state | game_state: new_game_state}
-    broadcast_state_update(new_game_state, state.message_history, state.playing, state.speed)
+
+    broadcast_state_update(
+      state.game_id,
+      new_game_state,
+      state.message_history,
+      state.playing,
+      state.speed
+    )
+
     {:reply, new_game_state, new_state}
   end
 
@@ -184,7 +218,15 @@ defmodule StellaInvictaUi.GameServer do
   def handle_call(:simulate_year, _from, %{game_state: game_state} = state) do
     new_game_state = StellaInvicta.Game.simulate_year(game_state)
     new_state = %{state | game_state: new_game_state}
-    broadcast_state_update(new_game_state, state.message_history, state.playing, state.speed)
+
+    broadcast_state_update(
+      state.game_id,
+      new_game_state,
+      state.message_history,
+      state.playing,
+      state.speed
+    )
+
     {:reply, new_game_state, new_state}
   end
 
@@ -205,7 +247,7 @@ defmodule StellaInvictaUi.GameServer do
       timer_ref: nil
     }
 
-    broadcast_state_update(new_game_state, [], new_state.playing, new_state.speed)
+    broadcast_state_update(state.game_id, new_game_state, [], new_state.playing, new_state.speed)
     {:reply, new_game_state, new_state}
   end
 
@@ -218,7 +260,15 @@ defmodule StellaInvictaUi.GameServer do
   def handle_call(:play, _from, state) do
     timer_ref = Process.send_after(self(), :tick, @tick_interval)
     new_state = %{state | playing: true, timer_ref: timer_ref}
-    broadcast_state_update(state.game_state, state.message_history, true, state.speed)
+
+    broadcast_state_update(
+      state.game_id,
+      state.game_state,
+      state.message_history,
+      true,
+      state.speed
+    )
+
     {:reply, :ok, new_state}
   end
 
@@ -231,7 +281,15 @@ defmodule StellaInvictaUi.GameServer do
   def handle_call(:pause, _from, state) do
     if state.timer_ref, do: Process.cancel_timer(state.timer_ref)
     new_state = %{state | playing: false, timer_ref: nil}
-    broadcast_state_update(state.game_state, state.message_history, false, state.speed)
+
+    broadcast_state_update(
+      state.game_id,
+      state.game_state,
+      state.message_history,
+      false,
+      state.speed
+    )
+
     {:reply, :ok, new_state}
   end
 
@@ -249,7 +307,15 @@ defmodule StellaInvictaUi.GameServer do
       end
 
     new_state = %{state | speed: speed, timer_ref: timer_ref}
-    broadcast_state_update(state.game_state, state.message_history, state.playing, speed)
+
+    broadcast_state_update(
+      state.game_id,
+      state.game_state,
+      state.message_history,
+      state.playing,
+      speed
+    )
+
     {:reply, :ok, new_state}
   end
 
@@ -257,7 +323,15 @@ defmodule StellaInvictaUi.GameServer do
   def handle_call({:toggle_system, system_module}, _from, %{game_state: game_state} = state) do
     new_game_state = StellaInvicta.Game.toggle_system(game_state, system_module)
     new_state = %{state | game_state: new_game_state}
-    broadcast_state_update(new_game_state, state.message_history, state.playing, state.speed)
+
+    broadcast_state_update(
+      state.game_id,
+      new_game_state,
+      state.message_history,
+      state.playing,
+      state.speed
+    )
+
     {:reply, new_game_state, new_state}
   end
 
@@ -272,7 +346,15 @@ defmodule StellaInvictaUi.GameServer do
     current_enabled = StellaInvicta.Metrics.enabled?(game_state)
     new_game_state = StellaInvicta.Metrics.set_enabled(game_state, !current_enabled)
     new_state = %{state | game_state: new_game_state}
-    broadcast_state_update(new_game_state, state.message_history, state.playing, state.speed)
+
+    broadcast_state_update(
+      state.game_id,
+      new_game_state,
+      state.message_history,
+      state.playing,
+      state.speed
+    )
+
     {:reply, :ok, new_state}
   end
 
@@ -280,7 +362,15 @@ defmodule StellaInvictaUi.GameServer do
   def handle_call(:reset_metrics, _from, %{game_state: game_state} = state) do
     new_game_state = StellaInvicta.Metrics.reset(game_state)
     new_state = %{state | game_state: new_game_state}
-    broadcast_state_update(new_game_state, state.message_history, state.playing, state.speed)
+
+    broadcast_state_update(
+      state.game_id,
+      new_game_state,
+      state.message_history,
+      state.playing,
+      state.speed
+    )
+
     {:reply, :ok, new_state}
   end
 
@@ -307,7 +397,15 @@ defmodule StellaInvictaUi.GameServer do
     timer_ref = Process.send_after(self(), :tick, @tick_interval)
 
     new_state = %{state | game_state: new_game_state, timer_ref: timer_ref}
-    broadcast_state_update(new_game_state, state.message_history, true, state.speed)
+
+    broadcast_state_update(
+      state.game_id,
+      new_game_state,
+      state.message_history,
+      true,
+      state.speed
+    )
+
     {:noreply, new_state}
   end
 
@@ -325,15 +423,15 @@ defmodule StellaInvictaUi.GameServer do
     new_state = %{state | message_history: new_history}
 
     # Broadcast the update
-    broadcast_state_update(game_state, new_history, state.playing, state.speed)
+    broadcast_state_update(state.game_id, game_state, new_history, state.playing, state.speed)
 
     {:noreply, new_state}
   end
 
-  defp broadcast_state_update(game_state, message_history, playing, speed) do
+  defp broadcast_state_update(game_id, game_state, message_history, playing, speed) do
     Phoenix.PubSub.broadcast(
       StellaInvictaUi.PubSub,
-      "game:state",
+      "game:#{game_id}:state",
       {:game_state_updated, game_state, message_history, playing, speed}
     )
   end

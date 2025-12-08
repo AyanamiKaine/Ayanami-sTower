@@ -14,8 +14,8 @@ defmodule StellaInvictaUi.Application do
       {Phoenix.PubSub, name: StellaInvictaUi.PubSub},
       # Start the game library's supervisor (for its internal PubSub)
       StellaInvicta.Supervisor,
-      # Game state server
-      StellaInvictaUi.GameServer,
+      # Game manager for multiple game instances
+      StellaInvictaUi.GameManager,
       # Start to serve requests, typically the last entry
       StellaInvictaUiWeb.Endpoint
     ]

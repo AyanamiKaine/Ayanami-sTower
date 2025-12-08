@@ -8,60 +8,103 @@ defmodule StellaInvictaUiWeb.GameStateLive do
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
-      Phoenix.PubSub.subscribe(StellaInvictaUi.PubSub, "game:state")
+      Phoenix.PubSub.subscribe(StellaInvictaUi.PubSub, "games:list")
     end
 
-    game_state = StellaInvictaUi.GameServer.get_state()
-    message_history = StellaInvictaUi.GameServer.get_message_history()
-    sim_state = StellaInvictaUi.GameServer.get_simulation_state()
-    world_keys = get_world_keys(game_state)
+    current_game_id = StellaInvictaUi.GameManager.get_current_game()
+    games = StellaInvictaUi.GameManager.list_games()
 
     socket =
-      socket
-      |> assign(:game_state, game_state)
-      |> assign(:message_history, message_history)
-      |> assign(:playing, sim_state.playing)
-      |> assign(:speed, sim_state.speed)
-      |> assign(:world_keys, world_keys)
-      |> assign(:selected_table, Enum.at(world_keys, 0))
-      |> assign(:page_title, "Game State Viewer")
+      if current_game_id do
+        game_server = get_game_server(current_game_id)
+        game_state = StellaInvictaUi.GameServer.get_state(game_server)
+        message_history = StellaInvictaUi.GameServer.get_message_history(game_server)
+        sim_state = StellaInvictaUi.GameServer.get_simulation_state(game_server)
+        world_keys = get_world_keys(game_state)
+
+        if connected?(socket) do
+          Phoenix.PubSub.subscribe(StellaInvictaUi.PubSub, "game:#{current_game_id}:state")
+        end
+
+        socket
+        |> assign(:current_game_id, current_game_id)
+        |> assign(:games, games)
+        |> assign(:game_server, game_server)
+        |> assign(:game_state, game_state)
+        |> assign(:message_history, message_history)
+        |> assign(:playing, sim_state.playing)
+        |> assign(:speed, sim_state.speed)
+        |> assign(:world_keys, world_keys)
+        |> assign(:selected_table, Enum.at(world_keys, 0))
+        |> assign(:page_title, "Game State Viewer")
+      else
+        socket
+        |> assign(:current_game_id, nil)
+        |> assign(:games, games)
+        |> assign(:game_server, nil)
+        |> assign(:game_state, %{})
+        |> assign(:message_history, [])
+        |> assign(:playing, false)
+        |> assign(:speed, :hour)
+        |> assign(:world_keys, [])
+        |> assign(:selected_table, nil)
+        |> assign(:page_title, "Game State Viewer")
+      end
 
     {:ok, socket}
   end
 
   @impl true
   def handle_event("simulate_hour", _params, socket) do
-    StellaInvictaUi.GameServer.simulate_hour()
+    if socket.assigns[:game_server] do
+      StellaInvictaUi.GameServer.simulate_hour(socket.assigns.game_server)
+    end
+
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("simulate_day", _params, socket) do
-    StellaInvictaUi.GameServer.simulate_day()
+    if socket.assigns[:game_server] do
+      StellaInvictaUi.GameServer.simulate_day(socket.assigns.game_server)
+    end
+
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("simulate_week", _params, socket) do
-    StellaInvictaUi.GameServer.simulate_week()
+    if socket.assigns[:game_server] do
+      StellaInvictaUi.GameServer.simulate_week(socket.assigns.game_server)
+    end
+
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("simulate_month", _params, socket) do
-    StellaInvictaUi.GameServer.simulate_month()
+    if socket.assigns[:game_server] do
+      StellaInvictaUi.GameServer.simulate_month(socket.assigns.game_server)
+    end
+
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("simulate_year", _params, socket) do
-    StellaInvictaUi.GameServer.simulate_year()
+    if socket.assigns[:game_server] do
+      StellaInvictaUi.GameServer.simulate_year(socket.assigns.game_server)
+    end
+
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("reset", _params, socket) do
-    StellaInvictaUi.GameServer.reset()
+    if socket.assigns[:game_server] do
+      StellaInvictaUi.GameServer.reset(socket.assigns.game_server)
+    end
+
     {:noreply, socket}
   end
 
@@ -72,57 +115,167 @@ defmodule StellaInvictaUiWeb.GameStateLive do
 
   @impl true
   def handle_event("toggle_system", %{"system" => system_name}, socket) do
-    system_module = String.to_existing_atom(system_name)
-    StellaInvictaUi.GameServer.toggle_system(system_module)
+    if socket.assigns[:game_server] do
+      system_module = String.to_existing_atom(system_name)
+      StellaInvictaUi.GameServer.toggle_system(socket.assigns.game_server, system_module)
+    end
+
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("clear_message_history", _params, socket) do
-    StellaInvictaUi.GameServer.clear_message_history()
+    if socket.assigns[:game_server] do
+      StellaInvictaUi.GameServer.clear_message_history(socket.assigns.game_server)
+    end
+
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("toggle_metrics", _params, socket) do
-    StellaInvictaUi.GameServer.toggle_metrics()
+    if socket.assigns[:game_server] do
+      StellaInvictaUi.GameServer.toggle_metrics(socket.assigns.game_server)
+    end
+
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("reset_metrics", _params, socket) do
-    StellaInvictaUi.GameServer.reset_metrics()
+    if socket.assigns[:game_server] do
+      StellaInvictaUi.GameServer.reset_metrics(socket.assigns.game_server)
+    end
+
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("play", _params, socket) do
-    StellaInvictaUi.GameServer.play()
+    if socket.assigns[:game_server] do
+      StellaInvictaUi.GameServer.play(socket.assigns.game_server)
+    end
+
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("pause", _params, socket) do
-    StellaInvictaUi.GameServer.pause()
+    if socket.assigns[:game_server] do
+      StellaInvictaUi.GameServer.pause(socket.assigns.game_server)
+    end
+
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("set_speed", %{"speed" => speed}, socket) do
-    speed = String.to_existing_atom(speed)
-    StellaInvictaUi.GameServer.set_speed(speed)
+    if socket.assigns[:game_server] do
+      speed = String.to_existing_atom(speed)
+      StellaInvictaUi.GameServer.set_speed(socket.assigns.game_server, speed)
+    end
+
     {:noreply, socket}
   end
 
   @impl true
+  def handle_event("create_game", %{"name" => name}, socket) do
+    case StellaInvictaUi.GameManager.create_game(name) do
+      {:ok, _game_id} ->
+        Phoenix.PubSub.broadcast(StellaInvictaUi.PubSub, "games:list", :games_updated)
+        {:noreply, socket}
+
+      {:error, _reason} ->
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("delete_game", %{"game_id" => game_id}, socket) do
+    game_id = String.to_integer(game_id)
+
+    case StellaInvictaUi.GameManager.delete_game(game_id) do
+      :ok ->
+        Phoenix.PubSub.broadcast(StellaInvictaUi.PubSub, "games:list", :games_updated)
+        {:noreply, socket}
+
+      {:error, _reason} ->
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("switch_game", %{"game_id" => game_id}, socket) do
+    game_id = String.to_integer(game_id)
+
+    case StellaInvictaUi.GameManager.set_current_game(game_id) do
+      :ok ->
+        Phoenix.PubSub.broadcast(StellaInvictaUi.PubSub, "games:list", :games_updated)
+        {:noreply, socket}
+
+      {:error, _reason} ->
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
   def handle_info({:game_state_updated, new_state, message_history, playing, speed}, socket) do
+    # Only update if this message is from the current game
+    if socket.assigns[:current_game_id] do
+      socket =
+        socket
+        |> assign(:game_state, new_state)
+        |> assign(:message_history, message_history)
+        |> assign(:playing, playing)
+        |> assign(:speed, speed)
+        |> assign(:world_keys, get_world_keys(new_state))
+
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_info(:games_updated, socket) do
+    current_game_id = StellaInvictaUi.GameManager.get_current_game()
+    games = StellaInvictaUi.GameManager.list_games()
+
     socket =
-      socket
-      |> assign(:game_state, new_state)
-      |> assign(:message_history, message_history)
-      |> assign(:playing, playing)
-      |> assign(:speed, speed)
-      |> assign(:world_keys, get_world_keys(new_state))
+      if current_game_id && current_game_id != socket.assigns[:current_game_id] do
+        # Unsubscribe from old game
+        if socket.assigns[:current_game_id] do
+          Phoenix.PubSub.unsubscribe(
+            StellaInvictaUi.PubSub,
+            "game:#{socket.assigns[:current_game_id]}:state"
+          )
+        end
+
+        # Subscribe to new game
+        if connected?(socket) do
+          Phoenix.PubSub.subscribe(StellaInvictaUi.PubSub, "game:#{current_game_id}:state")
+        end
+
+        game_server = get_game_server(current_game_id)
+        game_state = StellaInvictaUi.GameServer.get_state(game_server)
+        message_history = StellaInvictaUi.GameServer.get_message_history(game_server)
+        sim_state = StellaInvictaUi.GameServer.get_simulation_state(game_server)
+        world_keys = get_world_keys(game_state)
+
+        socket
+        |> assign(:current_game_id, current_game_id)
+        |> assign(:games, games)
+        |> assign(:game_server, game_server)
+        |> assign(:game_state, game_state)
+        |> assign(:message_history, message_history)
+        |> assign(:playing, sim_state.playing)
+        |> assign(:speed, sim_state.speed)
+        |> assign(:world_keys, world_keys)
+        |> assign(:selected_table, Enum.at(world_keys, 0))
+      else
+        # Just update the games list, don't change current game
+        assign(socket, :games, games)
+      end
 
     {:noreply, socket}
   end
@@ -132,6 +285,13 @@ defmodule StellaInvictaUiWeb.GameStateLive do
     |> Map.from_struct()
     |> Map.keys()
     |> Enum.sort()
+  end
+
+  defp get_game_server(game_id) do
+    case StellaInvictaUi.GameManager.get_game(game_id) do
+      {:ok, game_info} -> game_info.game_server
+      {:error, _} -> nil
+    end
   end
 
   defp format_date(%{day: day, month: month, year: year, hour: hour}) do
@@ -218,220 +378,229 @@ defmodule StellaInvictaUiWeb.GameStateLive do
     ~H"""
     <Layouts.app flash={@flash}>
       <div class="space-y-6">
+        <%!-- Game Management Panel --%>
+        <.render_games_panel games={@games} current_game_id={@current_game_id} />
         <%!-- Header with date and tick info --%>
-        <div class="card bg-base-200 p-4">
-          <div class="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 class="text-2xl font-bold">Game State Viewer</h1>
-
-              <p class="text-base-content/70">
-                <span class="font-semibold">Date:</span> {format_date(@game_state.date)}
-              </p>
-
-              <p class="text-base-content/70">
-                <span class="font-semibold">Tick:</span> {@game_state.current_tick}
-              </p>
-            </div>
-             <%!-- Real-time Simulation Controls --%>
-            <div class="flex items-center gap-3">
-              <%!-- Play/Pause Button --%>
-              <%= if @playing do %>
-                <button
-                  id="btn-pause"
-                  phx-click="pause"
-                  class="btn btn-circle btn-primary"
-                  title="Pause"
-                >
-                  <.icon name="hero-pause-solid" class="size-5" />
-                </button>
-              <% else %>
-                <button
-                  id="btn-play"
-                  phx-click="play"
-                  class="btn btn-circle btn-primary"
-                  title="Play"
-                >
-                  <.icon name="hero-play-solid" class="size-5" />
-                </button>
-              <% end %>
-               <%!-- Speed Controls --%>
-              <div class="join">
-                <%= for speed <- [:hour, :day, :week, :month, :year] do %>
+        <%= if @current_game_id do %>
+          <div class="card bg-base-200 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h1 class="text-2xl font-bold">Game State Viewer</h1>
+                
+                <p class="text-base-content/70">
+                  <span class="font-semibold">Date:</span> {format_date(@game_state.date)}
+                </p>
+                
+                <p class="text-base-content/70">
+                  <span class="font-semibold">Tick:</span> {@game_state.current_tick}
+                </p>
+              </div>
+               <%!-- Real-time Simulation Controls --%>
+              <div class="flex items-center gap-3">
+                <%!-- Play/Pause Button --%>
+                <%= if @playing do %>
                   <button
-                    id={"btn-speed-#{speed}"}
-                    phx-click="set_speed"
-                    phx-value-speed={speed}
-                    class={[
-                      "join-item btn btn-sm",
-                      if(@speed == speed, do: "btn-primary", else: "btn-ghost")
-                    ]}
-                    title={"Speed: #{speed |> Atom.to_string() |> String.capitalize()}"}
+                    id="btn-pause"
+                    phx-click="pause"
+                    class="btn btn-circle btn-primary"
+                    title="Pause"
                   >
-                    {speed |> Atom.to_string() |> String.capitalize()}
+                    <.icon name="hero-pause-solid" class="size-5" />
+                  </button>
+                <% else %>
+                  <button
+                    id="btn-play"
+                    phx-click="play"
+                    class="btn btn-circle btn-primary"
+                    title="Play"
+                  >
+                    <.icon name="hero-play-solid" class="size-5" />
                   </button>
                 <% end %>
-              </div>
-               <%!-- Status indicator --%>
-              <div class={[
-                "badge gap-1",
-                if(@playing, do: "badge-success", else: "badge-neutral")
-              ]}>
-                <span class={[
-                  "size-2 rounded-full",
-                  if(@playing, do: "bg-success-content animate-pulse", else: "bg-neutral-content")
+                 <%!-- Speed Controls --%>
+                <div class="join">
+                  <%= for speed <- [:hour, :day, :week, :month, :year] do %>
+                    <button
+                      id={"btn-speed-#{speed}"}
+                      phx-click="set_speed"
+                      phx-value-speed={speed}
+                      class={[
+                        "join-item btn btn-sm",
+                        if(@speed == speed, do: "btn-primary", else: "btn-ghost")
+                      ]}
+                      title={"Speed: #{speed |> Atom.to_string() |> String.capitalize()}"}
+                    >
+                      {speed |> Atom.to_string() |> String.capitalize()}
+                    </button>
+                  <% end %>
+                </div>
+                 <%!-- Status indicator --%>
+                <div class={[
+                  "badge gap-1",
+                  if(@playing, do: "badge-success", else: "badge-neutral")
                 ]}>
-                </span> {if @playing,
-                  do: "#{@speed |> Atom.to_string() |> String.capitalize()}/250ms",
-                  else: "Paused"}
+                  <span class={[
+                    "size-2 rounded-full",
+                    if(@playing, do: "bg-success-content animate-pulse", else: "bg-neutral-content")
+                  ]}>
+                  </span> {if @playing,
+                    do: "#{@speed |> Atom.to_string() |> String.capitalize()}/250ms",
+                    else: "Paused"}
+                </div>
               </div>
-            </div>
-
-            <div class="flex flex-wrap gap-2">
-              <button
-                id="btn-simulate-hour"
-                phx-click="simulate_hour"
-                class="btn btn-sm btn-primary btn-soft"
-              >
-                +1 Hour
-              </button>
-              <button
-                id="btn-simulate-day"
-                phx-click="simulate_day"
-                class="btn btn-sm btn-primary btn-soft"
-              >
-                +1 Day
-              </button>
-              <button
-                id="btn-simulate-week"
-                phx-click="simulate_week"
-                class="btn btn-sm btn-primary btn-soft"
-              >
-                +1 Week
-              </button>
-              <button
-                id="btn-simulate-month"
-                phx-click="simulate_month"
-                class="btn btn-sm btn-primary btn-soft"
-              >
-                +1 Month
-              </button>
-              <button
-                id="btn-simulate-year"
-                phx-click="simulate_year"
-                class="btn btn-sm btn-primary btn-soft"
-              >
-                +1 Year
-              </button>
-              <button id="btn-reset" phx-click="reset" class="btn btn-sm btn-error btn-soft">
-                Reset
-              </button>
+              
+              <div class="flex flex-wrap gap-2">
+                <button
+                  id="btn-simulate-hour"
+                  phx-click="simulate_hour"
+                  class="btn btn-sm btn-primary btn-soft"
+                >
+                  +1 Hour
+                </button>
+                <button
+                  id="btn-simulate-day"
+                  phx-click="simulate_day"
+                  class="btn btn-sm btn-primary btn-soft"
+                >
+                  +1 Day
+                </button>
+                <button
+                  id="btn-simulate-week"
+                  phx-click="simulate_week"
+                  class="btn btn-sm btn-primary btn-soft"
+                >
+                  +1 Week
+                </button>
+                <button
+                  id="btn-simulate-month"
+                  phx-click="simulate_month"
+                  class="btn btn-sm btn-primary btn-soft"
+                >
+                  +1 Month
+                </button>
+                <button
+                  id="btn-simulate-year"
+                  phx-click="simulate_year"
+                  class="btn btn-sm btn-primary btn-soft"
+                >
+                  +1 Year
+                </button>
+                <button id="btn-reset" phx-click="reset" class="btn btn-sm btn-error btn-soft">
+                  Reset
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-         <%!-- Systems Panel --%>
-        <div class="card bg-base-200 p-4">
-          <h2 class="text-lg font-semibold mb-3">Systems</h2>
-
-          <div class="flex flex-wrap gap-4">
-            <%= for {system_module, enabled} <- get_systems(@game_state) do %>
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  id={"system-#{format_system_name(system_module)}"}
-                  checked={enabled}
-                  phx-click="toggle_system"
-                  phx-value-system={Atom.to_string(system_module)}
-                  class="checkbox checkbox-sm checkbox-primary"
-                /> <span class="text-sm">{format_system_name(system_module)}</span>
-              </label>
+           <%!-- Systems Panel --%>
+          <div class="card bg-base-200 p-4">
+            <h2 class="text-lg font-semibold mb-3">Systems</h2>
+            
+            <div class="flex flex-wrap gap-4">
+              <%= for {system_module, enabled} <- get_systems(@game_state) do %>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id={"system-#{format_system_name(system_module)}"}
+                    checked={enabled}
+                    phx-click="toggle_system"
+                    phx-value-system={Atom.to_string(system_module)}
+                    class="checkbox checkbox-sm checkbox-primary"
+                  /> <span class="text-sm">{format_system_name(system_module)}</span>
+                </label>
+              <% end %>
+            </div>
+          </div>
+           <%!-- Performance Metrics Panel --%> <.render_metrics_panel game_state={@game_state} />
+          <%!-- AI Decisions Panel --%> <.render_ai_panel game_state={@game_state} />
+          <%!-- Message Queue Debug Panel --%>
+          <div class="card bg-base-200 p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-lg font-semibold">Message Queue</h2>
+              
+              <button
+                id="btn-clear-messages"
+                phx-click="clear_message_history"
+                class="btn btn-xs btn-ghost"
+              >
+                Clear History
+              </button>
+            </div>
+             <%!-- Subscriptions --%>
+            <div class="mb-4">
+              <h3 class="text-sm font-semibold mb-2 text-base-content/70">System Subscriptions</h3>
+              
+              <div class="flex flex-wrap gap-2">
+                <%= for {system_module, _enabled} <- get_systems(@game_state) do %>
+                  <div class="badge badge-outline badge-sm">
+                    <span class="font-semibold mr-1">{format_system_name(system_module)}:</span>
+                    <span class="text-base-content/70">
+                      {get_system_subscriptions(@game_state, system_module)}
+                    </span>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+             <%!-- Pending Messages --%>
+            <div class="mb-4">
+              <h3 class="text-sm font-semibold mb-2 text-base-content/70">Pending Messages</h3>
+               <.render_pending_messages game_state={@game_state} />
+            </div>
+             <%!-- Message History --%>
+            <div>
+              <h3 class="text-sm font-semibold mb-2 text-base-content/70">
+                Message History ({length(@message_history)} messages)
+              </h3>
+              
+              <div class="max-h-48 overflow-y-auto bg-base-100 rounded-box p-2">
+                <%= if @message_history == [] do %>
+                  <p class="text-base-content/50 italic text-sm">No messages yet</p>
+                <% else %>
+                  <ul class="space-y-1">
+                    <li
+                      :for={entry <- @message_history}
+                      class="text-xs font-mono border-b border-base-200 pb-1"
+                    >
+                      <span class="text-base-content/50">[Tick {entry.tick}]</span>
+                      <span class="text-primary ml-1">{inspect(entry.message)}</span>
+                    </li>
+                  </ul>
+                <% end %>
+              </div>
+            </div>
+          </div>
+           <%!-- Table selector tabs --%>
+          <div class="flex flex-wrap gap-2">
+            <%= for key <- @world_keys do %>
+              <button
+                id={"tab-#{key}"}
+                phx-click="select_table"
+                phx-value-table={key}
+                class={[
+                  "btn btn-sm",
+                  if(@selected_table == key, do: "btn-primary", else: "btn-ghost")
+                ]}
+              >
+                {key |> Atom.to_string() |> String.replace("_", " ") |> String.capitalize()}
+              </button>
             <% end %>
           </div>
-        </div>
-         <%!-- Performance Metrics Panel --%> <.render_metrics_panel game_state={@game_state} />
-        <%!-- AI Decisions Panel --%> <.render_ai_panel game_state={@game_state} />
-        <%!-- Message Queue Debug Panel --%>
-        <div class="card bg-base-200 p-4">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-lg font-semibold">Message Queue</h2>
-
-            <button
-              id="btn-clear-messages"
-              phx-click="clear_message_history"
-              class="btn btn-xs btn-ghost"
-            >
-              Clear History
-            </button>
+           <%!-- Data display --%>
+          <div class="card bg-base-200 p-4">
+            <h2 class="text-xl font-semibold mb-4">
+              {@selected_table |> Atom.to_string() |> String.replace("_", " ") |> String.capitalize()}
+            </h2>
+            
+            <.render_table_data
+              data={get_table_data(@game_state, @selected_table)}
+              key={@selected_table}
+            />
           </div>
-           <%!-- Subscriptions --%>
-          <div class="mb-4">
-            <h3 class="text-sm font-semibold mb-2 text-base-content/70">System Subscriptions</h3>
-
-            <div class="flex flex-wrap gap-2">
-              <%= for {system_module, _enabled} <- get_systems(@game_state) do %>
-                <div class="badge badge-outline badge-sm">
-                  <span class="font-semibold mr-1">{format_system_name(system_module)}:</span>
-                  <span class="text-base-content/70">
-                    {get_system_subscriptions(@game_state, system_module)}
-                  </span>
-                </div>
-              <% end %>
-            </div>
+        <% else %>
+          <div class="alert alert-info">
+            \n
+            <p>No games created yet. Create a new game to get started.</p>
           </div>
-           <%!-- Pending Messages --%>
-          <div class="mb-4">
-            <h3 class="text-sm font-semibold mb-2 text-base-content/70">Pending Messages</h3>
-             <.render_pending_messages game_state={@game_state} />
-          </div>
-           <%!-- Message History --%>
-          <div>
-            <h3 class="text-sm font-semibold mb-2 text-base-content/70">
-              Message History ({length(@message_history)} messages)
-            </h3>
-
-            <div class="max-h-48 overflow-y-auto bg-base-100 rounded-box p-2">
-              <%= if @message_history == [] do %>
-                <p class="text-base-content/50 italic text-sm">No messages yet</p>
-              <% else %>
-                <ul class="space-y-1">
-                  <li
-                    :for={entry <- @message_history}
-                    class="text-xs font-mono border-b border-base-200 pb-1"
-                  >
-                    <span class="text-base-content/50">[Tick {entry.tick}]</span>
-                    <span class="text-primary ml-1">{inspect(entry.message)}</span>
-                  </li>
-                </ul>
-              <% end %>
-            </div>
-          </div>
-        </div>
-         <%!-- Table selector tabs --%>
-        <div class="flex flex-wrap gap-2">
-          <%= for key <- @world_keys do %>
-            <button
-              id={"tab-#{key}"}
-              phx-click="select_table"
-              phx-value-table={key}
-              class={[
-                "btn btn-sm",
-                if(@selected_table == key, do: "btn-primary", else: "btn-ghost")
-              ]}
-            >
-              {key |> Atom.to_string() |> String.replace("_", " ") |> String.capitalize()}
-            </button>
-          <% end %>
-        </div>
-         <%!-- Data display --%>
-        <div class="card bg-base-200 p-4">
-          <h2 class="text-xl font-semibold mb-4">
-            {@selected_table |> Atom.to_string() |> String.replace("_", " ") |> String.capitalize()}
-          </h2>
-
-          <.render_table_data
-            data={get_table_data(@game_state, @selected_table)}
-            key={@selected_table}
-          />
-        </div>
+        <% end %>
       </div>
     </Layouts.app>
     """
@@ -520,15 +689,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <thead>
           <tr>
             <th>Field</th>
-
+            
             <th>Value</th>
           </tr>
         </thead>
-
+        
         <tbody>
           <tr :for={{field, value} <- @fields}>
             <td class="font-semibold">{field}</td>
-
+            
             <td><code class="text-sm">{inspect(value)}</code></td>
           </tr>
         </tbody>
@@ -558,15 +727,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <thead>
           <tr>
             <th>ID</th>
-
+            
             <th :for={col <- @columns}>{col |> Atom.to_string() |> String.capitalize()}</th>
           </tr>
         </thead>
-
+        
         <tbody>
           <tr :for={{id, struct} <- @entries}>
             <td class="font-mono">{inspect(id)}</td>
-
+            
             <td :for={col <- @columns}><.render_cell_value value={Map.get(struct, col)} /></td>
           </tr>
         </tbody>
@@ -584,15 +753,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <thead>
           <tr>
             <th>ID</th>
-
+            
             <th>Values</th>
           </tr>
         </thead>
-
+        
         <tbody>
           <tr :for={{id, list} <- @entries}>
             <td class="font-mono">{inspect(id)}</td>
-
+            
             <td>
               <%= if list == [] do %>
                 <span class="text-base-content/50 italic">Empty</span>
@@ -618,15 +787,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <thead>
           <tr>
             <th>Key</th>
-
+            
             <th>Value</th>
           </tr>
         </thead>
-
+        
         <tbody>
           <tr :for={{key, value} <- @entries}>
             <td class="font-mono">{inspect(key)}</td>
-
+            
             <td><.render_cell_value value={value} /></td>
           </tr>
         </tbody>
@@ -679,19 +848,19 @@ defmodule StellaInvictaUiWeb.GameStateLive do
           <thead>
             <tr>
               <th>System</th>
-
+              
               <th>Topic</th>
-
+              
               <th>Message</th>
             </tr>
           </thead>
-
+          
           <tbody>
             <tr :for={entry <- @pending}>
               <td class="font-mono text-xs">{format_system_name(entry.system)}</td>
-
+              
               <td class="text-xs">{inspect(entry.topic)}</td>
-
+              
               <td class="text-xs">{inspect(entry.message)}</td>
             </tr>
           </tbody>
@@ -711,7 +880,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
     <div class="card bg-base-200 p-4">
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-lg font-semibold">Performance Metrics</h2>
-
+        
         <div class="flex gap-2">
           <label class="flex items-center gap-2 cursor-pointer">
             <input
@@ -731,34 +900,34 @@ defmodule StellaInvictaUiWeb.GameStateLive do
           </button>
         </div>
       </div>
-
+      
       <%= if @metrics.enabled do %>
         <%!-- Tick Performance --%>
         <div class="mb-4">
           <h3 class="text-sm font-semibold mb-2 text-base-content/70">Tick Performance</h3>
-
+          
           <div class="stats stats-horizontal bg-base-100 shadow-sm w-full">
             <div class="stat py-2 px-3">
               <div class="stat-title text-xs">Total Ticks</div>
-
+              
               <div class="stat-value text-lg">{@metrics.tick.total_ticks}</div>
             </div>
-
+            
             <div class="stat py-2 px-3">
               <div class="stat-title text-xs">Avg Tick</div>
-
+              
               <div class="stat-value text-lg">{format_time_ms(@metrics.tick.average_tick_ms)} ms</div>
             </div>
-
+            
             <div class="stat py-2 px-3">
               <div class="stat-title text-xs">Peak Tick</div>
-
+              
               <div class="stat-value text-lg">{format_time_ms(@metrics.tick.peak_tick_ms)} ms</div>
             </div>
-
+            
             <div class="stat py-2 px-3">
               <div class="stat-title text-xs">Last Tick</div>
-
+              
               <div class="stat-value text-lg">{format_time_ms(@metrics.tick.last_tick_ms)} ms</div>
             </div>
           </div>
@@ -766,7 +935,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
          <%!-- System Performance --%>
         <div class="mb-4">
           <h3 class="text-sm font-semibold mb-2 text-base-content/70">System Performance</h3>
-
+          
           <%= if map_size(@metrics.systems) == 0 do %>
             <p class="text-base-content/50 italic text-sm">No system metrics yet</p>
           <% else %>
@@ -775,32 +944,32 @@ defmodule StellaInvictaUiWeb.GameStateLive do
                 <thead>
                   <tr>
                     <th>System</th>
-
+                    
                     <th>Run Avg (µs)</th>
-
+                    
                     <th>Run Peak (µs)</th>
-
+                    
                     <th>Msg Avg (µs)</th>
-
+                    
                     <th>Msgs Processed</th>
-
+                    
                     <th>Total (µs)</th>
                   </tr>
                 </thead>
-
+                
                 <tbody>
                   <%= for {system_module, stats} <- @metrics.systems do %>
                     <tr>
                       <td class="font-mono text-xs">{format_system_name(system_module)}</td>
-
+                      
                       <td class="text-xs">{format_time_us(stats.run_average_us)}</td>
-
+                      
                       <td class="text-xs">{format_time_us(stats.run_peak_us)}</td>
-
+                      
                       <td class="text-xs">{format_time_us(stats.message_average_us)}</td>
-
+                      
                       <td class="text-xs">{stats.messages_processed}</td>
-
+                      
                       <td class="text-xs font-semibold">{format_time_us(stats.total_average_us)}</td>
                     </tr>
                   <% end %>
@@ -813,7 +982,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <%= if map_size(@metrics.tick.last_breakdown) > 0 do %>
           <div class="mb-4">
             <h3 class="text-sm font-semibold mb-2 text-base-content/70">Last Tick Breakdown</h3>
-
+            
             <div class="flex flex-wrap gap-2">
               <%= for {system_module, timing} <- @metrics.tick.last_breakdown do %>
                 <div class="badge badge-lg badge-ghost gap-1">
@@ -828,20 +997,20 @@ defmodule StellaInvictaUiWeb.GameStateLive do
          <%!-- Message Queue Stats --%>
         <div>
           <h3 class="text-sm font-semibold mb-2 text-base-content/70">Message Queue Stats</h3>
-
+          
           <div class="flex flex-wrap gap-4 text-sm">
             <div>
               <span class="text-base-content/70">Published:</span>
               <span class="font-semibold ml-1">{@metrics.message_queue.total_published}</span>
             </div>
-
+            
             <div>
               <span class="text-base-content/70">Avg Publish:</span>
               <span class="font-semibold ml-1">
                 {format_time_us(@metrics.message_queue.average_publish_us)} µs
               </span>
             </div>
-
+            
             <div>
               <span class="text-base-content/70">Peak Queue:</span>
               <span class="font-semibold ml-1">{@metrics.message_queue.peak_queue_size}</span>
@@ -868,7 +1037,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-lg font-semibold">AI Decision Log (HTN)</h2>
       </div>
-
+      
       <%= if @entity_ids == [] do %>
         <p class="text-base-content/50 italic text-sm">
           No AI entities with decision tracking. AI metrics are stored when using <code class="text-xs bg-base-300 px-1 rounded">find_plan_with_metrics/5</code>.
@@ -909,38 +1078,38 @@ defmodule StellaInvictaUiWeb.GameStateLive do
           Entity: {format_entity_id(@entity_id)}
         </h3>
       </div>
-
+      
       <%= if @summary do %>
         <%!-- Planning Statistics --%>
         <div class="mb-3">
           <div class="stats stats-horizontal bg-base-200 shadow-sm text-xs w-full">
             <div class="stat py-1 px-2">
               <div class="stat-title text-xs">Plans</div>
-
+              
               <div class="stat-value text-sm">
                 <span class="text-success">{@summary.successful_plans}</span>
                 <span class="text-base-content/50">/</span>
                 <span class="text-error">{@summary.failed_plans}</span>
               </div>
-
+              
               <div class="stat-desc text-xs">{Float.round(@summary.success_rate, 1)}% success</div>
             </div>
-
+            
             <div class="stat py-1 px-2">
               <div class="stat-title text-xs">Backtracks</div>
-
+              
               <div class="stat-value text-sm">{@summary.total_backtracks}</div>
             </div>
-
+            
             <div class="stat py-1 px-2">
               <div class="stat-title text-xs">Iterations</div>
-
+              
               <div class="stat-value text-sm">{@summary.total_iterations}</div>
             </div>
-
+            
             <div class="stat py-1 px-2">
               <div class="stat-title text-xs">Avg Plan Time</div>
-
+              
               <div class="stat-value text-sm">{@summary.avg_planning_time_us} µs</div>
             </div>
           </div>
@@ -949,7 +1118,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <%= if map_size(@summary.method_selection_counts) > 0 do %>
           <div class="mb-3">
             <h4 class="text-xs font-semibold text-base-content/70 mb-1">Method Usage</h4>
-
+            
             <div class="flex flex-wrap gap-1">
               <%= for {method, count} <- @summary.method_selection_counts do %>
                 <span class="badge badge-sm badge-primary badge-outline">{method}: {count}</span>
@@ -961,7 +1130,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <%= if map_size(@summary.task_execution_counts) > 0 do %>
           <div class="mb-3">
             <h4 class="text-xs font-semibold text-base-content/70 mb-1">Task Execution</h4>
-
+            
             <div class="flex flex-wrap gap-1">
               <%= for {task, count} <- @summary.task_execution_counts do %>
                 <span class="badge badge-sm badge-secondary badge-outline">{task}: {count}</span>
@@ -975,7 +1144,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <h4 class="text-xs font-semibold text-base-content/70 mb-1">
           Decision Log ({length(@decisions)} entries)
         </h4>
-
+        
         <div class="max-h-48 overflow-y-auto bg-base-200 rounded-box p-2">
           <%= if @decisions == [] do %>
             <p class="text-base-content/50 italic text-xs">No decisions recorded</p>
@@ -1008,5 +1177,70 @@ defmodule StellaInvictaUiWeb.GameStateLive do
       String.starts_with?(decision, "▶") -> "text-primary"
       true -> ""
     end
+  end
+
+  attr :games, :list, required: true
+  attr :current_game_id, :any, required: true
+
+  defp render_games_panel(assigns) do
+    ~H"""
+    <div class="card bg-base-200 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold">
+          <.icon name="hero-cube" class="size-5 inline mr-2" /> Games ({length(@games)})
+        </h2>
+      </div>
+      
+      <div class="space-y-3">
+        <%!-- Create new game form --%>
+        <form phx-submit="create_game" class="flex gap-2">
+          <input
+            type="text"
+            name="name"
+            placeholder="New game name..."
+            class="input input-sm input-bordered flex-1"
+          />
+          <button type="submit" class="btn btn-sm btn-primary">
+            <.icon name="hero-plus" class="size-4" /> Create Game
+          </button>
+        </form>
+         <%!-- Games list --%>
+        <%= if @games == [] do %>
+          <p class="text-base-content/50 italic text-sm">No games yet. Create one above.</p>
+        <% else %>
+          <div class="flex flex-wrap gap-2">
+            <%= for game <- @games do %>
+              <div
+                class={[
+                  "badge gap-2 p-3 cursor-pointer transition-all",
+                  if(game.id == @current_game_id,
+                    do: "badge-primary shadow-lg",
+                    else: "badge-outline hover:shadow"
+                  )
+                ]}
+                phx-click="switch_game"
+                phx-value-game_id={game.id}
+              >
+                <span class="font-semibold">{game.name}</span>
+                <span class="text-xs opacity-70">
+                  {if game.playing, do: "▶ ", else: "⏸ "} {game.speed
+                  |> Atom.to_string()
+                  |> String.capitalize()}
+                </span>
+                <button
+                  type="button"
+                  phx-click="delete_game"
+                  phx-value-game_id={game.id}
+                  class="ml-1 hover:text-error"
+                >
+                  <.icon name="hero-x-mark" class="size-3" />
+                </button>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+    """
   end
 end
