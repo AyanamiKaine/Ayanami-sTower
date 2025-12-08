@@ -6,25 +6,18 @@ defmodule StellaInvictaUi.GameServer do
 
   @max_message_history 100
 
-  # Speed settings: interval in ms between ticks
-  @speed_intervals %{
-    # 1 tick per second
-    1 => 1000,
-    # 2 ticks per second
-    2 => 500,
-    # 5 ticks per second
-    5 => 200,
-    # 10 ticks per second
-    10 => 100,
-    # 20 ticks per second
-    20 => 50,
-    # 50 ticks per second
-    50 => 20,
-    # 100 ticks per second
-    100 => 1
+  # Time scale for each speed setting
+  # Each tick simulates this amount of in-game time
+  @speed_scales %{
+    :hour => :hour,
+    :day => :day,
+    :week => :week,
+    :month => :month,
+    :year => :year
   }
 
-  @valid_speeds Map.keys(@speed_intervals)
+  # Fixed interval (in ms) between ticks for all speeds
+  @tick_interval 100
 
   # Client API
 
@@ -57,7 +50,7 @@ defmodule StellaInvictaUi.GameServer do
     GenServer.call(server, :pause)
   end
 
-  def set_speed(server \\ __MODULE__, speed) when speed in [1, 2, 5, 10, 20, 50, 100] do
+  def set_speed(server \\ __MODULE__, speed) when speed in [:hour, :day, :week, :month, :year] do
     GenServer.call(server, {:set_speed, speed})
   end
 
@@ -118,7 +111,7 @@ defmodule StellaInvictaUi.GameServer do
        game_state: game_state,
        message_history: [],
        playing: false,
-       speed: 1,
+       speed: :hour,
        timer_ref: nil
      }}
   end
@@ -208,7 +201,7 @@ defmodule StellaInvictaUi.GameServer do
       game_state: new_game_state,
       message_history: [],
       playing: false,
-      speed: 1,
+      speed: :hour,
       timer_ref: nil
     }
 
@@ -223,8 +216,7 @@ defmodule StellaInvictaUi.GameServer do
   end
 
   def handle_call(:play, _from, state) do
-    interval = Map.get(@speed_intervals, state.speed, 1000)
-    timer_ref = Process.send_after(self(), :tick, interval)
+    timer_ref = Process.send_after(self(), :tick, @tick_interval)
     new_state = %{state | playing: true, timer_ref: timer_ref}
     broadcast_state_update(state.game_state, state.message_history, true, state.speed)
     {:reply, :ok, new_state}
@@ -248,11 +240,10 @@ defmodule StellaInvictaUi.GameServer do
     # Cancel existing timer if playing
     if state.timer_ref, do: Process.cancel_timer(state.timer_ref)
 
-    # Start new timer with new speed if playing
+    # Start new timer with fixed interval if playing
     timer_ref =
       if state.playing do
-        interval = Map.get(@speed_intervals, speed, 1000)
-        Process.send_after(self(), :tick, interval)
+        Process.send_after(self(), :tick, @tick_interval)
       else
         nil
       end
@@ -301,12 +292,19 @@ defmodule StellaInvictaUi.GameServer do
   end
 
   def handle_info(:tick, state) do
-    # Run one tick
-    new_game_state = StellaInvicta.Game.simulate_hour(state.game_state)
+    # Run one tick based on the speed scale
+    new_game_state =
+      case state.speed do
+        :hour -> StellaInvicta.Game.simulate_hour(state.game_state)
+        :day -> StellaInvicta.Game.simulate_day(state.game_state)
+        :week -> StellaInvicta.Game.simulate_week(state.game_state)
+        :month -> StellaInvicta.Game.simulate_month(state.game_state)
+        :year -> StellaInvicta.Game.simulate_year(state.game_state)
+        _ -> state.game_state
+      end
 
-    # Schedule next tick
-    interval = Map.get(@speed_intervals, state.speed, 1000)
-    timer_ref = Process.send_after(self(), :tick, interval)
+    # Schedule next tick with fixed interval
+    timer_ref = Process.send_after(self(), :tick, @tick_interval)
 
     new_state = %{state | game_state: new_game_state, timer_ref: timer_ref}
     broadcast_state_update(new_game_state, state.message_history, true, state.speed)

@@ -109,7 +109,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
 
   @impl true
   def handle_event("set_speed", %{"speed" => speed}, socket) do
-    speed = String.to_integer(speed)
+    speed = String.to_existing_atom(speed)
     StellaInvictaUi.GameServer.set_speed(speed)
     {:noreply, socket}
   end
@@ -191,7 +191,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
     StellaInvicta.Metrics.get_ai_summary(game_state, entity_id)
   end
 
-  defp get_ai_decisions(game_state, entity_id, opts \\ []) do
+  defp get_ai_decisions(game_state, entity_id, opts) do
     StellaInvicta.Metrics.get_ai_decisions(game_state, entity_id, opts)
   end
 
@@ -256,7 +256,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
               <% end %>
                <%!-- Speed Controls --%>
               <div class="join">
-                <%= for speed <- [1, 2, 5, 10, 20, 50, 100] do %>
+                <%= for speed <- [:hour, :day, :week, :month, :year] do %>
                   <button
                     id={"btn-speed-#{speed}"}
                     phx-click="set_speed"
@@ -265,9 +265,9 @@ defmodule StellaInvictaUiWeb.GameStateLive do
                       "join-item btn btn-sm",
                       if(@speed == speed, do: "btn-primary", else: "btn-ghost")
                     ]}
-                    title={"Speed #{speed}x"}
+                    title={"Speed: #{speed |> Atom.to_string() |> String.capitalize()}"}
                   >
-                    {speed}x
+                    {speed |> Atom.to_string() |> String.capitalize()}
                   </button>
                 <% end %>
               </div>
@@ -280,7 +280,9 @@ defmodule StellaInvictaUiWeb.GameStateLive do
                   "size-2 rounded-full",
                   if(@playing, do: "bg-success-content animate-pulse", else: "bg-neutral-content")
                 ]}>
-                </span> {if @playing, do: "Running", else: "Paused"}
+                </span> {if @playing,
+                  do: "#{@speed |> Atom.to_string() |> String.capitalize()}/100ms",
+                  else: "Paused"}
               </div>
             </div>
             
