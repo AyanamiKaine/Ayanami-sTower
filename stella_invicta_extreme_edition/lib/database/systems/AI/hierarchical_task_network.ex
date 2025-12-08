@@ -20,6 +20,14 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
   - **Operator**: A function that executes a primitive task and returns
     the modified world state.
 
+  ## Performance Notes
+
+  - **Arity**: For performance reasons, all callback functions (preconditions,
+    effects, method conditions) MUST accept exactly 2 arguments: `(world, params)`.
+    Use `_params` if you don't need the second argument.
+  - **Running States**: Operators can return `{:running, new_world}` to indicate
+    a task takes multiple ticks to complete.
+
   ## Example
 
       # Define a domain
@@ -49,9 +57,12 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
             name: atom(),
             type: task_type(),
             # For primitive tasks
-            preconditions: [(world :: map() -> boolean())] | nil,
-            effects: [(world :: map() -> map())] | nil,
-            operator: (world :: map(), params :: map() -> {:ok, map()} | {:error, term()}) | nil,
+            preconditions: [(world :: map(), params :: map() -> boolean())] | nil,
+            effects: [(world :: map(), params :: map() -> map())] | nil,
+            operator:
+              (world :: map(), params :: map()
+               -> {:ok, map()} | {:running, map()} | {:error, term()})
+              | nil,
             # For compound tasks
             methods: [Method.t()] | nil,
             # Optional parameters schema
@@ -73,8 +84,8 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
 
     ## Options
 
-    - `:preconditions` - List of functions that check if the task can run
-    - `:effects` - List of functions that modify the world state (for planning)
+    - `:preconditions` - List of (world, params) -> bool functions
+    - `:effects` - List of (world, params) -> world functions
     - `:operator` - Function that executes the task
     - `:params` - Default parameters for the task
     """
@@ -110,37 +121,27 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
 
     @doc """
     Checks if all preconditions for a primitive task are satisfied.
+    Assuming strict arity-2 functions for performance.
     """
     @spec preconditions_met?(t(), map(), map()) :: boolean()
     def preconditions_met?(%__MODULE__{preconditions: nil}, _world, _params), do: true
     def preconditions_met?(%__MODULE__{preconditions: []}, _world, _params), do: true
 
     def preconditions_met?(%__MODULE__{preconditions: conditions}, world, params) do
-      Enum.all?(conditions, fn condition ->
-        case Function.info(condition, :arity) do
-          {:arity, 1} -> condition.(world)
-          {:arity, 2} -> condition.(world, params)
-          _ -> condition.(world)
-        end
-      end)
+      Enum.all?(conditions, fn condition -> condition.(world, params) end)
     end
 
     @doc """
     Applies the effects of a primitive task to the world state.
     Used during planning to simulate task execution.
+    Assuming strict arity-2 functions for performance.
     """
     @spec apply_effects(t(), map(), map()) :: map()
     def apply_effects(%__MODULE__{effects: nil}, world, _params), do: world
     def apply_effects(%__MODULE__{effects: []}, world, _params), do: world
 
     def apply_effects(%__MODULE__{effects: effects}, world, params) do
-      Enum.reduce(effects, world, fn effect, acc ->
-        case Function.info(effect, :arity) do
-          {:arity, 1} -> effect.(acc)
-          {:arity, 2} -> effect.(acc, params)
-          _ -> effect.(acc)
-        end
-      end)
+      Enum.reduce(effects, world, fn effect, acc -> effect.(acc, params) end)
     end
   end
 
@@ -156,7 +157,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
     @type t :: %__MODULE__{
             name: atom(),
             priority: integer(),
-            conditions: [(world :: map() -> boolean())],
+            conditions: [(world :: map(), params :: map() -> boolean())],
             subtasks: [{atom(), map()}]
           }
 
@@ -173,7 +174,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
     ## Options
 
     - `:priority` - Higher priority methods are tried first (default: 0)
-    - `:conditions` - List of functions to check if method is applicable
+    - `:conditions` - List of (world, params) -> bool functions
     - `:subtasks` - List of {task_name, params} tuples
     """
     @spec new(atom(), keyword()) :: t()
@@ -188,18 +189,13 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
 
     @doc """
     Checks if all conditions for this method are satisfied.
+    Assuming strict arity-2 functions for performance.
     """
     @spec applicable?(t(), map(), map()) :: boolean()
     def applicable?(%__MODULE__{conditions: []}, _world, _params), do: true
 
     def applicable?(%__MODULE__{conditions: conditions}, world, params) do
-      Enum.all?(conditions, fn condition ->
-        case Function.info(condition, :arity) do
-          {:arity, 1} -> condition.(world)
-          {:arity, 2} -> condition.(world, params)
-          _ -> condition.(world)
-        end
-      end)
+      Enum.all?(conditions, fn condition -> condition.(world, params) end)
     end
   end
 
@@ -251,6 +247,37 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
     @spec list_tasks(t()) :: [atom()]
     def list_tasks(%__MODULE__{tasks: tasks}) do
       Map.keys(tasks)
+    end
+
+    @doc """
+    Validates the domain structure.
+    Checks that all compound task methods refer to subtasks that actually exist in the domain.
+    Useful to run at application startup to catch typos.
+    """
+    @spec validate(t()) :: :ok | {:error, [String.t()]}
+    def validate(%__MODULE__{tasks: tasks}) do
+      errors =
+        Enum.reduce(tasks, [], fn {task_name, task}, errors ->
+          if task.type == :compound do
+            # Check all methods
+            Enum.reduce(task.methods, errors, fn method, acc ->
+              Enum.reduce(method.subtasks, acc, fn {subtask_name, _}, inner_acc ->
+                if Map.has_key?(tasks, subtask_name) do
+                  inner_acc
+                else
+                  [
+                    "Task :#{task_name} (Method :#{method.name}) refers to unknown subtask :#{subtask_name}"
+                    | inner_acc
+                  ]
+                end
+              end)
+            end)
+          else
+            errors
+          end
+        end)
+
+      if errors == [], do: :ok, else: {:error, errors}
     end
   end
 
@@ -347,11 +374,13 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
     ## Options
 
     - `:max_iterations` - Maximum planning iterations (default: 1000)
+    - `:max_depth` - Maximum recursion depth for task decomposition (default: 50)
     - `:params` - Initial parameters for the root task
     """
     @spec find_plan(Domain.t(), map(), atom(), keyword()) :: planning_result()
     def find_plan(domain, world, root_task, opts \\ []) do
       max_iterations = Keyword.get(opts, :max_iterations, 1000)
+      max_depth = Keyword.get(opts, :max_depth, 50)
       params = Keyword.get(opts, :params, %{})
 
       initial_state = %{
@@ -362,7 +391,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
         iterations: 0
       }
 
-      case do_plan(domain, initial_state, max_iterations) do
+      case do_plan(domain, initial_state, max_iterations, max_depth) do
         {:ok, steps} -> {:ok, Plan.new(steps)}
         {:error, _} = error -> error
       end
@@ -372,10 +401,6 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
     Finds a plan with metrics tracking enabled.
 
     Returns `{:ok, plan, metrics}` or `{:error, reason, metrics}`.
-
-    ## Options
-
-    Same as `find_plan/4`.
     """
     alias StellaInvicta.AI.HierarchicalTaskNetwork.Metrics
 
@@ -383,6 +408,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
             {:ok, Plan.t(), Metrics.t()} | {:error, term(), Metrics.t()}
     def find_plan_with_metrics(domain, world, root_task, metrics, opts \\ []) do
       max_iterations = Keyword.get(opts, :max_iterations, 1000)
+      max_depth = Keyword.get(opts, :max_depth, 50)
       params = Keyword.get(opts, :params, %{})
 
       start_time = System.monotonic_time(:microsecond)
@@ -397,7 +423,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
         metrics: metrics
       }
 
-      case do_plan_with_metrics(domain, initial_state, max_iterations) do
+      case do_plan_with_metrics(domain, initial_state, max_iterations, max_depth) do
         {:ok, steps, updated_metrics} ->
           elapsed = System.monotonic_time(:microsecond) - start_time
           plan = Plan.new(steps)
@@ -411,15 +437,15 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
       end
     end
 
-    defp do_plan(_domain, %{tasks_to_process: [], final_plan: plan}, _max) do
+    defp do_plan(_domain, %{tasks_to_process: [], final_plan: plan}, _max_iter, _max_depth) do
       {:ok, Enum.reverse(plan)}
     end
 
-    defp do_plan(_domain, %{iterations: iter}, max) when iter >= max do
+    defp do_plan(_domain, %{iterations: iter}, max_iter, _max_depth) when iter >= max_iter do
       {:error, :max_iterations_exceeded}
     end
 
-    defp do_plan(domain, state, max_iterations) do
+    defp do_plan(domain, state, max_iterations, max_depth) do
       %{
         tasks_to_process: [{task_name, params} | rest],
         final_plan: plan,
@@ -428,71 +454,69 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
         iterations: iter
       } = state
 
-      case Domain.get_task(domain, task_name) do
-        {:error, :task_not_found} ->
-          {:error, {:task_not_found, task_name}}
+      # Depth Check
+      if length(history) > max_depth do
+        {:error, :max_depth_exceeded}
+      else
+        case Domain.get_task(domain, task_name) do
+          {:error, :task_not_found} ->
+            {:error, {:task_not_found, task_name}}
 
-        {:ok, %Task{type: :primitive} = task} ->
-          # Primitive task - check preconditions and add to plan
-          if Task.preconditions_met?(task, world, params) do
-            new_world = Task.apply_effects(task, world, params)
-
-            new_state = %{
-              tasks_to_process: rest,
-              final_plan: [{task_name, params} | plan],
-              working_world: new_world,
-              decomposition_history: history,
-              iterations: iter + 1
-            }
-
-            do_plan(domain, new_state, max_iterations)
-          else
-            # Preconditions not met, try to backtrack
-            case backtrack(domain, history, max_iterations) do
-              {:continue, new_state} -> do_plan(domain, new_state, max_iterations)
-              {:error, _} = error -> error
-            end
-          end
-
-        {:ok, %Task{type: :compound, methods: methods} = _task} ->
-          # Compound task - find applicable method
-          sorted_methods = Enum.sort_by(methods, & &1.priority, :desc)
-
-          case find_applicable_method(sorted_methods, world, params) do
-            {:ok, method, method_index} ->
-              # Save state for backtracking
-              history_entry = %{
-                task: {task_name, params},
-                remaining_tasks: rest,
-                method_index: method_index,
-                world_snapshot: world,
-                plan_state: plan
-              }
-
-              # Add method's subtasks to the front of tasks to process
-              # Merge parent params into subtask params (subtask params take precedence)
-              new_tasks =
-                Enum.map(method.subtasks, fn {subtask_name, subtask_params} ->
-                  {subtask_name, Map.merge(params, subtask_params)}
-                end)
+          {:ok, %Task{type: :primitive} = task} ->
+            if Task.preconditions_met?(task, world, params) do
+              new_world = Task.apply_effects(task, world, params)
 
               new_state = %{
-                tasks_to_process: new_tasks ++ rest,
-                final_plan: plan,
-                working_world: world,
-                decomposition_history: [history_entry | history],
+                tasks_to_process: rest,
+                final_plan: [{task_name, params} | plan],
+                working_world: new_world,
+                decomposition_history: history,
                 iterations: iter + 1
               }
 
-              do_plan(domain, new_state, max_iterations)
-
-            {:error, :no_applicable_method} ->
-              # No method found, try to backtrack
+              do_plan(domain, new_state, max_iterations, max_depth)
+            else
               case backtrack(domain, history, max_iterations) do
-                {:continue, new_state} -> do_plan(domain, new_state, max_iterations)
+                {:continue, new_state} -> do_plan(domain, new_state, max_iterations, max_depth)
                 {:error, _} = error -> error
               end
-          end
+            end
+
+          {:ok, %Task{type: :compound, methods: methods} = _task} ->
+            sorted_methods = Enum.sort_by(methods, & &1.priority, :desc)
+
+            case find_applicable_method(sorted_methods, world, params) do
+              {:ok, method, method_index} ->
+                history_entry = %{
+                  task: {task_name, params},
+                  remaining_tasks: rest,
+                  method_index: method_index,
+                  world_snapshot: world,
+                  plan_state: plan
+                }
+
+                new_tasks =
+                  Enum.map(method.subtasks, fn {subtask_name, subtask_params} ->
+                    {subtask_name, Map.merge(params, subtask_params)}
+                  end)
+
+                new_state = %{
+                  tasks_to_process: new_tasks ++ rest,
+                  final_plan: plan,
+                  working_world: world,
+                  decomposition_history: [history_entry | history],
+                  iterations: iter + 1
+                }
+
+                do_plan(domain, new_state, max_iterations, max_depth)
+
+              {:error, :no_applicable_method} ->
+                case backtrack(domain, history, max_iterations) do
+                  {:continue, new_state} -> do_plan(domain, new_state, max_iterations, max_depth)
+                  {:error, _} = error -> error
+                end
+            end
+        end
       end
     end
 
@@ -523,7 +547,6 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
         plan_state: plan
       } = entry
 
-      # Get the task and try the next method
       case Domain.get_task(domain, task_name) do
         {:ok, %Task{methods: methods}} ->
           sorted_methods = Enum.sort_by(methods, & &1.priority, :desc)
@@ -539,7 +562,6 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
                 plan_state: plan
               }
 
-              # Merge parent params into subtask params
               new_tasks =
                 Enum.map(method.subtasks, fn {subtask_name, subtask_params} ->
                   {subtask_name, Map.merge(params, subtask_params)}
@@ -556,7 +578,6 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
               {:continue, new_state}
 
             {:error, :no_applicable_method} ->
-              # Try backtracking further
               backtrack(domain, rest_history, 0)
           end
 
@@ -584,17 +605,18 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
     defp do_plan_with_metrics(
            _domain,
            %{tasks_to_process: [], final_plan: plan, metrics: metrics},
-           _max
+           _max,
+           _depth
          ) do
       {:ok, Enum.reverse(plan), metrics}
     end
 
-    defp do_plan_with_metrics(_domain, %{iterations: iter, metrics: metrics}, max)
+    defp do_plan_with_metrics(_domain, %{iterations: iter, metrics: metrics}, max, _depth)
          when iter >= max do
       {:error, :max_iterations_exceeded, metrics}
     end
 
-    defp do_plan_with_metrics(domain, state, max_iterations) do
+    defp do_plan_with_metrics(domain, state, max_iterations, max_depth) do
       %{
         tasks_to_process: [{task_name, params} | rest],
         final_plan: plan,
@@ -604,75 +626,85 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
         metrics: metrics
       } = state
 
-      case Domain.get_task(domain, task_name) do
-        {:error, :task_not_found} ->
-          {:error, {:task_not_found, task_name}, metrics}
+      if length(history) > max_depth do
+        {:error, :max_depth_exceeded, metrics}
+      else
+        case Domain.get_task(domain, task_name) do
+          {:error, :task_not_found} ->
+            {:error, {:task_not_found, task_name}, metrics}
 
-        {:ok, %Task{type: :primitive} = task} ->
-          if Task.preconditions_met?(task, world, params) do
-            new_world = Task.apply_effects(task, world, params)
-            updated_metrics = Metrics.primitive_added(metrics, task_name, params, world)
-
-            new_state = %{
-              tasks_to_process: rest,
-              final_plan: [{task_name, params} | plan],
-              working_world: new_world,
-              decomposition_history: history,
-              iterations: iter + 1,
-              metrics: updated_metrics
-            }
-
-            do_plan_with_metrics(domain, new_state, max_iterations)
-          else
-            updated_metrics = Metrics.primitive_failed(metrics, task_name, params, world)
-
-            case backtrack_with_metrics(domain, history, max_iterations, updated_metrics) do
-              {:continue, new_state} -> do_plan_with_metrics(domain, new_state, max_iterations)
-              {:error, reason, final_metrics} -> {:error, reason, final_metrics}
-            end
-          end
-
-        {:ok, %Task{type: :compound, methods: methods} = _task} ->
-          sorted_methods = Enum.sort_by(methods, & &1.priority, :desc)
-
-          case find_applicable_method_with_metrics(
-                 sorted_methods,
-                 world,
-                 params,
-                 metrics,
-                 task_name
-               ) do
-            {:ok, method, method_index, updated_metrics} ->
-              history_entry = %{
-                task: {task_name, params},
-                remaining_tasks: rest,
-                method_index: method_index,
-                world_snapshot: world,
-                plan_state: plan
-              }
-
-              new_tasks =
-                Enum.map(method.subtasks, fn {subtask_name, subtask_params} ->
-                  {subtask_name, Map.merge(params, subtask_params)}
-                end)
+          {:ok, %Task{type: :primitive} = task} ->
+            if Task.preconditions_met?(task, world, params) do
+              new_world = Task.apply_effects(task, world, params)
+              updated_metrics = Metrics.primitive_added(metrics, task_name, params, world)
 
               new_state = %{
-                tasks_to_process: new_tasks ++ rest,
-                final_plan: plan,
-                working_world: world,
-                decomposition_history: [history_entry | history],
+                tasks_to_process: rest,
+                final_plan: [{task_name, params} | plan],
+                working_world: new_world,
+                decomposition_history: history,
                 iterations: iter + 1,
                 metrics: updated_metrics
               }
 
-              do_plan_with_metrics(domain, new_state, max_iterations)
+              do_plan_with_metrics(domain, new_state, max_iterations, max_depth)
+            else
+              updated_metrics = Metrics.primitive_failed(metrics, task_name, params, world)
 
-            {:error, :no_applicable_method, updated_metrics} ->
               case backtrack_with_metrics(domain, history, max_iterations, updated_metrics) do
-                {:continue, new_state} -> do_plan_with_metrics(domain, new_state, max_iterations)
-                {:error, reason, final_metrics} -> {:error, reason, final_metrics}
+                {:continue, new_state} ->
+                  do_plan_with_metrics(domain, new_state, max_iterations, max_depth)
+
+                {:error, reason, final_metrics} ->
+                  {:error, reason, final_metrics}
               end
-          end
+            end
+
+          {:ok, %Task{type: :compound, methods: methods} = _task} ->
+            sorted_methods = Enum.sort_by(methods, & &1.priority, :desc)
+
+            case find_applicable_method_with_metrics(
+                   sorted_methods,
+                   world,
+                   params,
+                   metrics,
+                   task_name
+                 ) do
+              {:ok, method, method_index, updated_metrics} ->
+                history_entry = %{
+                  task: {task_name, params},
+                  remaining_tasks: rest,
+                  method_index: method_index,
+                  world_snapshot: world,
+                  plan_state: plan
+                }
+
+                new_tasks =
+                  Enum.map(method.subtasks, fn {subtask_name, subtask_params} ->
+                    {subtask_name, Map.merge(params, subtask_params)}
+                  end)
+
+                new_state = %{
+                  tasks_to_process: new_tasks ++ rest,
+                  final_plan: plan,
+                  working_world: world,
+                  decomposition_history: [history_entry | history],
+                  iterations: iter + 1,
+                  metrics: updated_metrics
+                }
+
+                do_plan_with_metrics(domain, new_state, max_iterations, max_depth)
+
+              {:error, :no_applicable_method, updated_metrics} ->
+                case backtrack_with_metrics(domain, history, max_iterations, updated_metrics) do
+                  {:continue, new_state} ->
+                    do_plan_with_metrics(domain, new_state, max_iterations, max_depth)
+
+                  {:error, reason, final_metrics} ->
+                    {:error, reason, final_metrics}
+                end
+            end
+        end
       end
     end
 
@@ -800,6 +832,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
           {:ok, %Task{type: :primitive, operator: operator}} when not is_nil(operator) ->
             case operator.(current_world, params) do
               {:ok, new_world} -> {:cont, {:ok, new_world}}
+              {:running, new_world} -> {:cont, {:ok, new_world}}
               {:error, reason} -> {:halt, {:error, reason, current_world}}
             end
 
@@ -820,9 +853,15 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
     @doc """
     Executes a single step of the plan and returns the updated plan and world.
     Useful for incremental execution over multiple game ticks.
+
+    If an operator returns `{:running, world}`, the plan is NOT advanced,
+    allowing the same task to continue execution on the next tick.
     """
     @spec execute_step(Plan.t(), Domain.t(), map()) ::
-            {:ok, Plan.t(), map()} | {:complete, map()} | {:error, term(), Plan.t(), map()}
+            {:ok, Plan.t(), map()}
+            | {:running, Plan.t(), map()}
+            | {:complete, map()}
+            | {:error, term(), Plan.t(), map()}
     def execute_step(%Plan{status: :completed} = _plan, _domain, world) do
       {:complete, world}
     end
@@ -839,6 +878,10 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
                 {:ok, new_world} ->
                   new_plan = Plan.advance(plan)
                   {:ok, new_plan, new_world}
+
+                {:running, new_world} ->
+                  # Task is still running, don't advance plan
+                  {:running, plan, new_world}
 
                 {:error, reason} ->
                   {:error, reason, Plan.fail(plan), world}
@@ -877,6 +920,13 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
                 updated_metrics = Metrics.task_executed(acc_metrics, task_name, params, :success)
                 {:cont, {:ok, new_world, updated_metrics}}
 
+              {:running, new_world} ->
+                # For execute_plan (bulk), we treat running as success for that step conceptually,
+                # but technically execute_plan shouldn't be used with long-running tasks.
+                # We'll treat it as a success/continue for now.
+                updated_metrics = Metrics.task_executed(acc_metrics, task_name, params, :running)
+                {:cont, {:ok, new_world, updated_metrics}}
+
               {:error, reason} ->
                 updated_metrics =
                   Metrics.task_executed(acc_metrics, task_name, params, {:failure, reason})
@@ -909,6 +959,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
     """
     @spec execute_step_with_metrics(Plan.t(), Domain.t(), map(), Metrics.t()) ::
             {:ok, Plan.t(), map(), Metrics.t()}
+            | {:running, Plan.t(), map(), Metrics.t()}
             | {:complete, map(), Metrics.t()}
             | {:error, term(), Plan.t(), map(), Metrics.t()}
     def execute_step_with_metrics(%Plan{status: :completed} = _plan, _domain, world, metrics) do
@@ -928,6 +979,10 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
                   updated_metrics = Metrics.task_executed(metrics, task_name, params, :success)
                   new_plan = Plan.advance(plan)
                   {:ok, new_plan, new_world, updated_metrics}
+
+                {:running, new_world} ->
+                  updated_metrics = Metrics.task_executed(metrics, task_name, params, :running)
+                  {:running, plan, new_world, updated_metrics}
 
                 {:error, reason} ->
                   updated_metrics =
@@ -965,6 +1020,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
   defdelegate method(name, opts \\ []), to: Method, as: :new
   defdelegate new_domain(name), to: Domain, as: :new
   defdelegate add_task(domain, task), to: Domain
+  defdelegate validate_domain(domain), to: Domain, as: :validate
   defdelegate find_plan(domain, world, task, opts \\ []), to: Planner
   defdelegate execute_plan(plan, domain, world), to: Planner
   defdelegate execute_step(plan, domain, world), to: Planner
@@ -985,23 +1041,8 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
   defmodule Metrics do
     @moduledoc """
     Metrics and decision logging for HTN planning.
-
     Tracks planning decisions, method selections, backtracking events,
     and execution details to help debug and understand AI behavior.
-
-    ## Usage
-
-        # Create metrics tracker
-        metrics = HTN.Metrics.new()
-
-        # Plan with metrics
-        {:ok, plan, metrics} = HTN.Planner.find_plan_with_metrics(domain, world, :goal, metrics)
-
-        # Get decision log for UI
-        log = HTN.Metrics.get_decision_log(metrics)
-
-        # Get summary statistics
-        summary = HTN.Metrics.get_planning_summary(metrics)
     """
 
     @type decision_type ::
@@ -1032,6 +1073,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
 
     @type t :: %__MODULE__{
             decisions: [decision_entry()],
+            decision_count: non_neg_integer(),
             planning_attempts: non_neg_integer(),
             successful_plans: non_neg_integer(),
             failed_plans: non_neg_integer(),
@@ -1046,6 +1088,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
           }
 
     defstruct decisions: [],
+              decision_count: 0,
               planning_attempts: 0,
               successful_plans: 0,
               failed_plans: 0,
@@ -1060,12 +1103,6 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
 
     @doc """
     Creates a new metrics tracker.
-
-    ## Options
-
-    - `:enabled` - Whether to track metrics (default: true)
-    - `:capture_world_snapshots` - Include world state in decisions (default: false, can be expensive)
-    - `:max_decisions` - Maximum decisions to keep in log (default: 1000)
     """
     @spec new(keyword()) :: t()
     def new(opts \\ []) do
@@ -1084,6 +1121,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
       %{
         metrics
         | decisions: [],
+          decision_count: 0,
           planning_attempts: 0,
           successful_plans: 0,
           failed_plans: 0,
@@ -1097,6 +1135,8 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
 
     @doc """
     Records a planning decision.
+    Optimized to avoid O(N) length checks on every insertion.
+    Trimming occurs probabilistically every 100 decisions.
     """
     @spec record_decision(t(), decision_type(), keyword()) :: t()
     def record_decision(%__MODULE__{enabled: false} = metrics, _type, _opts), do: metrics
@@ -1117,17 +1157,16 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
         details: Keyword.get(opts, :details, %{})
       }
 
+      new_count = metrics.decision_count + 1
       decisions = [entry | metrics.decisions]
 
-      # Trim to max size
-      decisions =
-        if length(decisions) > metrics.max_decisions do
-          Enum.take(decisions, metrics.max_decisions)
-        else
-          decisions
-        end
-
-      %{metrics | decisions: decisions}
+      # Probabilistic trimming: Only check length every 100 inserts
+      if rem(new_count, 100) == 0 and new_count > metrics.max_decisions do
+        trimmed_decisions = Enum.take(decisions, metrics.max_decisions)
+        %{metrics | decisions: trimmed_decisions, decision_count: metrics.max_decisions}
+      else
+        %{metrics | decisions: decisions, decision_count: new_count}
+      end
     end
 
     @doc """
@@ -1297,7 +1336,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
     @doc """
     Records execution of a single task (primitive) during plan execution.
     """
-    @spec task_executed(t(), atom(), map(), :success | {:failure, term()}) :: t()
+    @spec task_executed(t(), atom(), map(), :success | :running | {:failure, term()}) :: t()
     def task_executed(%__MODULE__{enabled: false} = metrics, _task, _params, _result),
       do: metrics
 
@@ -1383,7 +1422,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
           ),
         method_selection_counts: metrics.method_selection_counts,
         task_execution_counts: metrics.task_execution_counts,
-        decisions_logged: length(metrics.decisions)
+        decisions_logged: metrics.decision_count
       }
     end
 
@@ -1437,7 +1476,14 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
 
           :execution_step ->
             result = get_in(entry, [:details, :result])
-            status = if result == :success, do: "✓", else: "✗"
+
+            status =
+              case result do
+                :success -> "✓"
+                :running -> "↻"
+                _ -> "✗"
+              end
+
             "#{status} Executed :#{task}"
 
           :execution_complete ->

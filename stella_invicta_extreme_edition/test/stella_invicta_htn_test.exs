@@ -22,8 +22,8 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetworkTest do
 
     test "creates a primitive task with options" do
       operator_fn = fn world, _params -> {:ok, world} end
-      precond_fn = fn _world -> true end
-      effect_fn = fn world -> Map.put(world, :moved, true) end
+      precond_fn = fn _world, _params -> true end
+      effect_fn = fn world, _params -> Map.put(world, :moved, true) end
 
       task =
         Task.primitive(:move,
@@ -72,8 +72,8 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetworkTest do
       task =
         Task.primitive(:attack,
           preconditions: [
-            fn world -> world.has_weapon end,
-            fn world -> world.target_in_range end
+            fn world, _params -> world.has_weapon end,
+            fn world, _params -> world.target_in_range end
           ]
         )
 
@@ -85,8 +85,8 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetworkTest do
       task =
         Task.primitive(:attack,
           preconditions: [
-            fn world -> world.has_weapon end,
-            fn world -> world.target_in_range end
+            fn world, _params -> world.has_weapon end,
+            fn world, _params -> world.target_in_range end
           ]
         )
 
@@ -119,8 +119,8 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetworkTest do
       task =
         Task.primitive(:heal,
           effects: [
-            fn world -> Map.update!(world, :health, &(&1 + 10)) end,
-            fn world -> Map.put(world, :healed, true) end
+            fn world, _params -> Map.update!(world, :health, &(&1 + 10)) end,
+            fn world, _params -> Map.put(world, :healed, true) end
           ]
         )
 
@@ -164,7 +164,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetworkTest do
       method =
         Method.new(:fast_travel,
           priority: 10,
-          conditions: [fn world -> world.has_mount end],
+          conditions: [fn world, _params -> world.has_mount end],
           subtasks: [{:mount_horse, %{}}, {:ride, %{}}]
         )
 
@@ -185,8 +185,8 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetworkTest do
       method =
         Method.new(:conditional,
           conditions: [
-            fn world -> world.a end,
-            fn world -> world.b end
+            fn world, _params -> world.a end,
+            fn world, _params -> world.b end
           ]
         )
 
@@ -197,8 +197,8 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetworkTest do
       method =
         Method.new(:conditional,
           conditions: [
-            fn world -> world.a end,
-            fn world -> world.b end
+            fn world, _params -> world.a end,
+            fn world, _params -> world.b end
           ]
         )
 
@@ -329,7 +329,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetworkTest do
         Domain.new("test")
         |> Domain.add_task(
           Task.primitive(:conditional_task,
-            preconditions: [fn world -> world.ready end]
+            preconditions: [fn world, _params -> world.ready end]
           )
         )
 
@@ -386,7 +386,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetworkTest do
           Task.compound(:move,
             methods: [
               Method.new(:method_run,
-                conditions: [fn world -> world.energy > 50 end],
+                conditions: [fn world, _params -> world.energy > 50 end],
                 subtasks: [{:run, %{}}]
               ),
               Method.new(:method_walk,
@@ -468,7 +468,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetworkTest do
         Domain.new("test")
         |> Domain.add_task(
           Task.primitive(:requires_key,
-            preconditions: [fn world -> world.has_key end]
+            preconditions: [fn world, _params -> world.has_key end]
           )
         )
         |> Domain.add_task(Task.primitive(:pick_lock))
@@ -499,12 +499,12 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetworkTest do
         Domain.new("test")
         |> Domain.add_task(
           Task.primitive(:requires_a,
-            preconditions: [fn world -> world.has_a end]
+            preconditions: [fn world, _params -> world.has_a end]
           )
         )
         |> Domain.add_task(
           Task.primitive(:requires_b,
-            preconditions: [fn world -> world.has_b end]
+            preconditions: [fn world, _params -> world.has_b end]
           )
         )
         |> Domain.add_task(
@@ -528,12 +528,12 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetworkTest do
         Domain.new("test")
         |> Domain.add_task(
           Task.primitive(:get_key,
-            effects: [fn world -> Map.put(world, :has_key, true) end]
+            effects: [fn world, _params -> Map.put(world, :has_key, true) end]
           )
         )
         |> Domain.add_task(
           Task.primitive(:unlock_door,
-            preconditions: [fn world -> world.has_key end]
+            preconditions: [fn world, _params -> world.has_key end]
           )
         )
         |> Domain.add_task(
@@ -570,7 +570,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetworkTest do
           )
         )
 
-      {:error, :max_iterations_exceeded} =
+      {:error, :max_depth_exceeded} =
         Planner.find_plan(domain, %{}, :loop, max_iterations: 100)
     end
   end
@@ -602,7 +602,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetworkTest do
         Domain.new("test")
         |> Domain.add_task(
           Task.primitive(:set_flag,
-            effects: [fn world -> Map.put(world, :flag, true) end]
+            effects: [fn world, _params -> Map.put(world, :flag, true) end]
           )
         )
 
@@ -733,7 +733,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetworkTest do
         HTN.new_domain("test")
         |> HTN.add_task(
           HTN.primitive(:set_value,
-            effects: [fn world -> Map.put(world, :done, true) end]
+            effects: [fn world, _params -> Map.put(world, :done, true) end]
           )
         )
 
@@ -760,7 +760,7 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetworkTest do
         |> HTN.add_task(
           HTN.primitive(:check_location,
             preconditions: [
-              fn world -> Map.has_key?(world.locations, 1) end
+              fn world, _params -> Map.has_key?(world.locations, 1) end
             ]
           )
         )
