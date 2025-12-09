@@ -225,6 +225,9 @@ defmodule StellaInvicta.System.CharacterAITest do
     end
 
     test "handles character_needs_plan message", %{world: world} do
+      # Set cooldown to 0 so message is processed (normally cooldown is managed by run/1)
+      world = CharacterAI.set_planning_cooldown(world, 1, 0)
+
       new_world =
         CharacterAI.handle_message(world, :character_events, {:character_needs_plan, 1})
 
@@ -929,10 +932,17 @@ defmodule StellaInvicta.System.CharacterAITest do
       # and the message handler should have generated a new one
       # But this happens asynchronously through message queue
 
-      # Trigger re-planning through handle_message
+      # Set cooldown to 0 so new plan is generated after completion
+      world = CharacterAI.set_planning_cooldown(world, 1, 0)
+
+      # Trigger re-planning through handle_message (resets cooldown to 1000)
       world = CharacterAI.handle_message(world, :character_events, {:plan_completed, 1})
 
-      # After handling plan completion, a new plan should be generated
+      # After completion resets cooldown to 1000, we need to set it to 0 again and request planning
+      world = CharacterAI.set_planning_cooldown(world, 1, 0)
+      world = CharacterAI.handle_message(world, :character_events, {:character_needs_plan, 1})
+
+      # After handling plan completion and requesting new plan, a new plan should be generated
       new_plan = CharacterAI.get_character_plan(world, 1)
       assert new_plan != nil, "New plan should be generated after completion"
     end
@@ -1032,6 +1042,9 @@ defmodule StellaInvicta.System.CharacterAITest do
       world = CharacterAI.clear_character_plan(world, 1)
       assert CharacterAI.get_character_plan(world, 1) == nil
 
+      # Set cooldown to 0 so message is processed (normally cooldown is managed by run/1)
+      world = CharacterAI.set_planning_cooldown(world, 1, 0)
+
       # Trigger plan request
       world = CharacterAI.handle_message(world, :character_events, {:character_needs_plan, 1})
 
@@ -1082,6 +1095,9 @@ defmodule StellaInvicta.System.CharacterAITest do
         world
         |> Map.put(:character_traits, %{})
         |> CharacterAI.clear_character_plan(1)
+
+      # Set cooldown to 0 so message is processed
+      world_modified = CharacterAI.set_planning_cooldown(world_modified, 1, 0)
 
       # Generate new plan with modified world state
       world_modified =
@@ -1134,17 +1150,25 @@ defmodule StellaInvicta.System.CharacterAITest do
       # Step 2: Execute plan (will complete if it's a single step)
       world = CharacterAI.run(world)
 
-      # Step 3: Trigger completion message
+      # Step 3: Set cooldown to 0 so new plan can be generated after completion
+      world = CharacterAI.set_planning_cooldown(world, 1, 0)
+
+      # Step 4: Trigger completion message (resets cooldown to 1000)
       world = CharacterAI.handle_message(world, :character_events, {:plan_completed, 1})
 
-      # Step 4: New plan should be generated
+      # Step 5: Request a new plan (cooldown check will now fail since it was reset to 1000)
+      # So we need to set it to 0 again before requesting
+      world = CharacterAI.set_planning_cooldown(world, 1, 0)
+      world = CharacterAI.handle_message(world, :character_events, {:character_needs_plan, 1})
+
+      # Step 6: New plan should be generated
       plan_2 = CharacterAI.get_character_plan(world, 1)
       assert plan_2 != nil, "Should have new plan after completion"
 
-      # Step 5: Execute new plan
+      # Step 7: Execute new plan
       _world = CharacterAI.run(world)
 
-      # Step 6: Verify execution occurred
+      # Step 8: Verify execution occurred
       # At this point, the plan should either still exist (if not complete)
       # or have been cleared (if complete)
       # Either way, the re-planning cycle worked

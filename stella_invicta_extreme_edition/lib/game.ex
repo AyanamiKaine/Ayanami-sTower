@@ -34,10 +34,17 @@ defmodule StellaInvicta.Game do
     |> initialize_character_plans()
   end
 
-  # Initializes plans for all characters at game start
+  # Initializes plans and cooldowns for all characters at game start
   defp initialize_character_plans(game_state) do
     characters = Map.get(game_state, :characters, %{})
 
+    game_state =
+      Enum.reduce(characters, game_state, fn {character_id, _character}, acc ->
+        # Initialize cooldown to 0 so first plan is generated immediately
+        StellaInvicta.System.CharacterAI.set_planning_cooldown(acc, character_id, 0)
+      end)
+
+    # Now request plans for all characters
     Enum.reduce(characters, game_state, fn {character_id, _character}, acc ->
       StellaInvicta.System.CharacterAI.handle_message(
         acc,

@@ -26,17 +26,27 @@ defmodule StellaInvicta.System.CharacterAI do
 
   def handle_message(world, :character_events, {:character_needs_plan, character_id}) do
     # Generate a new plan for a character with metrics tracking
-    generate_new_plan_for_character(world, character_id)
+    # Check cooldown - don't plan if still on cooldown
+    case get_planning_cooldown_remaining(world, character_id) do
+      0 ->
+        generate_new_plan_for_character(world, character_id)
+
+      _ ->
+        # Still on cooldown, defer planning
+        world
+    end
   end
 
   def handle_message(world, :character_events, {:plan_completed, character_id}) do
-    # Plan completed - immediately generate a new plan for continuous activity
-    generate_new_plan_for_character(world, character_id)
+    # Plan completed - don't re-plan immediately, respect cooldown
+    # Reset cooldown to configured default value so it ticks down before next plan
+    reset_planning_cooldown(world, character_id)
   end
 
   def handle_message(world, :character_events, {:plan_failed, character_id, _reason}) do
-    # Plan failed - immediately generate a new plan for continuous activity
-    generate_new_plan_for_character(world, character_id)
+    # Plan failed - don't re-plan immediately, respect cooldown
+    # Reset cooldown to configured default value so it ticks down before next plan
+    reset_planning_cooldown(world, character_id)
   end
 
   def handle_message(world, _topic, _message), do: world
@@ -61,20 +71,54 @@ defmodule StellaInvicta.System.CharacterAI do
       {:ok, plan, updated_metrics} ->
         world
         |> store_character_plan(character_id, plan)
+        |> reset_planning_cooldown(character_id)
         |> StellaInvicta.Metrics.store_ai_metrics(character_id, updated_metrics)
 
       {:error, _reason, updated_metrics} ->
-        StellaInvicta.Metrics.store_ai_metrics(world, character_id, updated_metrics)
+        # Even on planning failure, reset cooldown so we don't spam planning attempts
+        world
+        |> reset_planning_cooldown(character_id)
+        |> StellaInvicta.Metrics.store_ai_metrics(character_id, updated_metrics)
     end
   end
 
   @impl true
   def run(world) do
+    # Decrement planning cooldowns for all characters each tick
+    world = decrement_all_planning_cooldowns(world)
+
+    # Generate new plans for characters whose cooldown reached 0 and have no plan
+    world = request_plans_for_ready_characters(world)
+
     # Execute one step of each character's plan
     world
     |> get_all_character_plans()
     |> Enum.reduce(world, fn {character_id, plan}, acc_world ->
       execute_character_plan_step(acc_world, character_id, plan)
+    end)
+  end
+
+  # Requests plans for all characters whose cooldown is 0 and don't have an active plan
+  defp request_plans_for_ready_characters(world) do
+    all_characters = Map.get(world, :characters, %{})
+    cooldowns = Map.get(world, :character_planning_cooldowns, %{})
+
+    Enum.reduce(all_characters, world, fn {character_id, _character}, acc_world ->
+      # Only auto-request if cooldown has been explicitly set for this character
+      # (i.e., the character is being managed by the cooldown system)
+      if Map.has_key?(cooldowns, character_id) do
+        cooldown_remaining = get_planning_cooldown_remaining(acc_world, character_id)
+        current_plan = get_character_plan(acc_world, character_id)
+
+        if cooldown_remaining == 0 and current_plan == nil do
+          # Request a new plan
+          generate_new_plan_for_character(acc_world, character_id)
+        else
+          acc_world
+        end
+      else
+        acc_world
+      end
     end)
   end
 
@@ -646,6 +690,80 @@ defmodule StellaInvicta.System.CharacterAI do
     |> Map.put(:_character, character)
     |> Map.put(:_character_traits, character_traits)
     |> Map.put(:_character_stats, Map.get(character || %{}, :stats, %{}))
+  end
+
+  # =============================================================================
+  # Planning Cooldown Management
+  # =============================================================================
+
+  @doc """
+  Gets the planning cooldown configuration for a character.
+  Returns the default cooldown if not configured.
+
+  Default: 1000 ticks between replanning
+  """
+  def get_planning_cooldown_config(world, character_id) do
+    config = Map.get(world, :character_planning_config, %{})
+    # Default: 1000 ticks
+    Map.get(config, character_id, 1000)
+  end
+
+  @doc """
+  Sets the planning cooldown configuration for a character.
+  """
+  def set_planning_cooldown_config(world, character_id, ticks) do
+    config = Map.get(world, :character_planning_config, %{})
+    updated_config = Map.put(config, character_id, ticks)
+    Map.put(world, :character_planning_config, updated_config)
+  end
+
+  @doc """
+  Gets the current planning cooldown remaining for a character.
+  Returns 0 if cooldown has expired (ready to plan).
+  """
+  def get_planning_cooldown_remaining(world, character_id) do
+    cooldowns = Map.get(world, :character_planning_cooldowns, %{})
+    Map.get(cooldowns, character_id, 0)
+  end
+
+  @doc """
+  Sets the planning cooldown for a character to a specific number of ticks.
+  """
+  def set_planning_cooldown(world, character_id, ticks) do
+    cooldowns = Map.get(world, :character_planning_cooldowns, %{})
+    updated_cooldowns = Map.put(cooldowns, character_id, ticks)
+    Map.put(world, :character_planning_cooldowns, updated_cooldowns)
+  end
+
+  @doc """
+  Resets the planning cooldown for a character to the configured default.
+  Called after a plan is generated.
+  """
+  def reset_planning_cooldown(world, character_id) do
+    cooldown_ticks = get_planning_cooldown_config(world, character_id)
+    set_planning_cooldown(world, character_id, cooldown_ticks)
+  end
+
+  @doc """
+  Decrements all character planning cooldowns by 1 tick.
+  Called once per game tick to progress cooldowns.
+  """
+  def decrement_all_planning_cooldowns(world) do
+    cooldowns = Map.get(world, :character_planning_cooldowns, %{})
+
+    # Only process if there are any cooldowns to decrement
+    if map_size(cooldowns) == 0 do
+      world
+    else
+      updated_cooldowns =
+        Enum.reduce(cooldowns, %{}, fn {character_id, remaining}, acc ->
+          # Decrement but don't go below 0
+          new_remaining = max(0, remaining - 1)
+          Map.put(acc, character_id, new_remaining)
+        end)
+
+      Map.put(world, :character_planning_cooldowns, updated_cooldowns)
+    end
   end
 
   @doc """
