@@ -118,9 +118,10 @@ defmodule StellaInvicta.System.CharacterAITest do
       {:ok, plan} = HTN.find_plan(domain, context, :train)
       assert Plan.length(plan) == 1
 
-      # Character 2 does not have brave trait
+      # Character 2 also has brave trait, so it can also train
       context2 = CharacterAI.prepare_planning_context(world, 2)
-      {:error, :no_plan_found} = HTN.find_plan(domain, context2, :train)
+      {:ok, plan2} = HTN.find_plan(domain, context2, :train)
+      assert Plan.length(plan2) == 1
     end
 
     test "daily_routine selects based on traits", %{world: world, domain: domain} do

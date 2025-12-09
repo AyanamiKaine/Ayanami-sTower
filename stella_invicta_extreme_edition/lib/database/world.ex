@@ -254,7 +254,8 @@ defmodule StellaInvicta.World do
       # This supports multiple unique traits per character.
       character_traits: %{
         # Charlemagne is both Brave and a Scholar
-        1 => [:brave, :scholar]
+        1 => [:brave, :scholar],
+        2 => [:brave]
       },
       polities: %{}
     }
