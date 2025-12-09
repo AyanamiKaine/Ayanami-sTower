@@ -101,6 +101,86 @@ defmodule StellaInvicta.System.CharacterAI do
   end
 
   # =============================================================================
+  # Plan Tracking (History and Statistics)
+  # =============================================================================
+
+  @doc """
+  Records that a plan was completed for a character.
+  Moves current plan to history and increments completed count.
+  """
+  def record_plan_completed(world, character_id, completed_plan) do
+    # Store as last completed plan
+    world = store_last_plan(world, character_id, completed_plan)
+
+    # Increment plan execution counter
+    increment_plan_count(world, character_id)
+  end
+
+  @doc """
+  Stores a plan as the last completed/active plan for a character.
+  """
+  def store_last_plan(world, character_id, plan) do
+    plans_history = Map.get(world, :character_plan_history, %{})
+    character_history = Map.get(plans_history, character_id, %{})
+
+    updated_history = Map.put(character_history, :last_plan, plan)
+    updated_plans_history = Map.put(plans_history, character_id, updated_history)
+
+    Map.put(world, :character_plan_history, updated_plans_history)
+  end
+
+  @doc """
+  Gets the last completed plan for a character.
+  """
+  def get_last_plan(world, character_id) do
+    plans_history = Map.get(world, :character_plan_history, %{})
+    character_history = Map.get(plans_history, character_id, %{})
+    Map.get(character_history, :last_plan)
+  end
+
+  @doc """
+  Increments the plan execution counter for a character.
+  """
+  def increment_plan_count(world, character_id) do
+    plans_history = Map.get(world, :character_plan_history, %{})
+    character_history = Map.get(plans_history, character_id, %{})
+
+    current_count = Map.get(character_history, :plans_executed, 0)
+    updated_history = Map.put(character_history, :plans_executed, current_count + 1)
+    updated_plans_history = Map.put(plans_history, character_id, updated_history)
+
+    Map.put(world, :character_plan_history, updated_plans_history)
+  end
+
+  @doc """
+  Gets the total number of plans executed by a character.
+  """
+  def get_plans_executed_count(world, character_id) do
+    plans_history = Map.get(world, :character_plan_history, %{})
+    character_history = Map.get(plans_history, character_id, %{})
+    Map.get(character_history, :plans_executed, 0)
+  end
+
+  @doc """
+  Gets plan execution statistics for a character.
+  Returns a map with:
+  - `:current_plan` - The plan currently being executed (if any)
+  - `:last_plan` - The last completed plan
+  - `:plans_executed` - Total number of completed plans
+  """
+  def get_plan_stats(world, character_id) do
+    current_plan = get_character_plan(world, character_id)
+    last_plan = get_last_plan(world, character_id)
+    plans_executed = get_plans_executed_count(world, character_id)
+
+    %{
+      current_plan: current_plan,
+      last_plan: last_plan,
+      plans_executed: plans_executed
+    }
+  end
+
+  # =============================================================================
   # Plan Execution
   # =============================================================================
 
@@ -122,6 +202,7 @@ defmodule StellaInvicta.System.CharacterAI do
           new_plan.status == :completed ->
             # Plan finished after this step
             new_world
+            |> record_plan_completed(character_id, new_plan)
             |> clear_character_plan(character_id)
             |> MessageQueue.publish(:character_events, {:plan_completed, character_id})
 
@@ -142,6 +223,7 @@ defmodule StellaInvicta.System.CharacterAI do
         # Plan completed - clear it and potentially request new plan
         new_world
         |> StellaInvicta.Metrics.store_ai_metrics(character_id, updated_metrics)
+        |> record_plan_completed(character_id, plan)
         |> clear_character_plan(character_id)
         |> MessageQueue.publish(:character_events, {:plan_completed, character_id})
 
@@ -228,7 +310,9 @@ defmodule StellaInvicta.System.CharacterAI do
                    domain,
                    planning_context,
                    settings.fallback_goal,
-                   fallback_metrics, params: %{character_id: character_id}) do
+                   fallback_metrics,
+                   params: %{character_id: character_id}
+                 ) do
               {:ok, fallback_plan, fallback_updated_metrics} ->
                 world
                 |> clear_replan_attempts(character_id)

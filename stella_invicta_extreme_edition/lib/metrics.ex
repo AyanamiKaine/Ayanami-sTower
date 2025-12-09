@@ -540,4 +540,27 @@ defmodule StellaInvicta.Metrics do
   def new_ai_metrics(opts \\ []) do
     HTN.new_metrics(opts)
   end
+
+  @doc """
+  Gets plan execution statistics for a character.
+
+  Returns a map with:
+  - `:current_plan` - The plan currently being executed (if any)
+  - `:last_plan` - The last completed plan
+  - `:plans_executed` - Total number of completed plans
+  """
+  def get_plan_stats(game_state, character_id) do
+    StellaInvicta.System.CharacterAI.get_plan_stats(game_state, character_id)
+  end
+
+  @doc """
+  Gets all plan statistics for all characters.
+  """
+  def get_all_plan_stats(game_state) do
+    characters = Map.get(game_state, :characters, %{})
+
+    Map.new(characters, fn {character_id, _} ->
+      {character_id, get_plan_stats(game_state, character_id)}
+    end)
+  end
 end

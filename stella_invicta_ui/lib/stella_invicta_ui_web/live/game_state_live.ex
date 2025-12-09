@@ -246,6 +246,10 @@ defmodule StellaInvictaUiWeb.GameStateLive do
     StellaInvicta.Metrics.get_ai_decisions(game_state, entity_id, opts)
   end
 
+  defp get_plan_stats(game_state, entity_id) do
+    StellaInvicta.Metrics.get_plan_stats(game_state, entity_id)
+  end
+
   defp format_entity_id(entity_id) when is_atom(entity_id), do: Atom.to_string(entity_id)
   defp format_entity_id(entity_id) when is_binary(entity_id), do: entity_id
   defp format_entity_id(entity_id), do: inspect(entity_id)
@@ -282,18 +286,18 @@ defmodule StellaInvictaUiWeb.GameStateLive do
                   <.icon name="hero-arrow-left" class="size-5" />
                 </.link>
                 <h1 class="text-2xl font-bold">{@game_name}</h1>
-                 <span class="badge badge-neutral">ID: {@current_game_id}</span>
+                <span class="badge badge-neutral">ID: {@current_game_id}</span>
               </div>
-              
+
               <p class="text-base-content/70 mt-2">
                 <span class="font-semibold">Date:</span> {format_date(@game_state.date)}
               </p>
-              
+
               <p class="text-base-content/70">
                 <span class="font-semibold">Tick:</span> {@game_state.current_tick}
               </p>
             </div>
-             <%!-- Real-time Simulation Controls --%>
+            <%!-- Real-time Simulation Controls --%>
             <div class="flex items-center gap-3">
               <%!-- Play/Pause Button --%>
               <%= if @playing do %>
@@ -315,7 +319,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
                   <.icon name="hero-play-solid" class="size-5" />
                 </button>
               <% end %>
-               <%!-- Speed Controls --%>
+              <%!-- Speed Controls --%>
               <div class="join">
                 <%= for speed <- [:hour, :day, :week, :month, :year] do %>
                   <button
@@ -332,7 +336,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
                   </button>
                 <% end %>
               </div>
-               <%!-- Status indicator --%>
+              <%!-- Status indicator --%>
               <div class={[
                 "badge gap-1",
                 if(@playing, do: "badge-success", else: "badge-neutral")
@@ -346,7 +350,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
                   else: "Paused"}
               </div>
             </div>
-            
+
             <div class="flex flex-wrap gap-2">
               <button
                 id="btn-simulate-hour"
@@ -389,10 +393,10 @@ defmodule StellaInvictaUiWeb.GameStateLive do
             </div>
           </div>
         </div>
-         <%!-- Systems Panel --%>
+        <%!-- Systems Panel --%>
         <div class="card bg-base-200 p-4">
           <h2 class="text-lg font-semibold mb-3">Systems</h2>
-          
+
           <div class="flex flex-wrap gap-4">
             <%= for {system_module, enabled} <- get_systems(@game_state) do %>
               <label class="flex items-center gap-2 cursor-pointer">
@@ -408,13 +412,13 @@ defmodule StellaInvictaUiWeb.GameStateLive do
             <% end %>
           </div>
         </div>
-         <%!-- Performance Metrics Panel --%> <.render_metrics_panel game_state={@game_state} />
+        <%!-- Performance Metrics Panel --%> <.render_metrics_panel game_state={@game_state} />
         <%!-- AI Decisions Panel --%> <.render_ai_panel game_state={@game_state} />
         <%!-- Message Queue Debug Panel --%>
         <div class="card bg-base-200 p-4">
           <div class="flex items-center justify-between mb-3">
             <h2 class="text-lg font-semibold">Message Queue</h2>
-            
+
             <button
               id="btn-clear-messages"
               phx-click="clear_message_history"
@@ -423,10 +427,10 @@ defmodule StellaInvictaUiWeb.GameStateLive do
               Clear History
             </button>
           </div>
-           <%!-- Subscriptions --%>
+          <%!-- Subscriptions --%>
           <div class="mb-4">
             <h3 class="text-sm font-semibold mb-2 text-base-content/70">System Subscriptions</h3>
-            
+
             <div class="flex flex-wrap gap-2">
               <%= for {system_module, _enabled} <- get_systems(@game_state) do %>
                 <div class="badge badge-outline badge-sm">
@@ -438,17 +442,17 @@ defmodule StellaInvictaUiWeb.GameStateLive do
               <% end %>
             </div>
           </div>
-           <%!-- Pending Messages --%>
+          <%!-- Pending Messages --%>
           <div class="mb-4">
             <h3 class="text-sm font-semibold mb-2 text-base-content/70">Pending Messages</h3>
-             <.render_pending_messages game_state={@game_state} />
+            <.render_pending_messages game_state={@game_state} />
           </div>
-           <%!-- Message History --%>
+          <%!-- Message History --%>
           <div>
             <h3 class="text-sm font-semibold mb-2 text-base-content/70">
               Message History ({length(@message_history)} messages)
             </h3>
-            
+
             <div class="max-h-48 overflow-y-auto bg-base-100 rounded-box p-2">
               <%= if @message_history == [] do %>
                 <p class="text-base-content/50 italic text-sm">No messages yet</p>
@@ -466,7 +470,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
             </div>
           </div>
         </div>
-         <%!-- Table selector tabs --%>
+        <%!-- Table selector tabs --%>
         <div class="flex flex-wrap gap-2">
           <%= for key <- @world_keys do %>
             <button
@@ -482,12 +486,12 @@ defmodule StellaInvictaUiWeb.GameStateLive do
             </button>
           <% end %>
         </div>
-         <%!-- Data display --%>
+        <%!-- Data display --%>
         <div class="card bg-base-200 p-4">
           <h2 class="text-xl font-semibold mb-4">
             {@selected_table |> Atom.to_string() |> String.replace("_", " ") |> String.capitalize()}
           </h2>
-          
+
           <.render_table_data
             data={get_table_data(@game_state, @selected_table)}
             key={@selected_table}
@@ -581,15 +585,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <thead>
           <tr>
             <th>Field</th>
-            
+
             <th>Value</th>
           </tr>
         </thead>
-        
+
         <tbody>
           <tr :for={{field, value} <- @fields}>
             <td class="font-semibold">{field}</td>
-            
+
             <td><code class="text-sm">{inspect(value)}</code></td>
           </tr>
         </tbody>
@@ -619,15 +623,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <thead>
           <tr>
             <th>ID</th>
-            
+
             <th :for={col <- @columns}>{col |> Atom.to_string() |> String.capitalize()}</th>
           </tr>
         </thead>
-        
+
         <tbody>
           <tr :for={{id, struct} <- @entries}>
             <td class="font-mono">{inspect(id)}</td>
-            
+
             <td :for={col <- @columns}><.render_cell_value value={Map.get(struct, col)} /></td>
           </tr>
         </tbody>
@@ -645,15 +649,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <thead>
           <tr>
             <th>ID</th>
-            
+
             <th>Values</th>
           </tr>
         </thead>
-        
+
         <tbody>
           <tr :for={{id, list} <- @entries}>
             <td class="font-mono">{inspect(id)}</td>
-            
+
             <td>
               <%= if list == [] do %>
                 <span class="text-base-content/50 italic">Empty</span>
@@ -679,15 +683,15 @@ defmodule StellaInvictaUiWeb.GameStateLive do
         <thead>
           <tr>
             <th>Key</th>
-            
+
             <th>Value</th>
           </tr>
         </thead>
-        
+
         <tbody>
           <tr :for={{key, value} <- @entries}>
             <td class="font-mono">{inspect(key)}</td>
-            
+
             <td><.render_cell_value value={value} /></td>
           </tr>
         </tbody>
@@ -740,19 +744,19 @@ defmodule StellaInvictaUiWeb.GameStateLive do
           <thead>
             <tr>
               <th>System</th>
-              
+
               <th>Topic</th>
-              
+
               <th>Message</th>
             </tr>
           </thead>
-          
+
           <tbody>
             <tr :for={entry <- @pending}>
               <td class="font-mono text-xs">{format_system_name(entry.system)}</td>
-              
+
               <td class="text-xs">{inspect(entry.topic)}</td>
-              
+
               <td class="text-xs">{inspect(entry.message)}</td>
             </tr>
           </tbody>
@@ -772,7 +776,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
     <div class="card bg-base-200 p-4">
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-lg font-semibold">Performance Metrics</h2>
-        
+
         <div class="flex gap-2">
           <label class="flex items-center gap-2 cursor-pointer">
             <input
@@ -792,42 +796,42 @@ defmodule StellaInvictaUiWeb.GameStateLive do
           </button>
         </div>
       </div>
-      
+
       <%= if @metrics.enabled do %>
         <%!-- Tick Performance --%>
         <div class="mb-4">
           <h3 class="text-sm font-semibold mb-2 text-base-content/70">Tick Performance</h3>
-          
+
           <div class="stats stats-horizontal bg-base-100 shadow-sm w-full">
             <div class="stat py-2 px-3">
               <div class="stat-title text-xs">Total Ticks</div>
-              
+
               <div class="stat-value text-lg">{@metrics.tick.total_ticks}</div>
             </div>
-            
+
             <div class="stat py-2 px-3">
               <div class="stat-title text-xs">Avg Tick</div>
-              
+
               <div class="stat-value text-lg">{format_time_ms(@metrics.tick.average_tick_ms)} ms</div>
             </div>
-            
+
             <div class="stat py-2 px-3">
               <div class="stat-title text-xs">Peak Tick</div>
-              
+
               <div class="stat-value text-lg">{format_time_ms(@metrics.tick.peak_tick_ms)} ms</div>
             </div>
-            
+
             <div class="stat py-2 px-3">
               <div class="stat-title text-xs">Last Tick</div>
-              
+
               <div class="stat-value text-lg">{format_time_ms(@metrics.tick.last_tick_ms)} ms</div>
             </div>
           </div>
         </div>
-         <%!-- System Performance --%>
+        <%!-- System Performance --%>
         <div class="mb-4">
           <h3 class="text-sm font-semibold mb-2 text-base-content/70">System Performance</h3>
-          
+
           <%= if map_size(@metrics.systems) == 0 do %>
             <p class="text-base-content/50 italic text-sm">No system metrics yet</p>
           <% else %>
@@ -836,32 +840,32 @@ defmodule StellaInvictaUiWeb.GameStateLive do
                 <thead>
                   <tr>
                     <th>System</th>
-                    
+
                     <th>Run Avg (µs)</th>
-                    
+
                     <th>Run Peak (µs)</th>
-                    
+
                     <th>Msg Avg (µs)</th>
-                    
+
                     <th>Msgs Processed</th>
-                    
+
                     <th>Total (µs)</th>
                   </tr>
                 </thead>
-                
+
                 <tbody>
                   <%= for {system_module, stats} <- @metrics.systems do %>
                     <tr>
                       <td class="font-mono text-xs">{format_system_name(system_module)}</td>
-                      
+
                       <td class="text-xs">{format_time_us(stats.run_average_us)}</td>
-                      
+
                       <td class="text-xs">{format_time_us(stats.run_peak_us)}</td>
-                      
+
                       <td class="text-xs">{format_time_us(stats.message_average_us)}</td>
-                      
+
                       <td class="text-xs">{stats.messages_processed}</td>
-                      
+
                       <td class="text-xs font-semibold">{format_time_us(stats.total_average_us)}</td>
                     </tr>
                   <% end %>
@@ -870,11 +874,11 @@ defmodule StellaInvictaUiWeb.GameStateLive do
             </div>
           <% end %>
         </div>
-         <%!-- Last Tick Breakdown --%>
+        <%!-- Last Tick Breakdown --%>
         <%= if map_size(@metrics.tick.last_breakdown) > 0 do %>
           <div class="mb-4">
             <h3 class="text-sm font-semibold mb-2 text-base-content/70">Last Tick Breakdown</h3>
-            
+
             <div class="flex flex-wrap gap-2">
               <%= for {system_module, timing} <- @metrics.tick.last_breakdown do %>
                 <div class="badge badge-lg badge-ghost gap-1">
@@ -886,23 +890,23 @@ defmodule StellaInvictaUiWeb.GameStateLive do
             </div>
           </div>
         <% end %>
-         <%!-- Message Queue Stats --%>
+        <%!-- Message Queue Stats --%>
         <div>
           <h3 class="text-sm font-semibold mb-2 text-base-content/70">Message Queue Stats</h3>
-          
+
           <div class="flex flex-wrap gap-4 text-sm">
             <div>
               <span class="text-base-content/70">Published:</span>
               <span class="font-semibold ml-1">{@metrics.message_queue.total_published}</span>
             </div>
-            
+
             <div>
               <span class="text-base-content/70">Avg Publish:</span>
               <span class="font-semibold ml-1">
                 {format_time_us(@metrics.message_queue.average_publish_us)} µs
               </span>
             </div>
-            
+
             <div>
               <span class="text-base-content/70">Peak Queue:</span>
               <span class="font-semibold ml-1">{@metrics.message_queue.peak_queue_size}</span>
@@ -929,7 +933,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-lg font-semibold">AI Decision Log (HTN)</h2>
       </div>
-      
+
       <%= if @entity_ids == [] do %>
         <p class="text-base-content/50 italic text-sm">
           No AI entities with decision tracking. AI metrics are stored when using <code class="text-xs bg-base-300 px-1 rounded">find_plan_with_metrics/5</code>.
@@ -953,6 +957,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
 
   defp render_ai_entity_panel(assigns) do
     summary = get_ai_summary(assigns.game_state, assigns.entity_id)
+    plan_stats = get_plan_stats(assigns.game_state, assigns.entity_id)
 
     decisions =
       get_ai_decisions(assigns.game_state, assigns.entity_id, limit: 30, chronological: true)
@@ -960,6 +965,7 @@ defmodule StellaInvictaUiWeb.GameStateLive do
     assigns =
       assigns
       |> assign(:summary, summary)
+      |> assign(:plan_stats, plan_stats)
       |> assign(:decisions, decisions)
 
     ~H"""
@@ -970,47 +976,92 @@ defmodule StellaInvictaUiWeb.GameStateLive do
           Entity: {format_entity_id(@entity_id)}
         </h3>
       </div>
-      
+
+      <%!-- Plan Execution Status --%>
+      <div class="mb-3 bg-base-200 rounded-box p-2">
+        <h4 class="text-xs font-semibold text-base-content/70 mb-2">Plan Execution</h4>
+
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between items-center">
+            <span class="text-base-content/70">Total Plans Executed:</span>
+            <span class="font-semibold badge badge-sm badge-success">
+              {@plan_stats.plans_executed}
+            </span>
+          </div>
+
+          <%= if @plan_stats.current_plan do %>
+            <div class="flex justify-between items-start">
+              <span class="text-base-content/70">Current Plan:</span>
+              <div class="text-right">
+                <div class="badge badge-sm badge-info">Active</div>
+                <div class="text-xs text-base-content/60 mt-0.5">
+                  Step {(@plan_stats.current_plan.current_step || 0) + 1} / {length(
+                    @plan_stats.current_plan.steps
+                  )}
+                </div>
+              </div>
+            </div>
+          <% else %>
+            <div class="flex justify-between items-center">
+              <span class="text-base-content/70">Current Plan:</span>
+              <span class="text-base-content/50 italic">None</span>
+            </div>
+          <% end %>
+
+          <%= if @plan_stats.last_plan do %>
+            <div class="flex justify-between items-start">
+              <span class="text-base-content/70">Last Plan:</span>
+              <div class="text-right">
+                <div class="badge badge-sm badge-ghost">Completed</div>
+                <div class="text-xs text-base-content/60 mt-0.5">
+                  {length(@plan_stats.last_plan.steps)} steps
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
       <%= if @summary do %>
         <%!-- Planning Statistics --%>
         <div class="mb-3">
           <div class="stats stats-horizontal bg-base-200 shadow-sm text-xs w-full">
             <div class="stat py-1 px-2">
               <div class="stat-title text-xs">Plans</div>
-              
+
               <div class="stat-value text-sm">
                 <span class="text-success">{@summary.successful_plans}</span>
                 <span class="text-base-content/50">/</span>
                 <span class="text-error">{@summary.failed_plans}</span>
               </div>
-              
+
               <div class="stat-desc text-xs">{Float.round(@summary.success_rate, 1)}% success</div>
             </div>
-            
+
             <div class="stat py-1 px-2">
               <div class="stat-title text-xs">Backtracks</div>
-              
+
               <div class="stat-value text-sm">{@summary.total_backtracks}</div>
             </div>
-            
+
             <div class="stat py-1 px-2">
               <div class="stat-title text-xs">Iterations</div>
-              
+
               <div class="stat-value text-sm">{@summary.total_iterations}</div>
             </div>
-            
+
             <div class="stat py-1 px-2">
               <div class="stat-title text-xs">Avg Plan Time</div>
-              
+
               <div class="stat-value text-sm">{@summary.avg_planning_time_us} µs</div>
             </div>
           </div>
         </div>
-         <%!-- Method Selection Counts --%>
+        <%!-- Method Selection Counts --%>
         <%= if map_size(@summary.method_selection_counts) > 0 do %>
           <div class="mb-3">
             <h4 class="text-xs font-semibold text-base-content/70 mb-1">Method Usage</h4>
-            
+
             <div class="flex flex-wrap gap-1">
               <%= for {method, count} <- @summary.method_selection_counts do %>
                 <span class="badge badge-sm badge-primary badge-outline">{method}: {count}</span>
@@ -1018,11 +1069,11 @@ defmodule StellaInvictaUiWeb.GameStateLive do
             </div>
           </div>
         <% end %>
-         <%!-- Task Execution Counts --%>
+        <%!-- Task Execution Counts --%>
         <%= if map_size(@summary.task_execution_counts) > 0 do %>
           <div class="mb-3">
             <h4 class="text-xs font-semibold text-base-content/70 mb-1">Task Execution</h4>
-            
+
             <div class="flex flex-wrap gap-1">
               <%= for {task, count} <- @summary.task_execution_counts do %>
                 <span class="badge badge-sm badge-secondary badge-outline">{task}: {count}</span>
@@ -1031,12 +1082,12 @@ defmodule StellaInvictaUiWeb.GameStateLive do
           </div>
         <% end %>
       <% end %>
-       <%!-- Decision Log --%>
+      <%!-- Decision Log --%>
       <div>
         <h4 class="text-xs font-semibold text-base-content/70 mb-1">
           Decision Log ({length(@decisions)} entries)
         </h4>
-        
+
         <div class="max-h-48 overflow-y-auto bg-base-200 rounded-box p-2">
           <%= if @decisions == [] do %>
             <p class="text-base-content/50 italic text-xs">No decisions recorded</p>
