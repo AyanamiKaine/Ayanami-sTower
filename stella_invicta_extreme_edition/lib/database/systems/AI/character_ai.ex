@@ -26,12 +26,31 @@ defmodule StellaInvicta.System.CharacterAI do
 
   def handle_message(world, :character_events, {:character_needs_plan, character_id}) do
     # Generate a new plan for a character with metrics tracking
-    {:ok, domain} = get_character_domain(world, character_id)
+    generate_new_plan_for_character(world, character_id)
+  end
 
-    # Prepare rich context for planning - the world is the domain
+  def handle_message(world, :character_events, {:plan_completed, character_id}) do
+    # Plan completed - immediately generate a new plan for continuous activity
+    generate_new_plan_for_character(world, character_id)
+  end
+
+  def handle_message(world, :character_events, {:plan_failed, character_id, _reason}) do
+    # Plan failed - immediately generate a new plan for continuous activity
+    generate_new_plan_for_character(world, character_id)
+  end
+
+  def handle_message(world, _topic, _message), do: world
+
+  # =============================================================================
+  # Plan Generation
+  # =============================================================================
+
+  # Generates a new plan for a character with metrics tracking.
+  # Used both for initial planning and re-planning after plan completion/failure.
+  defp generate_new_plan_for_character(world, character_id) do
+    {:ok, domain} = get_character_domain(world, character_id)
     planning_context = prepare_planning_context(world, character_id)
 
-    # Get or create metrics tracker for this character
     metrics =
       StellaInvicta.Metrics.get_ai_metrics(world, character_id) ||
         StellaInvicta.Metrics.new_ai_metrics()
@@ -40,18 +59,14 @@ defmodule StellaInvicta.System.CharacterAI do
            params: %{character_id: character_id}
          ) do
       {:ok, plan, updated_metrics} ->
-        # Store both the plan and the updated metrics
         world
         |> store_character_plan(character_id, plan)
         |> StellaInvicta.Metrics.store_ai_metrics(character_id, updated_metrics)
 
       {:error, _reason, updated_metrics} ->
-        # Failed to find plan - store metrics and character will idle
         StellaInvicta.Metrics.store_ai_metrics(world, character_id, updated_metrics)
     end
   end
-
-  def handle_message(world, _topic, _message), do: world
 
   @impl true
   def run(world) do
