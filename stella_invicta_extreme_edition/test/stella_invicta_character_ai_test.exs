@@ -104,30 +104,32 @@ defmodule StellaInvicta.System.CharacterAITest do
     test "study task requires scholar trait", %{world: world, domain: domain} do
       # Character 1 has scholar trait
       context = CharacterAI.prepare_planning_context(world, 1)
-      {:ok, plan} = HTN.find_plan(domain, context, :study)
+      {:ok, plan} = HTN.find_plan(domain, context, :study, params: %{character_id: 1})
       assert Plan.length(plan) == 1
 
       # Character 2 does not have scholar trait
       context2 = CharacterAI.prepare_planning_context(world, 2)
-      {:error, :no_plan_found} = HTN.find_plan(domain, context2, :study)
+
+      {:error, :no_plan_found} =
+        HTN.find_plan(domain, context2, :study, params: %{character_id: 2})
     end
 
     test "train task requires brave trait", %{world: world, domain: domain} do
       # Character 1 has brave trait
       context = CharacterAI.prepare_planning_context(world, 1)
-      {:ok, plan} = HTN.find_plan(domain, context, :train)
+      {:ok, plan} = HTN.find_plan(domain, context, :train, params: %{character_id: 1})
       assert Plan.length(plan) == 1
 
       # Character 2 also has brave trait, so it can also train
       context2 = CharacterAI.prepare_planning_context(world, 2)
-      {:ok, plan2} = HTN.find_plan(domain, context2, :train)
+      {:ok, plan2} = HTN.find_plan(domain, context2, :train, params: %{character_id: 2})
       assert Plan.length(plan2) == 1
     end
 
     test "daily_routine selects based on traits", %{world: world, domain: domain} do
       # Charlemagne (1) has both scholar and brave - scholar has same priority but comes first
       context = CharacterAI.prepare_planning_context(world, 1)
-      {:ok, plan} = HTN.find_plan(domain, context, :daily_routine)
+      {:ok, plan} = HTN.find_plan(domain, context, :daily_routine, params: %{character_id: 1})
       [{task_name, _}] = plan.steps
       assert task_name == :study
 
@@ -136,7 +138,7 @@ defmodule StellaInvicta.System.CharacterAITest do
       context_no_traits = CharacterAI.prepare_planning_context(world_no_traits, 1)
 
       {:ok, plan} =
-        HTN.find_plan(domain, context_no_traits, :daily_routine)
+        HTN.find_plan(domain, context_no_traits, :daily_routine, params: %{character_id: 1})
 
       [{task_name, _}] = plan.steps
       assert task_name == :rest
@@ -155,7 +157,7 @@ defmodule StellaInvicta.System.CharacterAITest do
       world = put_in(world.characters[1].health, 50)
 
       context = CharacterAI.prepare_planning_context(world, 1)
-      {:ok, plan} = HTN.find_plan(domain, context, :rest)
+      {:ok, plan} = HTN.find_plan(domain, context, :rest, params: %{character_id: 1})
       {:ok, new_context} = HTN.execute_plan(plan, domain, context)
 
       # Extract the updated character from the context
@@ -167,7 +169,7 @@ defmodule StellaInvicta.System.CharacterAITest do
       world = put_in(world.characters[1].stewardship, 10)
 
       context = CharacterAI.prepare_planning_context(world, 1)
-      {:ok, plan} = HTN.find_plan(domain, context, :study)
+      {:ok, plan} = HTN.find_plan(domain, context, :study, params: %{character_id: 1})
       {:ok, new_context} = HTN.execute_plan(plan, domain, context)
 
       assert new_context.characters[1].stewardship == 11
@@ -178,7 +180,7 @@ defmodule StellaInvicta.System.CharacterAITest do
       world = put_in(world.characters[1].martial, 10)
 
       context = CharacterAI.prepare_planning_context(world, 1)
-      {:ok, plan} = HTN.find_plan(domain, context, :train)
+      {:ok, plan} = HTN.find_plan(domain, context, :train, params: %{character_id: 1})
       {:ok, new_context} = HTN.execute_plan(plan, domain, context)
 
       assert new_context.characters[1].martial == 11

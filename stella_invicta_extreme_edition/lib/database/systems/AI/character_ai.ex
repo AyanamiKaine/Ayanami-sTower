@@ -546,9 +546,8 @@ defmodule StellaInvicta.System.CharacterAI do
   defp rest_task do
     HTN.primitive(:rest,
       effects: [
-        fn world, _params ->
-          # Use the character ID from the planning context
-          character_id = Map.get(world, :_character_id)
+        fn world, params ->
+          character_id = Map.get(params, :character_id)
 
           if character_id do
             update_character_stat(world, character_id, :health, 5)
@@ -557,8 +556,8 @@ defmodule StellaInvicta.System.CharacterAI do
           end
         end
       ],
-      operator: fn world, _params ->
-        character_id = Map.get(world, :_character_id)
+      operator: fn world, params ->
+        character_id = Map.get(params, :character_id)
 
         if character_id do
           {:ok, update_character_stat(world, character_id, :health, 5)}
@@ -572,15 +571,16 @@ defmodule StellaInvicta.System.CharacterAI do
   defp study_task do
     HTN.primitive(:study,
       preconditions: [
-        fn world, _params ->
-          # Check the character's traits from the planning context
-          traits = Map.get(world, :_character_traits, [])
+        fn world, params ->
+          character_id = Map.get(params, :character_id)
+          character_traits = Map.get(world, :character_traits, %{})
+          traits = Map.get(character_traits, character_id, [])
           :scholar in traits
         end
       ],
       effects: [
-        fn world, _params ->
-          character_id = Map.get(world, :_character_id)
+        fn world, params ->
+          character_id = Map.get(params, :character_id)
 
           if character_id do
             # Studying improves stewardship
@@ -590,8 +590,8 @@ defmodule StellaInvicta.System.CharacterAI do
           end
         end
       ],
-      operator: fn world, _params ->
-        character_id = Map.get(world, :_character_id)
+      operator: fn world, params ->
+        character_id = Map.get(params, :character_id)
 
         if character_id do
           {:ok, update_character_stat(world, character_id, :stewardship, 1)}
@@ -605,15 +605,16 @@ defmodule StellaInvicta.System.CharacterAI do
   defp train_task do
     HTN.primitive(:train,
       preconditions: [
-        fn world, _params ->
-          # Check the character's traits from the planning context
-          traits = Map.get(world, :_character_traits, [])
+        fn world, params ->
+          character_id = Map.get(params, :character_id)
+          character_traits = Map.get(world, :character_traits, %{})
+          traits = Map.get(character_traits, character_id, [])
           :brave in traits
         end
       ],
       effects: [
-        fn world, _params ->
-          character_id = Map.get(world, :_character_id)
+        fn world, params ->
+          character_id = Map.get(params, :character_id)
 
           if character_id do
             # Training improves martial
@@ -623,8 +624,8 @@ defmodule StellaInvicta.System.CharacterAI do
           end
         end
       ],
-      operator: fn world, _params ->
-        character_id = Map.get(world, :_character_id)
+      operator: fn world, params ->
+        character_id = Map.get(params, :character_id)
 
         if character_id do
           {:ok, update_character_stat(world, character_id, :martial, 1)}
@@ -642,8 +643,10 @@ defmodule StellaInvicta.System.CharacterAI do
         HTN.method(:scholar_routine,
           priority: 10,
           conditions: [
-            fn world, _params ->
-              traits = Map.get(world, :_character_traits, [])
+            fn world, params ->
+              character_id = Map.get(params, :character_id)
+              character_traits = Map.get(world, :character_traits, %{})
+              traits = Map.get(character_traits, character_id, [])
               :scholar in traits
             end
           ],
@@ -653,8 +656,10 @@ defmodule StellaInvicta.System.CharacterAI do
         HTN.method(:warrior_routine,
           priority: 10,
           conditions: [
-            fn world, _params ->
-              traits = Map.get(world, :_character_traits, [])
+            fn world, params ->
+              character_id = Map.get(params, :character_id)
+              character_traits = Map.get(world, :character_traits, %{})
+              traits = Map.get(character_traits, character_id, [])
               :brave in traits
             end
           ],
@@ -674,25 +679,19 @@ defmodule StellaInvicta.System.CharacterAI do
   # =============================================================================
 
   @doc """
-  Prepares a rich planning context that includes both world state and character-specific data.
-  This becomes the "domain" that the HTN planner reasons about.
+  Prepares the planning context for HTN planning.
 
-  The HTN planner sees this as its world - it contains all the information needed
-  to make decisions for that character.
+  The HTN planner uses the world state directly. All character information
+  (character data, traits, stats) is already available in the world via:
+  - world.characters[character_id]
+  - world.character_traits[character_id]
+  - world.characters[character_id].stats
+
+  Operators receive the character_id as a parameter and can look up
+  what they need from the world state.
   """
-  def prepare_planning_context(world, character_id) do
-    character = get_character(world, character_id)
-    character_traits = Map.get(world, :character_traits, %{}) |> Map.get(character_id, [])
-
-    # Build a context map that includes:
-    # - Global world state (for environmental reasoning)
-    # - Character-specific state (stats, traits, inventory)
-    # - Character identity (so operators don't need to pass it around)
+  def prepare_planning_context(world, _character_id) do
     world
-    |> Map.put(:_character_id, character_id)
-    |> Map.put(:_character, character)
-    |> Map.put(:_character_traits, character_traits)
-    |> Map.put(:_character_stats, Map.get(character || %{}, :stats, %{}))
   end
 
   # =============================================================================
