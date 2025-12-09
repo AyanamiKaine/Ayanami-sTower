@@ -13,8 +13,8 @@ defmodule StellaInvicta.Game do
   @default_systems [
     {StellaInvicta.System.Date, true},
     {StellaInvicta.System.Age, true},
-    # CharacterAI disabled by default - enable when AI behavior is needed
-    {StellaInvicta.System.CharacterAI, false}
+    # CharacterAI enabled by default - AI behavior for characters
+    {StellaInvicta.System.CharacterAI, true}
   ]
 
   @doc """
@@ -31,6 +31,20 @@ defmodule StellaInvicta.Game do
     |> MessageQueue.init()
     |> Metrics.init()
     |> setup_system_subscriptions()
+    |> initialize_character_plans()
+  end
+
+  # Initializes plans for all characters at game start
+  defp initialize_character_plans(game_state) do
+    characters = Map.get(game_state, :characters, %{})
+
+    Enum.reduce(characters, game_state, fn {character_id, _character}, acc ->
+      StellaInvicta.System.CharacterAI.handle_message(
+        acc,
+        :character_events,
+        {:character_needs_plan, character_id}
+      )
+    end)
   end
 
   # Sets up subscriptions for all systems that declare them

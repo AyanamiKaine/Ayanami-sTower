@@ -25,21 +25,29 @@ defmodule StellaInvicta.System.CharacterAI do
   end
 
   def handle_message(world, :character_events, {:character_needs_plan, character_id}) do
-    # Generate a new plan for a character
+    # Generate a new plan for a character with metrics tracking
     {:ok, domain} = get_character_domain(world, character_id)
 
     # Prepare rich context for planning - the world is the domain
     planning_context = prepare_planning_context(world, character_id)
 
-    case HTN.find_plan(domain, planning_context, :daily_routine,
+    # Get or create metrics tracker for this character
+    metrics =
+      StellaInvicta.Metrics.get_ai_metrics(world, character_id) ||
+        StellaInvicta.Metrics.new_ai_metrics()
+
+    case HTN.find_plan_with_metrics(domain, planning_context, :daily_routine, metrics,
            params: %{character_id: character_id}
          ) do
-      {:ok, plan} ->
-        store_character_plan(world, character_id, plan)
-
-      {:error, _reason} ->
-        # Failed to find plan - character will idle
+      {:ok, plan, updated_metrics} ->
+        # Store both the plan and the updated metrics
         world
+        |> store_character_plan(character_id, plan)
+        |> StellaInvicta.Metrics.store_ai_metrics(character_id, updated_metrics)
+
+      {:error, _reason, updated_metrics} ->
+        # Failed to find plan - store metrics and character will idle
+        StellaInvicta.Metrics.store_ai_metrics(world, character_id, updated_metrics)
     end
   end
 
@@ -99,32 +107,49 @@ defmodule StellaInvicta.System.CharacterAI do
   defp execute_character_plan_step(world, character_id, plan) do
     {:ok, domain} = get_character_domain(world, character_id)
 
-    case HTN.execute_step(plan, domain, world) do
-      {:ok, new_plan, new_world} ->
+    # Get current metrics for this character
+    metrics =
+      StellaInvicta.Metrics.get_ai_metrics(world, character_id) ||
+        StellaInvicta.Metrics.new_ai_metrics()
+
+    case HTN.execute_step_with_metrics(plan, domain, world, metrics) do
+      {:ok, new_plan, new_world, updated_metrics} ->
         # Step completed - check if plan is now done
-        if new_plan.status == :completed do
-          # Plan finished after this step
-          new_world
-          |> clear_character_plan(character_id)
-          |> MessageQueue.publish(:character_events, {:plan_completed, character_id})
-        else
-          # More steps remaining, store updated plan for next tick
-          store_character_plan(new_world, character_id, new_plan)
+        new_world =
+          StellaInvicta.Metrics.store_ai_metrics(new_world, character_id, updated_metrics)
+
+        cond do
+          new_plan.status == :completed ->
+            # Plan finished after this step
+            new_world
+            |> clear_character_plan(character_id)
+            |> MessageQueue.publish(:character_events, {:plan_completed, character_id})
+
+          true ->
+            # More steps remaining, store updated plan for next tick
+            store_character_plan(new_world, character_id, new_plan)
         end
 
-      {:running, plan, new_world} ->
+      {:running, plan, new_world, updated_metrics} ->
         # Task is still running (multi-tick task), keep the same plan position
         # The same step will continue execution on the next tick
+        new_world =
+          StellaInvicta.Metrics.store_ai_metrics(new_world, character_id, updated_metrics)
+
         store_character_plan(new_world, character_id, plan)
 
-      {:complete, new_world} ->
+      {:complete, new_world, updated_metrics} ->
         # Plan completed - clear it and potentially request new plan
         new_world
+        |> StellaInvicta.Metrics.store_ai_metrics(character_id, updated_metrics)
         |> clear_character_plan(character_id)
         |> MessageQueue.publish(:character_events, {:plan_completed, character_id})
 
-      {:error, reason, _failed_plan, new_world} ->
+      {:error, reason, _failed_plan, new_world, updated_metrics} ->
         # Plan failed - attempt to replan if replanning is enabled
+        new_world =
+          StellaInvicta.Metrics.store_ai_metrics(new_world, character_id, updated_metrics)
+
         handle_plan_failure(new_world, character_id, plan, reason)
     end
   end
@@ -163,36 +188,53 @@ defmodule StellaInvicta.System.CharacterAI do
         {:plan_failed, character_id, {:max_replan_attempts, original_reason}}
       )
     else
-      # Try to replan
+      # Try to replan with metrics tracking
       {:ok, domain} = get_character_domain(world, character_id)
       goal = get_plan_goal(world, character_id) || settings.fallback_goal
 
       planning_context = prepare_planning_context(world, character_id)
 
-      case HTN.find_plan(domain, planning_context, goal, params: %{character_id: character_id}) do
-        {:ok, new_plan} ->
+      # Get or create metrics tracker for this character
+      metrics =
+        StellaInvicta.Metrics.get_ai_metrics(world, character_id) ||
+          StellaInvicta.Metrics.new_ai_metrics()
+
+      case HTN.find_plan_with_metrics(domain, planning_context, goal, metrics,
+             params: %{character_id: character_id}
+           ) do
+        {:ok, new_plan, updated_metrics} ->
           # Replanning succeeded
           world
           |> increment_replan_attempts(character_id)
           |> store_character_plan(character_id, new_plan)
           |> store_plan_goal(character_id, goal)
+          |> StellaInvicta.Metrics.store_ai_metrics(character_id, updated_metrics)
           |> MessageQueue.publish(
             :character_events,
             {:plan_replanned, character_id, original_reason}
           )
 
-        {:error, replan_reason} ->
-          # Replanning failed - try fallback or give up
+        {:error, replan_reason, updated_metrics} ->
+          # Replanning failed - try fallback or give up, but store metrics
+          world = StellaInvicta.Metrics.store_ai_metrics(world, character_id, updated_metrics)
+
           if goal != settings.fallback_goal and settings.fallback_goal != nil do
             # Try fallback goal
-            case HTN.find_plan(domain, planning_context, settings.fallback_goal,
-                   params: %{character_id: character_id}
-                 ) do
-              {:ok, fallback_plan} ->
+            fallback_metrics =
+              StellaInvicta.Metrics.get_ai_metrics(world, character_id) ||
+                StellaInvicta.Metrics.new_ai_metrics()
+
+            case HTN.find_plan_with_metrics(
+                   domain,
+                   planning_context,
+                   settings.fallback_goal,
+                   fallback_metrics, params: %{character_id: character_id}) do
+              {:ok, fallback_plan, fallback_updated_metrics} ->
                 world
                 |> clear_replan_attempts(character_id)
                 |> store_character_plan(character_id, fallback_plan)
                 |> store_plan_goal(character_id, settings.fallback_goal)
+                |> StellaInvicta.Metrics.store_ai_metrics(character_id, fallback_updated_metrics)
                 |> MessageQueue.publish(
                   :character_events,
                   {:plan_fallback, character_id, settings.fallback_goal}
