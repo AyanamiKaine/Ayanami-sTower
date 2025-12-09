@@ -60,8 +60,8 @@ defmodule StellaInvicta.AI.HierarchicalTaskNetwork do
             preconditions: [(world :: map(), params :: map() -> boolean())] | nil,
             effects: [(world :: map(), params :: map() -> map())] | nil,
             operator:
-              (world :: map(), params :: map()
-               -> {:ok, map()} | {:running, map()} | {:error, term()})
+              (world :: map(), params :: map() ->
+                 {:ok, map()} | {:running, map()} | {:error, term()})
               | nil,
             # For compound tasks
             methods: [Method.t()] | nil,

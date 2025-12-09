@@ -251,7 +251,10 @@ defmodule StellaInvicta.System.CharacterAI do
       StellaInvicta.Metrics.get_ai_metrics(world, character_id) ||
         StellaInvicta.Metrics.new_ai_metrics()
 
-    case HTN.execute_step_with_metrics(plan, domain, world, metrics) do
+    # Prepare planning context with character identity so tasks can access it
+    planning_context = prepare_planning_context(world, character_id)
+
+    case HTN.execute_step_with_metrics(plan, domain, planning_context, metrics) do
       {:ok, new_plan, new_world, updated_metrics} ->
         # Step completed - check if plan is now done
         new_world =
