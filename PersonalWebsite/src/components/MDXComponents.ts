@@ -6,7 +6,11 @@
  */
 
 import Aside from './Aside.astro';
+import SourceReference from './SourceReference.svelte';
+import SourceQuote from './SourceQuote.svelte';
 
 export const components = {
   Aside,
+  SourceReference,
+  SourceQuote,
 };
