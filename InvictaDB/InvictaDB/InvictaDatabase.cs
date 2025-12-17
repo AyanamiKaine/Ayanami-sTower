@@ -2,6 +2,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using InvictaDB.Events;
+using InvictaDB.Messaging;
 
 namespace InvictaDB;
 /// <summary>
@@ -15,6 +17,12 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
     private readonly ConcurrentDictionary<Type, string> _typeToTable;
     private readonly ConcurrentDictionary<string, Type> _tableToType;
 
+    // Event log for tracking changes
+    private readonly DatabaseEventLog _eventLog;
+
+    // Message queue for inter-system communication
+    private readonly MessageQueue _messageQueue;
+
     /// <summary>
     /// Creates a new empty InvictaDatabase.
     /// </summary>
@@ -23,6 +31,8 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
         _currentState = [];
         _typeToTable = new ConcurrentDictionary<Type, string>();
         _tableToType = new ConcurrentDictionary<string, Type>();
+        _eventLog = DatabaseEventLog.Empty;
+        _messageQueue = MessageQueue.Empty;
     }
 
     /// <summary>
@@ -31,11 +41,15 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
     private InvictaDatabase(
         ImmutableDictionary<string, object> state,
         ConcurrentDictionary<Type, string> typeToTable,
-        ConcurrentDictionary<string, Type> tableToType)
+        ConcurrentDictionary<string, Type> tableToType,
+        DatabaseEventLog eventLog,
+        MessageQueue messageQueue)
     {
         _currentState = state;
         _typeToTable = typeToTable;
         _tableToType = tableToType;
+        _eventLog = eventLog;
+        _messageQueue = messageQueue;
     }
 
     /// <summary>
@@ -43,7 +57,114 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
     /// </summary>
     private InvictaDatabase WithState(ImmutableDictionary<string, object> newState)
     {
-        return new InvictaDatabase(newState, _typeToTable, _tableToType);
+        return new InvictaDatabase(newState, _typeToTable, _tableToType, _eventLog, _messageQueue);
+    }
+
+    /// <summary>
+    /// Creates a new InvictaDatabase with updated state and events.
+    /// </summary>
+    private InvictaDatabase WithStateAndEvent(ImmutableDictionary<string, object> newState, DatabaseEvent evt)
+    {
+        return new InvictaDatabase(newState, _typeToTable, _tableToType, _eventLog.Add(evt), _messageQueue);
+    }
+
+    /// <summary>
+    /// Gets the event log containing all events since the last clear.
+    /// </summary>
+    public DatabaseEventLog EventLog => _eventLog;
+
+    /// <summary>
+    /// Gets all pending events.
+    /// </summary>
+    public ImmutableList<DatabaseEvent> PendingEvents => _eventLog.Events;
+
+    /// <summary>
+    /// Clears all pending events, returning a new database instance.
+    /// </summary>
+    public InvictaDatabase ClearEvents()
+    {
+        return new InvictaDatabase(_currentState, _typeToTable, _tableToType, _eventLog.Clear(), _messageQueue);
+    }
+
+    /// <summary>
+    /// Gets the message queue for inter-system communication.
+    /// </summary>
+    public MessageQueue Messages => _messageQueue;
+
+    /// <summary>
+    /// Sends a message to the message queue.
+    /// </summary>
+    /// <param name="message">The message to send.</param>
+    /// <returns>A new database with the message enqueued.</returns>
+    public InvictaDatabase SendMessage(GameMessage message)
+    {
+        return new InvictaDatabase(_currentState, _typeToTable, _tableToType, _eventLog, _messageQueue.Enqueue(message));
+    }
+
+    /// <summary>
+    /// Sends a message to the message queue.
+    /// </summary>
+    /// <param name="messageType">The type of message.</param>
+    /// <param name="sender">The sender system name.</param>
+    /// <param name="payload">Optional payload data.</param>
+    /// <returns>A new database with the message enqueued.</returns>
+    public InvictaDatabase SendMessage(string messageType, string sender, object? payload = null)
+    {
+        var message = GameMessage.Create(messageType, sender, payload);
+        return SendMessage(message);
+    }
+
+    /// <summary>
+    /// Sends a typed message to the message queue.
+    /// </summary>
+    /// <typeparam name="T">The payload type (used as message type).</typeparam>
+    /// <param name="sender">The sender system name.</param>
+    /// <param name="payload">The payload data.</param>
+    /// <returns>A new database with the message enqueued.</returns>
+    public InvictaDatabase SendMessage<T>(string sender, T payload)
+    {
+        var message = GameMessage.Create(sender, payload);
+        return SendMessage(message);
+    }
+
+    /// <summary>
+    /// Sends multiple messages to the message queue.
+    /// </summary>
+    /// <param name="messages">The messages to send.</param>
+    /// <returns>A new database with the messages enqueued.</returns>
+    public InvictaDatabase SendMessages(IEnumerable<GameMessage> messages)
+    {
+        return new InvictaDatabase(_currentState, _typeToTable, _tableToType, _eventLog, _messageQueue.EnqueueRange(messages));
+    }
+
+    /// <summary>
+    /// Consumes all messages of a specific type, returning them and a new database without those messages.
+    /// </summary>
+    /// <param name="messageType">The type of messages to consume.</param>
+    /// <returns>The consumed messages and a new database.</returns>
+    public (IReadOnlyList<GameMessage> Consumed, InvictaDatabase Database) ConsumeMessages(string messageType)
+    {
+        var (consumed, newQueue) = _messageQueue.ConsumeMessages(messageType);
+        return (consumed, new InvictaDatabase(_currentState, _typeToTable, _tableToType, _eventLog, newQueue));
+    }
+
+    /// <summary>
+    /// Consumes all messages of a specific type, returning them and a new database without those messages.
+    /// </summary>
+    /// <typeparam name="T">The message type to consume.</typeparam>
+    /// <returns>The consumed messages and a new database.</returns>
+    public (IReadOnlyList<GameMessage> Consumed, InvictaDatabase Database) ConsumeMessages<T>()
+    {
+        return ConsumeMessages(typeof(T).Name);
+    }
+
+    /// <summary>
+    /// Clears all messages from the queue.
+    /// </summary>
+    /// <returns>A new database with an empty message queue.</returns>
+    public InvictaDatabase ClearMessages()
+    {
+        return new InvictaDatabase(_currentState, _typeToTable, _tableToType, _eventLog, _messageQueue.Clear());
     }
 
     /// <inheritdoc/>
@@ -54,7 +175,7 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
 
     /// <inheritdoc/>
     public int Count => _currentState.Count;
-    
+
     /// <inheritdoc/>
     public object this[string key] => _currentState[key];
 
@@ -69,7 +190,8 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
         _tableToType[tableName] = typeof(T);
         if (!_currentState.ContainsKey(tableName))
         {
-            return WithState(_currentState.Add(tableName, ImmutableDictionary<string, T>.Empty));
+            var evt = DatabaseEvent.TableRegistered<T>(tableName);
+            return WithStateAndEvent(_currentState.Add(tableName, ImmutableDictionary<string, T>.Empty), evt);
         }
         return this;
     }
@@ -85,7 +207,8 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
         _tableToType[tableName] = typeof(T);
         if (!_currentState.ContainsKey(tableName))
         {
-            return WithState(_currentState.Add(tableName, ImmutableDictionary<string, T>.Empty));
+            var evt = DatabaseEvent.TableRegistered<T>(tableName);
+            return WithStateAndEvent(_currentState.Add(tableName, ImmutableDictionary<string, T>.Empty), evt);
         }
         return this;
     }
@@ -156,8 +279,15 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
         }
 
         var table = GetTable<T>(tableName);
+        var isUpdate = table.ContainsKey(id);
+        var oldValue = isUpdate ? table[id] : default;
         table = table.SetItem(id, entry);
-        return WithState(_currentState.SetItem(tableName, table));
+
+        var evt = isUpdate
+            ? DatabaseEvent.Update(tableName, id, oldValue, entry)
+            : DatabaseEvent.Insert(tableName, id, entry);
+
+        return WithStateAndEvent(_currentState.SetItem(tableName, table), evt);
     }
     /// <summary>
     /// Inserts a singleton entry into the database.
@@ -173,7 +303,14 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
             throw new ArgumentNullException(nameof(entry), "Entry cannot be null.");
         }
 
-        return WithState(_currentState.SetItem(id, entry));
+        T? oldValue = default;
+        if (_currentState.TryGetValue(id, out var existing))
+        {
+            oldValue = (T)existing;
+        }
+
+        var evt = DatabaseEvent.SingletonChanged(id, oldValue, entry);
+        return WithStateAndEvent(_currentState.SetItem(id, entry), evt);
     }
     /// <summary>
     /// Inserts a singleton entry into the database.
@@ -188,7 +325,15 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
             throw new ArgumentNullException(nameof(entry), "Entry cannot be null.");
         }
 
-        return WithState(_currentState.SetItem(typeof(T).Name, entry));
+        var id = typeof(T).Name;
+        T? oldValue = default;
+        if (_currentState.TryGetValue(id, out var existing))
+        {
+            oldValue = (T)existing;
+        }
+
+        var evt = DatabaseEvent.SingletonChanged(id, oldValue, entry);
+        return WithStateAndEvent(_currentState.SetItem(id, entry), evt);
     }
     /// <summary>
     /// Gets a singleton entry by ID.
@@ -283,6 +428,65 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
             return false;
         }
         return GetTable<T>(tableName).ContainsKey(id);
+    }
+
+    /// <summary>
+    /// Removes an entry from the appropriate table.
+    /// </summary>
+    /// <typeparam name="T">The type of entry.</typeparam>
+    /// <param name="id">The entry ID.</param>
+    /// <returns>The updated database.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the type is not registered.</exception>
+    public InvictaDatabase RemoveEntry<T>(string id)
+    {
+        if (!_typeToTable.TryGetValue(typeof(T), out var tableName))
+        {
+            throw new InvalidOperationException($"Type {typeof(T).Name} is not mapped to a table.");
+        }
+
+        var table = GetTable<T>(tableName);
+        if (!table.TryGetValue(id, out var oldValue))
+        {
+            return this; // Entry doesn't exist, return unchanged
+        }
+
+        table = table.Remove(id);
+        var evt = DatabaseEvent.Remove(tableName, id, oldValue);
+        return WithStateAndEvent(_currentState.SetItem(tableName, table), evt);
+    }
+
+    /// <summary>
+    /// Removes a singleton from the database by ID.
+    /// </summary>
+    /// <typeparam name="T">The type of singleton.</typeparam>
+    /// <param name="id">The singleton ID.</param>
+    /// <returns>The updated database.</returns>
+    public InvictaDatabase RemoveSingleton<T>(string id)
+    {
+        if (!_currentState.TryGetValue(id, out var existing))
+        {
+            return this; // Singleton doesn't exist, return unchanged
+        }
+
+        var evt = DatabaseEvent.Remove<T>(null, id, (T)existing);
+        return WithStateAndEvent(_currentState.Remove(id), evt);
+    }
+
+    /// <summary>
+    /// Removes a singleton from the database by type.
+    /// </summary>
+    /// <typeparam name="T">The type of singleton.</typeparam>
+    /// <returns>The updated database.</returns>
+    public InvictaDatabase RemoveSingleton<T>()
+    {
+        var id = typeof(T).Name;
+        if (!_currentState.TryGetValue(id, out var existing))
+        {
+            return this; // Singleton doesn't exist, return unchanged
+        }
+
+        var evt = DatabaseEvent.Remove<T>(null, id, (T)existing);
+        return WithStateAndEvent(_currentState.Remove(id), evt);
     }
 
     /// <inheritdoc/>

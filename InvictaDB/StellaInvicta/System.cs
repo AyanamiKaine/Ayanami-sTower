@@ -32,12 +32,15 @@ public interface ISystem
     /// Initializes the system.
     /// </summary>
     /// <param name="db"></param>
-    public void Initialize(InvictaDatabase db);
+    /// <returns>The updated database.</returns>
+    public InvictaDatabase Initialize(InvictaDatabase db);
 
     /// <summary>
     /// Shuts down the system.
     /// </summary>
-    public void Shutdown(InvictaDatabase db);
+    /// <param name="db"></param>
+    /// <returns>The updated database.</returns>
+    public InvictaDatabase Shutdown(InvictaDatabase db);
 
     /// <summary>
     /// Runs the system logic. Returns an updated database.

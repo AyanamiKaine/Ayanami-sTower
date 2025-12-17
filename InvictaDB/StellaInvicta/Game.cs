@@ -55,17 +55,19 @@ public class Game
     /// You can safely call this multiple times; systems will only initialize once.
     /// </summary>
     /// <param name="db"></param>
-    public void InitializeSystems(InvictaDatabase db)
+    /// <returns>The updated database.</returns>
+    public InvictaDatabase InitializeSystems(InvictaDatabase db)
     {
         foreach (var system in _systems.Values)
         {
             if (system.Enabled && !system.IsInitialized)
             {
-                system.Initialize(db);
+                db = system.Initialize(db);
             }
         }
 
         _initialized = true;
+        return db;
     }
 
     /// <summary>

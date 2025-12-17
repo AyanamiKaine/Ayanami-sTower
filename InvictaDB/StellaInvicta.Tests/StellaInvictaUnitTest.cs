@@ -27,7 +27,7 @@ public class StellaInvictaUnitTest
         var game = new Game();
         game.AddSystem(dateSystem.Name, dateSystem);
 
-        game.InitializeSystems(db);
+        db = game.InitializeSystems(db);
 
         var initialDate = db.GetSingleton<DateTime>();
 
