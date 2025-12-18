@@ -29,7 +29,7 @@ db = db.InsertSingleton(new DateTime(startYear, 1, 1, 0, 0, 0));
 
 // Create many characters for benchmarking
 var rng = new Random(42); // Fixed seed for reproducibility
-var characterCounts = new[] { 1_000, 5_000, };
+var characterCounts = new[] { 500, 1_000 };
 
 Console.WriteLine("╔══════════════════════════════════════════════════════════════════════════════╗");
 Console.WriteLine("║                    StellaInvicta Year Simulation Benchmark                   ║");
