@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\fluid-hierarchical-task-network-fork\Fluid-HTN\Fluid-HTN.csproj" />
     <ProjectReference Include="..\..\stella_fuzzy_pattern_matcher\SFPM\AyanamisTower.SFPM.csproj" />
     <ProjectReference Include="..\InvictaDB.Tests\InvictaDB.Tests.csproj" />
     <ProjectReference Include="..\InvictaDB\InvictaDB.csproj" />

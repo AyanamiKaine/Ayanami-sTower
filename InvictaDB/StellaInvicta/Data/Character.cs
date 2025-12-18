@@ -1,6 +1,7 @@
 namespace StellaInvicta.Data;
 /// <summary>
-/// Represents a character within the game world.
+/// Represents a character within the game world. Characters are the backbone of the simulation, 
+/// actions that influence the world are typically performed by characters.
 /// </summary>
 /// <param name="Name"></param>
 /// <param name="Age"></param>
