@@ -3,69 +3,141 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using FluidHTN;
 using FluidHTN.Contexts;
+using FluidHTN.Debug;
 using FluidHTN.Factory;
 using InvictaDB;
+using StellaInvicta.Data;
 
 namespace StellaInvicta.AI;
 
+/// <summary>
+/// World state flags used by the HTN planner for simulation.
+/// </summary>
+public enum WorldState
+{
+    /// <inheritdoc/>
+    HasCredits,
+    /// <inheritdoc/>
+    HasCargo,
+    /// <inheritdoc/>
+    HasTradeRoute,
+    /// <inheritdoc/>
+    AtOrigin,
+    /// <inheritdoc/>
+    AtDestination
+}
+
+/// <summary>
+/// Component data for an entity controlled by HTN.
+/// Stores high-level state that needs to be persisted in the DB.
+/// </summary>
+public record AIAgentData(
+    string DomainName,       // Which behavior logic to use (e.g., "Trader", "Fighter")
+    string CurrentStateLabel // Debug label for what they are doing
+);
+
+/// <summary>
+/// The Bridge Context.
+/// It wraps the Immutable Database for 'Read' access,
+/// and buffers 'Write' access into a queue of mutations.
+/// </summary>
+public class SimulationContext : BaseContext
+{
     /// <summary>
-    /// Component data for an entity controlled by HTN.
-    /// Stores high-level state that needs to be persisted in the DB.
+    /// READ-ONLY access to the world state at the start of the tick
     /// </summary>
-    public record AIAgentData(
-        string DomainName,       // Which behavior logic to use (e.g., "Trader", "Fighter")
-        string CurrentStateLabel // Debug label for what they are doing
-    );
+    public InvictaDatabase Db { get; }
 
     /// <summary>
-    /// The Bridge Context.
-    /// It wraps the Immutable Database for 'Read' access,
-    /// and buffers 'Write' access into a queue of mutations.
+    /// The Entity currently "thinking"
     /// </summary>
-    public class SimulationContext : BaseContext
+    public Ref<Character> Self { get; }
+
+    /// <summary>
+    /// QUEUE of changes to apply after the planner finishes thinking
+    /// </summary>
+    private List<Func<InvictaDatabase, InvictaDatabase>> _pendingMutations
+        = [];
+
+    /// <inheritdoc/>
+    public SimulationContext(InvictaDatabase db, Ref<Character> self)
     {
-        // READ-ONLY access to the world state at the start of the tick
-        public InvictaDatabase Db { get; }
-        
-        // The Entity currently "thinking"
-        public Ref<Character> Self { get; }
-        
-        // QUEUE of changes to apply after the planner finishes thinking
-        private List<Func<InvictaDatabase, InvictaDatabase>> _pendingMutations 
-            = new List<Func<InvictaDatabase, InvictaDatabase>>();
+        Db = db;
+        Self = self;
+        Init(); // fluid-htn init
+    }
 
-        public SimulationContext(InvictaDatabase db, Ref<Character> self)
+    /// <summary>
+    /// Call this from within HTN Actions to schedule a DB change.
+    /// </summary>
+    public void ApplyChange(Func<InvictaDatabase, InvictaDatabase> mutation)
+    {
+        _pendingMutations.Add(mutation);
+    }
+
+    /// <summary>
+    /// Executes all buffered changes on the database and returns the new state.
+    /// </summary>
+    public InvictaDatabase Commit(InvictaDatabase originalDb)
+    {
+        var result = originalDb;
+        foreach (var mutation in _pendingMutations)
         {
-            Db = db;
-            Self = self;
-            Init(); // fluid-htn init
+            result = mutation(result);
         }
+        return result;
+    }
 
-        /// <summary>
-        /// Call this from within HTN Actions to schedule a DB change.
-        /// </summary>
-        public void ApplyChange(Func<InvictaDatabase, InvictaDatabase> mutation)
+    /// <summary>
+    /// Gets the number of pending mutations queued.
+    /// </summary>
+    public int PendingMutationCount => _pendingMutations.Count;
+
+    /// <inheritdoc/>
+    public override IFactory Factory { get; protected set; } = new DefaultFactory();
+    /// <inheritdoc/>
+    public override IPlannerState PlannerState { get; protected set; } = new DefaultPlannerState();
+    /// <inheritdoc/>
+    public override List<string> MTRDebug { get; set; } = [];
+    /// <inheritdoc/>
+    public override List<string> LastMTRDebug { get; set; } = [];
+
+    /// <inheritdoc/>
+    public override bool DebugMTR => true;
+
+    /// <inheritdoc/>
+    public override Queue<IBaseDecompositionLogEntry> DecompositionLog { get; set; } = new Queue<IBaseDecompositionLogEntry>();
+
+    /// <inheritdoc/>
+    public override bool LogDecomposition => true;
+    /// <inheritdoc/>
+    public override byte[] WorldState { get; } = new byte[Enum.GetValues<WorldState>().Length];
+
+    // --- World State Helpers for HTN Effects ---
+
+    /// <summary>
+    /// Sets a world state flag (used by HTN effects during planning).
+    /// </summary>
+    public void SetWorldState(WorldState state, bool value)
+    {
+        if (ContextState == ContextState.Planning)
         {
-            _pendingMutations.Add(mutation);
+            // During planning, we use the base SetState which handles the state stack
+            SetState((int)state, (byte)(value ? 1 : 0), true, EffectType.PlanAndExecute);
         }
-
-        /// <summary>
-        /// Executes all buffered changes on the database and returns the new state.
-        /// </summary>
-        public InvictaDatabase Commit(InvictaDatabase originalDb)
+        else
         {
-            var result = originalDb;
-            foreach (var mutation in _pendingMutations)
-            {
-                result = mutation(result);
-            }
-            return result;
-        }
-
-        // --- Standard Fluid-HTN Logging Overrides ---
-        public override void Log(string name, string description)
-        {
-            // Optional: Route this to your own logging system
-            // Console.WriteLine($"[AI-{Self.Id}] {name}: {description}");
+            // During execution or initialization, we set the state directly
+            // But we should still use SetState to be safe if the library expects it
+            SetState((int)state, (byte)(value ? 1 : 0), true, EffectType.Permanent);
         }
     }
+
+    /// <summary>
+    /// Gets a world state flag.
+    /// </summary>
+    public bool GetWorldState(WorldState state)
+    {
+        return GetState((int)state) == 1;
+    }
+}

@@ -21,7 +21,7 @@ public class DateSystemMessagingTest
         var dateSystem = new DateSystem();
         var game = new Game();
         game.AddSystem(dateSystem.Name, dateSystem);
-        db = game.InitializeSystems(db);
+        db = game.Init(db);
         db = db.ClearMessages(); // Clear any initialization messages
 
         db = game.SimulateHour(db);
@@ -45,7 +45,7 @@ public class DateSystemMessagingTest
         var dateSystem = new DateSystem();
         var game = new Game();
         game.AddSystem(dateSystem.Name, dateSystem);
-        db = game.InitializeSystems(db);
+        db = game.Init(db);
         db = db.ClearMessages();
 
         // Simulate 24 hours to cross into new day
@@ -69,7 +69,7 @@ public class DateSystemMessagingTest
         var dateSystem = new DateSystem();
         var game = new Game();
         game.AddSystem(dateSystem.Name, dateSystem);
-        db = game.InitializeSystems(db);
+        db = game.Init(db);
         db = db.ClearMessages();
 
         // Simulate a full month
@@ -94,7 +94,7 @@ public class DateSystemMessagingTest
         var dateSystem = new DateSystem();
         var game = new Game();
         game.AddSystem(dateSystem.Name, dateSystem);
-        db = game.InitializeSystems(db);
+        db = game.Init(db);
         db = db.ClearMessages();
 
         // Simulate a full year
@@ -119,7 +119,7 @@ public class DateSystemMessagingTest
         var dateSystem = new DateSystem();
         var game = new Game();
         game.AddSystem(dateSystem.Name, dateSystem);
-        db = game.InitializeSystems(db);
+        db = game.Init(db);
         db = db.ClearMessages();
 
         // Starting date is Jan 1 (Winter). Simulate until March (Spring)
@@ -147,7 +147,7 @@ public class DateSystemMessagingTest
         var dateSystem = new DateSystem();
         var game = new Game();
         game.AddSystem(dateSystem.Name, dateSystem);
-        db = game.InitializeSystems(db);
+        db = game.Init(db);
 
         // Jan 1, year 1 is a Monday in .NET's DateTime
         // Simulate to Jan 8 (next Monday) - 7 days
@@ -175,7 +175,7 @@ public class DateSystemMessagingTest
         var dateSystem = new DateSystem();
         var game = new Game();
         game.AddSystem(dateSystem.Name, dateSystem);
-        db = game.InitializeSystems(db);
+        db = game.Init(db);
         db = db.ClearMessages();
 
         db = game.SimulateHour(db);
@@ -194,7 +194,7 @@ public class DateSystemMessagingTest
         var dateSystem = new DateSystem();
         var game = new Game();
         game.AddSystem(dateSystem.Name, dateSystem);
-        db = game.InitializeSystems(db);
+        db = game.Init(db);
         db = db.ClearMessages();
 
         // Simulate 5 hours
@@ -217,7 +217,7 @@ public class DateSystemMessagingTest
         var dateSystem = new DateSystem();
         var game = new Game();
         game.AddSystem(dateSystem.Name, dateSystem);
-        db = game.InitializeSystems(db);
+        db = game.Init(db);
         db = db.ClearMessages();
 
         db = game.SimulateDay(db);

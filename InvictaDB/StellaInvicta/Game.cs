@@ -29,8 +29,8 @@ public class Game
     private int _maxHistorySize = 100; // Configurable limit to prevent memory bloat
 
     // Milestone snapshots (keyed by "YYYY-MM" for monthly, "YYYY" for yearly)
-    private readonly Dictionary<string, GameSnapshot> _monthlySnapshots = new();
-    private readonly Dictionary<string, GameSnapshot> _yearlySnapshots = new();
+    private readonly Dictionary<string, GameSnapshot> _monthlySnapshots = [];
+    private readonly Dictionary<string, GameSnapshot> _yearlySnapshots = [];
     private int _maxMonthlySnapshots = 24;  // Keep 2 years of monthly snapshots by default
     private int _maxYearlySnapshots = 100;  // Keep 100 years of yearly snapshots by default
 
@@ -418,6 +418,9 @@ public class Game
     /// <returns></returns>
     public InvictaDatabase Init(InvictaDatabase db)
     {
+        if (_initialized)
+            return db;
+
         db = InitializeSystems(db);
         _initialized = true;
         return db.InsertSingleton("CurrentTick", 0L);

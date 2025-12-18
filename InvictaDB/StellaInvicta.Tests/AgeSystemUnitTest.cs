@@ -26,7 +26,7 @@ public class AgeSystemUnitTest
         game.AddSystem(dateSystem.Name, dateSystem);
         game.AddSystem(ageSystem.Name, ageSystem);
 
-        db = game.InitializeSystems(db);
+        db = game.Init(db);
         return (game, db);
     }
 

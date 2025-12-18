@@ -346,7 +346,7 @@ public class GameMessagingPracticalTest
         game.AddSystem(notificationSystem.Name, notificationSystem);
 
         // Initialize all systems
-        db = game.InitializeSystems(db);
+        db = game.Init(db);
 
         // Add initial colonists
         db = db.Insert("colonist_1", new Colonist("Alice", "Farmer", Morale: 75, Fatigue: 0));
@@ -405,7 +405,7 @@ public class GameMessagingPracticalTest
         game.AddSystem("Date System", new DateSystem());
         game.AddSystem("Colonist System", new ColonistSystem());
 
-        db = game.InitializeSystems(db);
+        db = game.Init(db);
         db = db.Insert("colonist_1", new Colonist("Alice", "Farmer", Morale: 50, Fatigue: 0));
         db = db.ClearMessages();
 
@@ -435,7 +435,7 @@ public class GameMessagingPracticalTest
         game.AddSystem("Colonist System", new ColonistSystem());
         game.AddSystem("Notification System", new NotificationSystem());
 
-        db = game.InitializeSystems(db);
+        db = game.Init(db);
 
         // Start with low food (override the initialized value)
         db = db.InsertSingleton(new Resources(Food: 60, Materials: 100, Energy: 50, Credits: 500));
@@ -468,7 +468,7 @@ public class GameMessagingPracticalTest
         game.AddSystem("Farming System", new FarmingSystem());
         game.AddSystem("Economy System", new EconomySystem());
 
-        db = game.InitializeSystems(db);
+        db = game.Init(db);
         db = db.Insert("field_1", new CropField("Wheat", 0, 10, false, Season.Winter));
         db = db.ClearMessages();
 
@@ -498,7 +498,7 @@ public class GameMessagingPracticalTest
         game.AddSystem("Farming System", new FarmingSystem());
         game.AddSystem("Notification System", new NotificationSystem());
 
-        db = game.InitializeSystems(db);
+        db = game.Init(db);
 
         // Plant crops that will be ready soon
         db = db.Insert("field_1", new CropField("Wheat", GrowthStage: 9, MaxGrowth: 10, IsHarvestable: false, PlantedSeason: Season.Winter));
