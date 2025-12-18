@@ -1347,11 +1347,8 @@ public class AISystemTest
         db = db.RegisterTable<AIAgentData>();
         db = db.RegisterTable<GoldItem>();
 
-        db = db.InsertSingleton(new DateTime(2200, 1, 1));
         db = db.Insert("worker", new Character("Worker", 25, 5, 10, 5, 5, new DateTime(2175, 1, 1)));
         db = db.Insert("worker", new AIAgentData("Worker", "Idle"));
-
-        db = game.Init(db);
 
         var workCount = 0;
         var workerDomain = new DomainBuilder<SimulationContext>("Worker")
@@ -1367,6 +1364,9 @@ public class AISystemTest
             .Build();
 
         aiSystem.RegisterDomain("Worker", workerDomain);
+
+        // Initialize game after domain registration
+        db = game.Init(db);
 
         // Simulate a day with AI enabled
         db = game.SimulateDay(db);
