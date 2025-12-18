@@ -48,7 +48,7 @@ foreach (var characterCount in characterCounts)
     game = new Game();
     game.AddSystem("Date System", new StellaInvicta.System.Date.DateSystem());
     game.AddSystem("Age System", new StellaInvicta.System.Age.AgeSystem());
-    db = game.InitializeSystems(db);
+    db = game.Init(db);
     db = db.InsertSingleton(new DateTime(startYear, 1, 1, 0, 0, 0));
 
     // Create characters
