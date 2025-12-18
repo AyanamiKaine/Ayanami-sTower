@@ -13,11 +13,17 @@ public class Game
     /// Indicates whether the game has been initialized.
     /// </summary>
     public bool IsInitialized => _initialized;
-
     /// <summary>
-    /// The current tick count of the game.
+    /// Initializes the game with the provided database.
     /// </summary>
-    public int CurrentTick { get; private set; } = 0;
+    /// <param name="db"></param>
+    /// <returns></returns>
+    public InvictaDatabase Init(InvictaDatabase db)
+    {
+        db = InitializeSystems(db);
+        _initialized = true;
+        return db.InsertSingleton("CurrentTick", 0L);
+    }
 
     /// <summary>
     /// Adds a system to the game.
@@ -82,8 +88,8 @@ public class Game
                 db = system.Run(db);
             }
         }
-        CurrentTick++;
-        return db;
+        long currentTick = db.GetSingleton<long>("CurrentTick");
+        return db.InsertSingleton("CurrentTick", currentTick + 1);
     }
     /// <summary>
     /// Simulates an hour in the game.

@@ -258,7 +258,16 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
     /// <returns></returns>
     public ImmutableDictionary<string, T> GetTable<T>()
     {
-        if (_currentState.TryGetValue(typeof(T).Name, out var tableObj))
+        // First try to look up the table name from the type registry
+        if (_typeToTable.TryGetValue(typeof(T), out var tableName))
+        {
+            if (_currentState.TryGetValue(tableName, out var tableObj))
+            {
+                return (ImmutableDictionary<string, T>)tableObj;
+            }
+        }
+        // Fall back to using the type name directly
+        else if (_currentState.TryGetValue(typeof(T).Name, out var tableObj))
         {
             return (ImmutableDictionary<string, T>)tableObj;
         }
@@ -565,4 +574,302 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
     {
         return GetEnumerator();
     }
+
+    #region Batch Operations
+
+    /// <summary>
+    /// Executes a batch of operations on the database, committing them as a single state transition.
+    /// This is significantly more performant for multiple updates than calling Insert/Remove individually.
+    /// </summary>
+    /// <param name="batchAction">The action to perform on the batch builder.</param>
+    /// <returns>The updated database.</returns>
+    public InvictaDatabase Batch(Action<BatchOperations> batchAction)
+    {
+        var batch = new BatchOperations(this);
+        batchAction(batch);
+        return batch.Commit();
+    }
+
+    /// <summary>
+    /// Helper class for batching database operations to reduce allocation overhead.
+    /// </summary>
+    public class BatchOperations
+    {
+        private readonly InvictaDatabase _sourceDb;
+        private readonly ImmutableDictionary<string, object>.Builder _rootStateBuilder;
+        private readonly List<DatabaseEvent> _pendingEvents = [];
+
+        // Cache for active table builders to avoid recreating them multiple times in one batch
+        private readonly Dictionary<string, ITableBuilderAdapter> _activeTableBuilders = [];
+
+        internal BatchOperations(InvictaDatabase sourceDb)
+        {
+            _sourceDb = sourceDb;
+            _rootStateBuilder = sourceDb._currentState.ToBuilder();
+        }
+
+        /// <summary>
+        /// Inserts or updates an entry in the batch.
+        /// </summary>
+        /// <typeparam name="T">The type of entry.</typeparam>
+        /// <param name="id">The entry ID.</param>
+        /// <param name="entry">The entry to insert or update.</param>
+        public void Insert<T>(string id, T entry)
+        {
+            if (!_sourceDb._typeToTable.TryGetValue(typeof(T), out var tableName))
+            {
+                throw new InvalidOperationException($"Type {typeof(T).Name} is not mapped to a table.");
+            }
+
+            var builder = GetTableBuilder<T>(tableName);
+
+            bool isUpdate = builder.ContainsKey(id);
+            T? oldValue = isUpdate ? builder[id] : default;
+
+            // Update the builder
+            builder[id] = entry;
+
+            // Queue the event
+            var evt = isUpdate
+                ? DatabaseEvent.Update(tableName, id, oldValue, entry)
+                : DatabaseEvent.Insert(tableName, id, entry);
+            _pendingEvents.Add(evt);
+        }
+
+        /// <summary>
+        /// Removes an entry in the batch.
+        /// </summary>
+        /// <typeparam name="T">The type of entry.</typeparam>
+        /// <param name="id">The entry ID.</param>
+        public void RemoveEntry<T>(string id)
+        {
+            if (!_sourceDb._typeToTable.TryGetValue(typeof(T), out var tableName))
+            {
+                throw new InvalidOperationException($"Type {typeof(T).Name} is not mapped to a table.");
+            }
+
+            var builder = GetTableBuilder<T>(tableName);
+
+            if (builder.TryGetValue(id, out var oldValue))
+            {
+                builder.Remove(id);
+                _pendingEvents.Add(DatabaseEvent.Remove(tableName, id, oldValue));
+            }
+        }
+
+        /// <summary>
+        /// Inserts or updates a singleton in the batch.
+        /// </summary>
+        /// <typeparam name="T">The type of singleton.</typeparam>
+        /// <param name="id">The singleton ID.</param>
+        /// <param name="entry">The singleton value.</param>
+        public void InsertSingleton<T>(string id, T entry)
+        {
+            if (entry is null) throw new ArgumentNullException(nameof(entry));
+
+            T? oldValue = default;
+            if (_rootStateBuilder.TryGetValue(id, out var existing))
+            {
+                oldValue = (T)existing;
+            }
+
+            _rootStateBuilder[id] = entry;
+            _pendingEvents.Add(DatabaseEvent.SingletonChanged(id, oldValue, entry));
+        }
+
+        /// <summary>
+        /// Inserts or updates a singleton in the batch using the type name as the ID.
+        /// </summary>
+        /// <typeparam name="T">The type of singleton.</typeparam>
+        /// <param name="entry">The singleton value.</param>
+        public void InsertSingleton<T>(T entry)
+        {
+            InsertSingleton(typeof(T).Name, entry);
+        }
+
+        /// <summary>
+        /// Removes a singleton in the batch.
+        /// </summary>
+        /// <typeparam name="T">The type of singleton.</typeparam>
+        /// <param name="id">The singleton ID.</param>
+        public void RemoveSingleton<T>(string id)
+        {
+            if (_rootStateBuilder.TryGetValue(id, out var existing))
+            {
+                _rootStateBuilder.Remove(id);
+                _pendingEvents.Add(DatabaseEvent.Remove<T>(null, id, (T)existing));
+            }
+        }
+
+        /// <summary>
+        /// Removes a singleton in the batch using the type name as the ID.
+        /// </summary>
+        /// <typeparam name="T">The type of singleton.</typeparam>
+        public void RemoveSingleton<T>()
+        {
+            RemoveSingleton<T>(typeof(T).Name);
+        }
+
+        /// <summary>
+        /// Gets an entry by ID from the current batch state.
+        /// </summary>
+        /// <typeparam name="T">The type of entry.</typeparam>
+        /// <param name="id">The entry ID.</param>
+        /// <returns>The entry if found, default otherwise.</returns>
+        public T? GetEntry<T>(string id)
+        {
+            if (!_sourceDb._typeToTable.TryGetValue(typeof(T), out var tableName))
+            {
+                return default;
+            }
+
+            // Check if we have an active builder for this table
+            if (_activeTableBuilders.TryGetValue(tableName, out var adapter))
+            {
+                var builder = ((TableBuilderAdapter<T>)adapter).Builder;
+                return builder.TryGetValue(id, out var value) ? value : default;
+            }
+
+            // Otherwise, check the source database
+            return _sourceDb.GetEntry<T>(tableName, id);
+        }
+
+        /// <summary>
+        /// Gets a singleton by ID from the current batch state.
+        /// </summary>
+        /// <typeparam name="T">The type of singleton.</typeparam>
+        /// <param name="id">The singleton ID.</param>
+        /// <returns>The singleton if found.</returns>
+        public T GetSingleton<T>(string id)
+        {
+            if (_rootStateBuilder.TryGetValue(id, out var value))
+            {
+                return (T)value;
+            }
+            throw new InvalidOperationException($"Singleton with ID {id} does not exist.");
+        }
+
+        /// <summary>
+        /// Gets a singleton by type from the current batch state.
+        /// </summary>
+        /// <typeparam name="T">The type of singleton.</typeparam>
+        /// <returns>The singleton if found.</returns>
+        public T GetSingleton<T>()
+        {
+            return GetSingleton<T>(typeof(T).Name);
+        }
+
+        /// <summary>
+        /// Checks if an entry exists in the current batch state.
+        /// </summary>
+        /// <typeparam name="T">The type of entry.</typeparam>
+        /// <param name="id">The entry ID.</param>
+        /// <returns>True if the entry exists.</returns>
+        public bool Exists<T>(string id)
+        {
+            if (!_sourceDb._typeToTable.TryGetValue(typeof(T), out var tableName))
+            {
+                return false;
+            }
+
+            // Check if we have an active builder for this table
+            if (_activeTableBuilders.TryGetValue(tableName, out var adapter))
+            {
+                return ((TableBuilderAdapter<T>)adapter).Builder.ContainsKey(id);
+            }
+
+            // Otherwise, check the source database
+            return _sourceDb.Exists<T>(id);
+        }
+
+        /// <summary>
+        /// Sends a message to the message queue within the batch.
+        /// </summary>
+        /// <typeparam name="T">The payload type.</typeparam>
+        /// <param name="sender">The sender system name.</param>
+        /// <param name="payload">The message payload.</param>
+        public void SendMessage<T>(string sender, T payload)
+        {
+            // Note: Messages are handled separately from the main state
+            // For now, we'll store them and apply at commit time
+            // This requires extending the batch to track messages
+            _pendingMessages.Add(GameMessage.Create(sender, payload));
+        }
+
+        private readonly List<GameMessage> _pendingMessages = [];
+
+        /// <summary>
+        /// Commits the batch changes to a new InvictaDatabase instance.
+        /// </summary>
+        internal InvictaDatabase Commit()
+        {
+            // 1. Finalize all table builders and put them back into the root state builder
+            foreach (var kvp in _activeTableBuilders)
+            {
+                var tableName = kvp.Key;
+                var tableAdapter = kvp.Value;
+                _rootStateBuilder[tableName] = tableAdapter.Build();
+            }
+
+            // 2. Create the new immutable state
+            var finalState = _rootStateBuilder.ToImmutable();
+
+            // 3. Handle message queue
+            var messageQueue = _sourceDb._messageQueue;
+            foreach (var message in _pendingMessages)
+            {
+                messageQueue = messageQueue.Enqueue(message);
+            }
+
+            // 4. Return new DB instance with updated state and added events
+            return new InvictaDatabase(
+                finalState,
+                _sourceDb._typeToTable,
+                _sourceDb._tableToType,
+                _sourceDb._eventLog.AddRange(_pendingEvents),
+                messageQueue
+            );
+        }
+
+        // --- Helper Logic for Generic Builders ---
+
+        // We need an interface to store generic builders in a non-generic dictionary
+        private interface ITableBuilderAdapter
+        {
+            object Build();
+        }
+
+        // Concrete wrapper for the ImmutableDictionary.Builder
+        private class TableBuilderAdapter<T> : ITableBuilderAdapter
+        {
+            public readonly ImmutableDictionary<string, T>.Builder Builder;
+
+            public TableBuilderAdapter(ImmutableDictionary<string, T> sourceTable)
+            {
+                Builder = sourceTable.ToBuilder();
+            }
+
+            public object Build() => Builder.ToImmutable();
+        }
+
+        // Helper to get or create a strongly-typed builder
+        private ImmutableDictionary<string, T>.Builder GetTableBuilder<T>(string tableName)
+        {
+            if (_activeTableBuilders.TryGetValue(tableName, out var adapter))
+            {
+                return ((TableBuilderAdapter<T>)adapter).Builder;
+            }
+
+            // Retrieve existing table (immutable) from source DB or create empty
+            var existingTable = _sourceDb.GetTable<T>(tableName);
+
+            // Create new adapter
+            var newAdapter = new TableBuilderAdapter<T>(existingTable);
+            _activeTableBuilders[tableName] = newAdapter;
+
+            return newAdapter.Builder;
+        }
+    }
+
+    #endregion
 }
