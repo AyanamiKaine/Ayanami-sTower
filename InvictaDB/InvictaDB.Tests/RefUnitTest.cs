@@ -25,7 +25,7 @@ public class RefUnitTest
         var tower = new Building("Tower", "alice"); // Implicit conversion to Ref<Person>
         db = db.Insert("tower", tower);
 
-        var building = db.GetEntry<Building>("tower");
+        var building = db.Get<Building>("tower");
         var owner = building.Owner.Resolve(db);
 
         Assert.Equal("Alice", owner.Name);
@@ -45,7 +45,7 @@ public class RefUnitTest
         var building = new Building("Abandoned", "ghost"); // Reference to non-existent person
         db = db.Insert("abandoned", building);
 
-        var retrieved = db.GetEntry<Building>("abandoned");
+        var retrieved = db.Get<Building>("abandoned");
         var owner = retrieved.Owner.TryResolve(db);
 
         Assert.Null(owner);
@@ -139,7 +139,7 @@ public class RefUnitTest
         db = db.Insert("hq", new Building("Headquarters", "ceo"));
         db = db.Insert("acme", new Company("ACME Corp", "ceo", "hq"));
 
-        var company = db.GetEntry<Company>("acme");
+        var company = db.Get<Company>("acme");
         var ceo = company.CEO.Resolve(db);
         var headquarters = company.Headquarters.Resolve(db);
         var buildingOwner = headquarters.Owner.Resolve(db);
@@ -196,7 +196,7 @@ public class RefUnitTest
         // Update Alice's age
         db = db.Insert("alice", new Person("Alice", 31));
 
-        var building = db.GetEntry<Building>("tower");
+        var building = db.Get<Building>("tower");
         var owner = building.Owner.Resolve(db);
 
         Assert.Equal(31, owner.Age); // Gets the updated version

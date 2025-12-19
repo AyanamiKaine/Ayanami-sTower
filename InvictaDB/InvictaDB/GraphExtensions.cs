@@ -19,7 +19,7 @@ public static class GraphExtensions
     /// <returns>The entity, or default if not found.</returns>
     public static T? Resolve<T>(this InvictaDatabase db, Ref<T> reference) where T : class
     {
-        return db.TryGetEntry<T>(reference.Id, out var entry) ? entry : default;
+        return db.TryGet<T>(reference.Id, out var entry) ? entry : default;
     }
 
     /// <summary>
@@ -32,7 +32,7 @@ public static class GraphExtensions
     /// <exception cref="KeyNotFoundException">Thrown if the entity doesn't exist.</exception>
     public static T ResolveRequired<T>(this InvictaDatabase db, Ref<T> reference) where T : class
     {
-        if (db.TryGetEntry<T>(reference.Id, out var entry) && entry is not null)
+        if (db.TryGet<T>(reference.Id, out var entry) && entry is not null)
             return entry;
         throw new KeyNotFoundException($"Entity of type {typeof(T).Name} with ID '{reference.Id}' not found.");
     }

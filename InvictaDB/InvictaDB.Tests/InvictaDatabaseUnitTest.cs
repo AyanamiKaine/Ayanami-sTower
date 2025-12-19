@@ -71,7 +71,7 @@ public class InvictaDatabaseUnitTest
         var person = new Person { Name = "Alice", Age = 30 };
         db = db.Insert("person1", person);
 
-        var retrievedPerson = db.GetEntry<Person>("person1");
+        var retrievedPerson = db.Get<Person>("person1");
         Assert.Equal("Alice", retrievedPerson.Name);
         Assert.Equal(30, retrievedPerson.Age);
     }

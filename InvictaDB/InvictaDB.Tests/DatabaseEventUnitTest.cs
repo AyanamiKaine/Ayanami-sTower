@@ -304,7 +304,7 @@ public class DatabaseEventUnitTest
         db = db.ClearEvents();
 
         Assert.True(db.TableExists<Player>());
-        Assert.Equal(player, db.GetEntry<Player>("player1"));
+        Assert.Equal(player, db.Get<Player>("player1"));
     }
 
     #endregion

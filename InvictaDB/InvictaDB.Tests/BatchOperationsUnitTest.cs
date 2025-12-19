@@ -41,7 +41,7 @@ public class BatchOperationsUnitTest
         });
 
         // Assert
-        var entity = result.GetEntry<TestEntity>("1");
+        var entity = result.Get<TestEntity>("1");
         Assert.NotNull(entity);
         Assert.Equal("Test", entity.Name);
         Assert.Equal(100, entity.Value);
@@ -67,9 +67,9 @@ public class BatchOperationsUnitTest
 
         // Assert
         Assert.Equal(3, result.GetTable<TestEntity>().Count);
-        Assert.Equal("First", result.GetEntry<TestEntity>("1")?.Name);
-        Assert.Equal("Second", result.GetEntry<TestEntity>("2")?.Name);
-        Assert.Equal("Third", result.GetEntry<TestEntity>("3")?.Name);
+        Assert.Equal("First", result.Get<TestEntity>("1")?.Name);
+        Assert.Equal("Second", result.Get<TestEntity>("2")?.Name);
+        Assert.Equal("Third", result.Get<TestEntity>("3")?.Name);
     }
 
     /// <summary>
@@ -113,7 +113,7 @@ public class BatchOperationsUnitTest
         });
 
         // Assert
-        var entity = result.GetEntry<TestEntity>("1");
+        var entity = result.Get<TestEntity>("1");
         Assert.NotNull(entity);
         Assert.Equal("Updated", entity.Name);
         Assert.Equal(200, entity.Value);
@@ -139,7 +139,7 @@ public class BatchOperationsUnitTest
         });
 
         // Assert
-        var entity = result.GetEntry<TestEntity>("1");
+        var entity = result.Get<TestEntity>("1");
         Assert.NotNull(entity);
         Assert.Equal("Third", entity.Name);
         Assert.Equal(300, entity.Value);
@@ -167,7 +167,7 @@ public class BatchOperationsUnitTest
         });
 
         // Assert
-        Assert.Null(result.GetEntry<TestEntity>("1"));
+        Assert.Null(result.Get<TestEntity>("1"));
         Assert.Empty(result.GetTable<TestEntity>());
     }
 
@@ -190,7 +190,7 @@ public class BatchOperationsUnitTest
 
         // Assert
         Assert.Single(result.GetTable<TestEntity>());
-        Assert.NotNull(result.GetEntry<TestEntity>("1"));
+        Assert.NotNull(result.Get<TestEntity>("1"));
     }
 
     /// <summary>
@@ -211,7 +211,7 @@ public class BatchOperationsUnitTest
         });
 
         // Assert
-        Assert.Null(result.GetEntry<TestEntity>("1"));
+        Assert.Null(result.Get<TestEntity>("1"));
         Assert.Empty(result.GetTable<TestEntity>());
     }
 
@@ -234,7 +234,7 @@ public class BatchOperationsUnitTest
         });
 
         // Assert
-        var entity = result.GetEntry<TestEntity>("1");
+        var entity = result.Get<TestEntity>("1");
         Assert.NotNull(entity);
         Assert.Equal("New", entity.Name);
     }
@@ -618,8 +618,8 @@ public class BatchOperationsUnitTest
 
         // Assert
         Assert.NotSame(db, result);
-        Assert.Null(db.GetEntry<TestEntity>("1"));
-        Assert.NotNull(result.GetEntry<TestEntity>("1"));
+        Assert.Null(db.Get<TestEntity>("1"));
+        Assert.NotNull(result.Get<TestEntity>("1"));
     }
 
     /// <summary>
@@ -639,7 +639,7 @@ public class BatchOperationsUnitTest
         // Assert
         Assert.NotSame(db, result);
         Assert.Single(result.GetTable<TestEntity>());
-        Assert.NotNull(result.GetEntry<TestEntity>("1"));
+        Assert.NotNull(result.Get<TestEntity>("1"));
     }
 
     #endregion
@@ -674,8 +674,8 @@ public class BatchOperationsUnitTest
         // Assert
         Assert.Equal(2, result.GetTable<TestEntity>().Count);
         Assert.Equal(2, result.GetTable<SecondEntity>().Count);
-        Assert.Equal("First", result.GetEntry<TestEntity>("1")?.Name);
-        Assert.Equal("Alpha", result.GetEntry<SecondEntity>("a")?.Description);
+        Assert.Equal("First", result.Get<TestEntity>("1")?.Name);
+        Assert.Equal("Alpha", result.Get<SecondEntity>("a")?.Description);
     }
 
     /// <summary>
@@ -702,8 +702,8 @@ public class BatchOperationsUnitTest
         // Assert
         Assert.Equal(2, result.GetTable<TestEntity>().Count);
         Assert.Empty(result.GetTable<SecondEntity>());
-        Assert.Equal("Updated", result.GetEntry<TestEntity>("1")?.Name);
-        Assert.Equal("New", result.GetEntry<TestEntity>("2")?.Name);
+        Assert.Equal("Updated", result.Get<TestEntity>("1")?.Name);
+        Assert.Equal("New", result.Get<TestEntity>("2")?.Name);
     }
 
     #endregion
@@ -733,7 +733,7 @@ public class BatchOperationsUnitTest
 
         // Assert
         Assert.Equal(count, result.GetTable<TestEntity>().Count);
-        Assert.Equal("Entity500", result.GetEntry<TestEntity>("500")?.Name);
+        Assert.Equal("Entity500", result.Get<TestEntity>("500")?.Name);
     }
 
     /// <summary>
@@ -764,8 +764,8 @@ public class BatchOperationsUnitTest
 
         // Assert
         Assert.Equal(2, result.GetTable<TestEntity>().Count);
-        Assert.Equal("Updated2", result.GetEntry<TestEntity>("1")?.Name);
-        Assert.Equal(175, result.GetEntry<TestEntity>("1")?.Value);
+        Assert.Equal("Updated2", result.Get<TestEntity>("1")?.Name);
+        Assert.Equal(175, result.Get<TestEntity>("1")?.Value);
     }
 
     #endregion

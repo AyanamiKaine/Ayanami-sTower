@@ -77,7 +77,7 @@ public class DatabasePersistenceUnitTest
             var loadedTable = loadedDb.GetTable<TestCharacter>();
             Assert.Equal(2, loadedTable.Count);
 
-            var alice = loadedDb.GetEntry<TestCharacter>("char1");
+            var alice = loadedDb.Get<TestCharacter>("char1");
             Assert.Equal("Alice", alice.Name);
             Assert.Equal(25, alice.Age);
         }
@@ -216,7 +216,7 @@ public class DatabasePersistenceUnitTest
             var loadedDb = await DatabasePersistence.LoadFromFileAsync(tempFile);
 
             // Assert
-            var alice = loadedDb.GetEntry<TestCharacter>("char1");
+            var alice = loadedDb.Get<TestCharacter>("char1");
             Assert.Equal("Alice", alice.Name);
         }
         finally

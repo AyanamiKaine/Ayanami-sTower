@@ -307,7 +307,7 @@ public class MessagingUnitTest
         db = db.SendMessage("Type", "Sender", null);
 
         Assert.True(db.TableExists<TestMessage>());
-        Assert.Equal("Hello", db.GetEntry<TestMessage>("1").Content);
+        Assert.Equal("Hello", db.Get<TestMessage>("1").Content);
     }
 
     #endregion

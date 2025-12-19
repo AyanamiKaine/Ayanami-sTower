@@ -238,7 +238,7 @@ public class AISystemTest
                 .Action("Fight Bravely")
                     .Condition("Is Brave", ctx =>
                     {
-                        var character = ctx.Db.GetEntry<Character>(ctx.Self.Id);
+                        var character = ctx.Db.Get<Character>(ctx.Self.Id);
                         return character.Martial >= 10;
                     })
                     .Do(ctx =>
@@ -251,7 +251,7 @@ public class AISystemTest
                 .Action("Flee")
                     .Condition("Is Coward", ctx =>
                     {
-                        var character = ctx.Db.GetEntry<Character>(ctx.Self.Id);
+                        var character = ctx.Db.Get<Character>(ctx.Self.Id);
                         return character.Martial < 10;
                     })
                     .Do(ctx =>
@@ -305,12 +305,12 @@ public class AISystemTest
                 .Action("Sell Cargo")
                     .Condition("Has Cargo", ctx =>
                     {
-                        var ship = ctx.Db.GetEntry<Ship>(ctx.Self.Id);
+                        var ship = ctx.Db.Get<Ship>(ctx.Self.Id);
                         return ship.CurrentCargo > 0;
                     })
                     .Condition("At Destination", ctx =>
                     {
-                        var ship = ctx.Db.GetEntry<Ship>(ctx.Self.Id);
+                        var ship = ctx.Db.Get<Ship>(ctx.Self.Id);
                         return ship.CurrentLocation == ship.Destination || ship.Destination == null && ship.CurrentLocation == "Mars";
                     })
                     .Do(ctx =>
@@ -318,7 +318,7 @@ public class AISystemTest
                         actionsLog.Add("SellCargo");
                         ctx.ApplyChange(d =>
                         {
-                            var ship = d.GetEntry<Ship>(ctx.Self.Id);
+                            var ship = d.Get<Ship>(ctx.Self.Id);
                             d = d.Insert(ctx.Self.Id, ship with { CurrentCargo = 0, Destination = null });
                             d = d.Insert(ctx.Self.Id + "_gold", new GoldItem(500));
                             return d;
@@ -331,12 +331,12 @@ public class AISystemTest
                 .Action("Travel To Destination")
                     .Condition("Has Cargo", ctx =>
                     {
-                        var ship = ctx.Db.GetEntry<Ship>(ctx.Self.Id);
+                        var ship = ctx.Db.Get<Ship>(ctx.Self.Id);
                         return ship.CurrentCargo > 0;
                     })
                     .Condition("Not At Destination", ctx =>
                     {
-                        var ship = ctx.Db.GetEntry<Ship>(ctx.Self.Id);
+                        var ship = ctx.Db.Get<Ship>(ctx.Self.Id);
                         return ship.CurrentLocation != ship.Destination;
                     })
                     .Do(ctx =>
@@ -344,7 +344,7 @@ public class AISystemTest
                         actionsLog.Add("TravelToDestination");
                         ctx.ApplyChange(d =>
                         {
-                            var ship = d.GetEntry<Ship>(ctx.Self.Id);
+                            var ship = d.Get<Ship>(ctx.Self.Id);
                             return d.Insert(ctx.Self.Id, ship with { CurrentLocation = ship.Destination ?? "Mars" });
                         });
                         return FluidHTN.TaskStatus.Success;
@@ -355,7 +355,7 @@ public class AISystemTest
                 .Action("Load Cargo")
                     .Condition("No Cargo", ctx =>
                     {
-                        var ship = ctx.Db.GetEntry<Ship>(ctx.Self.Id);
+                        var ship = ctx.Db.Get<Ship>(ctx.Self.Id);
                         return ship.CurrentCargo == 0;
                     })
                     .Do(ctx =>
@@ -363,7 +363,7 @@ public class AISystemTest
                         actionsLog.Add("LoadCargo");
                         ctx.ApplyChange(d =>
                         {
-                            var ship = d.GetEntry<Ship>(ctx.Self.Id);
+                            var ship = d.Get<Ship>(ctx.Self.Id);
                             return d.Insert(ctx.Self.Id, ship with { CurrentCargo = 50 });
                         });
                         return FluidHTN.TaskStatus.Success;
@@ -377,21 +377,21 @@ public class AISystemTest
         // Tick 1: Should load cargo
         var nextDb = aiSystem.Run(db);
         Assert.Contains("LoadCargo", actionsLog);
-        var ship = nextDb.GetEntry<Ship>(traderId);
+        var ship = nextDb.Get<Ship>(traderId);
         Assert.Equal(50, ship.CurrentCargo);
 
         // Tick 2: Should travel (has cargo, not at destination)
         actionsLog.Clear();
         nextDb = aiSystem.Run(nextDb);
         Assert.Contains("TravelToDestination", actionsLog);
-        ship = nextDb.GetEntry<Ship>(traderId);
+        ship = nextDb.Get<Ship>(traderId);
         Assert.Equal("Mars", ship.CurrentLocation);
 
         // Tick 3: Should sell cargo (at destination with cargo)
         actionsLog.Clear();
         nextDb = aiSystem.Run(nextDb);
         Assert.Contains("SellCargo", actionsLog);
-        ship = nextDb.GetEntry<Ship>(traderId);
+        ship = nextDb.Get<Ship>(traderId);
         Assert.Equal(0, ship.CurrentCargo);
         var gold = nextDb.GetTable<GoldItem>();
         Assert.True(gold.ContainsKey(traderId + "_gold"));
@@ -527,13 +527,13 @@ public class AISystemTest
                             .First(c => c.Key != ctx.Self.Id).Key;
 
                         // Calculate damage based on attacker's martial
-                        var attacker = ctx.Db.GetEntry<Character>(ctx.Self.Id);
+                        var attacker = ctx.Db.Get<Character>(ctx.Self.Id);
                         var damage = attacker.Martial * 2;
 
                         ctx.ApplyChange(d =>
                         {
                             // Reduce target's health
-                            var targetHealth = d.GetEntry<Health>(targetId);
+                            var targetHealth = d.Get<Health>(targetId);
                             d = d.Insert(targetId, targetHealth with
                             {
                                 Current = Math.Max(0, targetHealth.Current - damage)
@@ -558,7 +558,7 @@ public class AISystemTest
         var nextDb = aiSystem.Run(db);
 
         // Assert: Defender took damage (15 martial * 2 = 30 damage)
-        var defenderHealth = nextDb.GetEntry<Health>(defenderId);
+        var defenderHealth = nextDb.Get<Health>(defenderId);
         Assert.True(defenderHealth.Current < 50); // Started at 50, took damage
 
         // Assert: Combat was logged
@@ -630,7 +630,7 @@ public class AISystemTest
                         ctx.ApplyChange(d =>
                         {
                             // Spend gold
-                            var gold = d.GetEntry<GoldItem>(ctx.Self.Id + "_gold");
+                            var gold = d.Get<GoldItem>(ctx.Self.Id + "_gold");
                             d = d.Insert(ctx.Self.Id + "_gold", gold with { Amount = gold.Amount - 100 });
 
                             // Record the gift
@@ -658,7 +658,7 @@ public class AISystemTest
         var nextDb = aiSystem.Run(db);
 
         // Assert: Gold was spent (at least 100 per gift)
-        var merchantGold = nextDb.GetEntry<GoldItem>(merchantId + "_gold");
+        var merchantGold = nextDb.Get<GoldItem>(merchantId + "_gold");
         Assert.True(merchantGold.Amount < 1000); // Started with 1000
 
         // Assert: Gift was recorded
@@ -668,7 +668,7 @@ public class AISystemTest
         Assert.Equal(nobleId, gifts.Values.First().ToId);
 
         // Assert: Relationship improved (started at 0)
-        var relationship = nextDb.GetEntry<Relationship>(relationshipKey);
+        var relationship = nextDb.Get<Relationship>(relationshipKey);
         Assert.True(relationship.Strength > 0);
     }
 
@@ -813,15 +813,15 @@ public class AISystemTest
                         ctx.ApplyChange(d =>
                         {
                             // Buyer pays gold
-                            var buyerGold = d.GetEntry<GoldItem>(ctx.Self.Id + "_gold");
+                            var buyerGold = d.Get<GoldItem>(ctx.Self.Id + "_gold");
                             d = d.Insert(ctx.Self.Id + "_gold", buyerGold with { Amount = buyerGold.Amount - totalCost });
 
                             // Seller receives gold
-                            var sellerGold = d.GetEntry<GoldItem>(sellerKey + "_gold");
+                            var sellerGold = d.Get<GoldItem>(sellerKey + "_gold");
                             d = d.Insert(sellerKey + "_gold", sellerGold with { Amount = sellerGold.Amount + totalCost });
 
                             // Seller loses goods
-                            var goods = d.GetEntry<TradeGood>(sellerGoods.Key);
+                            var goods = d.Get<TradeGood>(sellerGoods.Key);
                             d = d.Insert(sellerGoods.Key, goods with { Quantity = goods.Quantity - quantityToBuy });
 
                             // Buyer gains goods
@@ -850,18 +850,18 @@ public class AISystemTest
         var nextDb = aiSystem.Run(db);
 
         // Assert: Buyer spent gold and got goods
-        var buyerGold = nextDb.GetEntry<GoldItem>(buyerId + "_gold");
+        var buyerGold = nextDb.Get<GoldItem>(buyerId + "_gold");
         Assert.True(buyerGold.Amount < 500); // Started with 500, spent some
 
-        var buyerGoods = nextDb.GetEntry<TradeGood>(buyerId + "_goods");
+        var buyerGoods = nextDb.Get<TradeGood>(buyerId + "_goods");
         Assert.True(buyerGoods.Quantity > 0); // Got some goods
         Assert.Equal("Wheat", buyerGoods.Name);
 
         // Assert: Seller gained gold and lost goods
-        var sellerGold = nextDb.GetEntry<GoldItem>(sellerId + "_gold");
+        var sellerGold = nextDb.Get<GoldItem>(sellerId + "_gold");
         Assert.True(sellerGold.Amount > 50); // Started with 50, gained some
 
-        var sellerGoods = nextDb.GetEntry<TradeGood>(sellerId + "_goods");
+        var sellerGoods = nextDb.Get<TradeGood>(sellerId + "_goods");
         Assert.True(sellerGoods.Quantity < 100); // Started with 100, sold some
     }
 
@@ -898,10 +898,10 @@ public class AISystemTest
                     .Condition("No Combat Log Yet", ctx => !ctx.Db.GetTable<CombatLog>().Any())
                     .Do(ctx =>
                     {
-                        var damage = ctx.Db.GetEntry<Character>(ctx.Self.Id).Martial * 2;
+                        var damage = ctx.Db.Get<Character>(ctx.Self.Id).Martial * 2;
                         ctx.ApplyChange(d =>
                         {
-                            var targetHealth = d.GetEntry<Health>(defenderId);
+                            var targetHealth = d.Get<Health>(defenderId);
                             d = d.Insert(defenderId, targetHealth with { Current = targetHealth.Current - damage });
                             d = d.Insert($"log_{ctx.Self.Id}", new CombatLog(ctx.Self.Id, defenderId, damage, DateTime.Now));
                             return d;
@@ -927,10 +927,10 @@ public class AISystemTest
                         var logs = ctx.Db.GetTable<CombatLog>();
                         var attacker = logs.Values.First(l => l.DefenderId == ctx.Self.Id).AttackerId;
 
-                        var damage = ctx.Db.GetEntry<Character>(ctx.Self.Id).Martial * 2;
+                        var damage = ctx.Db.Get<Character>(ctx.Self.Id).Martial * 2;
                         ctx.ApplyChange(d =>
                         {
-                            var attackerHealth = d.GetEntry<Health>(attacker);
+                            var attackerHealth = d.Get<Health>(attacker);
                             d = d.Insert(attacker, attackerHealth with { Current = attackerHealth.Current - damage });
                             d = d.Insert($"log_{ctx.Self.Id}", new CombatLog(ctx.Self.Id, attacker, damage, DateTime.Now));
                             return d;
@@ -947,7 +947,7 @@ public class AISystemTest
         // Tick 1: Aggressor attacks (condition: no combat log yet)
         var nextDb = aiSystem.Run(db);
 
-        var defenderHealth = nextDb.GetEntry<Health>(defenderId);
+        var defenderHealth = nextDb.Get<Health>(defenderId);
         Assert.True(defenderHealth.Current < 100); // Started at 100, took damage
 
         // Assert combat log was created
@@ -957,7 +957,7 @@ public class AISystemTest
         // Tick 2: Defender retaliates (sees they were attacked)
         nextDb = aiSystem.Run(nextDb);
 
-        var aggressorHealth = nextDb.GetEntry<Health>(aggressorId);
+        var aggressorHealth = nextDb.Get<Health>(aggressorId);
         Assert.True(aggressorHealth.Current < 80); // Started at 80, took retaliation damage
 
         // Both combat logs exist
@@ -1015,10 +1015,10 @@ public class AISystemTest
                         ctx.ApplyChange(d =>
                         {
                             // Pay the mercenary
-                            var employerGold = d.GetEntry<GoldItem>(ctx.Self.Id + "_gold");
+                            var employerGold = d.Get<GoldItem>(ctx.Self.Id + "_gold");
                             d = d.Insert(ctx.Self.Id + "_gold", employerGold with { Amount = employerGold.Amount - 200 });
 
-                            var mercGold = d.GetEntry<GoldItem>(target.Key + "_gold");
+                            var mercGold = d.Get<GoldItem>(target.Key + "_gold");
                             d = d.Insert(target.Key + "_gold", mercGold with { Amount = mercGold.Amount + 200 });
 
                             // Create employment relationship
@@ -1041,8 +1041,8 @@ public class AISystemTest
         var nextDb = aiSystem.Run(db);
 
         // Assert: Gold transferred (employer paid, mercenary got paid)
-        Assert.True(nextDb.GetEntry<GoldItem>(employerId + "_gold").Amount < 1000); // Started with 1000
-        Assert.True(nextDb.GetEntry<GoldItem>(mercenaryId + "_gold").Amount > 10); // Started with 10
+        Assert.True(nextDb.Get<GoldItem>(employerId + "_gold").Amount < 1000); // Started with 1000
+        Assert.True(nextDb.Get<GoldItem>(mercenaryId + "_gold").Amount > 10); // Started with 10
 
         // Assert: Relationship created
         var relationships = nextDb.GetTable<Relationship>();
@@ -1283,7 +1283,7 @@ public class AISystemTest
                         ctx.ApplyChange(d =>
                         {
                             // Pay for ore
-                            var traderGold = d.GetEntry<GoldItem>(ctx.Self.Id + "_gold");
+                            var traderGold = d.Get<GoldItem>(ctx.Self.Id + "_gold");
                             d = d.Insert(ctx.Self.Id + "_gold", traderGold with { Amount = traderGold.Amount - 50 });
 
                             // Seller gets paid
@@ -1295,7 +1295,7 @@ public class AISystemTest
                                 d = d.Insert(sellerGoldKey, new GoldItem(50));
 
                             // Transfer ore
-                            var ore = d.GetEntry<TradeGood>(sellerOre.Key);
+                            var ore = d.Get<TradeGood>(sellerOre.Key);
                             d = d.Insert(sellerOre.Key, ore with { Quantity = ore.Quantity - 10 });
 
                             var traderOreKey = ctx.Self.Id + "_ore";
@@ -1321,7 +1321,7 @@ public class AISystemTest
         var nextDb = game.SimulateMonth(db);
 
         // Assert: Miner produced ore and earned gold
-        var minerGold = nextDb.GetEntry<GoldItem>("miner_1_gold");
+        var minerGold = nextDb.Get<GoldItem>("miner_1_gold");
         Assert.True(minerGold.Amount > 0); // Miner got paid by trader
 
         // Assert: Trade happened - trader has some ore

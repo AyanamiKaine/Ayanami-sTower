@@ -45,7 +45,7 @@ public class JoinTableUnitTest
         db = db.Insert(link.CompositeKey, link);
 
         // Verify the link exists
-        var storedLink = db.GetEntry<CharacterTrait>(link.CompositeKey);
+        var storedLink = db.Get<CharacterTrait>(link.CompositeKey);
         Assert.Equal("alice", storedLink.CharacterId.Id);
         Assert.Equal("brave", storedLink.TraitId.Id);
     }
@@ -195,7 +195,7 @@ public class JoinTableUnitTest
         db = db.Insert(friendship.CompositeKey, friendship);
 
         // Verify
-        var stored = db.GetEntry<Relationship>(friendship.CompositeKey);
+        var stored = db.Get<Relationship>(friendship.CompositeKey);
         Assert.Equal("alice", stored.SourceId);
         Assert.Equal("bob", stored.TargetId);
         Assert.Equal("friend", stored.RelationshipTypeId);
@@ -381,7 +381,7 @@ public class JoinTableUnitTest
         var updatedFriendship = friendship with { Strength = 90 };
         db = db.Insert(friendship.CompositeKey, updatedFriendship); // Same key, updated value
 
-        var stored = db.GetEntry<Relationship>(friendship.CompositeKey);
+        var stored = db.Get<Relationship>(friendship.CompositeKey);
         Assert.Equal(90, stored.Strength);
     }
 

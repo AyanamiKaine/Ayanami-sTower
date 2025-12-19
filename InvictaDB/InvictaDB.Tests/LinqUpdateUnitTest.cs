@@ -45,12 +45,12 @@ public class LinqUpdateUnitTest
         var db = CreateTestDatabase();
 
         // Find Alice and give her a raise
-        var alice = db.GetEntry<Person>("alice");
+        var alice = db.Get<Person>("alice");
         var updatedAlice = alice with { Salary = alice.Salary * 1.10m }; // 10% raise
 
         db = db.Insert("alice", updatedAlice);
 
-        var result = db.GetEntry<Person>("alice");
+        var result = db.Get<Person>("alice");
         Assert.Equal(88000m, result.Salary);
     }
 
@@ -73,9 +73,9 @@ public class LinqUpdateUnitTest
             db = db.Insert(kvp.Key, updated);
         }
 
-        Assert.Equal(92000m, db.GetEntry<Person>("alice").Salary);   // 80000 * 1.15
-        Assert.Equal(103500m, db.GetEntry<Person>("charlie").Salary); // 90000 * 1.15
-        Assert.Equal(60000m, db.GetEntry<Person>("bob").Salary);      // Unchanged (Marketing)
+        Assert.Equal(92000m, db.Get<Person>("alice").Salary);   // 80000 * 1.15
+        Assert.Equal(103500m, db.Get<Person>("charlie").Salary); // 90000 * 1.15
+        Assert.Equal(60000m, db.Get<Person>("bob").Salary);      // Unchanged (Marketing)
     }
 
     /// <summary>
@@ -91,10 +91,10 @@ public class LinqUpdateUnitTest
             .Aggregate(db, (currentDb, kvp) =>
                 currentDb.Insert(kvp.Key, kvp.Value with { Age = kvp.Value.Age + 1 }));
 
-        Assert.Equal(31, db.GetEntry<Person>("alice").Age);
-        Assert.Equal(26, db.GetEntry<Person>("bob").Age);
-        Assert.Equal(36, db.GetEntry<Person>("charlie").Age);
-        Assert.Equal(29, db.GetEntry<Person>("diana").Age);
+        Assert.Equal(31, db.Get<Person>("alice").Age);
+        Assert.Equal(26, db.Get<Person>("bob").Age);
+        Assert.Equal(36, db.Get<Person>("charlie").Age);
+        Assert.Equal(29, db.Get<Person>("diana").Age);
     }
 
     /// <summary>
@@ -115,10 +115,10 @@ public class LinqUpdateUnitTest
             db = db.Insert(kvp.Key, kvp.Value with { Shipped = true });
         }
 
-        Assert.True(db.GetEntry<Order>("order1").Shipped);  // Laptop $1200
-        Assert.True(db.GetEntry<Order>("order2").Shipped);  // Phone $800
-        Assert.True(db.GetEntry<Order>("order3").Shipped);  // Tablet $500 - was already shipped
-        Assert.False(db.GetEntry<Order>("order4").Shipped); // Monitor $300 - below threshold
+        Assert.True(db.Get<Order>("order1").Shipped);  // Laptop $1200
+        Assert.True(db.Get<Order>("order2").Shipped);  // Phone $800
+        Assert.True(db.Get<Order>("order3").Shipped);  // Tablet $500 - was already shipped
+        Assert.False(db.Get<Order>("order4").Shipped); // Monitor $300 - below threshold
     }
 
     /// <summary>
@@ -136,14 +136,14 @@ public class LinqUpdateUnitTest
 
         foreach (var (personId, totalOrders) in orderTotalsByCustomer)
         {
-            var person = db.GetEntry<Person>(personId);
+            var person = db.Get<Person>(personId);
             var bonus = totalOrders * 0.01m; // 1% of order total as bonus
             db = db.Insert(personId, person with { Salary = person.Salary + bonus });
         }
 
-        Assert.Equal(80020m, db.GetEntry<Person>("alice").Salary);   // 80000 + (2000 * 0.01)
-        Assert.Equal(60005m, db.GetEntry<Person>("bob").Salary);     // 60000 + (500 * 0.01)
-        Assert.Equal(90003m, db.GetEntry<Person>("charlie").Salary); // 90000 + (300 * 0.01)
+        Assert.Equal(80020m, db.Get<Person>("alice").Salary);   // 80000 + (2000 * 0.01)
+        Assert.Equal(60005m, db.Get<Person>("bob").Salary);     // 60000 + (500 * 0.01)
+        Assert.Equal(90003m, db.Get<Person>("charlie").Salary); // 90000 + (300 * 0.01)
     }
 
     /// <summary>
@@ -155,11 +155,11 @@ public class LinqUpdateUnitTest
         var db = CreateTestDatabase();
 
         // Transfer Tower ownership from Alice to Charlie
-        var tower = db.GetEntry<Building>("tower");
+        var tower = db.Get<Building>("tower");
         var updatedTower = tower with { Owner = "charlie" };
         db = db.Insert("tower", updatedTower);
 
-        var result = db.GetEntry<Building>("tower");
+        var result = db.Get<Building>("tower");
         Assert.Equal("charlie", result.Owner.Id);
         Assert.Equal("Charlie", result.Owner.Resolve(db).Name);
     }
@@ -173,7 +173,7 @@ public class LinqUpdateUnitTest
         var db = CreateTestDatabase();
 
         // Promote Diana: change department and give raise
-        var diana = db.GetEntry<Person>("diana");
+        var diana = db.Get<Person>("diana");
         var promotedDiana = diana with
         {
             Department = "Engineering",
@@ -182,11 +182,11 @@ public class LinqUpdateUnitTest
         db = db.Insert("diana", promotedDiana);
 
         // Also transfer a building to her
-        var plaza = db.GetEntry<Building>("plaza");
+        var plaza = db.Get<Building>("plaza");
         db = db.Insert("plaza", plaza with { Owner = "diana" });
 
-        var resultDiana = db.GetEntry<Person>("diana");
-        var resultPlaza = db.GetEntry<Building>("plaza");
+        var resultDiana = db.Get<Person>("diana");
+        var resultPlaza = db.Get<Building>("plaza");
 
         Assert.Equal("Engineering", resultDiana.Department);
         Assert.Equal(81250m, resultDiana.Salary);
@@ -217,7 +217,7 @@ public class LinqUpdateUnitTest
             db = db.Insert($"{kvp.Key}_warranty", followUp);
         }
 
-        var warrantyOrder = db.GetEntry<Order>("order3_warranty");
+        var warrantyOrder = db.Get<Order>("order3_warranty");
         Assert.Equal("Tablet Warranty", warrantyOrder.ProductName);
         Assert.Equal(50m, warrantyOrder.Price);
         Assert.Equal("bob", warrantyOrder.Customer.Id);
@@ -247,12 +247,12 @@ public class LinqUpdateUnitTest
         }
 
         // Engineering avg was 85000, Alice was 80000 -> now 85000
-        Assert.Equal(85000m, db.GetEntry<Person>("alice").Salary);
+        Assert.Equal(85000m, db.Get<Person>("alice").Salary);
         // Marketing avg was 62500, Bob was 60000 -> now 62500
-        Assert.Equal(62500m, db.GetEntry<Person>("bob").Salary);
+        Assert.Equal(62500m, db.Get<Person>("bob").Salary);
         // Charlie and Diana were above average, unchanged
-        Assert.Equal(90000m, db.GetEntry<Person>("charlie").Salary);
-        Assert.Equal(65000m, db.GetEntry<Person>("diana").Salary);
+        Assert.Equal(90000m, db.Get<Person>("charlie").Salary);
+        Assert.Equal(65000m, db.Get<Person>("diana").Salary);
     }
 
     /// <summary>
@@ -283,18 +283,18 @@ public class LinqUpdateUnitTest
 
         foreach (var ownerId in ownerIds)
         {
-            var owner = db.GetEntry<Person>(ownerId);
+            var owner = db.Get<Person>(ownerId);
             db = db.Insert(ownerId, owner with { Salary = owner.Salary + 5000m });
         }
 
         // Verify all operations
         Assert.True(db.GetTable<Order>().All(kvp => kvp.Value.Shipped));
-        Assert.Equal(60, db.GetEntry<Building>("tower").Floors);  // 50 + 10
-        Assert.Equal(50, db.GetEntry<Building>("center").Floors); // 40 + 10
-        Assert.Equal(30, db.GetEntry<Building>("plaza").Floors);  // Boston, unchanged
-        Assert.Equal(85000m, db.GetEntry<Person>("alice").Salary);
-        Assert.Equal(65000m, db.GetEntry<Person>("bob").Salary);
-        Assert.Equal(95000m, db.GetEntry<Person>("charlie").Salary);
+        Assert.Equal(60, db.Get<Building>("tower").Floors);  // 50 + 10
+        Assert.Equal(50, db.Get<Building>("center").Floors); // 40 + 10
+        Assert.Equal(30, db.Get<Building>("plaza").Floors);  // Boston, unchanged
+        Assert.Equal(85000m, db.Get<Person>("alice").Salary);
+        Assert.Equal(65000m, db.Get<Person>("bob").Salary);
+        Assert.Equal(95000m, db.Get<Person>("charlie").Salary);
     }
 
     /// <summary>
@@ -320,9 +320,9 @@ public class LinqUpdateUnitTest
             db = db.Insert(kvp.Key, kvp.Value with { Floors = kvp.Value.Floors + 5 });
         }
 
-        Assert.Equal(55, db.GetEntry<Building>("tower").Floors);  // Alice (Engineer)
-        Assert.Equal(45, db.GetEntry<Building>("center").Floors); // Charlie (Engineer)
-        Assert.Equal(30, db.GetEntry<Building>("plaza").Floors);  // Bob (Marketing) - unchanged
+        Assert.Equal(55, db.Get<Building>("tower").Floors);  // Alice (Engineer)
+        Assert.Equal(45, db.Get<Building>("center").Floors); // Charlie (Engineer)
+        Assert.Equal(30, db.Get<Building>("plaza").Floors);  // Bob (Marketing) - unchanged
     }
 
     /// <summary>
@@ -332,16 +332,16 @@ public class LinqUpdateUnitTest
     public void QueryAndUpdate_OriginalDatabaseUnchanged()
     {
         var originalDb = CreateTestDatabase();
-        var originalAliceSalary = originalDb.GetEntry<Person>("alice").Salary;
+        var originalAliceSalary = originalDb.Get<Person>("alice").Salary;
 
         // Make updates on a new reference
         var updatedDb = originalDb;
-        var alice = updatedDb.GetEntry<Person>("alice");
+        var alice = updatedDb.Get<Person>("alice");
         updatedDb = updatedDb.Insert("alice", alice with { Salary = 999999m });
 
         // Original is unchanged
-        Assert.Equal(originalAliceSalary, originalDb.GetEntry<Person>("alice").Salary);
-        Assert.Equal(999999m, updatedDb.GetEntry<Person>("alice").Salary);
+        Assert.Equal(originalAliceSalary, originalDb.Get<Person>("alice").Salary);
+        Assert.Equal(999999m, updatedDb.Get<Person>("alice").Salary);
     }
 
     /// <summary>
@@ -366,9 +366,9 @@ public class LinqUpdateUnitTest
         snapshots.Add(db);
 
         // We can query any snapshot
-        Assert.Equal(80000m, snapshots[0].GetEntry<Person>("alice").Salary);  // Original
-        Assert.Equal(88000m, snapshots[1].GetEntry<Person>("alice").Salary);  // After 1st raise
-        Assert.Equal(96800m, snapshots[2].GetEntry<Person>("alice").Salary);  // After 2nd raise
+        Assert.Equal(80000m, snapshots[0].Get<Person>("alice").Salary);  // Original
+        Assert.Equal(88000m, snapshots[1].Get<Person>("alice").Salary);  // After 1st raise
+        Assert.Equal(96800m, snapshots[2].Get<Person>("alice").Salary);  // After 2nd raise
     }
 
     /// <summary>
@@ -381,15 +381,15 @@ public class LinqUpdateUnitTest
         var checkpoint = db; // Save checkpoint
 
         // Make some bad updates
-        db = db.Insert("alice", db.GetEntry<Person>("alice") with { Salary = 0m });
-        db = db.Insert("bob", db.GetEntry<Person>("bob") with { Salary = 0m });
+        db = db.Insert("alice", db.Get<Person>("alice") with { Salary = 0m });
+        db = db.Insert("bob", db.Get<Person>("bob") with { Salary = 0m });
 
-        Assert.Equal(0m, db.GetEntry<Person>("alice").Salary);
+        Assert.Equal(0m, db.Get<Person>("alice").Salary);
 
         // Rollback
         db = checkpoint;
 
-        Assert.Equal(80000m, db.GetEntry<Person>("alice").Salary);
-        Assert.Equal(60000m, db.GetEntry<Person>("bob").Salary);
+        Assert.Equal(80000m, db.Get<Person>("alice").Salary);
+        Assert.Equal(60000m, db.Get<Person>("bob").Salary);
     }
 }

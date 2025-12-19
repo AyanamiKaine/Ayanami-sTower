@@ -382,14 +382,14 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
     /// <param name="id">The entry ID.</param>
     /// <returns>The entry.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the type is not registered.</exception>
-    public T GetEntry<T>(string id)
+    public T Get<T>(string id)
     {
         if (!_typeToTable.TryGetValue(typeof(T), out var tableName))
         {
             throw new InvalidOperationException($"Type {typeof(T).Name} is not mapped to a table.");
         }
 
-        return GetEntry<T>(tableName, id)!;
+        return Get<T>(tableName, id)!;
     }
 
     /// <summary>
@@ -399,7 +399,7 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
     /// <param name="tableName">The table name.</param>
     /// <param name="id">The entry ID.</param>
     /// <returns>The entry, or default if not found.</returns>
-    public T? GetEntry<T>(string tableName, string id)
+    public T? Get<T>(string tableName, string id)
     {
         var table = GetTable<T>(tableName);
         return table.TryGetValue(id, out var entry) ? entry : default;
@@ -412,7 +412,7 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
     /// <param name="id">The entry ID.</param>
     /// <param name="entry">The entry if found.</param>
     /// <returns>True if found, false otherwise.</returns>
-    public bool TryGetEntry<T>(string id, out T? entry)
+    public bool TryGet<T>(string id, out T? entry)
     {
         entry = default;
         if (!_typeToTable.TryGetValue(typeof(T), out var tableName))
@@ -731,7 +731,7 @@ public class InvictaDatabase : IImmutableDictionary<string, object>
             }
 
             // Otherwise, check the source database
-            return _sourceDb.GetEntry<T>(tableName, id);
+            return _sourceDb.Get<T>(tableName, id);
         }
 
         /// <summary>

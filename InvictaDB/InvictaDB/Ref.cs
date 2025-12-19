@@ -57,7 +57,7 @@ public readonly struct Ref<T> : IEquatable<Ref<T>> where T : class
         {
             throw new InvalidOperationException("Cannot resolve an empty reference.");
         }
-        return db.GetEntry<T>(Id);
+        return db.Get<T>(Id);
     }
 
     /// <summary>
@@ -68,7 +68,7 @@ public readonly struct Ref<T> : IEquatable<Ref<T>> where T : class
     public T? TryResolve(InvictaDatabase db)
     {
         if (IsEmpty) return default;
-        return db.TryGetEntry<T>(Id, out var entry) ? entry : default;
+        return db.TryGet<T>(Id, out var entry) ? entry : default;
     }
 
     /// <summary>

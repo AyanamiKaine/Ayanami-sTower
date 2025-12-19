@@ -371,11 +371,11 @@ public class GameMessagingPracticalTest
         }
 
         // Verify crops grew
-        var wheatField = db.GetEntry<CropField>("field_1");
+        var wheatField = db.Get<CropField>("field_1");
         Assert.True(wheatField.IsHarvestable); // Should be ready (10 days reached)
         Assert.Equal(10, wheatField.GrowthStage);
 
-        var cornField = db.GetEntry<CropField>("field_2");
+        var cornField = db.Get<CropField>("field_2");
         Assert.True(cornField.IsHarvestable); // Should be ready (15 days reached)
         Assert.Equal(15, cornField.GrowthStage);
 
@@ -417,7 +417,7 @@ public class GameMessagingPracticalTest
         }
 
         // Verify colonist morale increased due to Spring
-        var colonist = db.GetEntry<Colonist>("colonist_1");
+        var colonist = db.Get<Colonist>("colonist_1");
         Assert.Equal(60, colonist.Morale); // +10 for Spring
     }
 
@@ -451,7 +451,7 @@ public class GameMessagingPracticalTest
         Assert.True(resources.Food < 50); // Should be 40 (60 - 20)
 
         // Verify colonist morale dropped
-        var colonist = db.GetEntry<Colonist>("colonist_1");
+        var colonist = db.Get<Colonist>("colonist_1");
         Assert.True(colonist.Morale < 80);
     }
 
@@ -511,7 +511,7 @@ public class GameMessagingPracticalTest
         db = game.SimulateDay(db);
 
         // Verify the chain reaction worked
-        var field = db.GetEntry<CropField>("field_1");
+        var field = db.Get<CropField>("field_1");
         Assert.True(field.IsHarvestable);
 
         var notifications = db.GetTable<GameNotification>();

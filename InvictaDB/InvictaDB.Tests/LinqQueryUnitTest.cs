@@ -274,7 +274,7 @@ public class LinqQueryUnitTest
             .GroupBy(kvp => kvp.Value.Customer.Id)
             .Select(g => new
             {
-                CustomerName = db.GetEntry<Person>(g.Key).Name,
+                CustomerName = db.Get<Person>(g.Key).Name,
                 TotalSpent = g.Sum(kvp => kvp.Value.Price),
                 OrderCount = g.Count()
             })

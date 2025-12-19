@@ -59,8 +59,8 @@ public class ImmutableBenefitsUnitTest
         db = db.Insert("alice", new Person("Alice", 31));
 
         // Bob's entry should be the exact same object
-        var bobBefore = dbBefore.GetEntry<Person>("bob");
-        var bobAfter = db.GetEntry<Person>("bob");
+        var bobBefore = dbBefore.Get<Person>("bob");
+        var bobAfter = db.Get<Person>("bob");
 
         Assert.True(ReferenceEquals(bobBefore, bobAfter),
             "Unchanged entries should be the same reference (structural sharing)");
@@ -92,10 +92,10 @@ public class ImmutableBenefitsUnitTest
 
         // All 51 snapshots share the other 99 person entries
         // Verify person50 is the same reference across ALL snapshots
-        var person50Original = snapshots[0].GetEntry<Person>("person50");
+        var person50Original = snapshots[0].Get<Person>("person50");
         foreach (var snapshot in snapshots)
         {
-            Assert.True(ReferenceEquals(person50Original, snapshot.GetEntry<Person>("person50")),
+            Assert.True(ReferenceEquals(person50Original, snapshot.Get<Person>("person50")),
                 "Unchanged entries should be shared across all versions");
         }
     }
@@ -129,14 +129,14 @@ public class ImmutableBenefitsUnitTest
         db = db.Insert("charlie", new Person("Charlie", 35));
 
         // Each snapshot has its own independent state
-        Assert.Equal(30, snapshot1.GetEntry<Person>("alice").Age);
+        Assert.Equal(30, snapshot1.Get<Person>("alice").Age);
         Assert.False(snapshot1.Exists<Person>("bob"));
 
-        Assert.Equal(31, snapshot2.GetEntry<Person>("alice").Age);
+        Assert.Equal(31, snapshot2.Get<Person>("alice").Age);
         Assert.True(snapshot2.Exists<Person>("bob"));
         Assert.False(snapshot2.Exists<Person>("charlie"));
 
-        Assert.Equal(32, db.GetEntry<Person>("alice").Age);
+        Assert.Equal(32, db.Get<Person>("alice").Age);
         Assert.True(db.Exists<Person>("charlie"));
     }
 
@@ -209,7 +209,7 @@ public class ImmutableBenefitsUnitTest
         history["2024-12-01"] = db;
 
         // Query: "What was Alice's age on 2024-06-01?"
-        Assert.Equal(31, history["2024-06-01"].GetEntry<Person>("alice").Age);
+        Assert.Equal(31, history["2024-06-01"].Get<Person>("alice").Age);
 
         // Query: "Who existed on 2024-01-01?"
         Assert.Single(history["2024-01-01"].GetTable<Person>());
@@ -217,7 +217,7 @@ public class ImmutableBenefitsUnitTest
         // Query: "Show Alice's age progression"
         var aliceAges = history
             .OrderBy(h => h.Key)
-            .Select(h => new { Date = h.Key, Age = h.Value.GetEntry<Person>("alice").Age })
+            .Select(h => new { Date = h.Key, Age = h.Value.Get<Person>("alice").Age })
             .ToList();
 
         Assert.Equal(30, aliceAges[0].Age);
@@ -251,14 +251,14 @@ public class ImmutableBenefitsUnitTest
         var branchB = ancestor.Insert("bob", new Person("Bob Senior", 25));
 
         // All three states exist independently
-        Assert.Equal("Alice", ancestor.GetEntry<Person>("alice").Name);
-        Assert.Equal("Bob", ancestor.GetEntry<Person>("bob").Name);
+        Assert.Equal("Alice", ancestor.Get<Person>("alice").Name);
+        Assert.Equal("Bob", ancestor.Get<Person>("bob").Name);
 
-        Assert.Equal("Alice Senior", branchA.GetEntry<Person>("alice").Name);
-        Assert.Equal("Bob", branchA.GetEntry<Person>("bob").Name);
+        Assert.Equal("Alice Senior", branchA.Get<Person>("alice").Name);
+        Assert.Equal("Bob", branchA.Get<Person>("bob").Name);
 
-        Assert.Equal("Alice", branchB.GetEntry<Person>("alice").Name);
-        Assert.Equal("Bob Senior", branchB.GetEntry<Person>("bob").Name);
+        Assert.Equal("Alice", branchB.Get<Person>("alice").Name);
+        Assert.Equal("Bob Senior", branchB.Get<Person>("bob").Name);
     }
 
     /// <summary>
@@ -329,7 +329,7 @@ public class ImmutableBenefitsUnitTest
             var snapshotIndex = iteration % snapshots.Count;
             var snapshot = snapshots[snapshotIndex];
 
-            var age = snapshot.GetEntry<Person>("person0").Age;
+            var age = snapshot.Get<Person>("person0").Age;
             var count = snapshot.GetTable<Person>().Count;
 
             results.Add((snapshotIndex, age, count));
@@ -365,7 +365,7 @@ public class ImmutableBenefitsUnitTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    readResults.Add(readerSnapshot.GetEntry<Person>("alice").Age);
+                    readResults.Add(readerSnapshot.Get<Person>("alice").Age);
                 }
             },
             // Reader 2: Same
@@ -373,7 +373,7 @@ public class ImmutableBenefitsUnitTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    readResults.Add(readerSnapshot.GetEntry<Person>("alice").Age);
+                    readResults.Add(readerSnapshot.Get<Person>("alice").Age);
                 }
             },
             // Writer: Create 100 new versions
@@ -410,13 +410,13 @@ public class ImmutableBenefitsUnitTest
 
         db = db.Insert("alice", new Person("Alice", 30));
 
-        var originalAge = db.GetEntry<Person>("alice").Age;
+        var originalAge = db.Get<Person>("alice").Age;
 
         // Pass to function that "tries" to modify
         ProcessDatabase(db);
 
         // Original unchanged
-        Assert.Equal(originalAge, db.GetEntry<Person>("alice").Age);
+        Assert.Equal(originalAge, db.Get<Person>("alice").Age);
     }
 
     private void ProcessDatabase(InvictaDatabase db)
@@ -451,19 +451,19 @@ public class ImmutableBenefitsUnitTest
         Assert.Equal("Shared", component2.GetPersonName("shared"));
 
         // Original db also unchanged
-        Assert.Equal("Shared", db.GetEntry<Person>("shared").Name);
+        Assert.Equal("Shared", db.Get<Person>("shared").Name);
     }
 
     private class ComponentA(InvictaDatabase db)
     {
-        public string GetPersonName(string id) => db.GetEntry<Person>(id).Name;
+        public string GetPersonName(string id) => db.Get<Person>(id).Name;
         public InvictaDatabase UpdatePerson(string id, string name) =>
-            db.Insert(id, db.GetEntry<Person>(id) with { Name = name });
+            db.Insert(id, db.Get<Person>(id) with { Name = name });
     }
 
     private class ComponentB(InvictaDatabase db)
     {
-        public string GetPersonName(string id) => db.GetEntry<Person>(id).Name;
+        public string GetPersonName(string id) => db.Get<Person>(id).Name;
     }
 
     #endregion
@@ -499,8 +499,8 @@ public class ImmutableBenefitsUnitTest
 
         var modified = potentiallyModified
             .Where(key => !ReferenceEquals(
-                before.GetEntry<Person>(key),
-                after.GetEntry<Person>(key)))
+                before.Get<Person>(key),
+                after.Get<Person>(key)))
             .ToList();
 
         Assert.Single(added);
@@ -535,8 +535,8 @@ public class ImmutableBenefitsUnitTest
 
         for (int i = 1; i < versions.Length; i++)
         {
-            var prev = versions[i - 1].GetEntry<Person>("alice");
-            var curr = versions[i].GetEntry<Person>("alice");
+            var prev = versions[i - 1].Get<Person>("alice");
+            var curr = versions[i].Get<Person>("alice");
 
             if (prev.Age != curr.Age)
             {
@@ -583,8 +583,8 @@ public class ImmutableBenefitsUnitTest
         }
 
         // Both unchanged due to rollback
-        Assert.Equal(30, db.GetEntry<Person>("alice").Age);
-        Assert.Equal(25, db.GetEntry<Person>("bob").Age);
+        Assert.Equal(30, db.Get<Person>("alice").Age);
+        Assert.Equal(25, db.Get<Person>("bob").Age);
     }
 
     /// <summary>
@@ -603,7 +603,7 @@ public class ImmutableBenefitsUnitTest
         var user2Read = db;
 
         // User 1 makes changes
-        var doc1 = user1Read.GetEntry<Document>("doc1");
+        var doc1 = user1Read.Get<Document>("doc1");
         var user1Update = user1Read.Insert("doc1",
             doc1 with { Content = "User 1 edit", Version = doc1.Version + 1 });
 
@@ -611,8 +611,8 @@ public class ImmutableBenefitsUnitTest
         db = user1Update;
 
         // User 2 tries to make changes based on stale read
-        var doc2 = user2Read.GetEntry<Document>("doc1");
-        var currentDoc = db.GetEntry<Document>("doc1");
+        var doc2 = user2Read.Get<Document>("doc1");
+        var currentDoc = db.Get<Document>("doc1");
 
         // Optimistic lock check
         if (doc2.Version != currentDoc.Version)
@@ -626,8 +626,8 @@ public class ImmutableBenefitsUnitTest
         }
 
         // Final state has User 1's changes
-        Assert.Equal("User 1 edit", db.GetEntry<Document>("doc1").Content);
-        Assert.Equal(2, db.GetEntry<Document>("doc1").Version);
+        Assert.Equal("User 1 edit", db.Get<Document>("doc1").Content);
+        Assert.Equal(2, db.Get<Document>("doc1").Version);
     }
 
     #endregion
@@ -656,7 +656,7 @@ public class ImmutableBenefitsUnitTest
         }
 
         // ...snapshot is exactly as it was
-        Assert.Equal(30, snapshot.GetEntry<Person>("alice").Age);
+        Assert.Equal(30, snapshot.Get<Person>("alice").Age);
         Assert.Single(snapshot.GetTable<Person>());
     }
 
@@ -681,8 +681,8 @@ public class ImmutableBenefitsUnitTest
 
         // Both have identical final state
         Assert.Equal(
-            state1.GetEntry<Person>("a").Age,
-            state2.GetEntry<Person>("a").Age);
+            state1.Get<Person>("a").Age,
+            state2.Get<Person>("a").Age);
 
         Assert.Equal(
             state1.GetTable<Person>().Count,

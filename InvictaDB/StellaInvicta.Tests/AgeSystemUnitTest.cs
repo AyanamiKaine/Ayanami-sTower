@@ -79,7 +79,7 @@ public class AgeSystemUnitTest
         // Simulate one day - should trigger birthday on Jan 2
         db = game.SimulateDay(db);
 
-        var updatedCharacter = db.GetEntry<Character>("testchar");
+        var updatedCharacter = db.Get<Character>("testchar");
         Assert.Equal(1, updatedCharacter.Age); // Character should now be 1 year old
     }
 
@@ -105,7 +105,7 @@ public class AgeSystemUnitTest
             db = game.SimulateDay(db);
         }
 
-        var updatedCharacter = db.GetEntry<Character>("testchar");
+        var updatedCharacter = db.Get<Character>("testchar");
         Assert.Equal(0, updatedCharacter.Age); // Character should still be 0
     }
 
@@ -134,7 +134,7 @@ public class AgeSystemUnitTest
 
         // Born Year 1, started Year 2, now Year 5 (Jan 1)
         // Had birthdays on March 15 of Years 2, 3, 4 = 3 birthdays
-        var updatedCharacter = db.GetEntry<Character>("testchar");
+        var updatedCharacter = db.Get<Character>("testchar");
         Assert.Equal(3, updatedCharacter.Age);
     }
 
@@ -167,9 +167,9 @@ public class AgeSystemUnitTest
             db = game.SimulateDay(db);
         }
 
-        Assert.Equal(20, db.GetEntry<Character>("alice").Age);   // Had birthday on Jan 5
-        Assert.Equal(19, db.GetEntry<Character>("bob").Age);     // Birthday is Jan 10
-        Assert.Equal(19, db.GetEntry<Character>("charlie").Age); // Birthday is Feb 1
+        Assert.Equal(20, db.Get<Character>("alice").Age);   // Had birthday on Jan 5
+        Assert.Equal(19, db.Get<Character>("bob").Age);     // Birthday is Jan 10
+        Assert.Equal(19, db.Get<Character>("charlie").Age); // Birthday is Feb 1
     }
 
     /// <summary>
@@ -227,7 +227,7 @@ public class AgeSystemUnitTest
         var currentDate = db.GetSingleton<DateTime>();
         Assert.Equal(3, currentDate.Month); // Should be in March
 
-        var updatedCharacter = db.GetEntry<Character>("leapbaby");
+        var updatedCharacter = db.Get<Character>("leapbaby");
         Assert.Equal(4, updatedCharacter.Age); // Should have aged on Feb 29
     }
 
@@ -249,7 +249,7 @@ public class AgeSystemUnitTest
         // Run the age system directly without any NewDay message
         db = ageSystem.Run(db);
 
-        var updatedCharacter = db.GetEntry<Character>("testchar");
+        var updatedCharacter = db.Get<Character>("testchar");
         Assert.Equal(25, updatedCharacter.Age); // Age unchanged
     }
 
@@ -289,7 +289,7 @@ public class AgeSystemUnitTest
             db = game.SimulateDay(db);
         }
 
-        var updatedCharacter = db.GetEntry<Character>("testchar");
+        var updatedCharacter = db.Get<Character>("testchar");
         Assert.Equal(1, updatedCharacter.Age); // Still 1, birthday is in December
     }
 
@@ -312,7 +312,7 @@ public class AgeSystemUnitTest
         // Simulate a full year - should have birthday on Dec 25
         db = game.SimulateYear(db);
 
-        var updatedCharacter = db.GetEntry<Character>("testchar");
+        var updatedCharacter = db.Get<Character>("testchar");
         Assert.Equal(1, updatedCharacter.Age);
 
         // Verify we're now in Year 3
@@ -344,9 +344,9 @@ public class AgeSystemUnitTest
         // Simulate one day - all three should have birthdays
         db = game.SimulateDay(db);
 
-        Assert.Equal(20, db.GetEntry<Character>("alice").Age);
-        Assert.Equal(20, db.GetEntry<Character>("bob").Age);     // All born same year, so same new age
-        Assert.Equal(20, db.GetEntry<Character>("charlie").Age); // All born same year, so same new age
+        Assert.Equal(20, db.Get<Character>("alice").Age);
+        Assert.Equal(20, db.Get<Character>("bob").Age);     // All born same year, so same new age
+        Assert.Equal(20, db.Get<Character>("charlie").Age); // All born same year, so same new age
 
         // Should have 3 birthday messages
         var birthdayMessages = db.Messages.GetMessages<CharacterBirthday>().ToList();
