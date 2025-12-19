@@ -33,3 +33,11 @@ The fuzzy pattern matcher can be used by a form of AI director like it's done in
 Great question! The reason is quite simple, when playing Victoria 3 I was so fucked up by constant event pop-ups that are 90% meaningless and just generic generated. Why can't I just skip to the future where something interesting happens? While playing Stellaris with my friends, we had to wait because nothing interesting was happening as we had to wait for our fleets to build up.
 
 In essence, we want to skip waiting for something. This is not Clash of Clans. We can easily do that by implementing a system that stops skipping when something interesting or noteworthy the player might be interested in happens (The player should be able to edit what events he wants to stop the simulation for.).
+
+# LLM
+
+## New Features
+
+## Unit Tests
+
+When adding new features or editing existing ones we need to add and re-run our test-suit
