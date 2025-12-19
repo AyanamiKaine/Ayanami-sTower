@@ -26,7 +26,7 @@ public static class CharacterTraitExtensions
     {
         var traitTable = db.GetTable<Trait>();
         return db.GetTraitIds(characterId)
-            .Where(id => traitTable.ContainsKey(id))
+            .Where(traitTable.ContainsKey)
             .Select(id => traitTable[id]);
     }
 
@@ -47,7 +47,7 @@ public static class CharacterTraitExtensions
     {
         var characterTable = db.GetTable<Character>();
         return db.GetCharacterIdsWithTrait(traitId)
-            .Where(id => characterTable.ContainsKey(id))
+            .Where(characterTable.ContainsKey)
             .Select(id => characterTable[id]);
     }
 
