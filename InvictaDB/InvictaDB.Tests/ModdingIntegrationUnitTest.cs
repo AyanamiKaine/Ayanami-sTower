@@ -74,9 +74,7 @@ public class ModdingIntegrationUnitTest
     private static InvictaDatabase Mod_GoldOnSpawn_OnTick(InvictaDatabase db)
     {
         // Read all UnitCreated events (do not consume/remove them)
-        var unitCreatedEvents = db.Messages.GetMessages<UnitCreated>();
-
-        foreach (var evt in unitCreatedEvents)
+        foreach (var evt in db.Messages.GetMessages<UnitCreated>())
         {
             var payload = evt.GetPayload<UnitCreated>();
             if (payload == null) continue;
@@ -101,9 +99,7 @@ public class ModdingIntegrationUnitTest
     /// </summary>
     private static InvictaDatabase Mod_KillTracker_OnTick(InvictaDatabase db)
     {
-        var unitDestroyedEvents = db.Messages.GetMessages<UnitDestroyed>();
-
-        foreach (var evt in unitDestroyedEvents)
+        foreach (var evt in db.Messages.GetMessages<UnitDestroyed>())
         {
             var payload = evt.GetPayload<UnitDestroyed>();
             if (payload == null) continue;
