@@ -1,0 +1,11 @@
+---
+import Layout from "../layouts/Layout.astro";
+import XPathGenerator from "../components/XPathGenerator.svelte";
+
+// Get file path from query string if provided
+const filePath = Astro.url.searchParams.get("file");
+---
+
+<Layout title="X4 Modding Studio - Editor">
+    <XPathGenerator client:load initialFilePath={filePath} />
+</Layout>

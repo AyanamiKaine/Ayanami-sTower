@@ -1,0 +1,11 @@
+---
+import Layout from "../layouts/Layout.astro";
+import BrowserPage from "../components/BrowserPage.svelte";
+
+// Get initial path from query string (may be empty, component will check localStorage)
+const urlPath = Astro.url.searchParams.get("path") || "";
+---
+
+<Layout title="X4 Modding Studio - File Browser">
+    <BrowserPage client:load urlPath={urlPath} />
+</Layout>
