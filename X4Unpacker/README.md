@@ -34,7 +34,7 @@ dotnet build
 
 ### Basic Usage
 
-Run the tool without arguments to scan the current directory and extract to ./x4_unpacked.
+Run the tool without arguments to scan the current directory and extract to ./x4_unpacked. Just put it in the X4 Foundations folder and run it.
 
 ```shell
 ./X4Unpacker
