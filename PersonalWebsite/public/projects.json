@@ -32,11 +32,15 @@
       },
       {
         "name": "Linux Build",
-        "url": "/downloads/X4Unpacker_linux64.zip"
+        "url": "/downloads/X4Unpacker_linux64.zip",
+        "download": true,
+        "downloadName": "X4Unpacker_linux64.zip"
       },
       {
         "name": "Windows Build",
-        "url": "/downloads/X4Unpacker_win64.zip"
+        "url": "/downloads/X4Unpacker_win64.zip",
+        "download": true,
+        "downloadName": "X4Unpacker_win64.zip"
       }
     ]
   },

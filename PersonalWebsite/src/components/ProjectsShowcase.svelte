@@ -53,7 +53,9 @@
                             </span>
                         {/if}
                     </div>
-                    <p class="text-gray-700 mb-4 text-sm leading-relaxed text-justify">
+                    <p
+                        class="text-gray-700 mb-4 text-sm leading-relaxed text-justify"
+                    >
                         {project.description}
                     </p>
                 </div>
@@ -87,6 +89,8 @@
                                     href={link.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    download={link.downloadName ??
+                                        (link.download ? true : undefined)}
                                     class="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
                                 >
                                     {#if link.name === "GitHub"}
