@@ -1,10 +1,10 @@
-# X4Unpacker
+# X4Unpacker for X4 Foundations 8.0.3
 
 ## What is this?
 
 This is a command-line tool written in C# to extract game assets from X4 Foundations .cat and .dat archives. It allows you to access the raw files (xml, xsm, dds, etc.) used by the game for modding or inspection.
 
-Its made to be a direct replacement for the X Compact Tool. Unpack function. I tried to use the compact tool on linux and it didnt work so this implementation should work better.
+Its made to be a direct replacement for the X Compact Tool unpack function. I tried to use the compact tool on linux and it didnt work so I created this.
 
 ## Why use this tool?
 
@@ -13,8 +13,6 @@ Its made to be a direct replacement for the X Compact Tool. Unpack function. I t
 - Internal De-duplication: Some catalog files contain duplicate entries (patches within patches). This tool identifies the correct winning line and ignores older versions to prevent infinite extraction loops.
 
 - Incremental Updates: It checks file sizes and timestamps (UTC) before extracting. If you run the tool again after a game update, it only extracts the new or changed files.
-
-- Parallel Processing: It uses multiple CPU threads to extract files rapidly.
 
 ## Requirements
 
