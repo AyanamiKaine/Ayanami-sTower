@@ -1,0 +1,473 @@
+---
+import Flashcard from "../components/Flashcard.astro";
+import Quiz from "../components/Quiz.astro";
+import CodeBlock from "../components/CodeBlock.astro";
+---
+
+<Flashcard id="doom-doctor" tags={["doom-emacs", "cli", "maintenance"]}>
+    <Fragment slot="front">
+        <h3>
+            Which CLI command should you run to diagnose issues with your Doom
+            Emacs installation?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p><code>doom doctor</code></p>
+        <p>
+            This command checks your environment for common issues, missing
+            dependencies, and configuration errors.
+        </p>
+    </Fragment>
+</Flashcard>
+
+<Flashcard id="doom-sync" tags={["doom-emacs", "cli", "maintenance"]}>
+    <Fragment slot="front">
+        <h3>What is the purpose of the <code>doom sync</code> command?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            It synchronizes your configuration with the installed packages. You
+            must run this after modifying <code>init.el</code> or <code
+                >packages.el</code
+            > to install/remove packages and regenerate autoloads.
+        </p>
+    </Fragment>
+</Flashcard>
+
+<Flashcard id="cloze-doom-reload" cloze="SPC h r r">
+    <Fragment slot="front"
+        >To reload your Doom configuration without restarting Emacs entirely,
+        use the keybinding ...</Fragment
+    >
+    <Fragment slot="back">
+        To reload your Doom configuration without restarting Emacs entirely, use
+        the keybinding <strong>SPC h r r</strong>
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-doom-find-file"
+    question="Which keybinding is the default for 'Find File' (opening a file anywhere on the system)?"
+    options={["SPC f f", "SPC .", "SPC f s", "SPC p f"]}
+    correctIndex={0}
+    tags={["doom-emacs", "navigation", "files"]}
+    priority={10}
+    source="doom-emacs.astro"
+    explanation="SPC f f (find-file) is the standard way to navigate the file system. Note that SPC . is often used to find a file within the current project/directory."
+/>
+
+<Flashcard
+    id="doom-project-switch"
+    tags={["doom-emacs", "navigation", "projects"]}
+>
+    <Fragment slot="front">
+        <h3>How do you quickly switch between different projects?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p><code>SPC p p</code></p>
+        <p>
+            This opens a list of known projects. Once a project is selected, you
+            are prompted to find a file within that specific project.
+        </p>
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="doom-buffer-switch"
+    tags={["doom-emacs", "navigation", "buffers"]}
+>
+    <Fragment slot="front">
+        <h3>What is the binding to switch between open buffers?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p><code>SPC b b</code> (or <code>SPC ,</code>)</p>
+        <p>
+            This brings up a list of all currently open files and internal Emacs
+            buffers.
+        </p>
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-doom-split-window"
+    question="How do you create a vertical window split in Doom Emacs?"
+    options={["SPC w s", "SPC w v", "SPC w h", "SPC w c"]}
+    correctIndex={1}
+    tags={["doom-emacs", "windows"]}
+    priority={8}
+    source="doom-emacs.astro"
+    explanation="SPC w v stands for 'window vertical split'. Conversely, SPC w s is for a horizontal 'split'."
+/>
+
+<Flashcard id="doom-window-nav" tags={["doom-emacs", "windows", "evil"]}>
+    <Fragment slot="front">
+        <h3>
+            What are the 'Evil' keys for moving the cursor between split
+            windows?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <ul>
+            <li><strong>SPC w h</strong>: Move left</li>
+            <li><strong>SPC w j</strong>: Move down</li>
+            <li><strong>SPC w k</strong>: Move up</li>
+            <li><strong>SPC w l</strong>: Move right</li>
+        </ul>
+    </Fragment>
+</Flashcard>
+
+<Flashcard id="cloze-doom-search-project" cloze="SPC s p">
+    <Fragment slot="front"
+        >To search for a specific string across your entire project (usually
+        using ripgrep), press ...</Fragment
+    >
+    <Fragment slot="back">
+        To search for a specific string across your entire project (usually
+        using ripgrep), press <strong>SPC s p</strong>
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-doom-help"
+    question="If you forget a keybinding, which prefix allows you to access help, documentation, and keybinding searches?"
+    options={["SPC h", "SPC a", "SPC s", "SPC f"]}
+    correctIndex={0}
+    tags={["doom-emacs", "discovery"]}
+    priority={9}
+    source="doom-emacs.astro"
+    explanation="The 'h' stands for Help. Common follow-ups are 'SPC h k' to find what a key does or 'SPC h v' to look up a variable."
+/>
+
+<Flashcard id="doom-org-capture" tags={["doom-emacs", "org-mode"]}>
+    <Fragment slot="front">
+        <h3>
+            Which command opens the 'Capture' interface for quickly adding
+            notes/tasks in Org Mode?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p><code>SPC X</code> (uppercase X)</p>
+        <p>
+            Alternatively, <code>SPC n n</code> if the (org +journal) module is enabled,
+            but SPC X is the global dispatch for capture templates.
+        </p>
+    </Fragment>
+</Flashcard>
+
+<Flashcard id="evil-line-nav" tags={["doom-emacs", "navigation", "evil"]}>
+    <Fragment slot="front">
+        <h3>How do you jump to the start and end of a line in Evil mode?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <ul>
+            <li><strong>0</strong>: Absolute start of the line.</li>
+            <li><strong>^</strong>: First non-whitespace character.</li>
+            <li><strong>$</strong>: End of the line.</li>
+        </ul>
+    </Fragment>
+</Flashcard>
+
+<Flashcard id="evil-word-nav" tags={["doom-emacs", "navigation", "evil"]}>
+    <Fragment slot="front">
+        <h3>
+            What is the difference between <code>w</code>, <code>e</code>, and <code
+                >b</code
+            >?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <ul>
+            <li>
+                <strong>w</strong>: Jump to the start of the <em>next</em> word.
+            </li>
+            <li>
+                <strong>e</strong>: Jump to the <em>end</em> of the current word.
+            </li>
+            <li>
+                <strong>b</strong>: Jump <em>back</em> to the start of the previous
+                word.
+            </li>
+        </ul>
+    </Fragment>
+</Flashcard>
+
+<Flashcard id="evil-jump-matching" tags={["doom-emacs", "navigation", "evil"]}>
+    <Fragment slot="front">
+        <h3>
+            How do you jump between matching parentheses, brackets, or braces?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            Press <strong>%</strong> while the cursor is on one of the delimiters.
+        </p>
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-doom-comment-line"
+    question="How do you comment out a line or a selected block of text in Doom Emacs?"
+    options={["SPC c l", "g c c", "SPC ;", "M-;"]}
+    correctIndex={1}
+    tags={["doom-emacs", "editing"]}
+    priority={9}
+    source="doom-emacs.astro"
+    explanation="While M-; is the vanilla Emacs way, 'g c c' is the standard Evil-commentary way to comment a line. You can also use 'g c' followed by a motion (like 'g c p' for a paragraph)."
+/>
+
+<Flashcard id="cloze-doom-avy" cloze="g s SPC">
+    <Fragment slot="front"
+        >To use <strong>Avy</strong> to jump to any visible word on the screen instantly,
+        press ...</Fragment
+    >
+    <Fragment slot="back">
+        To use <strong>Avy</strong> to jump to any visible word on the screen instantly,
+        press <strong>g s SPC</strong> (or <strong>s</strong> if using evil-snipe).
+    </Fragment>
+</Flashcard>
+
+<Flashcard id="doom-save-file" tags={["doom-emacs", "editing", "files"]}>
+    <Fragment slot="front">
+        <h3>
+            What is the Doom-specific keybinding to save the current buffer?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p><strong>SPC f s</strong></p>
+        <p>Alternatively, the Vim command <code>:w</code> works as well.</p>
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-doom-resume-search"
+    question="Which command allows you to resume your last search or selection list (e.g., if you accidentally closed a file list)?"
+    options={["SPC r", "SPC s r", "SPC h r", "SPC s p"]}
+    correctIndex={0}
+    tags={["doom-emacs", "navigation"]}
+    priority={7}
+    source="doom-emacs.astro"
+    explanation="SPC r (resume) is incredibly useful for reopening the last search result list you were looking at."
+/>
+
+<Flashcard
+    id="doom-find-references"
+    tags={["doom-emacs", "navigation", "code"]}
+>
+    <Fragment slot="front">
+        <h3>
+            When using a language server (LSP), how do you jump to a definition
+            or find references?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <ul>
+            <li><strong>g d</strong>: Jump to Definition.</li>
+            <li><strong>g D</strong>: Jump to References.</li>
+            <li><strong>g h</strong>: Show documentation/hover info.</li>
+        </ul>
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="doom-workspace-switch"
+    tags={["doom-emacs", "navigation", "workspaces"]}
+>
+    <Fragment slot="front">
+        <h3>How do you quickly switch between workspace numbers (1-9)?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p><strong>M-1</strong> through <strong>M-9</strong> (Alt + number).</p>
+        <p>
+            This allows you to treat Emacs workspaces like browser tabs or
+            virtual desktops.
+        </p>
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-doom-quit"
+    question="What is the proper way to save your current session and quit Emacs in Doom?"
+    options={["SPC q q", "SPC q s", "SPC f s", ":q!"]}
+    correctIndex={0}
+    tags={["doom-emacs", "maintenance"]}
+    priority={6}
+    source="doom-emacs.astro"
+    explanation="SPC q q exits Doom Emacs. SPC q r can be used to restart it if things get sluggish."
+/>
+
+<!-- EDITING: Insert Mode Variations -->
+<Flashcard
+    id="evil-insert-append"
+    tags={["doom-emacs", "editing", "insert-mode"]}
+>
+    <Fragment slot="front">
+        <h3>
+            What is the difference between pressing <code>i</code> and <code
+                >a</code
+            >?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <ul>
+            <li>
+                <strong>i (insert)</strong>: Enters insert mode <em>before</em> the
+                cursor.
+            </li>
+            <li>
+                <strong>a (append)</strong>: Enters insert mode <em>after</em> the
+                cursor.
+            </li>
+        </ul>
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="evil-insert-line"
+    tags={["doom-emacs", "editing", "insert-mode"]}
+>
+    <Fragment slot="front">
+        <h3>How do you insert a new line while remaining in Normal mode?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <ul>
+            <li>
+                <strong>o</strong>: Opens a new line <em>below</em> the cursor and
+                enters Insert mode.
+            </li>
+            <li>
+                <strong>O</strong>: Opens a new line <em>above</em> the cursor and
+                enters Insert mode.
+            </li>
+        </ul>
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-evil-insert-extremes"
+    question="Which keys allow you to jump to the start or end of the line and immediately start typing?"
+    options={["I and A", "0 and $", "^ and g_", "H and L"]}
+    correctIndex={0}
+    tags={["doom-emacs", "editing"]}
+    priority={8}
+    source="doom-emacs.astro"
+    explanation="'I' jumps to the first non-blank character and inserts. 'A' jumps to the very end of the line and appends."
+/>
+
+<!-- SELECTION: Visual Mode -->
+<Flashcard
+    id="evil-visual-types"
+    tags={["doom-emacs", "selection", "visual-mode"]}
+>
+    <Fragment slot="front">
+        <h3>What are the three types of Visual Selection modes?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <ul>
+            <li><strong>v</strong>: Visual Character (standard selection).</li>
+            <li><strong>V</strong>: Visual Line (selects whole lines).</li>
+            <li>
+                <strong>C-v</strong> (Ctrl+v): Visual Block (selects rectangular columns).
+            </li>
+        </ul>
+    </Fragment>
+</Flashcard>
+
+<Flashcard id="cloze-reselect" cloze="gv">
+    <Fragment slot="front"
+        >To quickly re-select the last block of text you selected (even after
+        editing it), press ...</Fragment
+    >
+    <Fragment slot="back">
+        To quickly re-select the last block of text you selected (even after
+        editing it), press <strong>gv</strong>
+    </Fragment>
+</Flashcard>
+
+<!-- DELETING & CHANGING -->
+<Quiz
+    id="quiz-delete-word"
+    question="Which command deletes the word under the cursor?"
+    options={["dw", "cw", "x", "dd"]}
+    correctIndex={0}
+    tags={["doom-emacs", "editing", "deletion"]}
+    priority={10}
+    source="doom-emacs.astro"
+    explanation="'dw' stands for 'delete word'. Note: 'cw' (change word) deletes the word but also places you into Insert mode immediately."
+/>
+
+<Flashcard id="evil-delete-eol" tags={["doom-emacs", "editing", "deletion"]}>
+    <Fragment slot="front">
+        <h3>
+            How do you delete everything from the cursor to the end of the line?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p><strong>D</strong> (shift+d)</p>
+        <p>This is equivalent to <code>d$</code>.</p>
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="evil-change-whole-line"
+    tags={["doom-emacs", "editing", "change"]}
+>
+    <Fragment slot="front">
+        <h3>What does the <code>cc</code> (or <code>S</code>) command do?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            It clears the <strong>entire current line</strong> and places you in Insert
+            mode with the correct indentation.
+        </p>
+    </Fragment>
+</Flashcard>
+
+<!-- MOVING TEXT (Copy/Paste) -->
+<Flashcard
+    id="evil-copy-paste-basics"
+    tags={["doom-emacs", "editing", "clipboard"]}
+>
+    <Fragment slot="front">
+        <h3>What are the Evil keys for Copy and Paste?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <ul>
+            <li><strong>y</strong> (yank): Copy selected text.</li>
+            <li>
+                <strong>p</strong> (put): Paste <em>after</em> the cursor/line.
+            </li>
+            <li><strong>P</strong>: Paste <em>before</em> the cursor/line.</li>
+        </ul>
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-move-text"
+    question="What is the most common 'Vim way' to move a line of text from one place to another?"
+    options={[
+        "Select it, press 'd' (cut), move cursor, press 'p' (paste).",
+        "Select it, press 'm' (move), type line number.",
+        "Click and drag with the mouse.",
+        "Press 'Alt+Up' or 'Alt+Down'.",
+    ]}
+    correctIndex={0}
+    tags={["doom-emacs", "editing"]}
+    priority={9}
+    source="doom-emacs.astro"
+    explanation="In Vim/Evil, 'deleting' text (d, x, c) automatically saves it to the register (clipboard). Therefore, 'delete' acts exactly like 'cut'."
+/>
+
+<Flashcard id="evil-replace-char" tags={["doom-emacs", "editing"]}>
+    <Fragment slot="front">
+        <h3>
+            How do you replace a single character without leaving Normal mode?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>Press <strong>r</strong> followed by the character you want.</p>
+        <p>
+            Example: <code>r x</code> replaces the character under the cursor with
+            'x'.
+        </p>
+    </Fragment>
+</Flashcard>

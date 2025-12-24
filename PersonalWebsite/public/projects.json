@@ -29,6 +29,14 @@
       {
         "name": "GitHub",
         "url": "https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/X4Unpacker"
+      },
+      {
+        "name": "Linux Build",
+        "url": "/downloads/X4Unpacker_linux64.zip"
+      },
+      {
+        "name": "Windows Build",
+        "url": "/downloads/X4Unpacker_win64.zip"
       }
     ]
   },
