@@ -101,6 +101,8 @@ Freelancer promises a living world where the economy can run without the player 
 
 So what is the problem? Why is there not the biggest modding community of all space games? The modding tools suck ass. First to start modding you realistic need to decompress your game data. Why? Because it shows you how the developers actually crafted their game logic. Now to do that you have to download a tool that is over 10 years old and does not work on linux... called [Catalog Tool](https://forum.egosoft.com/viewtopic.php?t=363625). Its a command line tool you have to use. 
 
+Another problem is state management scripts can register global variables and other scripts can refrence them. This is all good but working with such complex state, for example many different scripts that refrence them at the same time. Looking at how the developers manage it they keep the state to a minimum and when registering new variables they either use them in the same script the registed them or have a two places the first one creating it and the second script using it. 
+
 I needed to create my own [X4 Unpacker](https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/X4Unpacker) in C# so I can actually decompress my data on Linux as wine didnt work for me.
 
 Now the next part would be understanding how can I do X? 
