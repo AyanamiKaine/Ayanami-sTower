@@ -1,0 +1,84 @@
+[gd_scene load_steps=3 format=3 uid="uid://c5rm2kfk8616a"]
+
+[ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="1_10wqc"]
+[ext_resource type="Script" uid="uid://dww4lh8hrrey1" path="res://nodes/delay_node.gd" id="2_b4526"]
+
+[node name="DelayNode" instance=ExtResource("1_10wqc")]
+tooltip_text = "Range of delay time between activation and performing actions 
+(or between previous actions block and performing next actions block)
+
+"
+title = "Delay"
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+slot/1/left_enabled = false
+slot/1/left_type = 0
+slot/1/left_color = Color(1, 1, 1, 1)
+slot/1/left_icon = null
+slot/1/right_enabled = false
+slot/1/right_type = 0
+slot/1/right_color = Color(1, 1, 1, 1)
+slot/1/right_icon = null
+slot/1/draw_stylebox = true
+slot/2/left_enabled = false
+slot/2/left_type = 0
+slot/2/left_color = Color(1, 1, 1, 1)
+slot/2/left_icon = null
+slot/2/right_enabled = false
+slot/2/right_type = 0
+slot/2/right_color = Color(1, 1, 1, 1)
+slot/2/right_icon = null
+slot/2/draw_stylebox = true
+script = ExtResource("2_b4526")
+type = 9
+expected_parent_types = Array[int]([5])
+expected_child_types = Array[int]([8])
+xml_element_name = "delay"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="." index="2"]
+layout_mode = 2
+tooltip_text = "Maximum random number (ignored if exact is set)
+"
+
+[node name="Label" type="Label" parent="HBoxContainer" index="0"]
+layout_mode = 2
+text = "Max:"
+
+[node name="MaxAttribute" type="SpinBox" parent="HBoxContainer" index="1"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="." index="3"]
+layout_mode = 2
+tooltip_text = "Minimum random number (ignored if exact is set)"
+
+[node name="Label" type="Label" parent="HBoxContainer2" index="0"]
+layout_mode = 2
+text = "Min:"
+
+[node name="MinAttribute" type="SpinBox" parent="HBoxContainer2" index="1"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="." index="4"]
+layout_mode = 2
+tooltip_text = "Exact value (takes priority over min/max/profile/scale)."
+
+[node name="Label" type="Label" parent="HBoxContainer3" index="0"]
+layout_mode = 2
+text = "Exact:"
+
+[node name="ExactAttribute" type="SpinBox" parent="HBoxContainer3" index="1"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[connection signal="value_changed" from="HBoxContainer/MaxAttribute" to="." method="_on_max_attribute_value_changed"]
+[connection signal="value_changed" from="HBoxContainer2/MinAttribute" to="." method="_on_min_attribute_value_changed"]
+[connection signal="value_changed" from="HBoxContainer3/ExactAttribute" to="." method="_on_exact_attribute_value_changed"]

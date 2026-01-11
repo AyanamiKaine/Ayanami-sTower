@@ -1,0 +1,32 @@
+[gd_scene load_steps=2 format=3 uid="uid://nh1tk1iowiwp"]
+
+[ext_resource type="Script" uid="uid://ehmt1h5ab2gc" path="res://graph_node.gd" id="1_sjckv"]
+
+[node name="ScriptMissionNode" type="GraphNode"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -810.0
+offset_bottom = -561.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 1
+resizable = true
+title = "Mission"
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("1_sjckv")
+
+[node name="TextEdit" type="TextEdit" parent="."]
+custom_minimum_size = Vector2(0, 33)
+layout_mode = 2
+placeholder_text = "Mission_Name"

@@ -1,0 +1,1141 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+
+  <xs:include schemaLocation="aiscripts.xsd" />
+
+  <xs:simpleType name="idstring">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[a-zA-Z_][a-zA-Z0-9_]*" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="iconid">
+    <xs:restriction base="idname" />
+  </xs:simpleType>
+
+  <xs:simpleType name="giftwarefaction">
+    <xs:annotation>
+      <xs:documentation>
+        Faction or list of factions who react positively to receiving this gift ware
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string" />
+  </xs:simpleType>
+
+  <xs:attributeGroup name="icon">
+    <xs:attribute name="active" type="iconid" use="optional">
+      <xs:annotation>
+        <xs:documentation>
+          Active icon ID for diplomacy action/event
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="inactive" type="iconid" use="optional">
+      <xs:annotation>
+        <xs:documentation>
+          Inactive icon ID for diplomacy action/event
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="selected" type="iconid" use="optional">
+      <xs:annotation>
+        <xs:documentation>
+          Icon ID for diplomacy action/event when selected
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="image" type="iconid" use="optional">
+      <xs:annotation>
+        <xs:documentation>
+          Image ID for for diplomacy action/event
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="video" type="iconid" use="optional">
+      <xs:annotation>
+        <xs:documentation>
+          Video ID for diplomacy action/event
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:group name="diplomacytransaction">
+    <xs:annotation>
+      <xs:documentation>
+        Diplomacy transaction definition
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="wares" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="ware" minOccurs="0" maxOccurs="unbounded">
+              <xs:complexType>
+                <xs:attribute name="ware" type="ware" use="required" />
+                <xs:attribute name="amount" type="xs:integer" />
+                <xs:attribute name="min" type="xs:integer" />
+                <xs:attribute name="max" type="xs:integer" />
+                <xs:attribute name="comment" type="comment" />
+              </xs:complexType>
+            </xs:element>
+          </xs:sequence>
+          <xs:attribute name="tags" type="xs:string">
+            <xs:annotation>
+              <xs:documentation>
+                Ware tags
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+
+  <xs:attributeGroup name="diplomacytransaction">
+    <xs:attribute name="influence" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation>
+          Default influence cost to initiate the action (ranging from 0-9)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="money" type="xs:long">
+      <xs:annotation>
+        <xs:documentation>
+          Credit cost to initiate the action
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:complexType name="diplomacyrewardtransaction">
+    <xs:annotation>
+      <xs:documentation>
+        Diplomacy reward definition
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="diplomacytransaction" />
+      <xs:element name="unlocks" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="unlock" minOccurs="0" maxOccurs="unbounded">
+              <xs:complexType>
+                <xs:attribute name="id" type="idstring" use="required" />
+              </xs:complexType>
+            </xs:element>
+          </xs:sequence>
+        </xs:complexType>
+        <xs:key name="unlock_id_value">
+          <xs:selector xpath="unlock" />
+          <xs:field xpath="@id" />
+        </xs:key>
+      </xs:element>
+    </xs:sequence>
+    <xs:attributeGroup ref="diplomacytransaction"/>
+    <xs:attribute name="text" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          UI text summary for rewards
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="factionpairparameter">
+    <xs:annotation>
+      <xs:documentation>
+        Faction parameter for a faction-pair diplomacy action.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" type="paramname" use="required">
+      <xs:annotation>
+        <xs:documentation>
+          Parameter name
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="text" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Localised parameter name displayed in the UI
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="diplomacyaction">
+    <xs:annotation>
+      <xs:documentation>
+        Diplomacy action
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="agent">
+        <xs:annotation>
+          <xs:documentation>
+            Diplomacy action agent definition
+          </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="experience" type="xs:integer">
+            <xs:annotation>
+              <xs:documentation>
+                Recommended agent experience for success
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="text" type="xs:string">
+            <xs:annotation>
+              <xs:documentation>
+                UI text for agent assignment
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="risk" type="agentrisklookup" use="required">
+            <xs:annotation>
+              <xs:documentation>
+                Agent risk
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="type" type="agenttypelookup" use="required">
+            <xs:annotation>
+              <xs:documentation>
+                Agent type
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="cost" minOccurs="0" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Diplomacy action cost definition
+          </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:sequence>
+            <xs:group ref="diplomacytransaction" />
+          </xs:sequence>
+          <xs:attributeGroup ref="diplomacytransaction"/>
+          <xs:attribute name="maxinfluencefactor" type="xs:float">
+            <xs:annotation>
+              <xs:documentation>
+                The maximum factor to inflate the defined money cost. The maximum is achieved when the player has maximum influence. See &lt;influencecostcurve&gt; for the inflation curve.
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="reward" type="diplomacyrewardtransaction" minOccurs="0" maxOccurs="1" />
+      <xs:element name="time">
+        <xs:complexType>
+          <xs:attribute name="duration" type="xs:float" use="required">
+            <xs:annotation>
+              <xs:documentation>
+                Duration of the action
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="cooldown" type="xs:float" use="required">
+            <xs:annotation>
+              <xs:documentation>
+                Cooldown duration of the action
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="durationisbeneficial" type="xs:boolean">
+            <xs:annotation>
+              <xs:documentation>
+                Is a longer duration beneficial to this action? Defaults to false.
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="maxinfluencefactor" type="xs:float">
+            <xs:annotation>
+              <xs:documentation>
+                The maximum factor to inflate the defined duration. The maximum is achieved when the player has maximum influence. See &lt;influencecostcurve&gt; for the inflation curve.
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="icon" minOccurs="0" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Visual presentations for the action (ignored if 'icon' attribute is used in parent node)
+          </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attributeGroup ref="icon" />
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="failure" minOccurs="0" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Failure definition
+          </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="text" type="xs:string">
+            <xs:annotation>
+              <xs:documentation>
+                UI text for failure case
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="success" minOccurs="0" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Success definition
+          </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="chance" type="xs:integer">
+            <xs:annotation>
+              <xs:documentation>
+                Percentage chance of the action succeeding (defaults to 100)
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="text" type="xs:string">
+            <xs:annotation>
+              <xs:documentation>
+                UI text for success case
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="params" minOccurs="0" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Parameter definitions
+          </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:choice>
+            <xs:element name="factionpair" minOccurs="0" maxOccurs="1">
+              <xs:annotation>
+                <xs:documentation>
+                  Action will require two factions to be selected before activation.
+                  Input and lookup name for the factions are 'faction1' and 'faction2'.
+                </xs:documentation>
+              </xs:annotation>
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="first" type="factionpairparameter" />
+                  <xs:element name="second" type="factionpairparameter" />
+                </xs:sequence>
+                <xs:attribute name="comment" type="comment" />
+              </xs:complexType>
+            </xs:element>
+            <xs:sequence minOccurs="0" maxOccurs="unbounded">
+              <xs:element name="param">
+                <xs:annotation>
+                  <xs:documentation>
+                    Diplomacy action parameter
+                  </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="input_param" minOccurs="0" maxOccurs="unbounded">
+                      <xs:annotation>
+                        <xs:documentation>
+                          Internal parameter required by the UI for player input of this order parameter. The order parameter type determines which input parameters are expected.
+                        </xs:documentation>
+                      </xs:annotation>
+                      <xs:complexType>
+                        <xs:attribute name="name" type="orderinputparamlookup" use="required">
+                          <xs:annotation>
+                            <xs:documentation>
+                              Input parameter name
+                            </xs:documentation>
+                          </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="value" type="expression" use="required">
+                          <xs:annotation>
+                            <xs:documentation>
+                              Input parameter value
+                            </xs:documentation>
+                          </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="comment" type="comment" />
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute name="name" type="paramname" use="required">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Parameter name
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="type" type="orderparamlookup" use="required" />
+                  <xs:attribute name="text" type="xs:string">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Localised parameter name displayed in the UI
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="isagenttarget" type="xs:boolean">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Is this object the target of the agent and should be marked in the map? Defaults to false.
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="isfactionexclusive" type="xs:boolean">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Use this parameter to deduce the target faction and enforce exclusivity of this action/faction combination until the cooldown. Only faction and object parameter types supported.
+                        Defaults to false.
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="warecostfactor" type="xs:float">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Use the ware selected via this parameter to inflate the money cost of this action. Input the factor to apply to the average price of the selected ware.
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="comment" type="comment" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:choice>
+        </xs:complexType>
+        <xs:key name="diplomacy_action_param_name">
+          <xs:selector xpath="param" />
+          <xs:field xpath="@name" />
+        </xs:key>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="id" type="idstring" use="required">
+      <xs:annotation>
+        <xs:documentation>
+          Action ID
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="category" type="diplomacyactioncategorylookup" use="required">
+      <xs:annotation>
+        <xs:documentation>
+          Action category
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Action name
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Action description
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="shortdescription" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Action short description
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="hidden" type="boolean">
+      <xs:annotation>
+        <xs:documentation>
+          Is action hidden by default?
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="unique" type="boolean">
+      <xs:annotation>
+        <xs:documentation>
+          Is the action unique?
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="triggersevent" type="boolean">
+      <xs:annotation>
+        <xs:documentation>
+          Does the action lead to a diplomacy event triggering?
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="friendgroup" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Friend group ID. When evaluating which actions can be started, also take into account active or archived actions of the same friend group. Action cannot start if there is an ongoing or cooling-down friend action and:
+          - the 'unique' flag set is or
+          - the potential target faction conflicts with the friend action's faction and the 'isfactionexclusive' flag
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="icon" type="iconid" use="optional">
+      <xs:annotation>
+        <xs:documentation>
+          Icon for diplomacy action
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="image" type="iconid" use="optional">
+      <xs:annotation>
+        <xs:documentation>
+          Image ID for for diplomacy action
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="video" type="iconid" use="optional">
+      <xs:annotation>
+        <xs:documentation>
+          Video ID for diplomacy action
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="diplomacyactions">
+    <xs:annotation>
+      <xs:documentation>
+        Diplomacy action definitions
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="action" type="diplomacyaction" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="diplomacyevent">
+    <xs:annotation>
+      <xs:documentation>
+        Diplomacy event
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="icon" minOccurs="0" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Visual presentations for the event (ignored if 'icon' attribute is used in parent node)
+          </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attributeGroup ref="icon" />
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="conclusion" minOccurs="0" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Conclusion definition
+          </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="text" type="xs:string">
+            <xs:annotation>
+              <xs:documentation>
+                UI text for failure case
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="options" minOccurs="0" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Relation changes between the factions
+          </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="option" minOccurs="0" maxOccurs="unbounded">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="agent">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Diplomacy event option agent definition
+                      </xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                      <xs:attribute name="risk" type="agentrisklookup" use="required">
+                        <xs:annotation>
+                          <xs:documentation>
+                            Agent risk
+                          </xs:documentation>
+                        </xs:annotation>
+                      </xs:attribute>
+                    </xs:complexType>
+                  </xs:element>
+                  <xs:element name="cost" minOccurs="0" maxOccurs="1">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Diplomacy event option cost definition
+                      </xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                      <xs:sequence>
+                        <xs:group ref="diplomacytransaction" />
+                      </xs:sequence>
+                      <xs:attributeGroup ref="diplomacytransaction"/>
+                    </xs:complexType>
+                  </xs:element>
+                  <xs:element name="conclusion" minOccurs="0" maxOccurs="1">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Conclusion definition
+                      </xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                      <xs:attribute name="text" type="xs:string">
+                        <xs:annotation>
+                          <xs:documentation>
+                            UI text for the conclusion
+                          </xs:documentation>
+                        </xs:annotation>
+                      </xs:attribute>
+                    </xs:complexType>
+                  </xs:element>
+                  <xs:element name="relation" minOccurs="0" maxOccurs="1">
+                    <xs:annotation>
+                      <xs:documentation>
+                        The resulting relation if this option was chosen as the outcome
+                      </xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                      <xs:attribute name="value" type="xs:float" use="required" />
+                    </xs:complexType>
+                  </xs:element>
+                  <xs:element name="result" minOccurs="0" maxOccurs="1">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Result definition
+                      </xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                      <xs:attribute name="text" type="xs:string">
+                        <xs:annotation>
+                          <xs:documentation>
+                            UI text for the result
+                          </xs:documentation>
+                        </xs:annotation>
+                      </xs:attribute>
+                    </xs:complexType>
+                  </xs:element>
+                  <xs:element name="success" minOccurs="0" maxOccurs="1">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Success definition
+                      </xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                      <xs:attribute name="weight" type="xs:integer">
+                        <xs:annotation>
+                          <xs:documentation>
+                            Default weighting for this option to be chosen as the resulting outcome (defaults to 100)
+                          </xs:documentation>
+                        </xs:annotation>
+                      </xs:attribute>
+                      <xs:attribute name="selectionweightbonus">
+                        <xs:annotation>
+                          <xs:documentation>
+                            Bonus weighting value to be added to the base 'weight' if this is the currently selected option. Bonus may be reduced based on agent rank. (defaults to 20)
+                            If 'guaranteed' this option will be the outcome, regardless of other option weights or the rank of the agent.
+                          </xs:documentation>
+                        </xs:annotation>
+                        <xs:simpleType>
+                          <xs:union memberTypes="xs:nonNegativeInteger">
+                            <xs:simpleType>
+                              <xs:restriction base="xs:string">
+                                <xs:enumeration value="guaranteed" />
+                              </xs:restriction>
+                            </xs:simpleType>
+                          </xs:union>
+                        </xs:simpleType>
+                      </xs:attribute>
+                      <xs:attribute name="text" type="xs:string">
+                        <xs:annotation>
+                          <xs:documentation>
+                            UI text for success case
+                          </xs:documentation>
+                        </xs:annotation>
+                      </xs:attribute>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:sequence>
+                <xs:attribute name="id" type="idstring" use="required">
+                  <xs:annotation>
+                    <xs:documentation>
+                      Option ID
+                    </xs:documentation>
+                  </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="name" type="xs:string">
+                  <xs:annotation>
+                    <xs:documentation>
+                      Option name
+                    </xs:documentation>
+                  </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="description" type="xs:string">
+                  <xs:annotation>
+                    <xs:documentation>
+                      Option description
+                    </xs:documentation>
+                  </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="menuposition" type="xs:int" use="required">
+                  <xs:annotation>
+                    <xs:documentation>
+                      Position of option in the event menu relative to the centre slot. Currently supported positions are: -1 to 1, for left, centre and right respectively.
+                    </xs:documentation>
+                  </xs:annotation>
+                </xs:attribute>
+              </xs:complexType>
+            </xs:element>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="id" type="idstring" use="required">
+      <xs:annotation>
+        <xs:documentation>
+          Event ID
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Event name
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Event description
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="shortdescription" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Event short description
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="duration" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Duration of the event
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="icon" type="iconid" use="optional">
+      <xs:annotation>
+        <xs:documentation>
+          Icon for diplomacy event
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="image" type="iconid" use="optional">
+      <xs:annotation>
+        <xs:documentation>
+          Image ID for for diplomacy event
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="video" type="iconid" use="optional">
+      <xs:annotation>
+        <xs:documentation>
+          Video ID for diplomacy event
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="diplomacyevents">
+    <xs:annotation>
+      <xs:documentation>
+        Diplomacy event definitions
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="event" type="diplomacyevent" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="diplomacy">
+    <xs:annotation>
+      <xs:documentation>
+        Document element of diplomacy.xml
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="actions" type="diplomacyactions" minOccurs="0" maxOccurs="1" />
+        <xs:element name="events" type="diplomacyevents" minOccurs="0" maxOccurs="1" />
+        <xs:element name="gifts">
+          <xs:annotation>
+            <xs:documentation>
+              Definition of gift effects
+            </xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="defaults">
+                <xs:complexType>
+                  <xs:attribute name="negative" type="xs:int" use="required">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Default negative percentage chance success modifier if the gift is not well received by a faction
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="positive" type="xs:int" use="required">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Default positive percentage chance success modifier if the gift is well received by a faction
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="gift" minOccurs="1" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="faction" minOccurs="0" maxOccurs="unbounded">
+                      <xs:annotation>
+                        <xs:documentation>
+                          Additional faction condition
+                        </xs:documentation>
+                      </xs:annotation>
+                      <xs:complexType>
+                        <xs:attribute name="faction" type="giftwarefaction" use="optional" />
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute name="ware" type="xs:string" use="required">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Gift ware
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="faction" type="giftwarefaction" use="optional" />
+                  <xs:attribute name="negative" type="xs:int" use="optional">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Negative percentage chance success modifier if the gift is not well received by a faction (defaults to gifts/defaults/@negative)
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="positive" type="xs:int" use="optional">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Positive percentage chance success modifier if the gift is well received by a faction (defaults to gifts/defaults/@positive)
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+          <xs:key name="gift_ware_value">
+            <xs:selector xpath="gift" />
+            <xs:field xpath="@ware" />
+          </xs:key>
+        </xs:element>
+        <xs:element name="experience">
+          <xs:annotation>
+            <xs:documentation>
+              Definition of experience levels
+            </xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="level" minOccurs="1" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:attribute name="value" type="xs:int" use="required">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Experience integer value
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="name" type="xs:string" use="required">
+                    <xs:annotation>
+                      <xs:documentation>
+                        UI text for this experience level
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="comment" type="comment" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+          <xs:key name="experience_level_value">
+            <xs:selector xpath="level" />
+            <xs:field xpath="@value" />
+          </xs:key>
+        </xs:element>
+        <xs:element name="rank">
+          <xs:annotation>
+            <xs:documentation>
+              Definition of agent rank levels
+            </xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="level" minOccurs="1" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:attribute name="value" type="xs:int" use="required">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Rank experience integer value
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="name" type="xs:string" use="required">
+                    <xs:annotation>
+                      <xs:documentation>
+                        UI text for this rank level
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="icon" type="xs:string" use="required">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Icon for this rank level
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="eventbonus" type="xs:float" use="required">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Factor to be applied to an event option's 'selectionweightbonus' if the assigned agent is of this rank
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="comment" type="comment" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+          <xs:key name="rank_level_value">
+            <xs:selector xpath="level" />
+            <xs:field xpath="@value" />
+          </xs:key>
+        </xs:element>
+        <xs:element name="influencecostcurve">
+          <xs:annotation>
+            <xs:documentation>
+              Definition of cost inflation curve by player held influence. See '&lt;cost maxinfluencefactor=""&gt;'
+            </xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="influence" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:attribute name="position" type="xs:float">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Influence value
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="value" type="xs:float">
+                    <xs:annotation>
+                      <xs:documentation>
+                        Cost inflation value for this influence amount
+                      </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+          <xs:key name="influence_cost_position_value">
+            <xs:selector xpath="influence" />
+            <xs:field xpath="@position" />
+          </xs:key>
+        </xs:element>
+        <xs:element name="ship">
+          <xs:annotation>
+            <xs:documentation>
+              Data for ships assigned to aid agents on actions
+            </xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="bonuses">
+                <xs:annotation>
+                  <xs:documentation>
+                    Beneficial effects to diplomacy
+                  </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="actions">
+                      <xs:annotation>
+                        <xs:documentation>
+                          Beneficial effects to diplomatic actions
+                        </xs:documentation>
+                      </xs:annotation>
+                      <xs:complexType>
+                        <xs:attribute name="maxdurationbenefitincrease" type="xs:float" use="required">
+                          <xs:annotation>
+                            <xs:documentation>
+                              Maximum factor that a ship can increase the duration of an action when the overall bonus score is 1.0, for actions where the duration is flagged as beneficial
+                            </xs:documentation>
+                          </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="maxdurationreduction" type="xs:float" use="required">
+                          <xs:annotation>
+                            <xs:documentation>
+                              Maximum factor that a ship can reduce the duration of an action when the overall bonus score is 1.0
+                            </xs:documentation>
+                          </xs:annotation>
+                        </xs:attribute>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="curves">
+                      <xs:annotation>
+                        <xs:documentation>
+                          Curves defining the bonus scores from the various characteristics of the ship assigned to an agent. These scores are combined into an overall score which maxes out at 1.0.
+                        </xs:documentation>
+                      </xs:annotation>
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="dpscurve">
+                            <xs:annotation>
+                              <xs:documentation>
+                                Definition of ship bonus curve by ship damage per second
+                              </xs:documentation>
+                            </xs:annotation>
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="dps" minOccurs="0" maxOccurs="unbounded">
+                                  <xs:complexType>
+                                    <xs:attribute name="position" type="xs:float">
+                                      <xs:annotation>
+                                        <xs:documentation>
+                                          Ship DPS value
+                                        </xs:documentation>
+                                      </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="value" type="xs:float">
+                                      <xs:annotation>
+                                        <xs:documentation>
+                                          Bonus score for this DPS amount
+                                        </xs:documentation>
+                                      </xs:annotation>
+                                    </xs:attribute>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                            </xs:complexType>
+                            <xs:key name="dps_bonus_position_value">
+                              <xs:selector xpath="dps" />
+                              <xs:field xpath="@position" />
+                            </xs:key>
+                          </xs:element>
+                          <xs:element name="prestigecurve">
+                            <xs:annotation>
+                              <xs:documentation>
+                                Definition of ship bonus curve by ship prestige
+                              </xs:documentation>
+                            </xs:annotation>
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="prestige" minOccurs="0" maxOccurs="unbounded">
+                                  <xs:complexType>
+                                    <xs:attribute name="position" type="xs:float">
+                                      <xs:annotation>
+                                        <xs:documentation>
+                                          Ship prestige value
+                                        </xs:documentation>
+                                      </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="value" type="xs:float">
+                                      <xs:annotation>
+                                        <xs:documentation>
+                                          Bonus score for this prestige amount
+                                        </xs:documentation>
+                                      </xs:annotation>
+                                    </xs:attribute>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                            </xs:complexType>
+                            <xs:key name="prestige_bonus_position_value">
+                              <xs:selector xpath="prestige" />
+                              <xs:field xpath="@position" />
+                            </xs:key>
+                          </xs:element>
+                          <xs:element name="speedcurve">
+                            <xs:annotation>
+                              <xs:documentation>
+                                Definition of ship bonus curve by ship max travel drive speed
+                              </xs:documentation>
+                            </xs:annotation>
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="speed" minOccurs="0" maxOccurs="unbounded">
+                                  <xs:complexType>
+                                    <xs:attribute name="position" type="xs:float">
+                                      <xs:annotation>
+                                        <xs:documentation>
+                                          Ship max travel drive speed value
+                                        </xs:documentation>
+                                      </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="value" type="xs:float">
+                                      <xs:annotation>
+                                        <xs:documentation>
+                                          Bonus score for this speed amount
+                                        </xs:documentation>
+                                      </xs:annotation>
+                                    </xs:attribute>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                            </xs:complexType>
+                            <xs:key name="speed_bonus_position_value">
+                              <xs:selector xpath="speed" />
+                              <xs:field xpath="@position" />
+                            </xs:key>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+    <xs:key name="diplomacy_action_id">
+      <xs:selector xpath="diplomacyaction" />
+      <xs:field xpath="@id" />
+    </xs:key>
+    <xs:key name="diplomacy_event_id">
+      <xs:selector xpath="diplomacyevent" />
+      <xs:field xpath="@id" />
+    </xs:key>
+  </xs:element>
+
+</xs:schema>

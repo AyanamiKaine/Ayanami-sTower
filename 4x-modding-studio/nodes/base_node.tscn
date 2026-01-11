@@ -1,0 +1,33 @@
+[gd_scene load_steps=2 format=3 uid="uid://cxlrmygm25tcy"]
+
+[ext_resource type="Script" uid="uid://5aamwh7t8t5l" path="res://nodes/base_node.gd" id="1_1vhbe"]
+
+[node name="BaseNode" type="GraphNode"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -78.5
+offset_top = -54.5
+offset_right = 78.5
+offset_bottom = 54.5
+grow_horizontal = 2
+grow_vertical = 2
+resizable = true
+title = "Base Node"
+script = ExtResource("1_1vhbe")
+expected_parent_types = Array[int]([0, 1, 2, 3, 4, 5])
+expected_child_types = Array[int]([0, 1, 2, 3, 4, 5])
+
+[node name="PopupMenu" type="PopupMenu" parent="."]
+oversampling_override = 1.0
+item_count = 2
+item_0/text = "Delete"
+item_0/id = 0
+item_1/text = "Clear Connections"
+item_1/id = 1
+
+[connection signal="became_invalid" from="." to="." method="_on_became_invalid"]
+[connection signal="became_valid" from="." to="." method="_on_became_valid"]
+[connection signal="id_pressed" from="PopupMenu" to="." method="_on_popup_menu_id_pressed"]

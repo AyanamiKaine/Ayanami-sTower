@@ -1,0 +1,58 @@
+[gd_scene load_steps=6 format=3 uid="uid://dfhu12pxdd2d7"]
+
+[ext_resource type="Script" uid="uid://e68ng38rll3p" path="res://xml_syntax_highlighter.gd" id="1_nryfg"]
+[ext_resource type="Script" uid="uid://b7xevgxnfeofo" path="res://xml_output_window.gd" id="1_o3rfb"]
+[ext_resource type="Script" uid="uid://caam3fho242vp" path="res://XmlCodeEdit.cs" id="2_o3rfb"]
+[ext_resource type="Script" uid="uid://cth4gc53qwxa7" path="res://output_text.gd" id="4_5dfvo"]
+
+[sub_resource type="SyntaxHighlighter" id="SyntaxHighlighter_5dfvo"]
+script = ExtResource("1_nryfg")
+metadata/_custom_type_script = "uid://e68ng38rll3p"
+
+[node name="XMLOutputWindow" type="Window" node_paths=PackedStringArray("output_text_edit", "xml_editor")]
+oversampling_override = 1.0
+title = "Xml Preview"
+initial_position = 1
+size = Vector2i(500, 500)
+script = ExtResource("1_o3rfb")
+output_text_edit = NodePath("VBoxContainer/VSplitContainer/OutputText")
+xml_editor = NodePath("VBoxContainer/VSplitContainer/XMLCodeEdit")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="VSplitContainer" type="VSplitContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="XMLCodeEdit" type="CodeEdit" parent="VBoxContainer/VSplitContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_readonly_color = Color(1, 1, 1, 1)
+placeholder_text = "xml"
+editable = false
+scroll_smooth = true
+syntax_highlighter = SubResource("SyntaxHighlighter_5dfvo")
+symbol_lookup_on_click = true
+symbol_tooltip_on_hover = true
+code_completion_enabled = true
+auto_brace_completion_enabled = true
+auto_brace_completion_highlight_matching = true
+script = ExtResource("2_o3rfb")
+
+[node name="OutputText" type="TextEdit" parent="VBoxContainer/VSplitContainer"]
+custom_minimum_size = Vector2(0, 90)
+layout_mode = 2
+theme_override_colors/font_readonly_color = Color(1, 1, 1, 1)
+editable = false
+wrap_mode = 1
+script = ExtResource("4_5dfvo")
+
+[connection signal="code_completion_requested" from="VBoxContainer/VSplitContainer/XMLCodeEdit" to="VBoxContainer/VSplitContainer/XMLCodeEdit" method="_on_code_completion_requested"]
+[connection signal="text_changed" from="VBoxContainer/VSplitContainer/XMLCodeEdit" to="." method="_on_xml_code_edit_text_changed"]

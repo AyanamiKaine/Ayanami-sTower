@@ -1,0 +1,84 @@
+[gd_scene load_steps=3 format=3 uid="uid://cs1c3qfjgfwhk"]
+
+[ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="1_ik3xq"]
+[ext_resource type="Script" uid="uid://cmigseiexrp1j" path="res://write_to_logbook_node.gd" id="2_0mi5u"]
+
+[node name="WriteToLogbookNode" instance=ExtResource("1_ik3xq")]
+tooltip_text = "Write an entry into the logbook."
+title = "Write to logbook"
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+slot/1/left_enabled = false
+slot/1/left_type = 0
+slot/1/left_color = Color(1, 1, 1, 1)
+slot/1/left_icon = null
+slot/1/right_enabled = false
+slot/1/right_type = 0
+slot/1/right_color = Color(1, 1, 1, 1)
+slot/1/right_icon = null
+slot/1/draw_stylebox = true
+slot/2/left_enabled = false
+slot/2/left_type = 0
+slot/2/left_color = Color(1, 1, 1, 1)
+slot/2/left_icon = null
+slot/2/right_enabled = false
+slot/2/right_type = 0
+slot/2/right_color = Color(1, 1, 1, 1)
+slot/2/right_icon = null
+slot/2/draw_stylebox = true
+script = ExtResource("2_0mi5u")
+type = 0
+xml_element_name = "write_to_logbook"
+
+[node name="TitleAttribute" type="LineEdit" parent="." index="2"]
+layout_mode = 2
+placeholder_text = "Title"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="." index="3"]
+layout_mode = 2
+tooltip_text = "Logbook category"
+
+[node name="Label" type="Label" parent="HBoxContainer" index="0"]
+layout_mode = 2
+text = "Category: "
+
+[node name="CategoryAttribute" type="OptionButton" parent="HBoxContainer" index="1"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+selected = 0
+item_count = 7
+popup/item_0/text = "General"
+popup/item_0/id = 0
+popup/item_1/text = "Alerts"
+popup/item_1/id = 1
+popup/item_2/text = "Missions"
+popup/item_2/id = 2
+popup/item_3/text = "Tips"
+popup/item_3/id = 3
+popup/item_4/text = "Upkeep"
+popup/item_4/id = 4
+popup/item_5/text = "Diplomancy"
+popup/item_5/id = 5
+popup/item_6/text = "News"
+popup/item_6/id = 6
+
+[node name="TextAttribute" type="TextEdit" parent="." index="4"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+size_flags_vertical = 3
+tooltip_text = "Logbook entry text, either a single string with possible line breaks, or a list of strings in notification format (see ). 
+When using the notification format and both left and right columns of a row contain text, the texts will be concatenated 
+with a single space as separator, if no custom separator is provided in the separator attribute."
+placeholder_text = "Text:"
+wrap_mode = 1
+
+[connection signal="text_changed" from="TitleAttribute" to="." method="_on_title_attribute_text_changed"]
+[connection signal="item_selected" from="HBoxContainer/CategoryAttribute" to="." method="_on_category_attribute_item_selected"]
+[connection signal="text_changed" from="TextAttribute" to="." method="_on_text_attribute_text_changed"]

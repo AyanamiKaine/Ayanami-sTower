@@ -1,0 +1,26 @@
+[gd_scene load_steps=3 format=3 uid="uid://5mj8coh2xpaq"]
+
+[ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="1_nwfpu"]
+[ext_resource type="Script" uid="uid://qkb4lqd8uim6" path="res://nodes/cues_node.gd" id="2_5gcqe"]
+
+[node name="CuesNode" instance=ExtResource("1_nwfpu")]
+title = "Cues"
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("2_5gcqe")
+type = 6
+expected_parent_types = Array[int]([7])
+expected_child_types = Array[int]([5])
+xml_element_name = "cues"
+
+[node name="Label" type="Label" parent="." index="2"]
+layout_mode = 2
+text = "List of cues relating to a mission"
+autowrap_mode = 2

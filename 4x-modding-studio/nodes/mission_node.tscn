@@ -1,0 +1,35 @@
+[gd_scene load_steps=3 format=3 uid="uid://bx1wqtd670u3g"]
+
+[ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="1_b2e2t"]
+[ext_resource type="Script" uid="uid://dp8wag1ftqc31" path="res://nodes/mission_node.gd" id="2_vcin7"]
+
+[node name="MissionNode" instance=ExtResource("1_b2e2t")]
+offset_left = -96.75
+offset_right = 96.75
+tooltip_text = "Mission Director script root element."
+title = "MD Script"
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("2_vcin7")
+type = 7
+expected_parent_types = Array[int]([])
+expected_child_types = Array[int]([6])
+xml_element_name = "mdscript"
+xml_attributes = {
+"name": ""
+}
+
+[node name="NameAttribute" type="LineEdit" parent="." index="2"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+tooltip_text = "Its name must start with an Uppercase."
+placeholder_text = "MD_Script_Name"
+
+[connection signal="text_changed" from="NameAttribute" to="." method="_on_name_attribute_text_changed"]

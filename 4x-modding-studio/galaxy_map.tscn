@@ -1,0 +1,177 @@
+[gd_scene load_steps=6 format=3 uid="uid://k0stwqou0g55"]
+
+[ext_resource type="Script" uid="uid://dmofejod0gfcj" path="res://camera_2d.gd" id="1_bq8kf"]
+[ext_resource type="Script" uid="uid://biatiknt4no8m" path="res://sector.gd" id="1_cmydt"]
+[ext_resource type="Script" uid="uid://4e6tyo3ogsad" path="res://hex_grid.gd" id="1_lj2th"]
+[ext_resource type="Script" uid="uid://b68x6incrn173" path="res://hexagon_polygon_shape.gd" id="2_kawwm"]
+[ext_resource type="Script" uid="uid://cgxkmfs6c0uww" path="res://gate_polygon_shape.gd" id="3_kawwm"]
+
+[node name="GalaxyMap" type="Node2D"]
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(500, 327)
+script = ExtResource("1_bq8kf")
+edge_scroll_enabled = false
+drag_button = 1
+
+[node name="HexGrid" type="Node2D" parent="."]
+position = Vector2(-2098, -1940)
+script = ExtResource("1_lj2th")
+grid_size = Vector2i(50, 25)
+orientation = 1
+
+[node name="MarsSector" type="Node2D" parent="HexGrid"]
+position = Vector2(2400, 2425)
+script = ExtResource("1_cmydt")
+
+[node name="HexagonPolygonShape" type="Polygon2D" parent="HexGrid/MarsSector" node_paths=PackedStringArray("hex_grid")]
+color = Color(0.26657522, 0.2665752, 0.2665752, 1)
+antialiased = true
+polygon = PackedVector2Array(100, 0, 50, 86.60254, -50, 86.60254, -100, 1.22460635e-14, -50, -86.60254, 50, -86.60254)
+script = ExtResource("2_kawwm")
+hex_grid = NodePath("../..")
+orientation = 1
+outline_width = 2.0
+
+[node name="SectorName" type="Label" parent="HexGrid/MarsSector"]
+offset_left = -50.0
+offset_top = -79.0
+offset_right = 50.0
+offset_bottom = -56.0
+text = "Mars"
+horizontal_alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="VenusSector" type="Node2D" parent="HexGrid"]
+position = Vector2(2250, 2338.2686)
+script = ExtResource("1_cmydt")
+
+[node name="HexagonPolygonShape" type="Polygon2D" parent="HexGrid/VenusSector" node_paths=PackedStringArray("hex_grid")]
+color = Color(0.26657522, 0.2665752, 0.2665752, 1)
+antialiased = true
+polygon = PackedVector2Array(100, 0, 50, 86.60254, -50, 86.60254, -100, 1.22460635e-14, -50, -86.60254, 50, -86.60254)
+script = ExtResource("2_kawwm")
+hex_grid = NodePath("../..")
+orientation = 1
+outline_width = 2.0
+
+[node name="SectorName" type="Label" parent="HexGrid/VenusSector"]
+offset_left = -50.0
+offset_top = -79.0
+offset_right = 50.0
+offset_bottom = -56.0
+text = "Venus"
+horizontal_alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="AsteroidBeldSector" type="Node2D" parent="HexGrid"]
+position = Vector2(2550, 2511.4736)
+script = ExtResource("1_cmydt")
+
+[node name="HexagonPolygonShape" type="Polygon2D" parent="HexGrid/AsteroidBeldSector" node_paths=PackedStringArray("hex_grid")]
+position = Vector2(-1, 1)
+color = Color(0.26657522, 0.2665752, 0.2665752, 1)
+antialiased = true
+polygon = PackedVector2Array(100, 0, 50, 86.60254, -50, 86.60254, -100, 1.22460635e-14, -50, -86.60254, 50, -86.60254)
+script = ExtResource("2_kawwm")
+hex_grid = NodePath("../..")
+orientation = 1
+outline_width = 2.0
+
+[node name="SectorName" type="Label" parent="HexGrid/AsteroidBeldSector"]
+offset_left = -50.0
+offset_top = -79.0
+offset_right = 50.0
+offset_bottom = -56.0
+text = "Asteroid Belt"
+horizontal_alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="GetsuFuneSector" type="Node2D" parent="HexGrid"]
+position = Vector2(2850, 2338.2686)
+script = ExtResource("1_cmydt")
+
+[node name="HexagonPolygonShape" type="Polygon2D" parent="HexGrid/GetsuFuneSector" node_paths=PackedStringArray("hex_grid")]
+color = Color(0.26657522, 0.2665752, 0.2665752, 1)
+antialiased = true
+polygon = PackedVector2Array(100, 0, 50, 86.60254, -50, 86.60254, -100, 1.22460635e-14, -50, -86.60254, 50, -86.60254)
+script = ExtResource("2_kawwm")
+hex_grid = NodePath("../..")
+orientation = 1
+outline_width = 2.0
+
+[node name="SectorName" type="Label" parent="HexGrid/GetsuFuneSector"]
+offset_left = -50.0
+offset_top = -79.0
+offset_right = 50.0
+offset_bottom = -56.0
+text = "Getsu Fune"
+horizontal_alignment = 1
+
+[node name="MercurySector" type="Node2D" parent="HexGrid"]
+position = Vector2(2250, 2165.0635)
+script = ExtResource("1_cmydt")
+
+[node name="HexagonPolygonShape" type="Polygon2D" parent="HexGrid/MercurySector" node_paths=PackedStringArray("hex_grid")]
+color = Color(0.26657522, 0.2665752, 0.2665752, 1)
+antialiased = true
+polygon = PackedVector2Array(100, 0, 50, 86.60254, -50, 86.60254, -100, 1.22460635e-14, -50, -86.60254, 50, -86.60254)
+script = ExtResource("2_kawwm")
+hex_grid = NodePath("../..")
+orientation = 1
+outline_width = 2.0
+
+[node name="SectorName" type="Label" parent="HexGrid/MercurySector"]
+offset_left = -50.0
+offset_top = -79.0
+offset_right = 50.0
+offset_bottom = -56.0
+text = "Mercury
+"
+horizontal_alignment = 1
+
+[node name="JupiterSector" type="Node2D" parent="HexGrid"]
+position = Vector2(2400, 2771.2813)
+script = ExtResource("1_cmydt")
+
+[node name="HexagonPolygonShape" type="Polygon2D" parent="HexGrid/JupiterSector" node_paths=PackedStringArray("hex_grid")]
+color = Color(0.26657522, 0.2665752, 0.2665752, 1)
+antialiased = true
+polygon = PackedVector2Array(100, 0, 50, 86.60254, -50, 86.60254, -100, 1.22460635e-14, -50, -86.60254, 50, -86.60254)
+script = ExtResource("2_kawwm")
+hex_grid = NodePath("../..")
+orientation = 1
+outline_width = 2.0
+
+[node name="SectorName" type="Label" parent="HexGrid/JupiterSector"]
+offset_left = -50.0
+offset_top = -79.0
+offset_right = 50.0
+offset_bottom = -56.0
+text = "Jupiter
+"
+horizontal_alignment = 1
+
+[node name="GateConnections" type="Node2D" parent="."]
+visible = false
+
+[node name="GateConnection" type="Node2D" parent="GateConnections"]
+position = Vector2(160, 378)
+
+[node name="GatePolygonShape" type="Polygon2D" parent="GateConnections/GateConnection"]
+polygon = PackedVector2Array(2, 0, 1.9903694, 0.19603428, 1.9615705, 0.39018065, 1.9138807, 0.5805693, 1.847759, 0.76536685, 1.7638426, 0.9427935, 1.6629392, 1.1111405, 1.5460209, 1.2687865, 1.4142135, 1.4142135, 1.2687865, 1.5460209, 1.1111405, 1.6629392, 0.9427935, 1.7638426, 0.76536685, 1.847759, 0.5805693, 1.9138807, 0.39018065, 1.9615705, 0.19603428, 1.9903694, 1.2246064e-16, 2, -0.19603428, 1.9903694, -0.39018065, 1.9615705, -0.5805693, 1.9138807, -0.76536685, 1.847759, -0.9427935, 1.7638426, -1.1111405, 1.6629392, -1.2687865, 1.5460209, -1.4142135, 1.4142135, -1.5460209, 1.2687865, -1.6629392, 1.1111405, -1.7638426, 0.9427935, -1.847759, 0.76536685, -1.9138807, 0.5805693, -1.9615705, 0.39018065, -1.9903694, 0.19603428, -2, 2.4492127e-16, -1.9903694, -0.19603428, -1.9615705, -0.39018065, -1.9138807, -0.5805693, -1.847759, -0.76536685, -1.7638426, -0.9427935, -1.6629392, -1.1111405, -1.5460209, -1.2687865, -1.4142135, -1.4142135, -1.2687865, -1.5460209, -1.1111405, -1.6629392, -0.9427935, -1.7638426, -0.76536685, -1.847759, -0.5805693, -1.9138807, -0.39018065, -1.9615705, -0.19603428, -1.9903694, -3.673819e-16, -2, 0.19603428, -1.9903694, 0.39018065, -1.9615705, 0.5805693, -1.9138807, 0.76536685, -1.847759, 0.9427935, -1.7638426, 1.1111405, -1.6629392, 1.2687865, -1.5460209, 1.4142135, -1.4142135, 1.5460209, -1.2687865, 1.6629392, -1.1111405, 1.7638426, -0.9427935, 1.847759, -0.76536685, 1.9138807, -0.5805693, 1.9615705, -0.39018065, 1.9903694, -0.19603428)
+uv = PackedVector2Array(1, 0.5, 0.9975924, 0.54900855, 0.9903926, 0.59754515, 0.97847015, 0.6451423, 0.96193975, 0.6913417, 0.94096065, 0.73569834, 0.9157348, 0.7777851, 0.88650525, 0.81719667, 0.8535534, 0.8535534, 0.81719667, 0.88650525, 0.7777851, 0.9157348, 0.73569834, 0.94096065, 0.6913417, 0.96193975, 0.6451423, 0.97847015, 0.59754515, 0.9903926, 0.54900855, 0.9975924, 0.5, 1, 0.45099142, 0.9975924, 0.40245485, 0.9903926, 0.35485765, 0.97847015, 0.30865827, 0.96193975, 0.26430163, 0.94096065, 0.22221488, 0.9157348, 0.18280336, 0.88650525, 0.14644662, 0.8535534, 0.113494776, 0.81719667, 0.084265195, 0.7777851, 0.05903937, 0.73569834, 0.038060233, 0.6913417, 0.021529833, 0.6451423, 0.00960736, 0.59754515, 0.0024076367, 0.54900855, 0, 0.5, 0.0024076367, 0.45099142, 0.00960736, 0.40245485, 0.021529833, 0.35485765, 0.038060233, 0.30865827, 0.05903937, 0.26430163, 0.084265195, 0.22221488, 0.113494776, 0.18280336, 0.14644662, 0.14644662, 0.18280336, 0.113494776, 0.22221488, 0.084265195, 0.26430163, 0.05903937, 0.30865827, 0.038060233, 0.35485765, 0.021529833, 0.40245485, 0.00960736, 0.45099142, 0.0024076367, 0.5, 0, 0.54900855, 0.0024076367, 0.59754515, 0.00960736, 0.6451423, 0.021529833, 0.6913417, 0.038060233, 0.73569834, 0.05903937, 0.7777851, 0.084265195, 0.81719667, 0.113494776, 0.8535534, 0.14644662, 0.88650525, 0.18280336, 0.9157348, 0.22221488, 0.94096065, 0.26430163, 0.96193975, 0.30865827, 0.97847015, 0.35485765, 0.9903926, 0.40245485, 0.9975924, 0.45099142)
+script = ExtResource("3_kawwm")
+radius = 2.0
+
+[node name="GatePolygonShape2" type="Polygon2D" parent="GateConnections/GateConnection"]
+position = Vector2(97, 16)
+polygon = PackedVector2Array(2, 0, 1.9903694, 0.19603428, 1.9615705, 0.39018065, 1.9138807, 0.5805693, 1.847759, 0.76536685, 1.7638426, 0.9427935, 1.6629392, 1.1111405, 1.5460209, 1.2687865, 1.4142135, 1.4142135, 1.2687865, 1.5460209, 1.1111405, 1.6629392, 0.9427935, 1.7638426, 0.76536685, 1.847759, 0.5805693, 1.9138807, 0.39018065, 1.9615705, 0.19603428, 1.9903694, 1.2246064e-16, 2, -0.19603428, 1.9903694, -0.39018065, 1.9615705, -0.5805693, 1.9138807, -0.76536685, 1.847759, -0.9427935, 1.7638426, -1.1111405, 1.6629392, -1.2687865, 1.5460209, -1.4142135, 1.4142135, -1.5460209, 1.2687865, -1.6629392, 1.1111405, -1.7638426, 0.9427935, -1.847759, 0.76536685, -1.9138807, 0.5805693, -1.9615705, 0.39018065, -1.9903694, 0.19603428, -2, 2.4492127e-16, -1.9903694, -0.19603428, -1.9615705, -0.39018065, -1.9138807, -0.5805693, -1.847759, -0.76536685, -1.7638426, -0.9427935, -1.6629392, -1.1111405, -1.5460209, -1.2687865, -1.4142135, -1.4142135, -1.2687865, -1.5460209, -1.1111405, -1.6629392, -0.9427935, -1.7638426, -0.76536685, -1.847759, -0.5805693, -1.9138807, -0.39018065, -1.9615705, -0.19603428, -1.9903694, -3.673819e-16, -2, 0.19603428, -1.9903694, 0.39018065, -1.9615705, 0.5805693, -1.9138807, 0.76536685, -1.847759, 0.9427935, -1.7638426, 1.1111405, -1.6629392, 1.2687865, -1.5460209, 1.4142135, -1.4142135, 1.5460209, -1.2687865, 1.6629392, -1.1111405, 1.7638426, -0.9427935, 1.847759, -0.76536685, 1.9138807, -0.5805693, 1.9615705, -0.39018065, 1.9903694, -0.19603428)
+uv = PackedVector2Array(1, 0.5, 0.9975924, 0.54900855, 0.9903926, 0.59754515, 0.97847015, 0.6451423, 0.96193975, 0.6913417, 0.94096065, 0.73569834, 0.9157348, 0.7777851, 0.88650525, 0.81719667, 0.8535534, 0.8535534, 0.81719667, 0.88650525, 0.7777851, 0.9157348, 0.73569834, 0.94096065, 0.6913417, 0.96193975, 0.6451423, 0.97847015, 0.59754515, 0.9903926, 0.54900855, 0.9975924, 0.5, 1, 0.45099142, 0.9975924, 0.40245485, 0.9903926, 0.35485765, 0.97847015, 0.30865827, 0.96193975, 0.26430163, 0.94096065, 0.22221488, 0.9157348, 0.18280336, 0.88650525, 0.14644662, 0.8535534, 0.113494776, 0.81719667, 0.084265195, 0.7777851, 0.05903937, 0.73569834, 0.038060233, 0.6913417, 0.021529833, 0.6451423, 0.00960736, 0.59754515, 0.0024076367, 0.54900855, 0, 0.5, 0.0024076367, 0.45099142, 0.00960736, 0.40245485, 0.021529833, 0.35485765, 0.038060233, 0.30865827, 0.05903937, 0.26430163, 0.084265195, 0.22221488, 0.113494776, 0.18280336, 0.14644662, 0.14644662, 0.18280336, 0.113494776, 0.22221488, 0.084265195, 0.26430163, 0.05903937, 0.30865827, 0.038060233, 0.35485765, 0.021529833, 0.40245485, 0.00960736, 0.45099142, 0.0024076367, 0.5, 0, 0.54900855, 0.0024076367, 0.59754515, 0.00960736, 0.6451423, 0.021529833, 0.6913417, 0.038060233, 0.73569834, 0.05903937, 0.7777851, 0.084265195, 0.81719667, 0.113494776, 0.8535534, 0.14644662, 0.88650525, 0.18280336, 0.9157348, 0.22221488, 0.94096065, 0.26430163, 0.96193975, 0.30865827, 0.97847015, 0.35485765, 0.9903926, 0.40245485, 0.9975924, 0.45099142)
+script = ExtResource("3_kawwm")
+radius = 2.0
+
+[node name="Line2D" type="Line2D" parent="GateConnections/GateConnection"]
+points = PackedVector2Array(0, 0, 96.98, 15.93)
+width = 2.0
+default_color = Color(0.5330367, 0.5330367, 0.5330367, 1)

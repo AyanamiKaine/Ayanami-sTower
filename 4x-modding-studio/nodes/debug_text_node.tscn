@@ -1,0 +1,68 @@
+[gd_scene load_steps=3 format=3 uid="uid://cy4bym2vad7do"]
+
+[ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="1_j7f5d"]
+[ext_resource type="Script" uid="uid://bcanxqiubl3ob" path="res://nodes/debug_text_node.gd" id="2_1kcxr"]
+
+[node name="debug_text" instance=ExtResource("1_j7f5d")]
+title = "Debug Text"
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+slot/1/left_enabled = false
+slot/1/left_type = 0
+slot/1/left_color = Color(1, 1, 1, 1)
+slot/1/left_icon = null
+slot/1/right_enabled = false
+slot/1/right_type = 0
+slot/1/right_color = Color(1, 1, 1, 1)
+slot/1/right_icon = null
+slot/1/draw_stylebox = true
+script = ExtResource("2_1kcxr")
+type = 0
+expected_parent_types = Array[int]([3])
+expected_child_types = Array[int]([6])
+xml_element_name = "debug_text"
+
+[node name="TextAttribute" type="TextEdit" parent="." index="2"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+size_flags_vertical = 3
+placeholder_text = "Text to be logged"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="." index="3"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="HBoxContainer" index="0"]
+layout_mode = 2
+text = "Filter:"
+
+[node name="FilterAttribute" type="OptionButton" parent="HBoxContainer" index="1"]
+layout_mode = 2
+size_flags_horizontal = 3
+selected = 0
+item_count = 8
+popup/item_0/text = "General"
+popup/item_0/id = 0
+popup/item_1/text = "Combat"
+popup/item_1/id = 1
+popup/item_2/text = "Error"
+popup/item_2/id = 2
+popup/item_3/text = "Scripts"
+popup/item_3/id = 3
+popup/item_4/text = "None"
+popup/item_4/id = 4
+popup/item_5/text = "Save Game"
+popup/item_5/id = 5
+popup/item_6/text = "Economy Verbose"
+popup/item_6/id = 6
+popup/item_7/text = "Scripts Verbose"
+popup/item_7/id = 7
+
+[connection signal="text_changed" from="TextAttribute" to="." method="_on_text_attribute_text_changed"]
+[connection signal="item_selected" from="HBoxContainer/FilterAttribute" to="." method="_on_filter_attribute_item_selected"]

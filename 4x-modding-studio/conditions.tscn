@@ -1,0 +1,29 @@
+[gd_scene load_steps=2 format=3 uid="uid://bwf7ddm7r4uup"]
+
+[ext_resource type="Script" uid="uid://rahfp7ql6evu" path="res://conditions.gd" id="1_keelk"]
+
+[node name="Conditions" type="GraphNode"]
+offset_left = 755.0
+offset_top = 324.0
+offset_right = 982.0
+offset_bottom = 679.0
+mouse_filter = 1
+position_offset = Vector2(755, 324)
+resizable = true
+title = "Conditions"
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("1_keelk")
+
+[node name="Lable" type="Label" parent="."]
+custom_minimum_size = Vector2(0, 33)
+layout_mode = 2
+text = "Conditions are periodically checked, if true it the cue's actions are executed."
+autowrap_mode = 2

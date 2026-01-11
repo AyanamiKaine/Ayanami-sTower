@@ -1,0 +1,29 @@
+[gd_scene load_steps=2 format=3 uid="uid://bdj38cuqhj8uo"]
+
+[ext_resource type="Script" uid="uid://dyjvcxkqf20gj" path="res://actions.gd" id="1_y5whu"]
+
+[node name="Actions" type="GraphNode"]
+offset_left = 715.0
+offset_top = 10.0
+offset_right = 955.0
+offset_bottom = 263.0
+mouse_filter = 1
+position_offset = Vector2(715, 10)
+resizable = true
+title = "Actions"
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("1_y5whu")
+
+[node name="Lable" type="Label" parent="."]
+custom_minimum_size = Vector2(0, 33)
+layout_mode = 2
+text = "Actions are executed when the conditions are met."
+autowrap_mode = 2

@@ -1,0 +1,51 @@
+[gd_scene load_steps=3 format=3 uid="uid://bb8ptnrskv23q"]
+
+[ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="1_wmmwy"]
+[ext_resource type="Script" uid="uid://blgi3qlapr436" path="res://nodes/event_happened_node.gd" id="2_xvp5h"]
+
+[node name="EventHappenedNode" instance=ExtResource("1_wmmwy")]
+title = "Event Happened"
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+slot/1/left_enabled = false
+slot/1/left_type = 0
+slot/1/left_color = Color(1, 1, 1, 1)
+slot/1/left_icon = null
+slot/1/right_enabled = false
+slot/1/right_type = 0
+slot/1/right_color = Color(1, 1, 1, 1)
+slot/1/right_icon = null
+slot/1/draw_stylebox = true
+script = ExtResource("2_xvp5h")
+type = 3
+expected_parent_types = Array[int]([4])
+expected_child_types = Array[int]([8])
+
+[node name="OptionButton" type="OptionButton" parent="." index="2"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+selected = 0
+item_count = 4
+popup/item_0/text = "Game Started"
+popup/item_0/id = 0
+popup/item_1/text = "Game Loaded"
+popup/item_1/id = 1
+popup/item_2/text = "Player Created"
+popup/item_2/id = 2
+popup/item_3/text = "Cue Signalled"
+popup/item_3/id = 3
+
+[node name="CueAttribute" type="LineEdit" parent="." index="3"]
+visible = false
+layout_mode = 2
+placeholder_text = "cue_name"
+
+[connection signal="item_selected" from="OptionButton" to="." method="_on_option_button_item_selected"]
+[connection signal="text_changed" from="CueAttribute" to="." method="_on_cue_attribute_text_changed"]

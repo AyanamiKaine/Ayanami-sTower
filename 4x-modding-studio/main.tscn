@@ -1,0 +1,263 @@
+[gd_scene load_steps=8 format=3 uid="uid://bq3huk364skd3"]
+
+[ext_resource type="Script" uid="uid://ckp4b53u6oy0k" path="res://control.gd" id="1_h2yge"]
+[ext_resource type="Script" uid="uid://3trabpx82cr7" path="res://NodeSearcher.gd" id="2_1bvp3"]
+[ext_resource type="Script" uid="uid://d1qk1n50dr25f" path="res://FileSystem.cs" id="2_272bh"]
+[ext_resource type="Script" uid="uid://nhwo0h4xgufb" path="res://graph_edit.gd" id="3_lquwl"]
+[ext_resource type="PackedScene" uid="uid://dfhu12pxdd2d7" path="res://xml_output_window.tscn" id="4_1bvp3"]
+[ext_resource type="PackedScene" uid="uid://k0stwqou0g55" path="res://galaxy_map.tscn" id="5_7mycd"]
+[ext_resource type="Script" uid="uid://dqpcjdqujcqii" path="res://X4DatabaseManager.cs" id="5_lquwl"]
+
+[node name="Main" type="Control" node_paths=PackedStringArray("node_searcher", "context_menu", "graph_edit", "xml_editor_window", "xml_validation_timer")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_h2yge")
+node_searcher = NodePath("VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher")
+context_menu = NodePath("VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/ContextMenu")
+graph_edit = NodePath("VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/GraphEdit")
+xml_editor_window = NodePath("VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/XMLOutputWindow")
+xml_validation_timer = NodePath("VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/XMLValidationTimer")
+path_to_unpacked_4x_directory = "F:\\SteamLibrary\\steamapps\\common\\X4 Foundations\\x4_unpacked"
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MenuBar" type="MenuBar" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/MenuBar"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ModMenuButton" type="MenuButton" parent="VBoxContainer/MenuBar/HBoxContainer"]
+layout_mode = 2
+text = "Mod"
+item_count = 4
+popup/item_0/text = "Open"
+popup/item_0/id = 0
+popup/item_1/text = "Save"
+popup/item_1/id = 1
+popup/item_2/text = "Save to"
+popup/item_2/id = 3
+popup/item_3/text = "Close"
+popup/item_3/id = 2
+
+[node name="ScriptMenuButton" type="MenuButton" parent="VBoxContainer/MenuBar/HBoxContainer"]
+layout_mode = 2
+text = "Script"
+item_count = 4
+popup/item_0/text = "Open"
+popup/item_0/id = 0
+popup/item_1/text = "Save"
+popup/item_1/id = 1
+popup/item_2/text = "Save to"
+popup/item_2/id = 3
+popup/item_3/text = "Close"
+popup/item_3/id = 2
+
+[node name="GalaxyMenuButton" type="MenuButton" parent="VBoxContainer/MenuBar/HBoxContainer"]
+layout_mode = 2
+text = "Galaxy"
+item_count = 4
+popup/item_0/text = "Open"
+popup/item_0/id = 0
+popup/item_1/text = "Save"
+popup/item_1/id = 1
+popup/item_2/text = "Save to"
+popup/item_2/id = 3
+popup/item_3/text = "Close"
+popup/item_3/id = 2
+
+[node name="SplitContainer" type="SplitContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FileSystemTab" type="TabContainer" parent="VBoxContainer/SplitContainer"]
+custom_minimum_size = Vector2(260, 0)
+layout_mode = 2
+current_tab = 0
+
+[node name="FileSystem" type="VBoxContainer" parent="VBoxContainer/SplitContainer/FileSystemTab"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="LineEdit" type="LineEdit" parent="VBoxContainer/SplitContainer/FileSystemTab/FileSystem"]
+layout_mode = 2
+placeholder_text = "Search"
+
+[node name="ModExplorer" type="Tree" parent="VBoxContainer/SplitContainer/FileSystemTab/FileSystem"]
+layout_mode = 2
+size_flags_vertical = 3
+select_mode = 2
+script = ExtResource("2_272bh")
+RootPath = "F:\\SteamLibrary\\steamapps\\common\\X4 Foundations\\extensions\\stella_x4"
+
+[node name="ModDesignerTab" type="TabContainer" parent="VBoxContainer/SplitContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+current_tab = 1
+
+[node name="ScriptDesigner" type="Control" parent="VBoxContainer/SplitContainer/ModDesignerTab"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="Node Searcher" type="Popup" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner"]
+oversampling_override = 1.0
+initial_position = 1
+size = Vector2i(500, 500)
+
+[node name="Control" type="Control" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher" node_paths=PackedStringArray("main_app", "window")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_1bvp3")
+main_app = NodePath("../../../../../..")
+window = NodePath("..")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher/Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 100.0
+offset_bottom = 88.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="LineEdit" type="LineEdit" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher/Control/VBoxContainer"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Search For Node"
+
+[node name="ItemList" type="ItemList" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher/Control/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+allow_reselect = true
+auto_width = true
+auto_height = true
+item_count = 3
+item_0/text = "Debug Text"
+item_1/text = "Cue"
+item_2/text = "Event Happened"
+
+[node name="ContextMenu" type="PopupMenu" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner"]
+oversampling_override = 1.0
+size = Vector2i(181, 101)
+item_count = 5
+item_0/text = "Cue"
+item_0/id = 0
+item_1/id = 1
+item_1/separator = true
+item_2/text = "Check Value"
+item_2/id = 2
+item_3/id = 3
+item_3/separator = true
+item_4/text = "Debug Text"
+item_4/id = 4
+
+[node name="GraphEdit" type="GraphEdit" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 31.0
+grow_horizontal = 2
+grow_vertical = 2
+scroll_offset = Vector2(0, -31)
+script = ExtResource("3_lquwl")
+
+[node name="Button" type="Button" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner"]
+visible = false
+layout_mode = 0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = 1025.0
+offset_top = 12.0
+offset_right = 1093.0
+offset_bottom = 43.0
+grow_horizontal = 0
+text = "TO XML"
+
+[node name="Button2" type="Button" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner"]
+visible = false
+layout_mode = 0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = 1005.0
+offset_top = 59.0
+offset_right = 1093.0
+offset_bottom = 90.0
+grow_horizontal = 0
+text = "Show XML"
+
+[node name="XMLOutputWindow" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner" instance=ExtResource("4_1bvp3")]
+visible = false
+
+[node name="XMLValidationTimer" type="Timer" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner"]
+wait_time = 0.5
+one_shot = true
+
+[node name="GalaxyMapDesigner" type="Control" parent="VBoxContainer/SplitContainer/ModDesignerTab"]
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="VBoxContainer/SplitContainer/ModDesignerTab/GalaxyMapDesigner"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="VBoxContainer/SplitContainer/ModDesignerTab/GalaxyMapDesigner/SubViewportContainer"]
+handle_input_locally = false
+msaa_2d = 3
+use_debanding = true
+use_occlusion_culling = true
+size = Vector2i(880, 573)
+render_target_update_mode = 4
+
+[node name="GalaxyMap" parent="VBoxContainer/SplitContainer/ModDesignerTab/GalaxyMapDesigner/SubViewportContainer/SubViewport" instance=ExtResource("5_7mycd")]
+position = Vector2(272, 44)
+
+[node name="X4DatabaseManager" type="Node" parent="."]
+script = ExtResource("5_lquwl")
+SearchDirectory = "F:\\SteamLibrary\\steamapps\\common\\X4 Foundations\\x4_unpacked"
+FileExtensions = PackedStringArray("*.xml")
+
+[connection signal="node_created" from="." to="." method="_on_node_created"]
+[connection signal="node_destroyed" from="." to="." method="_on_node_destroyed"]
+[connection signal="about_to_popup" from="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher" to="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher/Control" method="_on_node_searcher_about_to_popup"]
+[connection signal="id_pressed" from="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/ContextMenu" to="." method="_on_context_menu_id_pressed"]
+[connection signal="connection_from_empty" from="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/GraphEdit" to="." method="_on_graph_edit_connection_from_empty"]
+[connection signal="connection_request" from="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/GraphEdit" to="." method="_on_graph_edit_connection_request"]
+[connection signal="connection_to_empty" from="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/GraphEdit" to="." method="_on_graph_edit_connection_to_empty"]
+[connection signal="end_node_move" from="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/GraphEdit" to="." method="_on_graph_edit_end_node_move"]
+[connection signal="pressed" from="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Button" to="." method="_on_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Button2" to="." method="_on_button_2_pressed"]
+[connection signal="close_requested" from="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/XMLOutputWindow" to="." method="_on_xml_output_window_close_requested"]
+[connection signal="timeout" from="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/XMLValidationTimer" to="." method="_on_timer_timeout"]

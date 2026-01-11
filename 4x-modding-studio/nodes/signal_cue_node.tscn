@@ -1,0 +1,25 @@
+[gd_scene load_steps=3 format=3 uid="uid://chx655w4pipgo"]
+
+[ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="1_i05m1"]
+[ext_resource type="Script" uid="uid://b6ex8n62f8f2d" path="res://nodes/signal_cue_node.gd" id="2_xr1ly"]
+
+[node name="SignalCueNode" instance=ExtResource("1_i05m1")]
+title = "Signal Cue"
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("2_xr1ly")
+xml_element_name = "signal_cue"
+
+[node name="Cue" type="LineEdit" parent="." index="2"]
+layout_mode = 2
+tooltip_text = "Send a signal to a cue, triggering cues that wait for this signal via .
+The signal will be dispatched in the same frame, but only after the current cue actions are completed. 
+NOTE: Make sure that the signal does not activate the current cue again (directly or indirectly), which could lead to an infinite loop."
+placeholder_text = "cue_name"

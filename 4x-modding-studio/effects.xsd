@@ -1,0 +1,1118 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+
+  <xs:simpleType name="idstring">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[a-zA-Z_][a-zA-Z0-9_]*" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="patchpos">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="before"/>
+      <xs:enumeration value="after"/>
+      <xs:enumeration value="prepend"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="chance">
+    <xs:restriction base="xs:float">
+      <xs:minInclusive value="0" />
+      <xs:maxInclusive value="1" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:attributeGroup name="position">
+    <xs:attribute name="x" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          X coordinate or length
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="y" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Y coordinate or length
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="z" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Z coordinate or length
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="rotation">
+    <xs:attribute name="pitch" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Pitch angle
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="yaw" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Yaw angle
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="roll" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Roll angle
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="profile">
+    <xs:attribute name="startvalue" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Value at the beginning of the profile (defaults to 0)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="sustainvalue" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Value during the sustain phase of the profile (defaults to 1)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="endvalue" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Value at the end of the profile (defaults to 1)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="profiledurations"/>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="profiledurations">
+    <xs:attribute name="attackduration" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Time to go from startvalue to sustainvalue (defaults to 0)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="sustainduration" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Time to remain at sustainvalue (defaults to 0)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="releaseduration" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Time to go from sustainvalue to endvalue (defaults to 0)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="effectproperties">
+    <xs:attribute name="alignment" type="alignmentlookup">
+      <xs:annotation>
+        <xs:documentation>
+          Alignment (defaults to "none")
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="intensitysource" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Intensity source (defaults to "none")
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="emitterspace" type="emitterspacelookup">
+      <xs:annotation>
+        <xs:documentation>
+          Particle emitter space (defaults to "none", only has an effect on particle emitters)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="minscale" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Minimum value for random scaling (defaults to 1)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="maxscale" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Maximum value for random scaling (defaults to 1)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="basesize" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          The base object size (diameter, in meters) this element was designed for - objects with different sizes can cause the effect to be scaled up or down (doesn't apply to every effect type)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="strengtheffect" type="effectstrengthlookup">
+      <xs:annotation>
+        <xs:documentation>
+          TODO docu
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="forcezonespace" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>
+          If set to true, forces creating this effect in zone space
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="nocull" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>
+          Only for engine effects: renders this effect even if the engine is culled for being off-screen
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="selectionattributes">
+    <xs:attribute name="selection" type="selectionlookup"/>
+  </xs:attributeGroup>
+
+  <xs:simpleType name="selectionlookup">
+    <xs:annotation>
+      <xs:documentation>
+        Selection type (used with select sub-nodes)
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="one">
+        <xs:annotation>
+          <xs:documentation>
+            One
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="random">
+        <xs:annotation>
+          <xs:documentation>
+            Random
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="random_except">
+        <xs:annotation>
+          <xs:documentation>
+            Random, excluding an item that can be optionally specified by code
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="choose">
+        <xs:annotation>
+          <xs:documentation>
+            Choose
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="alignmentlookup">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none"/>
+      <xs:enumeration value="object"/>
+      <xs:enumeration value="normal"/>
+      <xs:enumeration value="impact"/>
+      <xs:enumeration value="object"/>
+      <xs:enumeration value="random"/>
+      <xs:enumeration value="target"/>
+      <xs:enumeration value="zone"/>
+      <xs:enumeration value="normalclose"/>
+      <xs:enumeration value="impactclose"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="emitterspacelookup">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none"/>
+      <xs:enumeration value="local"/>
+      <xs:enumeration value="component"/>
+      <xs:enumeration value="object"/>
+      <xs:enumeration value="zone"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="forklodlookup">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none"/>
+      <xs:enumeration value="tinyeffect"/>
+      <xs:enumeration value="smalleffect"/>
+      <xs:enumeration value="mediumeffect"/>
+      <xs:enumeration value="largeeffect"/>
+      <xs:enumeration value="megaeffect"/>
+      <xs:enumeration value="ubereffect"/>
+      <xs:enumeration value="scfx"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="dynamicparameterlookup">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="forwardspeed">
+        <xs:annotation>
+          <xs:documentation>
+            Current non-normalized forward speed, in m/s
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="maxforwardspeed">
+        <xs:annotation>
+          <xs:documentation>
+            Maximum forward speed, in m/s
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="randomvalue">
+        <xs:annotation>
+          <xs:documentation>
+            A random value between 0.0 and 1.0, assigned to an effect on creation
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="stardustintensity">
+        <xs:annotation>
+          <xs:documentation>
+            Stardust intensity user setting, between 0 and 1
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="travelspeed">
+        <xs:annotation>
+          <xs:documentation>
+            Normalized travel speed - 0 means at or below normal max speed, 1 means at or above max travel speed
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="templatestatelookup">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="wreck"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="gametriggerlookup">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="playerwarning">
+        <xs:annotation>
+          <xs:documentation>
+            Have Betty speak a warning when this is triggered. - value: Warning Text ID - value2: maximum distance in m between effect and player for the warning to be played
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="effectstrengthlookup">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none"/>
+      <xs:enumeration value="interpolate"/>
+      <xs:enumeration value="multiply"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="propagation">
+    <xs:sequence>
+      <xs:element name="start" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:annotation>
+            <xs:documentation>
+              Start position in values from -1 to 1, relative to object's bounding box size. If the directional property is set to true, propagating elements will first spawn near this position, then further outward over time.
+            </xs:documentation>
+          </xs:annotation>
+          <xs:attributeGroup ref="position"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="number" type="xs:positiveInteger">
+      <xs:annotation>
+        <xs:documentation>
+          Exact number of propagating effects to create
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="minnumber" type="xs:positiveInteger">
+      <xs:annotation>
+        <xs:documentation>
+          Minimum number of propagating effects to create (ignored if number property is also supplied)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="maxnumber" type="xs:positiveInteger">
+      <xs:annotation>
+        <xs:documentation>
+          Maximum number of propagating effects to create (ignored if number property is also supplied)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="strengtheffect" type="effectstrengthlookup">
+      <xs:annotation>
+        <xs:documentation>
+          TODO docu
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="duration">
+      <xs:annotation>
+        <xs:documentation>
+          Total time in seconds over which the propagating elements will be distributed
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="timevariance">
+      <xs:annotation>
+        <xs:documentation>
+          Maximum random time variance in seconds added to each created effect
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="timefunction">
+      <xs:annotation>
+        <xs:documentation>
+          Function to distribute effects non-evenly in time - a positive number means more effects in the beginning, a negative number means more effects at the end
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="directional">
+      <xs:annotation>
+        <xs:documentation>
+          If set to true, start position is used
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="amplitude">
+    <xs:annotation>
+      <xs:documentation>
+        Amplitude values
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="position" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:attributeGroup ref="position"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="rotation" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:attributeGroup ref="rotation"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="randomize" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>
+          If set to true, the actual amplitude will be randomized using the defined value as the maximum
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="camerashake">
+    <xs:annotation>
+      <xs:documentation>
+        Camera shake properties
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="amplitude" type="amplitude"/>
+    </xs:sequence>
+    <xs:attribute name="frequency" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Frequency in 1/second
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="profiledurations"/>
+  </xs:complexType>
+
+  <xs:complexType name="controllerrumble">
+    <xs:annotation>
+      <xs:documentation>
+        Controller rumble
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="high" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:annotation>
+            <xs:documentation>
+              High frequency actuator
+            </xs:documentation>
+          </xs:annotation>
+          <xs:attributeGroup ref="profile"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="low" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:annotation>
+            <xs:documentation>
+              Low frequency actuator
+            </xs:documentation>
+          </xs:annotation>
+          <xs:attributeGroup ref="profile"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="linearforce">
+    <xs:annotation>
+      <xs:documentation>
+        Linear camera movement based on relative position
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="factors">
+        <xs:complexType>
+          <xs:annotation>
+            <xs:documentation>
+              These values get multiplied with the normalized relative position and the falloff factor to get the camera movement amplitude
+            </xs:documentation>
+          </xs:annotation>
+          <xs:attributeGroup ref="position"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attributeGroup ref="profile"/>
+  </xs:complexType>
+
+  <xs:complexType name="push">
+    <xs:annotation>
+      <xs:documentation>
+        Point attractor / repulsor force effect acting on physics objects
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="strength" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Force effect strength - a negative value means it pushes away from the center, a positive value pulls towards it
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="pow" type="xs:nonNegativeInteger">
+      <xs:annotation>
+        <xs:documentation>
+          The exponent at which the force effects falls off with distance from the center
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="force">
+    <xs:annotation>
+      <xs:documentation>
+        Force effects
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="rumble" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:annotation>
+            <xs:documentation>
+              Rumble / shake properties
+            </xs:documentation>
+          </xs:annotation>
+          <xs:sequence>
+            <xs:element name="camera" minOccurs="0" maxOccurs="1">
+              <xs:complexType>
+                <xs:annotation>
+                  <xs:documentation>
+                    List of camera shake definitions which add up to the full movement
+                  </xs:documentation>
+                </xs:annotation>
+                <xs:sequence>
+                  <xs:element name="component" type="camerashake" minOccurs="1" maxOccurs="unbounded"/>
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+            <xs:element name="controller" type="controllerrumble" minOccurs="0" maxOccurs="1"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="linear" type="linearforce" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="push" type="push" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="range" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Force effect range in meters
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="falloff" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Force effect falloff based on distance to center - 0 means no falloff, 1 means effects will reach 0 at the edge of the radius
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="sound">
+    <xs:annotation>
+      <xs:documentation>
+        Sound effect properties
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="ref" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Sound library reference
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="volume" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Sound volume override
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="distance" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Sound distance override
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="repeat" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>
+          Repeat override
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="flags" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Sound flags override - valid flags: autoplay, music, voice, effect, ui, ambient, unique, noocclusion, randomnoise, animambient, forceshutdown, permanent
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="areadamage">
+    <xs:annotation>
+      <xs:documentation>
+        Area damage properties
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="position" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:annotation>
+            <xs:documentation>
+              Optional additional offset
+            </xs:documentation>
+          </xs:annotation>
+          <xs:attributeGroup ref="position"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="damagedeffects" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:annotation>
+            <xs:documentation>
+              Effects to play when damaged by this effect
+            </xs:documentation>
+          </xs:annotation>
+          <xs:attribute name="hull" type="xs:string">
+            <xs:annotation>
+              <xs:documentation>
+                Effect when hull was damaged
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="shield" type="xs:string">
+            <xs:annotation>
+              <xs:documentation>
+                Effect when shield was damaged
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="range" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Damage range in meters
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="falloff" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Damage falloff based on distance to center - 0 means no falloff, 1 means damage will reach 0 at the edge of the radius
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="duration" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Damage duration in seconds
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Damage value applied first to shields, then to hull once shields are depleted
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="hull" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Damage value applied directly to hull, ignoring shields
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="shield" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Damage value applied only to shields
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="noshield" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Damage value only applied to hull if shields are depleted
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="continuous" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>
+          Whether the damage should be applied continuously and not only once, in which case the values are per second
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="state">
+    <xs:annotation>
+      <xs:documentation>
+        State change
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" type="templatestatelookup">
+      <xs:annotation>
+        <xs:documentation>
+          New template state
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="time" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Time in seconds after which this state change should happen
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="states">
+    <xs:annotation>
+      <xs:documentation>
+        State changes performed by this effect
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="state" type="state" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="gametrigger">
+    <xs:annotation>
+      <xs:documentation>
+        Trigger
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" type="gametriggerlookup">
+      <xs:annotation>
+        <xs:documentation>
+          Type of trigger
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="time" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Time in seconds after which this trigger should happen
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Trigger value, usage depends on trigger type
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value2" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Trigger value, usage depends on trigger type
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="gametriggers">
+    <xs:annotation>
+      <xs:documentation>
+        Triggers for specific game events
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="gametrigger" type="gametrigger" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="reference">
+    <xs:annotation>
+      <xs:documentation>
+        Referenced effect
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="effect" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Name of referenced effect
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="delay" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Delay in seconds before the referenced effect is created
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="references">
+    <xs:annotation>
+      <xs:documentation>
+        Referenced effects which will be created as part of this effect
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="reference" type="reference" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="select" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:annotation>
+            <xs:documentation>
+              Selection of referenced effects, one of which will be chosen randomly
+            </xs:documentation>
+          </xs:annotation>
+          <xs:sequence>
+            <xs:element name="reference" type="reference" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="element">
+    <xs:annotation>
+      <xs:documentation>
+        Effect element definition
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="propagation" type="propagation" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="sound" type="sound" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="force" type="force" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="areadamage" type="areadamage" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="basesize" type="basesize" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="dynamicparameters" type="dynamicparameters" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:positiveInteger">
+      <xs:annotation>
+        <xs:documentation>
+          Element ID - must be unique within the effect definition
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ref">
+      <xs:annotation>
+        <xs:documentation>
+          Macro to be used
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="forkeffect" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          The fork effect to be used
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="forklod" type="forklodlookup">
+      <xs:annotation>
+        <xs:documentation>
+          Fork LOD setting
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="delay" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Time between creation of the effect and this element being spawned
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="duration" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          Maximum duration of this effect - a value of -1 makes it last forever, USE WITH CAUTION!
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="fadein">
+      <xs:annotation>
+        <xs:documentation>
+          Time in seconds during which this effect will fade in after being created
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="fadeout">
+      <xs:annotation>
+        <xs:documentation>
+          Time in seconds during which this effect will fade out before being removed
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="wreckedfadeduration">
+      <xs:annotation>
+        <xs:documentation>
+          If set, this effect will fade out over the defined time (in seconds) when the object it's on is wrecked
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="chance" type="chance">
+      <xs:annotation>
+        <xs:documentation>
+          Chance that this element gets created when triggered (value between 0 and 1, defaults to 1)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="effectproperties">
+      <xs:annotation>
+        <xs:documentation>
+          Properties affecting this element, overriding effect definitions
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attributeGroup>
+  </xs:complexType>
+
+  <xs:complexType name="elementset">
+    <xs:annotation>
+      <xs:documentation>
+        TODO docu
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="propagation" type="propagation" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="element" type="element" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="elements">
+    <xs:annotation>
+      <xs:documentation>
+        List of effect elements
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:choice maxOccurs="unbounded">
+        <xs:element name="elementset" type="elementset" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element name="element" type="element" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:choice>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="mapblip">
+    <xs:annotation>
+      <xs:documentation>
+        Properties for showing a short-lived map blip associated with this effect object
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="color" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="basesize">
+    <xs:annotation>
+      <xs:documentation>
+        The base object size (bounding box edge lengths, in meters) this element was designed for - objects with different sizes can cause the effect to be scaled up or down non-uniformly along each axis (doesn't apply to every effect type)
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="position"/>
+  </xs:complexType>
+
+  <xs:complexType name="dynamicparameter">
+    <xs:annotation>
+      <xs:documentation>
+        TODO docu
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="type" type="dynamicparameterlookup">
+      <xs:annotation>
+        <xs:documentation>
+          TODO docu
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="dynamicparameters">
+    <xs:annotation>
+      <xs:documentation>
+        TODO docu
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="dynamicparameter" type="dynamicparameter" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="effect">
+    <xs:annotation>
+      <xs:documentation>
+        Effect definition
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="states" type="states" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="propagation" type="propagation" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="gametriggers" type="gametriggers" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="references" type="references" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="elements" type="elements" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="effects" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:annotation>
+            <xs:documentation>
+              Local effect definitions
+            </xs:documentation>
+          </xs:annotation>
+          <xs:sequence>
+            <xs:choice>
+              <xs:element name="effect" type="effect" minOccurs="0" maxOccurs="unbounded"/>
+              <xs:element name="select" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:annotation>
+                    <xs:documentation>
+                      Selection of effects, one of which will be chosen randomly
+                    </xs:documentation>
+                  </xs:annotation>
+                  <xs:sequence>
+                    <xs:element name="effect" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:complexContent>
+                          <xs:extension base="effect">
+                            <xs:attribute name="weight" type="xs:positiveInteger">
+                              <xs:annotation>
+                                <xs:documentation>
+                                  Selection weight (higher value means more likely to be selected)
+                                </xs:documentation>
+                              </xs:annotation>
+                            </xs:attribute>
+                          </xs:extension>
+                        </xs:complexContent>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attributeGroup ref="selectionattributes"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:choice>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="mapblip" type="mapblip" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="basesize" type="basesize" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="dynamicparameters" type="dynamicparameters" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="idstring" use="required">
+      <xs:annotation>
+        <xs:documentation>
+          Effect name, used to reference it from elsewhere
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="chance" type="chance">
+      <xs:annotation>
+        <xs:documentation>
+          Chance that this effect gets created when triggered (value between 0 and 1, defaults to 1)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="minstrength" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          TODO docu
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="maxstrength" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          TODO docu
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="timeout" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          An optional duration, in seconds, in which the same effect can't be re-created on the same object (defaults to no timeout)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="effectproperties">
+      <xs:annotation>
+        <xs:documentation>
+          Properties affecting all elements, unless overriden in element definition
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attributeGroup>
+  </xs:complexType>
+
+  <xs:element name="effects">
+    <xs:annotation>
+      <xs:documentation>
+        Document element of effects.xml
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="effect" type="effect" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

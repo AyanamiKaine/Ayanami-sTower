@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:simpleType name="idstring">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[a-zA-Z_][a-zA-Z0-9_]*" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="influencelookup">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="hulldamage">
+        <xs:annotation>
+          <xs:documentation>
+            Does direct hull damage. Multiple influences of this type add up.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="shielddamage">
+        <xs:annotation>
+          <xs:documentation>
+            Does shield damage. Multiple influences of this type add up.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="hullshielddamage">
+        <xs:annotation>
+          <xs:documentation>
+            Does damage first to shields, then hull. Multiple influences of this type add up.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="hullnoshielddamage">
+        <xs:annotation>
+          <xs:documentation>
+            Does hull damage only if shields are down. Multiple influences of this type add up.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="hullrepair">
+        <xs:annotation>
+          <xs:documentation>
+            Repairs hull damage. Multiple influences of this type add up.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="shieldrepair">
+        <xs:annotation>
+          <xs:documentation>
+            Recharges shields. Multiple influences of this type add up.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="maxforwardspeed">
+        <xs:annotation>
+          <xs:documentation>
+            Multiplier to maximum forward speed. Multiple influences of this type are multiplied together.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="maxreversespeed">
+        <xs:annotation>
+          <xs:documentation>
+            Multiplier to maximum reverse speed. Multiple influences of this type are multiplied together.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="maxstrafespeed">
+        <xs:annotation>
+          <xs:documentation>
+            Multiplier to maximum strafe speeds (both directions). Multiple influences of this type are multiplied together.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="maxsteeringspeed">
+        <xs:annotation>
+          <xs:documentation>
+            Multiplier to maximum steering speeds (all directions). Multiple influences of this type are multiplied together.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="forwardacceleration">
+        <xs:annotation>
+          <xs:documentation>
+            Multiplier to forward acceleration. Multiple influences of this type are multiplied together.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="reverseacceleration">
+        <xs:annotation>
+          <xs:documentation>
+            Multiplier to reverse acceleration. Multiple influences of this type are multiplied together.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="strafeacceleration">
+        <xs:annotation>
+          <xs:documentation>
+            Multiplier to strafe accelerations (both directions). Multiple influences of this type are multiplied together.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="steeringacceleration">
+        <xs:annotation>
+          <xs:documentation>
+            Multiplier to steering accelerations (all directions). Multiple influences of this type are multiplied together.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="radarrange">
+        <xs:annotation>
+          <xs:documentation>
+            Multiplier to radar range. Multiple influences of this type are multiplied together.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="radarcloak">
+        <xs:annotation>
+          <xs:documentation>
+            Multiplier to radar cloaking. Note that a value of 1 means no cloaking and 0 means full cloaking. Multiple influences of this type are multiplied together.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="disableboost">
+        <xs:annotation>
+          <xs:documentation>
+            Disable boosting for the duration of the profile. Multiple influences of this type do not make the effect any stronger.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="disabletravel">
+        <xs:annotation>
+          <xs:documentation>
+            Disable travel mode for the duration of the profile. Multiple influences of this type do not make the effect any stronger.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="disableshooting">
+        <xs:annotation>
+          <xs:documentation>
+            Disable shooting weapons for the duration of the profile. Multiple influences of this type do not make the effect any stronger.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="chargeoxygen">
+        <xs:annotation>
+          <xs:documentation>
+            Recharges oxygen. Multiple influences of this type add up.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="profilelookup">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="envelope">
+        <xs:annotation>
+          <xs:documentation>
+            Envelope profile. Relevant properties: startvalue, sustianvalue, endvalue, delay, attackduration, sustainduration, releaseduration.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="continuous">
+        <xs:annotation>
+          <xs:documentation>
+            Continuous profile. Relevant properties: startvalue, duration.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="profile">
+    <xs:annotation>
+      <xs:documentation>
+        The time-dependent profile of this influence. Used properties depend on profile type, see individual documentation.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="type" type="profilelookup" use="required">
+      <xs:annotation>
+        <xs:documentation>
+          Profile type
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="startvalue" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          [Envelope and continuous profile] The start value of the profile. Used while the current time is earlier than the start time.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="sustainvalue" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          [Envelope profile] The value during the sustain part of the profile.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="endvalue" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          [Envelope profile] The end value of the profile. Used when the current time is later than the end time.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="attackduration" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          [Envelope profile] The time over which the value will interpolate between startvalue and sustainvalue. Defaults to 0.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="sustainduration" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          [Envelope profile] The time over which the value will remain at the sustainvalue. Defaults to 0.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="releaseduration" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          [Envelope profile] The time over which the value will interpolate between sustainvalue and endvalue. Defaults to 0.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="duration" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          [Continuous profile] The total duration of this profile. Defaults to 0.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="delay" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          [Envelope profile] The initial time delay before the attack phase starts. Defaults to 0.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="influence">
+    <xs:annotation>
+      <xs:documentation>
+        Influence
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="profile" type="profile" minOccurs="1" maxOccurs="1" />
+    </xs:sequence>
+    <xs:attribute name="type" type="influencelookup">
+      <xs:annotation>
+        <xs:documentation>
+          Influence type
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="influences">
+    <xs:annotation>
+      <xs:documentation>
+        Influences, potentially for specific target classes
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="influence" type="influence" minOccurs="1" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="classes" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          List of classes these influences are for. Leave empty to make it work for all classes. If there are multiple options, the game will choose the first one that matches the class.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="influencelist">
+    <xs:annotation>
+      <xs:documentation>
+        List of influences, referencable by ID
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="influences" type="influences" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="id" type="idstring">
+      <xs:annotation>
+        <xs:documentation>
+          Unique ID
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          User-readable name
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          User-readable description
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="icon" type="idstring">
+      <xs:annotation>
+        <xs:documentation>
+          Icon ID override (optional)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:element name="influencelistconfigurations">
+    <xs:annotation>
+      <xs:documentation>
+        Document element of influenceconfigurations.xml
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="influencelist" type="influencelist" minOccurs="0" maxOccurs="unbounded" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

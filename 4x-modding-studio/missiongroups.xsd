@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+
+  <xs:include schemaLocation="common.xsd" />
+
+  <xs:simpleType name="missiongroupid">
+    <xs:restriction base="idname" />
+  </xs:simpleType>
+
+  <xs:simpleType name="factionid">
+    <xs:restriction base="idname" />
+  </xs:simpleType>
+
+  <xs:complexType name="groupdef">
+    <xs:attribute name="id" type="missiongroupid">
+      <xs:annotation>
+        <xs:documentation>
+          Mission group ID
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Mission group name
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Mission group description
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="story" type="boolean">
+      <xs:annotation>
+        <xs:documentation>
+          Is the mission group a story?
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="faction" type="factionid">
+      <xs:annotation>
+        <xs:documentation>
+          Primary faction
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="enemy" type="factionid">
+      <xs:annotation>
+        <xs:documentation>
+          Enemy faction
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="missiongroups">
+    <xs:sequence>
+      <xs:element name="group" type="groupdef" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation>
+            Definition of a mission group
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="missiongroups" type="missiongroups">
+    <xs:annotation>
+      <xs:documentation>
+        MissionGroup DB
+      </xs:documentation>
+    </xs:annotation>
+  </xs:element>
+
+</xs:schema>

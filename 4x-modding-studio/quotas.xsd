@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+
+  <xs:include schemaLocation="common.xsd" />
+
+  <!-- ===== Simple types ==== -->
+
+  <xs:simpleType name="quota_macro">
+    <xs:annotation>
+      <xs:documentation>
+        Macro
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string" />
+  </xs:simpleType>
+
+  <xs:simpleType name="quota_missiontype">
+    <xs:annotation>
+      <xs:documentation>
+        Mission type
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="plot" />
+      <xs:enumeration value="trade" />
+      <xs:enumeration value="fight" />
+      <xs:enumeration value="build" />
+      <xs:enumeration value="think" />
+      <xs:enumeration value="other" />
+      <xs:enumeration value="station" />
+      <xs:enumeration value="board" />
+      <xs:enumeration value="build_ship" />
+      <xs:enumeration value="build_station" />
+      <xs:enumeration value="buy" />
+      <xs:enumeration value="deliver" />
+      <xs:enumeration value="destroy" />
+      <xs:enumeration value="dockat" />
+      <xs:enumeration value="drop" />
+      <xs:enumeration value="escort" />
+      <xs:enumeration value="explore" />
+      <xs:enumeration value="find" />
+      <xs:enumeration value="flyto" />
+      <xs:enumeration value="follow" />
+      <xs:enumeration value="hack" />
+      <xs:enumeration value="kill" />
+      <xs:enumeration value="patrol" />
+      <xs:enumeration value="pickup" />
+      <xs:enumeration value="protect" />
+      <xs:enumeration value="race" />
+      <xs:enumeration value="repair" />
+      <xs:enumeration value="restock" />
+      <xs:enumeration value="scan" />
+      <xs:enumeration value="sell" />
+      <xs:enumeration value="talkto" />
+      <xs:enumeration value="transport" />
+      <xs:enumeration value="hazardousmaterials" />
+      <xs:enumeration value="intelligence" />
+      <xs:enumeration value="intoxicants" />
+      <xs:enumeration value="military" />
+      <xs:enumeration value="pharmaceuticals" />
+      <xs:enumeration value="police" />
+      <xs:enumeration value="protectedspecies" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="quota_limit">
+    <xs:union memberTypes="xs:nonNegativeInteger">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="none" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:union>
+  </xs:simpleType>
+
+  <xs:simpleType name="quota_docktype">
+    <xs:annotation>
+      <xs:documentation>
+        Dock population type
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="build" />
+      <xs:enumeration value="trade" />
+      <xs:enumeration value="drones" />
+      <xs:enumeration value="ships" />
+      <xs:enumeration value="repair" />
+      <xs:enumeration value="ammo" />
+      <xs:enumeration value="bar" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ===== Attribute groups ==== -->
+
+  <xs:attributeGroup name="quota_wareamount">
+    <xs:attribute name="amount" type="xs:nonNegativeInteger" />
+    <xs:attribute name="min" type="xs:nonNegativeInteger" />
+    <xs:attribute name="max" type="xs:nonNegativeInteger" />
+    <xs:attribute name="chance">
+      <xs:annotation>
+        <xs:documentation>
+          Chance percentage of this item being part of the content, if evaluated amount is nonzero (defaults to 100)
+        </xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:float">
+          <xs:minInclusive value="0" />
+          <xs:maxInclusive value="100" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <!-- ===== Offers ==== -->
+
+  <xs:complexType name="quota_offer">
+    <xs:annotation>
+      <xs:documentation>
+        Quota definition for mission type
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="type" type="quota_missiontype" use="required" />
+    <xs:attribute name="weight" type="xs:nonNegativeInteger" />
+    <xs:attribute name="zonelimit" type="quota_limit" />
+  </xs:complexType>
+
+  <xs:complexType name="quota_offers">
+    <xs:annotation>
+      <xs:documentation>
+        Mission offer quota definition
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="offer" type="quota_offer" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="zonelimit" type="quota_limit" />
+  </xs:complexType>
+
+  <!-- ===== Spaces ==== -->
+
+  <xs:complexType name="quota_zone">
+    <xs:annotation>
+      <xs:documentation>
+        Zone
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="offers" type="quota_offers" minOccurs="0" maxOccurs="1" />
+    </xs:sequence>
+    <xs:attribute name="macro" type="quota_macro" use="required" />
+  </xs:complexType>
+
+  <xs:complexType name="quota_sector">
+    <xs:annotation>
+      <xs:documentation>
+        Sector
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="offers" type="quota_offers" minOccurs="0" maxOccurs="1" />
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="zone" type="quota_zone" />
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="macro" type="quota_macro" use="required" />
+  </xs:complexType>
+
+  <xs:complexType name="quota_cluster">
+    <xs:annotation>
+      <xs:documentation>
+        Cluster
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="offers" type="quota_offers" minOccurs="0" maxOccurs="1" />
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="sector" type="quota_sector" />
+        <xs:element name="zone" type="quota_zone" />
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="macro" type="quota_macro" use="required" />
+  </xs:complexType>
+
+  <!-- ===== Root ==== -->
+
+  <xs:element name="quotas">
+    <xs:annotation>
+      <xs:documentation>
+        Mission quota definitions
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="offers" type="quota_offers" minOccurs="0" maxOccurs="1" />
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <xs:element name="cluster" type="quota_cluster" />
+          <xs:element name="sector" type="quota_sector" />
+          <xs:element name="zone" type="quota_zone" />
+        </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="loadmacros" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>
+            Load macros even if they are not used in the universe map? May be useful to detect typos. (default is false)
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

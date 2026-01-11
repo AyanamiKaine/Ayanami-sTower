@@ -1,0 +1,34 @@
+[gd_scene load_steps=2 format=3 uid="uid://tehdpbp7j4io"]
+
+[ext_resource type="Script" uid="uid://r61i5hrhp7gi" path="res://action.gd" id="1_2ga16"]
+
+[node name="DebugText" type="GraphNode"]
+offset_left = 715.0
+offset_top = 10.0
+offset_right = 955.0
+offset_bottom = 195.0
+tooltip_text = "Writes the test to the debug log."
+mouse_filter = 1
+position_offset = Vector2(715, 10)
+resizable = true
+title = "Debug Text"
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("1_2ga16")
+
+[node name="TextEdit" type="TextEdit" parent="."]
+custom_minimum_size = Vector2(0, 33)
+layout_mode = 2
+size_flags_vertical = 3
+tooltip_text = "Text to be written to the log"
+text = "Actions are executed when the conditions are met."
+wrap_mode = 1
+autowrap_mode = 2
+indent_wrapped_lines = true

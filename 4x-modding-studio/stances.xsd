@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:complexType name="effects">
+    <xs:annotation>
+      <xs:documentation>
+        Stance-related effects
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="activation" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Effect (from effects.xml) to create when this stance is activated
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="deactivation" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          Effect (from effects.xml) to create when this stance is deactivated - also happens when another stance is activated
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="animation">
+    <xs:annotation>
+      <xs:documentation>
+        Animation handling
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="triggers" minOccurs="0" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Animation triggers
+          </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="activation" type="xs:string">
+            <xs:annotation>
+              <xs:documentation>
+                Animation trigger for when this stance is activated
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="deactivation" type="xs:string">
+            <xs:annotation>
+              <xs:documentation>
+                Animation trigger for when this stance is deactivated. IMPORTANT: does not happen when activating a different stance, in that case the new stance's actication trigger is used
+              </xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="path" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          The ID of the animation path the ship should have while this stance is active
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="stance">
+    <xs:annotation>
+      <xs:documentation>
+        Definition of a ship stance
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="effects" type="effects" minOccurs="0" maxOccurs="1" />
+      <xs:element name="animation" type="animation" minOccurs="0" maxOccurs="1" />
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          The unique ID string for this stance, to be referenced in ship macros
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          The user-readable name of this stance
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          The user-readable description of this stance
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="icon" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          The icon ID (from icons.xml) for this stance
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="influencelist" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          The influence list ID (from influenceconfigurations.xml) for this stance
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="minduration" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          The minimum duration in seconds the stance needs to stay active before it can be deactivated again - defaults to 0
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="maxduration" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          The maximum duration in seconds before the stance is automatically deactivated - defaults to "no limit"
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="cooldown" type="xs:float">
+      <xs:annotation>
+        <xs:documentation>
+          The minimum waiting time in seconds after this stance's deactivation before another stance switch is allowed - defaults to 0
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:element name="stances">
+    <xs:annotation>
+      <xs:documentation>
+        Document element of stances.xml
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="stance" type="stance" minOccurs="0" maxOccurs="unbounded" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
