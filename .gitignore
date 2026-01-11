@@ -9,7 +9,7 @@ bazel-*
 *.a
 
 #X4 xsd files
-/Schemas/*.xsd
+**/Schemas/*.xsd
 
 # Misc
 ## Ignore build folder

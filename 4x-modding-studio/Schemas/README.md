@@ -1,0 +1,1 @@
+Place here your x4 .xsd files to enable schema validation
