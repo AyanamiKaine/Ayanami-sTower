@@ -6,3 +6,4 @@ extends Node2D
 @export var sector_owner: String = ""
 @export var sector_ressources: Dictionary = {}
 @export var sector_stations: Dictionary = {}
+@export var is_selected: bool = false

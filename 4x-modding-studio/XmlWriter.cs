@@ -4,10 +4,16 @@ using System.Collections.Generic;
 using System.Linq; // Essential for LINQ queries
 using System.Xml.Linq;
 
+/// <summary>
+/// Creates an XML representation of a graph
+/// </summary>
 public partial class XmlWriter : Node
 {
+    /// <summary>
+    /// Used graph for the xml representation
+    /// </summary>
     [Export]
-    public GraphEdit GraphEdit { get; set; }
+    public GraphEdit? GraphEdit { get; set; }
 
     /// <summary>
     /// Converts the current GraphEdit state into a hierarchical XElement.
@@ -56,7 +62,7 @@ public partial class XmlWriter : Node
         // 3. IDENTIFY ROOT NODE
         // The root is the FIRST node spawned in the graph (first in scene tree order)
         // that doesn't have a parent connection.
-        GraphNode rootNode = null;
+        GraphNode? rootNode = null;
 
         foreach (var node in nodeLookup.Values)
         {
@@ -118,7 +124,7 @@ public partial class XmlWriter : Node
         {
             foreach (var childName in adjacencyList[currentNode.Name])
             {
-                if (nodeLookup.TryGetValue(childName, out GraphNode childNode))
+                if (nodeLookup.TryGetValue(childName, out GraphNode? childNode))
                 {
                     // RECURSE: Add the result of this function as a child XElement
                     xNode.Add(BuildNodeRecursive(childNode, adjacencyList, nodeLookup, visited));

@@ -7,14 +7,27 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
 
-// Structure to represent a node in the graph
+/// <summary>
+/// Structure to represent a node in the graph
+/// </summary>
 public struct GraphNodeData
 {
+    /// <summary>
+    /// XML element name (e.g., "cues", "cue", "conditions")
+    /// </summary>
     public string ElementName;  // XML element name (e.g., "cues", "cue", "conditions")
+    /// <summary>
+    /// XML attributes
+    /// </summary>
     public Dictionary<string, string> Attributes;  // XML attributes
+    /// <summary>
+    /// Child nodes
+    /// </summary>
     public List<GraphNodeData> Children;  // Child nodes
 }
-
+/// <summary>
+/// Utility class for working with graph XML data
+/// </summary>
 public partial class GraphXmlUtils : RefCounted
 {
     // List of all possible node types (scene names)
@@ -25,6 +38,11 @@ public partial class GraphXmlUtils : RefCounted
         "Check Any", "Check Value"
     };
 
+    /// <summary>
+    /// XML representation of the graph 
+    /// </summary>
+    /// <param name="graphEdit"></param>
+    /// <returns></returns>
     public static string GetGraphXmlString(GraphEdit graphEdit)
     {
         XElement element = GenerateXElement(graphEdit);
@@ -81,8 +99,7 @@ public partial class GraphXmlUtils : RefCounted
         if (firstRoot != null)
         {
             // Add attributes from the root mdscript node to the outer mdscript element
-            Godot.Collections.Dictionary rootAttributes = firstRoot.Get("xml_attributes").AsGodotDictionary();
-            foreach (var attr in rootAttributes)
+            foreach (var attr in firstRoot.Get("xml_attributes").AsGodotDictionary())
             {
                 xmlRoot.Add(new XAttribute(attr.Key.AsString(), attr.Value.AsString()));
             }
@@ -97,7 +114,7 @@ public partial class GraphXmlUtils : RefCounted
 
                 foreach (var name in childNames)
                 {
-                    if (nodeLookup.TryGetValue(name, out GraphNode child))
+                    if (nodeLookup.TryGetValue(name, out GraphNode? child))
                     {
                         childNodes.Add(child);
                     }
@@ -131,9 +148,7 @@ public partial class GraphXmlUtils : RefCounted
 
         var xNode = new XElement(currentNode.Get("xml_element_name").AsString());
 
-        Godot.Collections.Dictionary xmlAttributes = currentNode.Get("xml_attributes").AsGodotDictionary();
-
-        foreach (var xmlAttribute in xmlAttributes)
+        foreach (var xmlAttribute in currentNode.Get("xml_attributes").AsGodotDictionary())
         {
             xNode.Add(new XAttribute(xmlAttribute.Key.AsString(), xmlAttribute.Value.AsString()));
         }
@@ -148,7 +163,7 @@ public partial class GraphXmlUtils : RefCounted
             var childNodes = new List<GraphNode>();
             foreach (var name in childNames)
             {
-                if (nodeLookup.TryGetValue(name, out GraphNode child))
+                if (nodeLookup.TryGetValue(name, out GraphNode? child))
                 {
                     childNodes.Add(child);
                 }
@@ -223,7 +238,7 @@ public partial class GraphXmlUtils : RefCounted
     /// <summary>
     /// Get the node scene name for a given XML element name by checking each node's xml_element_name property
     /// </summary>
-    public static string GetNodeNameFromElementName(string elementName)
+    public static string? GetNodeNameFromElementName(string elementName)
     {
         foreach (var nodeName in AllNodeTypes)
         {
@@ -268,7 +283,7 @@ public partial class GraphXmlUtils : RefCounted
         var result = new List<(string, Dictionary<string, string>, string)>();
 
         // Map element name to node name
-        string nodeName = GetNodeNameFromElementName(rootData.ElementName);
+        string nodeName = GetNodeNameFromElementName(rootData.ElementName)!;
         if (nodeName != null)
         {
             result.Add((nodeName, rootData.Attributes, parentName));
@@ -316,7 +331,7 @@ public partial class GraphXmlUtils : RefCounted
             var lineToElementMap = new Dictionary<int, string>();
 
             // Build a map of line numbers to XML element names
-            foreach (var element in doc.Root.DescendantsAndSelf())
+            foreach (var element in doc.Root!.DescendantsAndSelf())
             {
                 var lineInfo = (IXmlLineInfo)element;
                 if (lineInfo.HasLineInfo())
@@ -360,7 +375,7 @@ public partial class GraphXmlUtils : RefCounted
                 nodesThatHaveParents.Add((string)conn["to_node"]);
             }
 
-            Node rootNode = null;
+            Node? rootNode = null;
             foreach (var child in graphEdit.GetChildren())
             {
                 if (child is GraphNode node && !nodesThatHaveParents.Contains(node.Name))
@@ -374,7 +389,7 @@ public partial class GraphXmlUtils : RefCounted
             var invalidatedNodes = new HashSet<Node>();
             foreach (var errorLine in errorLines)
             {
-                if (lineToElementMap.TryGetValue(errorLine, out string elementName))
+                if (lineToElementMap.TryGetValue(errorLine, out string? elementName))
                 {
                     // Special case: if the element is "mdscript" (the root), mark the root node as invalid
                     if (elementName == "mdscript" && rootNode != null)
@@ -427,7 +442,7 @@ public partial class GraphXmlUtils : RefCounted
         try
         {
             XDocument doc = XDocument.Parse(xmlString);
-            XElement root = doc.Root;
+            XElement root = doc.Root!;
 
             // Get the schema location from xsi:noNamespaceSchemaLocation
             XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
@@ -441,7 +456,7 @@ public partial class GraphXmlUtils : RefCounted
             string schemaLocation = schemaLocationAttr.Value;
 
             // Build the full path to the schema file (relative to project root)
-            string projectPath = ProjectSettings.GlobalizePath("res://");
+            string projectPath = ProjectSettings.GlobalizePath("res://Schemas/");
             string schemaPath = Path.Combine(projectPath, schemaLocation);
 
             if (!File.Exists(schemaPath))
@@ -452,7 +467,7 @@ public partial class GraphXmlUtils : RefCounted
             // Create XmlSchemaSet with schema location set to the directory
             // This helps resolve relative imports in the schema
             XmlSchemaSet schemaSet = new();
-            string schemaDirectory = Path.GetDirectoryName(schemaPath);
+            string? schemaDirectory = Path.GetDirectoryName(schemaPath);
             schemaSet.XmlResolver = new XmlUrlResolver();
 
             try

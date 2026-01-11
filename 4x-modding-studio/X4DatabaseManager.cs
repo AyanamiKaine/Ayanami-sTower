@@ -24,7 +24,9 @@ public partial class X4DatabaseManager : Node
     [Export]
     public Dictionary UniqueMacros { get; set; } = [];
 
-    // We change _Ready to fire-and-forget our async method.
+    [Export]
+    public Godot.Collections.Array Factions { get; set; } = ["player", "buccaneers", "scaleplate", "antigone", "argon", "hatikvah", "paranid", "teladi", "trinity", "xenon", "court", "fallensplit", "freesplit", "split"];
+
     public override void _Ready()
     {
         base._Ready();
@@ -100,9 +102,7 @@ public partial class X4DatabaseManager : Node
             try
             {
                 string content = File.ReadAllText(filePath);
-                MatchCollection allMatches = allMacrosPattern.Matches(content);
-
-                foreach (Match match in allMatches)
+                foreach (Match match in allMacrosPattern.Matches(content))
                 {
                     string fullMacro = match.Value;
 
@@ -118,12 +118,11 @@ public partial class X4DatabaseManager : Node
                         : namePart;
 
                     // Add to thread-safe bag
-                    var bag = groupedResults.GetOrAdd(macroType, _ => new ConcurrentBag<string>());
+                    var bag = groupedResults.GetOrAdd(macroType, _ => []);
                     bag.Add(fullMacro);
                 }
             }
             catch (IOException) { /* File locked */ }
-            catch (Exception) { /* Access denied, etc. */ }
         });
 
         // 5. Marshaling back to Godot Types
@@ -135,10 +134,7 @@ public partial class X4DatabaseManager : Node
             var sortedList = kvp.Value.Distinct().OrderBy(x => x).ToList();
 
             var godotArray = new Godot.Collections.Array<string>();
-            foreach (var item in sortedList)
-            {
-                godotArray.Add(item);
-            }
+            godotArray.AddRange(sortedList);
             result[kvp.Key] = godotArray;
         }
 

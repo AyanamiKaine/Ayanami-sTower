@@ -2,6 +2,9 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
+/// <summary>
+/// XML code editor
+/// </summary>
 public partial class XmlCodeEdit : CodeEdit
 {
     // ------------------------------------------------------------------------------
@@ -48,6 +51,7 @@ public partial class XmlCodeEdit : CodeEdit
     // Root level tags
     private readonly string[] ROOT_TAGS = ["mdscript"];
 
+    /// <inheritdoc/>
     public override void _Ready()
     {
         SetupEditorSettings();
@@ -93,6 +97,7 @@ public partial class XmlCodeEdit : CodeEdit
     }
 
     // Handle manual completion with Ctrl+Space
+    /// <inheritdoc/>
     public override void _Input(InputEvent @event)
     {
         if (@event is InputEventKey keyEvent && keyEvent.Pressed)
@@ -108,6 +113,7 @@ public partial class XmlCodeEdit : CodeEdit
     }
 
     // This is called when code completion is requested
+    /// <inheritdoc/>
     public override void _RequestCodeCompletion(bool force)
     {
         OnCodeCompletionRequested();
@@ -270,7 +276,7 @@ public partial class XmlCodeEdit : CodeEdit
             // At root level
             availableTags.AddRange(ROOT_TAGS);
         }
-        else if (XML_SCHEMA.TryGetValue(parentTag, out TagDefinition value))
+        else if (XML_SCHEMA.TryGetValue(parentTag, out TagDefinition? value))
         {
             // Get valid children
             availableTags.AddRange(value.Children);
