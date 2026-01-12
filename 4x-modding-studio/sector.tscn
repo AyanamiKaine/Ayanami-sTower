@@ -1,14 +1,30 @@
-[gd_scene load_steps=3 format=3 uid="uid://b4a7yvvnxr2a5"]
+[gd_scene load_steps=5 format=3 uid="uid://b4a7yvvnxr2a5"]
 
 [ext_resource type="Script" uid="uid://biatiknt4no8m" path="res://sector.gd" id="1_inq6d"]
 [ext_resource type="Script" uid="uid://b68x6incrn173" path="res://hexagon_polygon_shape.gd" id="2_25r5j"]
+[ext_resource type="Theme" uid="uid://2l817y2oek51" path="res://default_theme.tres" id="3_25r5j"]
 
-[node name="Sector" type="Node2D" node_paths=PackedStringArray("sector_name_label", "hexagon_shape", "collision_shape")]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_25r5j"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0.0768358, 0.07683582, 0.076835774, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_size = 4
+
+[node name="Sector" type="Node2D" node_paths=PackedStringArray("data_vbox_container", "sector_owner_label", "sector_tooltip", "sector_name_label", "hexagon_shape", "collision_shape")]
 script = ExtResource("1_inq6d")
+data_vbox_container = NodePath("SectorTooltip/SectorVBoxContainer")
+sector_owner_label = NodePath("SectorTooltip/SectorVBoxContainer/SectorOwnerLabel")
+sector_tooltip = NodePath("SectorTooltip")
 sector_name_label = NodePath("SectorName")
 hexagon_shape = NodePath("HexagonPolygonShape")
 collision_shape = NodePath("ClickableArea/CollisionPolygon2D")
-auto_snap_to_grid = null
+tooltip_delay = 0.1
 
 [node name="ClickableArea" type="Area2D" parent="."]
 
@@ -23,6 +39,7 @@ script = ExtResource("2_25r5j")
 radius = 92.0
 orientation = 1
 outline_width = 8.0
+outline_color = Color(0.74509805, 0.74509805, 0.74509805, 1)
 
 [node name="SectorName" type="Label" parent="."]
 offset_left = -38.0
@@ -33,6 +50,27 @@ text = "SECTOR NAME"
 horizontal_alignment = 1
 autowrap_mode = 2
 
+[node name="SectorTooltip" type="PopupPanel" parent="."]
+msaa_2d = 2
+use_debanding = true
+gui_disable_input = true
+sdf_scale = 0
+oversampling_override = 1.0
+size = Vector2i(100, 51)
+mouse_passthrough = true
+theme = ExtResource("3_25r5j")
+theme_override_styles/panel = SubResource("StyleBoxFlat_25r5j")
+
+[node name="SectorVBoxContainer" type="VBoxContainer" parent="SectorTooltip"]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 90.0
+offset_bottom = 41.0
+
+[node name="SectorOwnerLabel" type="Label" parent="SectorTooltip/SectorVBoxContainer"]
+layout_mode = 2
+
 [connection signal="clicked_on_sector" from="." to="." method="_on_clicked_on_sector"]
 [connection signal="input_event" from="ClickableArea" to="." method="_on_clickable_area_input_event"]
 [connection signal="mouse_entered" from="ClickableArea" to="." method="_on_clickable_area_mouse_entered"]
+[connection signal="mouse_exited" from="ClickableArea" to="." method="_on_clickable_area_mouse_exited"]

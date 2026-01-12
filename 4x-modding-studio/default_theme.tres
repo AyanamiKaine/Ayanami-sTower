@@ -10,7 +10,7 @@ corner_radius_top_left = 8
 corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
-shadow_size = 3
+shadow_size = 4
 
 [resource]
 TooltipPanel/styles/panel = SubResource("StyleBoxFlat_bp0wp")

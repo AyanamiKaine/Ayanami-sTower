@@ -315,6 +315,27 @@ layout_mode = 2
 metadata/_tab_index = 2
 
 [node name="X4DatabaseManager" parent="." instance=ExtResource("10_4c57u")]
+FactionColors = Dictionary[String, Color]({
+"antigone": Color(0.08627451, 0.53333336, 0.5254902, 1),
+"antigone republic": Color(0.21568628, 0.6156863, 0.5882353, 1),
+"argon": Color(0.11764706, 0.5647059, 1, 1),
+"argon federation": Color(0.2627451, 0.26666668, 0.5137255, 1),
+"buccaneers": Color(1, 0.64705884, 0, 1),
+"court": Color(0.8627451, 0.078431375, 0.23529412, 1),
+"fallensplit": Color(1, 0.54901963, 0, 1),
+"freesplit": Color(1, 1, 0, 1),
+"hatikvah": Color(0, 0.5019608, 0.5019608, 1),
+"paranid": Color(0.4509804, 0.043137256, 0.23921569, 1),
+"player": Color(0.29214033, 0.7298991, 0.29222915, 1),
+"queendom of boron": Color(0.050980393, 0.48235294, 0.6392157, 1),
+"scaleplate": Color(0.07058824, 0.09803922, 0.5176471, 1),
+"split": Color(0.5019608, 0.5019608, 0, 1),
+"teladi": Color(0.32941177, 0.56078434, 0.02745098, 1),
+"terran protectorate": Color(0.07058824, 0.32156864, 0.50980395, 1),
+"trinity": Color(1, 0.84313726, 0, 1),
+"xenon": Color(0.54901963, 0.011764706, 0.015686275, 1),
+"yaki": Color(0.58431375, 0.52156866, 0.03137255, 1)
+})
 
 [node name="NodeGenerator" type="Node" parent="." node_paths=PackedStringArray("DatabaseManager")]
 script = ExtResource("11_dg77c")
