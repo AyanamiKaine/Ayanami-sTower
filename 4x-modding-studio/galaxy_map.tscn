@@ -281,12 +281,14 @@ auto_snap_to_grid = true
 [node name="Matrix #79BSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(3600, 1558.8457)
 sector_name = "Matrix #79B"
+sector_owner = "xenon"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Matrix #101Sector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(3900, 1732.0508)
 sector_name = "Matrix #101"
+sector_owner = "xenon"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
@@ -329,12 +331,14 @@ auto_snap_to_grid = true
 [node name="Rhy\'s DefianceSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(3750, 1125.833)
 sector_name = "Rhy's Defiance"
+sector_owner = "xenon"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Matrix #598Sector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(3900, 1039.2305)
 sector_name = "Matrix #598"
+sector_owner = "xenon"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
@@ -419,12 +423,14 @@ auto_snap_to_grid = true
 [node name="Eigtheen BillionSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(4200, 2078.461)
 sector_name = "Eigtheen Billion"
+sector_owner = "teladi"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Path to ProfitSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(4050, 2511.4736)
 sector_name = "Path to Profit"
+sector_owner = "teladi"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
@@ -521,18 +527,21 @@ auto_snap_to_grid = true
 [node name="CEO\'s DoubtSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(4500, 2424.871)
 sector_name = "CEO's Doubt"
+sector_owner = "teladi"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Memory of Profit XSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(4350, 2338.2686)
 sector_name = "Memory of Profit X"
+sector_owner = "teladi"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Memory of Profit IXSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(4350, 2165.0635)
 sector_name = "Memory of Profit IX"
+sector_owner = "teladi"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
@@ -551,72 +560,84 @@ auto_snap_to_grid = true
 [node name="Bright PromiseSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(4650, 1991.8584)
 sector_name = "Bright Promise"
+sector_owner = "teladi"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Profit Center AlphaSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(4500, 1905.2559)
 sector_name = "Profit Center Alpha"
+sector_owner = "teladi"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Two GrandSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(4650, 1645.4482)
 sector_name = "Two Grand"
+sector_owner = "teladi"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Matrix #9Sector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(4950, 1818.6533)
 sector_name = "Matrix #9"
+sector_owner = "xenon"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Matrix #451Sector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(5100, 1905.2559)
 sector_name = "Matrix #451"
+sector_owner = "xenon"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Family TkrSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(5250, 1818.6533)
 sector_name = "Family Tkr"
+sector_owner = "fallensplit"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Fires of DefeatSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(5250, 1645.4482)
 sector_name = "Fires of Defeat"
+sector_owner = "fallensplit"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Tharka\'s Ravine XXIVSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(5400, 1732.0508)
 sector_name = "Tharka's Ravine XXIV"
+sector_owner = "fallensplit"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Tharka\'s Ravine XVISector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(5550, 1645.4482)
 sector_name = "Tharka's Ravine XVI"
+sector_owner = "fallensplit"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Tharka\'s Ravine VIISector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(5700, 1732.0508)
 sector_name = "Tharka's Ravine VII"
+sector_owner = "fallensplit"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Tharka\'s Ravine IV Tharka\'s FallSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(5850, 1645.4482)
 sector_name = "Tharka's Ravine IV Tharka's Fall"
+sector_owner = "xenon"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Heart of Acrimony IISector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(5550, 1472.2432)
 sector_name = "Heart of Acrimony II"
+sector_owner = "fallensplit"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
@@ -635,6 +656,7 @@ auto_snap_to_grid = true
 [node name="Company RegardSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(4950, 2511.4736)
 sector_name = "Company Regard"
+sector_owner = "teladi"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
@@ -659,6 +681,7 @@ auto_snap_to_grid = true
 [node name="Open MarketSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(4500, 1558.8457)
 sector_name = "Open Market"
+sector_owner = "teladi"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
