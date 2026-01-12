@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://bq3huk364skd3"]
+[gd_scene load_steps=11 format=3 uid="uid://bq3huk364skd3"]
 
 [ext_resource type="Script" uid="uid://ckp4b53u6oy0k" path="res://control.gd" id="1_h2yge"]
 [ext_resource type="Script" uid="uid://3trabpx82cr7" path="res://NodeSearcher.gd" id="2_1bvp3"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://de6c8hfl8c708" path="res://mod_designer_tab.gd" id="4_kek77"]
 [ext_resource type="PackedScene" uid="uid://k0stwqou0g55" path="res://galaxy_map.tscn" id="5_7mycd"]
 [ext_resource type="Script" uid="uid://dqpcjdqujcqii" path="res://X4DatabaseManager.cs" id="5_lquwl"]
+[ext_resource type="PackedScene" uid="uid://dd3up6482irwd" path="res://database_viewer.tscn" id="9_4c57u"]
 
 [node name="Main" type="Control" node_paths=PackedStringArray("node_searcher", "context_menu", "graph_edit", "xml_editor_window", "xml_validation_timer", "script_designer", "galaxy_map_editor", "mod_explorer", "file_context_menu")]
 layout_mode = 3
@@ -277,6 +278,12 @@ render_target_update_mode = 4
 
 [node name="GalaxyMap" parent="VBoxContainer/SplitContainer/ModDesignerTab/GalaxyMapDesigner/SubViewportContainer/SubViewport" instance=ExtResource("5_7mycd")]
 position = Vector2(272, 44)
+
+[node name="DatabaseViewer" parent="VBoxContainer/SplitContainer/ModDesignerTab" node_paths=PackedStringArray("x4_database_manager") instance=ExtResource("9_4c57u")]
+visible = false
+layout_mode = 2
+x4_database_manager = NodePath("../../../../X4DatabaseManager")
+metadata/_tab_index = 2
 
 [node name="X4DatabaseManager" type="Node" parent="."]
 script = ExtResource("5_lquwl")
