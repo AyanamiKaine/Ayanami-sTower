@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://q65g0pxuu4c7"]
+
+[ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="1_7ykoj"]
+[ext_resource type="Script" uid="uid://gibodiifvm41" path="res://generated_node.gd" id="2_xd7f0"]
+
+[node name="GeneratedNode" instance=ExtResource("1_7ykoj")]
+script = ExtResource("2_xd7f0")
+expected_parent_types = Array[int]([])
+expected_child_types = Array[int]([])

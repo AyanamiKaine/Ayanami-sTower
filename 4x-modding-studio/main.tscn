@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://bq3huk364skd3"]
+[gd_scene load_steps=13 format=3 uid="uid://bq3huk364skd3"]
 
 [ext_resource type="Script" uid="uid://ckp4b53u6oy0k" path="res://control.gd" id="1_h2yge"]
 [ext_resource type="Script" uid="uid://3trabpx82cr7" path="res://NodeSearcher.gd" id="2_1bvp3"]
@@ -10,6 +10,8 @@
 [ext_resource type="PackedScene" uid="uid://k0stwqou0g55" path="res://galaxy_map.tscn" id="5_7mycd"]
 [ext_resource type="PackedScene" uid="uid://dd3up6482irwd" path="res://database_viewer.tscn" id="9_4c57u"]
 [ext_resource type="PackedScene" uid="uid://cqxn8vs5hgvwv" path="res://x_4_database_manager.tscn" id="10_4c57u"]
+[ext_resource type="Script" uid="uid://dykviru4ol6wx" path="res://NodeGenerator.cs" id="11_dg77c"]
+[ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="12_ycdy4"]
 
 [node name="Main" type="Control" node_paths=PackedStringArray("node_searcher", "context_menu", "graph_edit", "xml_editor_window", "xml_validation_timer", "script_designer", "galaxy_map_editor", "mod_explorer", "file_context_menu")]
 layout_mode = 3
@@ -157,35 +159,46 @@ layout_mode = 2
 metadata/_tab_index = 0
 
 [node name="Node Searcher" type="Popup" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner"]
+msaa_2d = 3
+use_debanding = true
+use_occlusion_culling = true
 oversampling_override = 1.0
 initial_position = 1
 size = Vector2i(500, 500)
+wrap_controls = false
+content_scale_size = Vector2i(500, 500)
 
-[node name="Control" type="Control" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher" node_paths=PackedStringArray("main_app", "window")]
+[node name="Control" type="Control" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher" node_paths=PackedStringArray("main_app", "window", "node_generator", "database_manager")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 script = ExtResource("2_1bvp3")
 main_app = NodePath("../../../../../..")
 window = NodePath("..")
+node_generator = NodePath("../../../../../../NodeGenerator")
+database_manager = NodePath("../../../../../../X4DatabaseManager")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher/Control"]
+clip_contents = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = 100.0
-offset_bottom = 88.0
 grow_horizontal = 2
 grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="LineEdit" type="LineEdit" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher/Control/VBoxContainer"]
 custom_minimum_size = Vector2(0, 35)
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 0
 placeholder_text = "Search For Node"
 
 [node name="ItemList" type="ItemList" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher/Control/VBoxContainer"]
@@ -193,11 +206,26 @@ layout_mode = 2
 size_flags_vertical = 3
 allow_reselect = true
 auto_width = true
-auto_height = true
-item_count = 3
+item_count = 19
 item_0/text = "Debug Text"
 item_1/text = "Cue"
 item_2/text = "Event Happened"
+item_3/text = "TEST"
+item_4/text = "TEST"
+item_5/text = "TEST"
+item_6/text = "TEST"
+item_7/text = "TEST"
+item_8/text = "TEST"
+item_9/text = "TEST"
+item_10/text = "TEST"
+item_11/text = "TEST"
+item_12/text = "TEST"
+item_13/text = "TEST"
+item_14/text = "TEST"
+item_15/text = "TEST"
+item_16/text = "TEST"
+item_17/text = "TEST"
+item_18/text = "TEST"
 
 [node name="ContextMenu" type="PopupMenu" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner"]
 oversampling_override = 1.0
@@ -285,6 +313,11 @@ layout_mode = 2
 metadata/_tab_index = 2
 
 [node name="X4DatabaseManager" parent="." instance=ExtResource("10_4c57u")]
+
+[node name="NodeGenerator" type="Node" parent="." node_paths=PackedStringArray("DatabaseManager")]
+script = ExtResource("11_dg77c")
+DatabaseManager = NodePath("../X4DatabaseManager")
+BaseNodeScene = ExtResource("12_ycdy4")
 
 [connection signal="node_created" from="." to="." method="_on_node_created"]
 [connection signal="node_destroyed" from="." to="." method="_on_node_destroyed"]

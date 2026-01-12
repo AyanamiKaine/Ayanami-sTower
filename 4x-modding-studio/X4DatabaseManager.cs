@@ -191,6 +191,26 @@ public partial class X4DatabaseManager : Node
     /// <summary>Total number of XML files scanned</summary>
     public int TotalXmlFilesScanned { get; private set; } = 0;
 
+    // --- GDScript-callable helper methods ---
+    // C# properties with complex types aren't directly accessible from GDScript
+
+    /// <summary>Gets the number of elements in the database (callable from GDScript)</summary>
+    public int GetElementCount() => AllElements.Count;
+
+    /// <summary>Checks if the database has loaded elements (callable from GDScript)</summary>
+    public bool IsElementDatabaseReady() => AllElements.Count > 0;
+
+    /// <summary>Gets all element names as a Godot array (callable from GDScript)</summary>
+    public Godot.Collections.Array<string> GetAllElementNames()
+    {
+        var result = new Godot.Collections.Array<string>();
+        foreach (var name in AllElements.Keys)
+        {
+            result.Add(name);
+        }
+        return result;
+    }
+
     public override void _Ready()
     {
         base._Ready();

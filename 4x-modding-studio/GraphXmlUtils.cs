@@ -236,10 +236,12 @@ public partial class GraphXmlUtils : RefCounted
     }
 
     /// <summary>
-    /// Get the node scene name for a given XML element name by checking each node's xml_element_name property
+    /// Get the node scene name for a given XML element name by checking each node's xml_element_name property.
+    /// First checks hand-crafted nodes, then returns the element name itself for dynamic generation.
     /// </summary>
     public static string? GetNodeNameFromElementName(string elementName)
     {
+        // First, try to find a matching hand-crafted node
         foreach (var nodeName in AllNodeTypes)
         {
             var nodePath = $"res://nodes/{nodeName.ToLower().Replace(" ", "_")}_node.tscn";
@@ -271,7 +273,48 @@ public partial class GraphXmlUtils : RefCounted
             instance.QueueFree();
         }
 
-        return null;  // Unknown element
+        // No hand-crafted node found - return the element name itself
+        // This signals that a dynamic node should be generated
+        return elementName;
+    }
+
+    /// <summary>
+    /// Checks if a hand-crafted node exists for the given element name
+    /// </summary>
+    public static bool HasHandcraftedNode(string elementName)
+    {
+        foreach (var nodeName in AllNodeTypes)
+        {
+            var nodePath = $"res://nodes/{nodeName.ToLower().Replace(" ", "_")}_node.tscn";
+            var nodeResource = GD.Load<PackedScene>(nodePath);
+
+            if (nodeResource == null)
+                continue;
+
+            var instance = nodeResource.Instantiate();
+            if (instance == null)
+                continue;
+
+            try
+            {
+                var xmlElementNameVariant = instance.Get("xml_element_name");
+                string xmlElementName = xmlElementNameVariant.AsString();
+
+                if (xmlElementName == elementName)
+                {
+                    instance.QueueFree();
+                    return true;
+                }
+            }
+            catch
+            {
+                // Ignore errors
+            }
+
+            instance.QueueFree();
+        }
+
+        return false;
     }
 
     /// <summary>

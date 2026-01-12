@@ -3,16 +3,35 @@ extends Control
 # Connect these in the inspector or use exact node names
 @onready var search_bar: LineEdit = $VBoxContainer/LineEdit
 @onready var item_list: ItemList = $VBoxContainer/ItemList
-@export var main_app: Node;
+@export var main_app: Node
 @export var window: Window
 
-# THE MASTER DATA
-# In a real game, this usually comes from a file, database, or resource.
-var all_possible_items: Array[String] = [
+## Reference to the NodeGenerator (C#)
+@export var node_generator: Node
+
+## Reference to the DatabaseManager (C#)
+@export var database_manager: Node
+
+## If true, use dynamic node generation from database. If false, use hand-crafted nodes only.
+@export var use_dynamic_generation: bool = true
+
+## Show only elements that have documentation (filters out internal/undocumented elements)
+@export var show_documented_only: bool = false
+
+## Maximum items to show in the list (for performance)
+@export var max_display_items: int = 100
+
+# THE MASTER DATA - Hand-crafted nodes (fallback)
+var handcrafted_nodes: Array[String] = [
 	"Cue", "Debug Text", "Actions", "Mission", "Set Value",
 	"Conditions", "Event Happened", "Show Help", "Write To Logbook",
 	"Delay", "Cues", "Check Any", "Check All", "Check Value"
 ]
+
+# Dynamic elements from database (populated when database is ready)
+var all_elements: Array[Dictionary] = [] # { name, display_name, documentation, category }
+var elements_by_category: Dictionary = {} # category -> Array of element dictionaries
+var is_database_loaded: bool = false
 
 # Reference to Types enum from Types.gd
 var NodeTypes = preload("res://nodes/Types.gd")
@@ -25,15 +44,163 @@ func _input(event: InputEvent) -> void:
 			item_list.emit_signal("item_selected", 0)
 
 func _ready() -> void:
-	# 1. Fill the list initially with everything
-	update_item_list("")
-	all_possible_items.sort()
-	# 2. Connect the text signal
-	# When text changes, we re-run the filter
+	# 1. Connect the text signal
 	search_bar.text_changed.connect(_on_search_text_changed)
 	
-	# Optional: Handle selection
+	# 2. Handle selection
 	item_list.item_selected.connect(_on_item_selected)
+	
+	# 3. Initial population with hand-crafted nodes
+	handcrafted_nodes.sort()
+	update_item_list("")
+	
+	# 4. Try to load from database if available
+	if use_dynamic_generation:
+		_try_load_from_database()
+		
+		# Also set up a timer to retry loading (database loads async)
+		var retry_timer = Timer.new()
+		retry_timer.wait_time = 1.0
+		retry_timer.one_shot = false
+		retry_timer.timeout.connect(_try_load_from_database)
+		add_child(retry_timer)
+		retry_timer.start()
+
+func _try_load_from_database() -> void:
+	if is_database_loaded:
+		return # Already loaded
+	
+	if database_manager == null:
+		print("[NodeSearcher] database_manager is null")
+		return # Not configured
+	
+	if node_generator == null:
+		print("[NodeSearcher] node_generator is null")
+		return # Not configured
+	
+	# Check if database has elements using GDScript-callable method
+	# (C# Dictionary properties aren't directly accessible from GDScript)
+	var element_count: int = database_manager.GetElementCount()
+	if element_count == 0:
+		print("[NodeSearcher] Database not ready yet (0 elements)")
+		return # Not ready yet
+	
+	print("[NodeSearcher] Database ready with ", element_count, " elements")
+	
+	# Load elements from database
+	_load_elements_from_database()
+	is_database_loaded = true
+	
+	# Update the list
+	update_item_list(search_bar.text)
+	
+	print("[NodeSearcher] Loaded %d elements from database" % all_elements.size())
+
+func _load_elements_from_database() -> void:
+	if node_generator == null:
+		print("[NodeSearcher] _load_elements_from_database: node_generator is null")
+		return
+	
+	all_elements.clear()
+	elements_by_category.clear()
+	
+	# Try calling the Godot-compatible C# method
+	print("[NodeSearcher] Calling GetElementsForSearcherGodot...")
+	var elements_data = node_generator.GetElementsForSearcherGodot()
+	print("[NodeSearcher] GetElementsForSearcherGodot returned: ", typeof(elements_data), " with ", elements_data.size() if elements_data else 0, " items")
+	
+	if elements_data == null or elements_data.size() == 0:
+		print("[NodeSearcher] No elements returned from GetElementsForSearcherGodot")
+		# Fallback: iterate AllElements directly
+		_load_elements_directly_from_database()
+		return
+	
+	for elem_array in elements_data:
+		# elem_array is [elementName, displayName, documentation, category]
+		var elem_name: String = elem_array[0] if elem_array.size() > 0 else ""
+		var display_name: String = elem_array[1] if elem_array.size() > 1 else ""
+		var documentation: String = elem_array[2] if elem_array.size() > 2 else ""
+		var category: String = elem_array[3] if elem_array.size() > 3 else ""
+		
+		if elem_name.is_empty():
+			continue
+		
+		# Skip undocumented elements if filter is enabled
+		if show_documented_only and documentation.is_empty():
+			continue
+		
+		var elem_dict = {
+			"name": elem_name,
+			"display_name": display_name,
+			"documentation": documentation,
+			"category": category,
+			"is_dynamic": true
+		}
+		
+		all_elements.append(elem_dict)
+		
+		if not elements_by_category.has(category):
+			elements_by_category[category] = []
+		elements_by_category[category].append(elem_dict)
+	
+	print("[NodeSearcher] Loaded ", all_elements.size(), " elements via GetElementsForSearcherGodot")
+
+## Fallback method to load directly from AllElements dictionary
+func _load_elements_directly_from_database() -> void:
+	print("[NodeSearcher] Using fallback: loading element names directly")
+	
+	# Use GDScript-callable method to get element names
+	var element_names = database_manager.GetAllElementNames()
+	
+	if element_names == null or element_names.size() == 0:
+		print("[NodeSearcher] No element names returned in fallback")
+		return
+	
+	for elem_name in element_names:
+		var display_name = _format_element_name(elem_name)
+		# In fallback mode we don't have full element info, just names
+		var category = _determine_category(elem_name, [])
+		
+		var elem_dict = {
+			"name": elem_name,
+			"display_name": display_name,
+			"documentation": "",
+			"category": category,
+			"is_dynamic": true
+		}
+		
+		all_elements.append(elem_dict)
+		
+		if not elements_by_category.has(category):
+			elements_by_category[category] = []
+		elements_by_category[category].append(elem_dict)
+	
+	print("[NodeSearcher] Loaded ", all_elements.size(), " elements via fallback")
+
+## Format element name for display (e.g., "set_value" -> "Set Value")
+func _format_element_name(elem_name: String) -> String:
+	var words = elem_name.split("_")
+	var formatted: Array[String] = []
+	for word in words:
+		if word.length() > 0:
+			formatted.append(word[0].to_upper() + word.substr(1).to_lower())
+	return " ".join(formatted)
+
+## Determine category based on element name and attribute groups
+func _determine_category(elem_name: String, attr_groups) -> String:
+	if attr_groups:
+		for group in attr_groups:
+			if str(group) == "action":
+				return "Actions"
+			if str(group) == "condition":
+				return "Conditions"
+	
+	if elem_name.begins_with("event_"):
+		return "Events"
+	if elem_name == "cue" or elem_name == "cues":
+		return "Cues"
+	
+	return "Other"
 
 func _on_search_text_changed(new_text: String) -> void:
 	update_item_list(new_text)
@@ -46,104 +213,267 @@ func update_item_list(filter_text: String) -> void:
 	filter_text = filter_text.to_lower()
 	
 	# Get the allowed types from the Control node (grandparent)
-	var allowed_types: Array = main_app.allowed_types
+	var allowed_types: Array = main_app.allowed_types if main_app else []
 	
 	# 3. Find Matches and Score them
 	var matches: Array[Dictionary] = []
 	
-	for item_name in all_possible_items:
-		var item_lower = item_name.to_lower()
-		
-		# Check if the item matches the search filter
-		if filter_text != "" and filter_text not in item_lower:
-			continue # Skip if filter text doesn't match
-		
-		# Check slot type compatibility (only if allowed types are set)
-		if not allowed_types.is_empty():
-			if not _is_node_type_compatible(item_name, allowed_types):
-				continue # Skip this node as it's not compatible
-		
-		var score = 0
-		
-		# --- SCORING LOGIC ---
-		# We give higher points for better matches
-		if filter_text != "":
-			if item_lower == filter_text:
-				score = 100 # Exact match (Best)
-			elif item_lower.begins_with(filter_text):
-				score = 50 # Starts with the text (Good)
-			else:
-				score = 10 # Contains text somewhere (Okay)
-		else:
-			score = 0 # No filter, show all with neutral score
-		
-		matches.append({"text": item_name, "score": score})
+	# Use dynamic elements if loaded, otherwise fall back to hand-crafted
+	if is_database_loaded and use_dynamic_generation:
+		matches = _search_dynamic_elements(filter_text, allowed_types)
+	else:
+		matches = _search_handcrafted_nodes(filter_text, allowed_types)
 	
 	# 4. Sort Matches by Score (Highest score first)
 	matches.sort_custom(func(a, b): return a.score > b.score)
 	
-	# 5. Populate the ItemList with the sorted results
+	# 5. Limit results for performance
+	if matches.size() > max_display_items:
+		matches.resize(max_display_items)
+	
+	# 6. Populate the ItemList with the sorted results
 	for match_data in matches:
-		item_list.add_item(match_data.text)
+		var display_text = match_data.display_name
+		
+		# Add category suffix for dynamic elements
+		if match_data.get("is_dynamic", false) and match_data.has("category"):
+			display_text += "  [%s]" % match_data.category
+		
+		var idx = item_list.add_item(display_text)
+		
+		# Store the actual element name as metadata
+		item_list.set_item_metadata(idx, match_data.name)
+		
+		# Set tooltip with documentation
+		if match_data.has("documentation") and not match_data.documentation.is_empty():
+			item_list.set_item_tooltip(idx, match_data.documentation)
+		
+		# Color code by category
+		if match_data.get("is_dynamic", false):
+			var color = _get_category_color(match_data.get("category", ""))
+			item_list.set_item_custom_fg_color(idx, color)
 
-# Check if a node's type is in the allowed types array
+func _search_dynamic_elements(filter_text: String, allowed_types: Array) -> Array[Dictionary]:
+	var matches: Array[Dictionary] = []
+	
+	for elem in all_elements:
+		var elem_name: String = elem.name
+		var display_name: String = elem.display_name
+		var documentation: String = elem.documentation
+		var elem_lower = elem_name.to_lower()
+		var display_lower = display_name.to_lower()
+		
+		# Check if the item matches the search filter
+		var matches_filter = filter_text.is_empty()
+		if not matches_filter:
+			matches_filter = elem_lower.contains(filter_text) or \
+							 display_lower.contains(filter_text) or \
+							 documentation.to_lower().contains(filter_text)
+		
+		if not matches_filter:
+			continue
+		
+		# TODO: Check slot type compatibility with allowed_types
+		# For now, we show all matching elements
+		
+		var score = _calculate_match_score(elem_name, display_name, filter_text)
+		
+		matches.append({
+			"name": elem_name,
+			"display_name": display_name,
+			"documentation": documentation,
+			"category": elem.category,
+			"is_dynamic": true,
+			"score": score
+		})
+	
+	return matches
+
+func _search_handcrafted_nodes(filter_text: String, allowed_types: Array) -> Array[Dictionary]:
+	var matches: Array[Dictionary] = []
+	
+	for item_name in handcrafted_nodes:
+		var item_lower = item_name.to_lower()
+		
+		# Check if the item matches the search filter
+		if not filter_text.is_empty() and filter_text not in item_lower:
+			continue
+		
+		# Check slot type compatibility (only if allowed types are set)
+		if not allowed_types.is_empty():
+			if not _is_node_type_compatible(item_name, allowed_types):
+				continue
+		
+		var score = _calculate_match_score(item_name, item_name, filter_text)
+		
+		matches.append({
+			"name": item_name,
+			"display_name": item_name,
+			"documentation": "",
+			"is_dynamic": false,
+			"score": score
+		})
+	
+	return matches
+
+func _calculate_match_score(elem_name: String, display_name: String, filter_text: String) -> int:
+	if filter_text.is_empty():
+		return 0
+	
+	var elem_lower = elem_name.to_lower()
+	var display_lower = display_name.to_lower()
+	
+	# Exact match (best)
+	if elem_lower == filter_text or display_lower == filter_text:
+		return 100
+	# Starts with filter (good)
+	elif elem_lower.begins_with(filter_text) or display_lower.begins_with(filter_text):
+		return 50
+	# Contains filter (okay)
+	else:
+		return 10
+
+func _get_category_color(category: String) -> Color:
+	match category:
+		"Actions":
+			return Color.LIGHT_GREEN
+		"Conditions":
+			return Color.LIGHT_BLUE
+		"Events":
+			return Color.ORANGE
+		"Cues":
+			return Color.YELLOW
+		"Groups":
+			return Color.GRAY
+		_:
+			return Color.WHITE
+
+# Check if a node's type is in the allowed types array (for hand-crafted nodes)
 func _is_node_type_compatible(node_name: String, allowed_types: Array) -> bool:
-	#print("--- Checking node: ", node_name, " ---")
-	#print("  allowed_types: ", allowed_types)
-	# If allowed_types is empty, no filter is applied (show all)
 	if allowed_types.is_empty():
-		#print("  RESULT: SHOWN (no filter, allowed_types is empty)")
 		return true
 	
-	# Load the node resource to check its type
 	var node_path = "res://nodes/%s_node.tscn" % node_name.to_lower().replace(" ", "_")
-	#print("  Loading: ", node_path)
 	var node_resource = load(node_path)
 	
 	if not node_resource:
-		#print("  RESULT: HIDDEN (could not load resource)")
 		return false
 	
 	var instance = node_resource.instantiate()
-	
 	if not instance:
-		#print("  RESULT: HIDDEN (could not instantiate)")
 		return false
 	
-	# Get the node's type
 	var node_type = instance.get("type")
-	#print("  node type: ", node_type)
-	
 	instance.queue_free()
 	
-	# Check if the node's type is in the allowed_types array
 	for allowed_type in allowed_types:
-		#print("    Comparing: node_type ", int(node_type), " vs allowed_type ", int(allowed_type))
 		if int(node_type) == int(allowed_type):
-			#print("  RESULT: SHOWN (node type is in allowed_types)")
 			return true
 	
-	#print("  RESULT: HIDDEN (node type not in allowed_types)")
 	return false
 
 func _on_item_selected(index: int) -> void:
-	# Check if index is valid
 	if index < 0 or index >= item_list.item_count:
 		return
 	
-	# Important: Because the list order changes, we must rely on the TEXT, not the index.
-	var selected_text = item_list.get_item_text(index)
+	# Get the element name from metadata (or text for hand-crafted nodes)
+	var element_name = item_list.get_item_metadata(index)
+	if element_name == null or (element_name is String and element_name.is_empty()):
+		element_name = item_list.get_item_text(index)
+		# Remove category suffix if present
+		if " [" in element_name:
+			element_name = element_name.split(" [")[0].strip_edges()
 	
-	# Don't spawn if text is empty
-	if selected_text.is_empty():
+	if element_name.is_empty():
 		return
 	
-	main_app.spawn_node(selected_text)
-	window.hide()
+	# PRIORITY: Always check for hand-crafted node first
+	if _has_handcrafted_node(element_name):
+		# Use hand-crafted node (convert element name to display name format)
+		var display_name = _format_element_name(element_name)
+		main_app.spawn_node(display_name)
+	elif node_generator != null:
+		# Fall back to dynamic generation
+		_spawn_dynamic_node(element_name)
+	else:
+		# Last resort: try spawning by name
+		main_app.spawn_node(element_name)
 	
+	window.hide()
+
+## Check if a hand-crafted node scene exists for this element
+func _has_handcrafted_node(element_name: String) -> bool:
+	# Convert element name to scene path (e.g., "cue" -> "res://nodes/cue_node.tscn")
+	var scene_name = element_name.to_lower().replace(" ", "_")
+	var scene_path = "res://nodes/%s_node.tscn" % scene_name
+	
+	# Check if the scene file exists
+	return ResourceLoader.exists(scene_path)
+
+func _is_dynamic_element(element_name: String) -> bool:
+	# Check if this element exists in our dynamic elements list
+	# BUT also check that no hand-crafted node exists (hand-crafted takes priority)
+	if _has_handcrafted_node(element_name):
+		return false
+	
+	for elem in all_elements:
+		if elem.name == element_name:
+			return true
+	return false
+
+func _spawn_dynamic_node(element_name: String) -> void:
+	if node_generator == null:
+		push_error("NodeSearcher: node_generator not set")
+		return
+	
+	var node_instance = node_generator.CreateNodeForElement(element_name)
+	if node_instance == null:
+		push_error("NodeSearcher: Failed to create node for element: " + element_name)
+		return
+	
+	# Emit signal so main_app can handle the node
+	if main_app.has_method("add_dynamic_node"):
+		main_app.add_dynamic_node(node_instance)
+	else:
+		# Fallback: Add directly to graph_edit
+		var graph_edit = main_app.get("graph_edit")
+		if graph_edit:
+			# Set position
+			var graph_pos = (main_app.node_searcher_position + graph_edit.scroll_offset) / graph_edit.zoom
+			graph_pos = graph_pos.snapped(Vector2(graph_edit.snapping_distance, graph_edit.snapping_distance))
+			node_instance.position_offset = graph_pos
+			
+			# Connect signals
+			if node_instance.has_signal("delete_requested"):
+				node_instance.delete_requested.connect(main_app._on_node_delete_requested)
+			if node_instance.has_signal("xml_refresh_requested"):
+				node_instance.xml_refresh_requested.connect(main_app._xml_refresh_requested)
+			if node_instance.has_signal("clear_connections_requested"):
+				node_instance.clear_connections_requested.connect(main_app._on_node_clear_connections_requested)
+			
+			graph_edit.add_child(node_instance)
+			
+			# Handle pending connection
+			if not main_app.pending_connection.is_empty():
+				_handle_pending_connection(node_instance)
+			
+			# Refresh XML
+			main_app._xml_refresh_requested(node_instance)
+
+func _handle_pending_connection(new_node: GraphNode) -> void:
+	var pending = main_app.pending_connection
+	var graph_edit = main_app.graph_edit
+	
+	if main_app.drag_from_output:
+		# Dragging from output to new node's input
+		graph_edit.connect_node(pending.from_node, pending.from_port, new_node.name, 0)
+	else:
+		# Dragging from input to new node's output
+		graph_edit.connect_node(new_node.name, 0, pending.to_node, pending.to_port)
+	
+	main_app.pending_connection = {}
 
 func _on_node_searcher_about_to_popup() -> void:
 	search_bar.grab_focus()
 	search_bar.clear()
-	# Update the list after clearing
 	update_item_list("")
