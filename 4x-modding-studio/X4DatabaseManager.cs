@@ -25,7 +25,27 @@ public partial class X4DatabaseManager : Node
     public Dictionary UniqueMacros { get; set; } = [];
 
     [Export]
-    public Godot.Collections.Array Factions { get; set; } = ["player", "buccaneers", "scaleplate", "antigone", "argon", "hatikvah", "paranid", "teladi", "trinity", "xenon", "court", "fallensplit", "freesplit", "split"];
+    public Godot.Collections.Array<string> Factions { get; set; } = new() { "player", "yaki", "buccaneers", "scaleplate", "antigone", "argon", "hatikvah", "paranid", "teladi", "trinity", "xenon", "court", "fallensplit", "freesplit", "split" };
+
+    [Export]
+    public Godot.Collections.Dictionary<string, Color> FactionColors { get; set; } = new()
+    {
+        { "player", Colors.Blue },
+        { "yaki", Colors.Purple },
+        { "buccaneers", Colors.Orange },
+        { "scaleplate", Colors.Brown },
+        { "antigone", Colors.Cyan },
+        { "argon", Colors.DodgerBlue },
+        { "hatikvah", Colors.Teal },
+        { "paranid", Colors.Magenta },
+        { "teladi", Colors.Green },
+        { "trinity", Colors.Gold },
+        { "xenon", Colors.Red },
+        { "court", Colors.Crimson },
+        { "fallensplit", Colors.DarkOrange },
+        { "freesplit", Colors.Yellow },
+        { "split", Colors.Olive }
+    };
 
     public override void _Ready()
     {
