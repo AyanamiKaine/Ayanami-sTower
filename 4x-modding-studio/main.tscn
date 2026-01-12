@@ -186,7 +186,6 @@ anchor_bottom = 1.0
 offset_top = 31.0
 grow_horizontal = 2
 grow_vertical = 2
-scroll_offset = Vector2(0, -31)
 script = ExtResource("3_lquwl")
 
 [node name="Button" type="Button" parent="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner"]
@@ -238,6 +237,7 @@ handle_input_locally = false
 msaa_2d = 3
 use_debanding = true
 use_occlusion_culling = true
+physics_object_picking = true
 size = Vector2i(880, 573)
 render_target_update_mode = 4
 
@@ -251,6 +251,7 @@ FileExtensions = PackedStringArray("*.xml")
 
 [connection signal="node_created" from="." to="." method="_on_node_created"]
 [connection signal="node_destroyed" from="." to="." method="_on_node_destroyed"]
+[connection signal="tab_changed" from="VBoxContainer/SplitContainer/ModDesignerTab" to="." method="_on_mod_designer_tab_tab_changed"]
 [connection signal="about_to_popup" from="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher" to="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher/Control" method="_on_node_searcher_about_to_popup"]
 [connection signal="id_pressed" from="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/ContextMenu" to="." method="_on_context_menu_id_pressed"]
 [connection signal="connection_from_empty" from="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/GraphEdit" to="." method="_on_graph_edit_connection_from_empty"]

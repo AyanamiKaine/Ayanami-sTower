@@ -1,9 +1,8 @@
-[gd_scene load_steps=6 format=3 uid="uid://k0stwqou0g55"]
+[gd_scene load_steps=5 format=3 uid="uid://k0stwqou0g55"]
 
 [ext_resource type="Script" uid="uid://dmofejod0gfcj" path="res://camera_2d.gd" id="1_bq8kf"]
-[ext_resource type="Script" uid="uid://biatiknt4no8m" path="res://sector.gd" id="1_cmydt"]
 [ext_resource type="Script" uid="uid://4e6tyo3ogsad" path="res://hex_grid.gd" id="1_lj2th"]
-[ext_resource type="Script" uid="uid://b68x6incrn173" path="res://hexagon_polygon_shape.gd" id="2_kawwm"]
+[ext_resource type="PackedScene" uid="uid://b4a7yvvnxr2a5" path="res://sector.tscn" id="3_41uo7"]
 [ext_resource type="Script" uid="uid://cgxkmfs6c0uww" path="res://gate_polygon_shape.gd" id="3_kawwm"]
 
 [node name="GalaxyMap" type="Node2D"]
@@ -20,137 +19,265 @@ script = ExtResource("1_lj2th")
 grid_size = Vector2i(50, 25)
 orientation = 1
 
-[node name="MarsSector" type="Node2D" parent="HexGrid"]
-position = Vector2(2400, 2425)
-script = ExtResource("1_cmydt")
+[node name="MarsSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(2400, 2251.666)
+sector_name = "Mars"
+hex_grid = NodePath("..")
 
-[node name="HexagonPolygonShape" type="Polygon2D" parent="HexGrid/MarsSector" node_paths=PackedStringArray("hex_grid")]
-color = Color(0.26657522, 0.2665752, 0.2665752, 1)
-antialiased = true
-polygon = PackedVector2Array(100, 0, 50, 86.60254, -50, 86.60254, -100, 1.22460635e-14, -50, -86.60254, 50, -86.60254)
-script = ExtResource("2_kawwm")
-hex_grid = NodePath("../..")
-orientation = 1
-outline_width = 2.0
+[node name="Asteroid BeldSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(2550, 2338.2686)
+sector_name = "Asteroid Beld"
+hex_grid = NodePath("..")
 
-[node name="SectorName" type="Label" parent="HexGrid/MarsSector"]
-offset_left = -50.0
-offset_top = -79.0
-offset_right = 50.0
-offset_bottom = -56.0
-text = "Mars"
-horizontal_alignment = 1
-metadata/_edit_use_anchors_ = true
-
-[node name="VenusSector" type="Node2D" parent="HexGrid"]
-position = Vector2(2250, 2338.2686)
-script = ExtResource("1_cmydt")
-
-[node name="HexagonPolygonShape" type="Polygon2D" parent="HexGrid/VenusSector" node_paths=PackedStringArray("hex_grid")]
-color = Color(0.26657522, 0.2665752, 0.2665752, 1)
-antialiased = true
-polygon = PackedVector2Array(100, 0, 50, 86.60254, -50, 86.60254, -100, 1.22460635e-14, -50, -86.60254, 50, -86.60254)
-script = ExtResource("2_kawwm")
-hex_grid = NodePath("../..")
-orientation = 1
-outline_width = 2.0
-
-[node name="SectorName" type="Label" parent="HexGrid/VenusSector"]
-offset_left = -50.0
-offset_top = -79.0
-offset_right = 50.0
-offset_bottom = -56.0
-text = "Venus"
-horizontal_alignment = 1
-metadata/_edit_use_anchors_ = true
-
-[node name="AsteroidBeldSector" type="Node2D" parent="HexGrid"]
-position = Vector2(2550, 2511.4736)
-script = ExtResource("1_cmydt")
-
-[node name="HexagonPolygonShape" type="Polygon2D" parent="HexGrid/AsteroidBeldSector" node_paths=PackedStringArray("hex_grid")]
-position = Vector2(-1, 1)
-color = Color(0.26657522, 0.2665752, 0.2665752, 1)
-antialiased = true
-polygon = PackedVector2Array(100, 0, 50, 86.60254, -50, 86.60254, -100, 1.22460635e-14, -50, -86.60254, 50, -86.60254)
-script = ExtResource("2_kawwm")
-hex_grid = NodePath("../..")
-orientation = 1
-outline_width = 2.0
-
-[node name="SectorName" type="Label" parent="HexGrid/AsteroidBeldSector"]
-offset_left = -50.0
-offset_top = -79.0
-offset_right = 50.0
-offset_bottom = -56.0
-text = "Asteroid Belt"
-horizontal_alignment = 1
-metadata/_edit_use_anchors_ = true
-
-[node name="GetsuFuneSector" type="Node2D" parent="HexGrid"]
-position = Vector2(2850, 2338.2686)
-script = ExtResource("1_cmydt")
-
-[node name="HexagonPolygonShape" type="Polygon2D" parent="HexGrid/GetsuFuneSector" node_paths=PackedStringArray("hex_grid")]
-color = Color(0.26657522, 0.2665752, 0.2665752, 1)
-antialiased = true
-polygon = PackedVector2Array(100, 0, 50, 86.60254, -50, 86.60254, -100, 1.22460635e-14, -50, -86.60254, 50, -86.60254)
-script = ExtResource("2_kawwm")
-hex_grid = NodePath("../..")
-orientation = 1
-outline_width = 2.0
-
-[node name="SectorName" type="Label" parent="HexGrid/GetsuFuneSector"]
-offset_left = -50.0
-offset_top = -79.0
-offset_right = 50.0
-offset_bottom = -56.0
-text = "Getsu Fune"
-horizontal_alignment = 1
-
-[node name="MercurySector" type="Node2D" parent="HexGrid"]
+[node name="VenusSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(2250, 2165.0635)
-script = ExtResource("1_cmydt")
+sector_name = "Venus"
+hex_grid = NodePath("..")
 
-[node name="HexagonPolygonShape" type="Polygon2D" parent="HexGrid/MercurySector" node_paths=PackedStringArray("hex_grid")]
-color = Color(0.26657522, 0.2665752, 0.2665752, 1)
-antialiased = true
-polygon = PackedVector2Array(100, 0, 50, 86.60254, -50, 86.60254, -100, 1.22460635e-14, -50, -86.60254, 50, -86.60254)
-script = ExtResource("2_kawwm")
-hex_grid = NodePath("../..")
-orientation = 1
-outline_width = 2.0
+[node name="Ocean of FantasySector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(2700, 2078.461)
+sector_name = "Ocean of Fantasy"
+hex_grid = NodePath("..")
 
-[node name="SectorName" type="Label" parent="HexGrid/MercurySector"]
-offset_left = -50.0
-offset_top = -79.0
-offset_right = 50.0
-offset_bottom = -56.0
-text = "Mercury
-"
-horizontal_alignment = 1
+[node name="Great ReefSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(2700, 1905.2559)
+sector_name = "Great Reef"
+hex_grid = NodePath("..")
 
-[node name="JupiterSector" type="Node2D" parent="HexGrid"]
-position = Vector2(2400, 2771.2813)
-script = ExtResource("1_cmydt")
+[node name="Barren ShoresSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(2850, 1818.6533)
+sector_name = "Barren Shores"
+hex_grid = NodePath("..")
 
-[node name="HexagonPolygonShape" type="Polygon2D" parent="HexGrid/JupiterSector" node_paths=PackedStringArray("hex_grid")]
-color = Color(0.26657522, 0.2665752, 0.2665752, 1)
-antialiased = true
-polygon = PackedVector2Array(100, 0, 50, 86.60254, -50, 86.60254, -100, 1.22460635e-14, -50, -86.60254, 50, -86.60254)
-script = ExtResource("2_kawwm")
-hex_grid = NodePath("../..")
-orientation = 1
-outline_width = 2.0
+[node name="Watchful GazeSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3000, 1732.0508)
+sector_name = "Watchful Gaze"
+hex_grid = NodePath("..")
 
-[node name="SectorName" type="Label" parent="HexGrid/JupiterSector"]
-offset_left = -50.0
-offset_top = -79.0
-offset_right = 50.0
-offset_bottom = -56.0
-text = "Jupiter
-"
-horizontal_alignment = 1
+[node name="Heretic\'s EndSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3300, 1732.0508)
+sector_name = "Heretic's End"
+hex_grid = NodePath("..")
+
+[node name="Getsu FuneSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3150, 1991.8584)
+sector_name = "Getsu Fune"
+hex_grid = NodePath("..")
+
+[node name="The VoidSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3150, 2165.0635)
+sector_name = "The Void"
+hex_grid = NodePath("..")
+
+[node name="Antigone MemorialSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3000, 2251.666)
+sector_name = "Antigone Memorial"
+hex_grid = NodePath("..")
+
+[node name="Frontier EdgeSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3300, 2424.871)
+sector_name = "Frontier Edge"
+hex_grid = NodePath("..")
+
+[node name="Ore BeltSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3150, 2511)
+sector_name = "Ore Belt"
+hex_grid = NodePath("..")
+
+[node name="Nopileos\' MemorialSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3300, 2078.461)
+sector_name = "Nopileos' Memorial"
+hex_grid = NodePath("..")
+
+[node name="The ReachSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3450, 1991.8584)
+sector_name = "The Reach"
+hex_grid = NodePath("..")
+
+[node name="Argon PrimeSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3600, 2078.461)
+sector_name = "Argon Prime"
+hex_grid = NodePath("..")
+
+[node name="Morning Star IIISector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3600, 1905.2559)
+sector_name = "Morning Star III"
+hex_grid = NodePath("..")
+
+[node name="Morning Star IVSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3600, 1732)
+sector_name = "Morning Star IV"
+hex_grid = NodePath("..")
+
+[node name="Matrix #79BSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3600, 1558.8457)
+sector_name = "Matrix #79B"
+hex_grid = NodePath("..")
+
+[node name="Family ZhinSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3750, 1472)
+sector_name = "Family Zhin"
+hex_grid = NodePath("..")
+
+[node name="Family KrittSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3750, 1299.0381)
+sector_name = "Family Kritt"
+hex_grid = NodePath("..")
+
+[node name="Rhy\'s DefianceSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3750, 1125.833)
+sector_name = "Rhy's Defiance"
+hex_grid = NodePath("..")
+
+[node name="Matrix #598Sector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3900, 1039.2305)
+sector_name = "Matrix #598"
+hex_grid = NodePath("..")
+
+[node name="Brennan\'s TriumphSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(2700, 2944.4863)
+sector_name = "Brennan's Triumph"
+hex_grid = NodePath("..")
+
+[node name="Circle of DeceitSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(2550, 3204.294)
+sector_name = "Circle of Deceit"
+hex_grid = NodePath("..")
+
+[node name="Gaian ProphecySector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(2850, 3031.0889)
+sector_name = "Gaian Prophecy"
+hex_grid = NodePath("..")
+
+[node name="SegarisSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3000, 2944.4863)
+sector_name = "Segaris"
+hex_grid = NodePath("..")
+
+[node name="Sanctum VergeSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3300, 3117.6914)
+sector_name = "Sanctum Verge"
+hex_grid = NodePath("..")
+
+[node name="Mists of ArtemisSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3450, 3031.0889)
+sector_name = "Mists of Artemis"
+hex_grid = NodePath("..")
+
+[node name="Cardinal\'s RedressSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3900, 2944.4863)
+sector_name = "Cardinal's Redress"
+hex_grid = NodePath("..")
+
+[node name="Holy VisionSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3900, 2771.2813)
+sector_name = "Holy Vision"
+hex_grid = NodePath("..")
+
+[node name="True SightSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3750, 2684.6787)
+sector_name = "True Sight"
+hex_grid = NodePath("..")
+
+[node name="Pontifex\'s ClaimSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4050, 2857.8838)
+sector_name = "Pontifex's Claim"
+hex_grid = NodePath("..")
+
+[node name="Lasting VengeanceSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4050, 3031.0889)
+sector_name = "Lasting Vengeance"
+hex_grid = NodePath("..")
+
+[node name="Freedom\'s ReachSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3900, 3117.6914)
+sector_name = "Freedom's Reach"
+hex_grid = NodePath("..")
+
+[node name="Tempting FumesSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4050, 3377)
+sector_name = "Tempting Fumes"
+hex_grid = NodePath("..")
+
+[node name="Pious Mists XISector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4350, 2857.8838)
+sector_name = "Pious Mists XI"
+hex_grid = NodePath("..")
+
+[node name="Pious Mists XISector2" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4500, 2944.4863)
+sector_name = "Pious Mists XI"
+hex_grid = NodePath("..")
+
+[node name="Pious Mists XISector3" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4500, 3117.6914)
+sector_name = "Pious Mists XI"
+hex_grid = NodePath("..")
+
+[node name="Pious Mists XISector4" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4500, 2771.2813)
+sector_name = "Pious Mists XI"
+hex_grid = NodePath("..")
+
+[node name="Pious Mists XISector5" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4350, 2684.6787)
+sector_name = "Pious Mists XI"
+hex_grid = NodePath("..")
+
+[node name="Pious Mists XISector6" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4650, 2684.6787)
+sector_name = "Pious Mists XI"
+hex_grid = NodePath("..")
+
+[node name="Pious Mists XISector7" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4800, 2771.2813)
+sector_name = "Pious Mists XI"
+hex_grid = NodePath("..")
+
+[node name="Pious Mists XISector8" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4800, 2944.4863)
+sector_name = "Pious Mists XI"
+hex_grid = NodePath("..")
+
+[node name="Pious Mists XISector9" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4650, 2511.4736)
+sector_name = "Pious Mists XI"
+hex_grid = NodePath("..")
+
+[node name="Pious Mists XISector10" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4500, 2424.871)
+sector_name = "Pious Mists XI"
+hex_grid = NodePath("..")
+
+[node name="MercurySector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(2250, 1991.8584)
+sector_name = "Mercury"
+hex_grid = NodePath("..")
+
+[node name="JupiterSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(2400, 2598.0762)
+sector_name = "Jupiter"
+hex_grid = NodePath("..")
+
+[node name="NeptuneSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(2250, 2857.8838)
+sector_name = "Neptune"
+hex_grid = NodePath("..")
+
+[node name="UranusSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(2100, 2771.2813)
+sector_name = "Uranus"
+hex_grid = NodePath("..")
+
+[node name="PlutoSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(2100, 2944.4863)
+sector_name = "Pluto"
+hex_grid = NodePath("..")
+
+[node name="Oort CloudSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(1950, 3031.0889)
+sector_name = "Oort Cloud"
+hex_grid = NodePath("..")
 
 [node name="GateConnections" type="Node2D" parent="."]
 visible = false

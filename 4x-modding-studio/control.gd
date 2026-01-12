@@ -9,6 +9,7 @@ const GraphXmlUtils = preload("res://GraphXmlUtils.cs")
 @export var xml_validation_timer: Timer
 @export var path_to_unpacked_4x_directory: String = ""
 
+@export var script_designer_open: bool = false
 
 signal node_created(node)
 signal node_destroyed(node)
@@ -26,7 +27,8 @@ func _input(event: InputEvent) -> void:
 		allowed_types = []
 		pending_connection = {}
 		drag_from_output = false
-		node_searcher.popup()
+		if script_designer_open:
+			node_searcher.popup()
 	if event.is_action_pressed("ui_undo"):
 		undo_redo.undo()
 	elif event.is_action_pressed("ui_redo"):
@@ -325,3 +327,10 @@ func _on_timer_timeout() -> void:
 
 func _on_xml_output_window_close_requested() -> void:
 	xml_editor_window.hide()
+
+
+func _on_mod_designer_tab_tab_changed(tab: int) -> void:
+	if tab == 0:
+		script_designer_open = true
+	else:
+		script_designer_open = false
