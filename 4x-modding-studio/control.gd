@@ -346,6 +346,15 @@ func _on_mod_designer_tab_tab_changed(tab: int) -> void:
 		galaxy_map_editor.process_mode = PROCESS_MODE_INHERIT
 
 
+## Text file extensions that can be opened in the script editor
+const TEXT_FILE_EXTENSIONS: Array[String] = [
+	"txt", "md", "markdown", "xml", "xsd", "html", "htm", "css", "js", "json",
+	"gd", "gdshader", "shader", "cfg", "ini", "toml", "yaml", "yml",
+	"csv", "tsv", "log", "bat", "sh", "ps1", "py", "lua", "c", "cpp",
+	"h", "hpp", "cs", "java", "rs", "go", "rb", "php", "sql", "tscn",
+	"tres", "import", "godot", "remap"
+]
+
 func _on_mod_explorer_item_activated() -> void:
 	if not mod_explorer:
 		push_error("ModExplorer not assigned!")
@@ -363,6 +372,12 @@ func _on_mod_explorer_item_activated() -> void:
 	
 	# Check if it's a directory (don't open directories)
 	if DirAccess.dir_exists_absolute(file_path):
+		return
+	
+	# Check if it's a text file we can open
+	var extension = file_path.get_extension().to_lower()
+	if extension not in TEXT_FILE_EXTENSIONS:
+		print("Cannot open binary file: ", file_path)
 		return
 	
 	# Check if file is already open
