@@ -1,0 +1,54 @@
+[gd_scene load_steps=5 format=3 uid="uid://dyps4os5j3yaa"]
+
+[ext_resource type="Script" uid="uid://que6gm1lbwt6" path="res://script_text_editor.gd" id="1_i2ks2"]
+[ext_resource type="Script" uid="uid://e68ng38rll3p" path="res://xml_syntax_highlighter.gd" id="2_fv4yv"]
+[ext_resource type="Script" uid="uid://cth4gc53qwxa7" path="res://output_text.gd" id="3_vnucf"]
+
+[sub_resource type="SyntaxHighlighter" id="SyntaxHighlighter_vnucf"]
+script = ExtResource("2_fv4yv")
+metadata/_custom_type_script = "uid://e68ng38rll3p"
+
+[node name="ScriptTextEditor" type="Control" node_paths=PackedStringArray("editor")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_i2ks2")
+editor = NodePath("VBoxContainer/VSplitContainer/CodeEdit")
+syntax_mode = 2
+xml_highlighter = SubResource("SyntaxHighlighter_vnucf")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="VSplitContainer" type="VSplitContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CodeEdit" type="CodeEdit" parent="VBoxContainer/VSplitContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+minimap_draw = true
+line_folding = true
+gutters_draw_line_numbers = true
+code_completion_enabled = true
+auto_brace_completion_enabled = true
+auto_brace_completion_highlight_matching = true
+
+[node name="OutputText" type="TextEdit" parent="VBoxContainer/VSplitContainer"]
+custom_minimum_size = Vector2(0, 90)
+layout_mode = 2
+theme_override_colors/font_readonly_color = Color(1, 1, 1, 1)
+placeholder_text = "Output"
+editable = false
+wrap_mode = 1
+script = ExtResource("3_vnucf")

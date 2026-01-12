@@ -14,6 +14,9 @@ const GraphXmlUtils = preload("res://GraphXmlUtils.cs")
 @export var script_designer: Node
 @export var galaxy_map_editor: Node
 
+@export var script_editor: PackedScene
+@export var mod_explorer: Tree ## Reference to the ModExplorer Tree node
+
 signal node_created(node)
 signal node_destroyed(node)
 
@@ -341,3 +344,42 @@ func _on_mod_designer_tab_tab_changed(tab: int) -> void:
 		script_designer_open = false
 		script_designer.process_mode = PROCESS_MODE_DISABLED
 		galaxy_map_editor.process_mode = PROCESS_MODE_INHERIT
+
+
+func _on_mod_explorer_item_activated() -> void:
+	if not mod_explorer:
+		push_error("ModExplorer not assigned!")
+		return
+	
+	# Get the selected item from the tree
+	var selected_item = mod_explorer.get_selected()
+	if not selected_item:
+		return
+	
+	# Get the file path from the item's metadata
+	var file_path: String = selected_item.get_metadata(0)
+	if file_path.is_empty():
+		return
+	
+	# Check if it's a directory (don't open directories)
+	if DirAccess.dir_exists_absolute(file_path):
+		return
+	
+	# Check if file is already open
+	var tab_container = $VBoxContainer/SplitContainer/ModDesignerTab
+	for i in range(tab_container.get_child_count()):
+		var child = tab_container.get_child(i)
+		if child.has_method("open_file") and child.current_file_path == file_path:
+			# File already open, switch to that tab
+			tab_container.current_tab = i
+			return
+	
+	# Create new script editor instance
+	var instance = script_editor.instantiate()
+	tab_container.add_child(instance)
+	
+	# Open the file
+	instance.open_file(file_path)
+	
+	# Switch to the new tab
+	tab_container.current_tab = tab_container.get_child_count() - 1

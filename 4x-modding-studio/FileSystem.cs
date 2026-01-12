@@ -77,6 +77,7 @@ public partial class FileSystem : Tree
                 // Create a new child item only if it passed the exclusion check
                 TreeItem child = CreateItem(parent);
                 child.SetText(0, fileName);
+                child.SetMetadata(0, fullPath); // Store full path for easy access
 
                 if (isDirectory)
                 {

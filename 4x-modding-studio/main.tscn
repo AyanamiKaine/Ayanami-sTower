@@ -1,14 +1,15 @@
-[gd_scene load_steps=8 format=3 uid="uid://bq3huk364skd3"]
+[gd_scene load_steps=9 format=3 uid="uid://bq3huk364skd3"]
 
 [ext_resource type="Script" uid="uid://ckp4b53u6oy0k" path="res://control.gd" id="1_h2yge"]
 [ext_resource type="Script" uid="uid://3trabpx82cr7" path="res://NodeSearcher.gd" id="2_1bvp3"]
+[ext_resource type="PackedScene" uid="uid://dyps4os5j3yaa" path="res://script_text_editor.tscn" id="2_5vw27"]
 [ext_resource type="Script" uid="uid://d1qk1n50dr25f" path="res://FileSystem.cs" id="2_272bh"]
 [ext_resource type="Script" uid="uid://nhwo0h4xgufb" path="res://graph_edit.gd" id="3_lquwl"]
 [ext_resource type="PackedScene" uid="uid://dfhu12pxdd2d7" path="res://xml_output_window.tscn" id="4_1bvp3"]
 [ext_resource type="PackedScene" uid="uid://k0stwqou0g55" path="res://galaxy_map.tscn" id="5_7mycd"]
 [ext_resource type="Script" uid="uid://dqpcjdqujcqii" path="res://X4DatabaseManager.cs" id="5_lquwl"]
 
-[node name="Main" type="Control" node_paths=PackedStringArray("node_searcher", "context_menu", "graph_edit", "xml_editor_window", "xml_validation_timer", "script_designer", "galaxy_map_editor")]
+[node name="Main" type="Control" node_paths=PackedStringArray("node_searcher", "context_menu", "graph_edit", "xml_editor_window", "xml_validation_timer", "script_designer", "galaxy_map_editor", "mod_explorer")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -24,6 +25,8 @@ xml_validation_timer = NodePath("VBoxContainer/SplitContainer/ModDesignerTab/Scr
 path_to_unpacked_4x_directory = "F:\\SteamLibrary\\steamapps\\common\\X4 Foundations\\x4_unpacked"
 script_designer = NodePath("VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner")
 galaxy_map_editor = NodePath("VBoxContainer/SplitContainer/ModDesignerTab/GalaxyMapDesigner")
+script_editor = ExtResource("2_5vw27")
+mod_explorer = NodePath("VBoxContainer/SplitContainer/FileSystemTab/FileSystem/ModExplorer")
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 1
@@ -253,6 +256,7 @@ FileExtensions = PackedStringArray("*.xml")
 
 [connection signal="node_created" from="." to="." method="_on_node_created"]
 [connection signal="node_destroyed" from="." to="." method="_on_node_destroyed"]
+[connection signal="item_activated" from="VBoxContainer/SplitContainer/FileSystemTab/FileSystem/ModExplorer" to="." method="_on_mod_explorer_item_activated"]
 [connection signal="tab_changed" from="VBoxContainer/SplitContainer/ModDesignerTab" to="." method="_on_mod_designer_tab_tab_changed"]
 [connection signal="about_to_popup" from="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher" to="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher/Control" method="_on_node_searcher_about_to_popup"]
 [connection signal="id_pressed" from="VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/ContextMenu" to="." method="_on_context_menu_id_pressed"]
