@@ -13,7 +13,12 @@ extends Node2D
 @export var sector_owner: String = ""
 @export var sector_ressources: Dictionary = {}
 @export var sector_stations: Dictionary = {}
-@export var is_selected: bool = false
+@export var is_selected: bool = false:
+	get:
+		return is_selected
+	set(value):
+		hexagon_shape.set("outline_color", Color.RED if value else Color.WHITE)
+		is_selected = value
 
 @export var hex_grid: Node2D
 @export var sector_name_label: Label
@@ -29,3 +34,12 @@ func _ready():
 
 func _on_clickable_area_mouse_entered() -> void:
 	print("Mouse entered sector" + " " + name)
+
+
+func _on_clickable_area_input_event(viewport: Node, event: InputEvent, shape_idx: int) -> void:
+	if event.is_action_pressed("galaxy_editor_click"):
+		clicked_on_sector.emit(self)
+
+
+func _on_clicked_on_sector(sector: Variant) -> void:
+	is_selected = true
