@@ -98,6 +98,7 @@ func _update_cluster_hexagon() -> void:
 		return
 	hexagon_shape.set("radius", cluster_radius)
 	hexagon_shape.set("orientation", orientation)
+	hexagon_shape.set("hex_grid", hex_grid)
 
 # --- SECTOR LAYOUT CALCULATION ---
 ## Calculate optimal positions for sectors inside the cluster

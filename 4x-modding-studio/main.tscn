@@ -282,6 +282,7 @@ position = Vector2(272, 44)
 script = ExtResource("5_lquwl")
 SearchDirectory = "F:\\SteamLibrary\\steamapps\\common\\X4 Foundations\\x4_unpacked"
 FileExtensions = PackedStringArray("*.xml")
+Factions = []
 
 [connection signal="node_created" from="." to="." method="_on_node_created"]
 [connection signal="node_destroyed" from="." to="." method="_on_node_destroyed"]

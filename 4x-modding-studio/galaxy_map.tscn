@@ -27,13 +27,127 @@ hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
 [node name="Cluster" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
-position = Vector2(2402, 2077)
+position = Vector2(2400, 2078.461)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster19" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(2250, 1472.2432)
 cluster_radius = 94.0
 orientation = 1
 hex_grid = NodePath("..")
 
 [node name="Cluster2" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
 position = Vector2(4351, 2512)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster3" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(4950, 2338.2686)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster4" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(4800, 2424.871)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster20" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(4950, 2684.6787)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster21" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(5100, 2598.0762)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster5" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(5100, 2078.461)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster7" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(4800, 1385.6406)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster8" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(3750, 1645.4482)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster9" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(2850, 1472.2432)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster11" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(3300, 1905.2559)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster12" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(3750, 1991.8584)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster13" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(3900, 2424.871)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster16" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(3750, 2857.8838)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster17" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(3450, 2857.8838)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster18" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(2250, 2684.6787)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster14" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(4050, 2338.2686)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster15" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(4050, 2165.0635)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster10" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(2700, 1385.6406)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
+[node name="Cluster6" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(5250, 1991.8584)
 cluster_radius = 94.0
 orientation = 1
 hex_grid = NodePath("..")
@@ -50,7 +164,7 @@ sector_name = "Adventure's Promise"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
-[node name="VenusSector2" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+[node name="VenusSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(2250, 2165.0635)
 sector_name = "Venus"
 hex_grid = NodePath("..")
@@ -167,6 +281,36 @@ auto_snap_to_grid = true
 [node name="Matrix #79BSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(3600, 1558.8457)
 sector_name = "Matrix #79B"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Matrix #101Sector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3900, 1732.0508)
+sector_name = "Matrix #101"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Silent Witness ISector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4050, 1818.6533)
+sector_name = "Silent Witness I"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="President\'s EndSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4200, 1905.2559)
+sector_name = "President's End"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Silent WItness XISector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4200, 1732.0508)
+sector_name = "Silent WItness XI"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Silent WItness XIISector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4050, 1645.4482)
+sector_name = "Silent WItness XII"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
