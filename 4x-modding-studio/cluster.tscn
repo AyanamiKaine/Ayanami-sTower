@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3 uid="uid://bs37hkg2jtw1t"]
+
+[ext_resource type="Script" uid="uid://qv0t24scl4yo" path="res://cluster.gd" id="1_qvuhq"]
+[ext_resource type="Script" uid="uid://b68x6incrn173" path="res://hexagon_polygon_shape.gd" id="2_hlu12"]
+
+[node name="Cluster" type="Node2D" node_paths=PackedStringArray("hexagon_shape")]
+script = ExtResource("1_qvuhq")
+layout_info = "No sectors. Add sector scenes as children."
+hexagon_shape = NodePath("HexagonPolygonShape")
+
+[node name="HexagonPolygonShape" type="Polygon2D" parent="."]
+color = Color(1, 1, 1, 0)
+polygon = PackedVector2Array(92, 0, 46, 79.67434, -46, 79.67434, -92, 1.12663785e-14, -46, -79.67434, 46, -79.67434)
+script = ExtResource("2_hlu12")
+radius = 92.0
+orientation = 1
+outline_width = 8.0

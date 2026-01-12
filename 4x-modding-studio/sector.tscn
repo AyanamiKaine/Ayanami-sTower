@@ -8,6 +8,7 @@ script = ExtResource("1_inq6d")
 sector_name_label = NodePath("SectorName")
 hexagon_shape = NodePath("HexagonPolygonShape")
 collision_shape = NodePath("ClickableArea/CollisionPolygon2D")
+auto_snap_to_grid = null
 
 [node name="ClickableArea" type="Area2D" parent="."]
 
@@ -17,21 +18,20 @@ polygon = PackedVector2Array(92, 0, 46, 79.67434, -46, 79.67434, -92, 1.12663785
 [node name="HexagonPolygonShape" type="Polygon2D" parent="."]
 color = Color(0.26657522, 0.2665752, 0.2665752, 1)
 antialiased = true
-polygon = PackedVector2Array(92, 0, 46, 79.67434, -46, 79.67434, -92, 1.12663785e-14, -46, -79.67434, 46, -79.67434, 92, 0)
+polygon = PackedVector2Array(92, 0, 46, 79.67434, -46, 79.67434, -92, 1.12663785e-14, -46, -79.67434, 46, -79.67434)
 script = ExtResource("2_25r5j")
 radius = 92.0
 orientation = 1
 outline_width = 8.0
 
 [node name="SectorName" type="Label" parent="."]
-offset_left = -50.0
-offset_top = -70.0
-offset_right = 50.0
-offset_bottom = -22.333332
+offset_left = -38.0
+offset_top = -55.0
+offset_right = 41.0
+offset_bottom = -7.333332
 text = "SECTOR NAME"
 horizontal_alignment = 1
 autowrap_mode = 2
-metadata/_edit_use_anchors_ = true
 
 [connection signal="clicked_on_sector" from="." to="." method="_on_clicked_on_sector"]
 [connection signal="input_event" from="ClickableArea" to="." method="_on_clickable_area_input_event"]

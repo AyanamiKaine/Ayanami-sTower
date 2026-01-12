@@ -6,8 +6,9 @@ extends Node2D
 	get:
 		return sector_name
 	set(value):
-		sector_name_label.text = value
-		name = value + "Sector"
+		if sector_name_label:
+			sector_name_label.text = value
+		name = value + "Sector" if value else "Sector"
 		sector_name = value
 
 @export var sector_owner: String = ""
@@ -17,20 +18,29 @@ extends Node2D
 	get:
 		return is_selected
 	set(value):
-		hexagon_shape.set("outline_color", Color.RED if value else Color.WHITE)
+		if hexagon_shape:
+			hexagon_shape.set("outline_color", Color.RED if value else Color.WHITE)
 		is_selected = value
 
 @export var hex_grid: Node2D
 @export var sector_name_label: Label
 @export var hexagon_shape: Polygon2D
 @export var collision_shape: CollisionPolygon2D
+@export var auto_snap_to_grid: bool = true:
+	get():
+		return auto_snap_to_grid
+	set(value):
+		hexagon_shape.set("auto_snap", value)
+		auto_snap_to_grid = value
 
 signal clicked_on_sector(sector)
 
 func _ready():
-	collision_shape.polygon = hexagon_shape.polygon
-	hexagon_shape.set("hex_grid", hex_grid)
-	name = sector_name + "Sector"
+	if collision_shape and hexagon_shape:
+		collision_shape.polygon = hexagon_shape.polygon
+	if hexagon_shape:
+		hexagon_shape.set("hex_grid", hex_grid)
+	name = sector_name + "Sector" if sector_name else "Sector"
 
 func _on_clickable_area_mouse_entered() -> void:
 	print("Mouse entered sector" + " " + name)

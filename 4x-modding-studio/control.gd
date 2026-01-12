@@ -11,6 +11,9 @@ const GraphXmlUtils = preload("res://GraphXmlUtils.cs")
 
 @export var script_designer_open: bool = false
 
+@export var script_designer: Node
+@export var galaxy_map_editor: Node
+
 signal node_created(node)
 signal node_destroyed(node)
 
@@ -332,5 +335,9 @@ func _on_xml_output_window_close_requested() -> void:
 func _on_mod_designer_tab_tab_changed(tab: int) -> void:
 	if tab == 0:
 		script_designer_open = true
-	else:
+		script_designer.process_mode = PROCESS_MODE_INHERIT
+		galaxy_map_editor.process_mode = PROCESS_MODE_DISABLED
+	if tab == 1:
 		script_designer_open = false
+		script_designer.process_mode = PROCESS_MODE_DISABLED
+		galaxy_map_editor.process_mode = PROCESS_MODE_INHERIT

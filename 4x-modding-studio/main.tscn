@@ -8,7 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://k0stwqou0g55" path="res://galaxy_map.tscn" id="5_7mycd"]
 [ext_resource type="Script" uid="uid://dqpcjdqujcqii" path="res://X4DatabaseManager.cs" id="5_lquwl"]
 
-[node name="Main" type="Control" node_paths=PackedStringArray("node_searcher", "context_menu", "graph_edit", "xml_editor_window", "xml_validation_timer")]
+[node name="Main" type="Control" node_paths=PackedStringArray("node_searcher", "context_menu", "graph_edit", "xml_editor_window", "xml_validation_timer", "script_designer", "galaxy_map_editor")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -22,6 +22,8 @@ graph_edit = NodePath("VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigne
 xml_editor_window = NodePath("VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/XMLOutputWindow")
 xml_validation_timer = NodePath("VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/XMLValidationTimer")
 path_to_unpacked_4x_directory = "F:\\SteamLibrary\\steamapps\\common\\X4 Foundations\\x4_unpacked"
+script_designer = NodePath("VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner")
+galaxy_map_editor = NodePath("VBoxContainer/SplitContainer/ModDesignerTab/GalaxyMapDesigner")
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 1
