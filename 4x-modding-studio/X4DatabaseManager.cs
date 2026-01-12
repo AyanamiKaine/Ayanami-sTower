@@ -10,6 +10,34 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 
 /// <summary>
+/// Represents a single usage of an XML element in a file
+/// </summary>
+public class XmlElementUsage
+{
+    public string FilePath { get; set; } = "";
+    public int LineNumber { get; set; } = 0;
+    public string ParentElement { get; set; } = ""; // The parent element name, if any
+    public System.Collections.Generic.Dictionary<string, string> Attributes { get; set; } = new(); // Attribute values at this usage
+
+    public override string ToString() => $"{Path.GetFileName(FilePath)}:{LineNumber}";
+}
+
+/// <summary>
+/// Aggregates all usages of a specific element name
+/// </summary>
+public class XmlElementUsageStats
+{
+    public string ElementName { get; set; } = "";
+    public int TotalUsageCount { get; set; } = 0;
+    public List<XmlElementUsage> Usages { get; set; } = new();
+    public HashSet<string> FilesUsedIn { get; set; } = new();
+    public HashSet<string> ObservedParents { get; set; } = new(); // Parent elements observed in actual usage
+    public System.Collections.Generic.Dictionary<string, HashSet<string>> ObservedAttributeValues { get; set; } = new(); // Attr name -> observed values
+
+    public override string ToString() => $"{ElementName}: {TotalUsageCount} usages in {FilesUsedIn.Count} files";
+}
+
+/// <summary>
 /// Represents an attribute definition from an XSD schema
 /// </summary>
 public class XsdAttributeInfo
@@ -107,6 +135,13 @@ public partial class X4DatabaseManager : Node
     /// <summary>All simple type enumerations (e.g., allowed string values)</summary>
     public System.Collections.Generic.Dictionary<string, List<string>> AllEnumTypes { get; private set; } = new();
 
+    // --- XML Usage Data ---
+    /// <summary>Usage statistics for each element, keyed by element name</summary>
+    public System.Collections.Generic.Dictionary<string, XmlElementUsageStats> ElementUsageStats { get; private set; } = new();
+
+    /// <summary>Total number of XML files scanned</summary>
+    public int TotalXmlFilesScanned { get; private set; } = 0;
+
     public override void _Ready()
     {
         base._Ready();
@@ -115,6 +150,7 @@ public partial class X4DatabaseManager : Node
         // This kicks off the process and lets Godot continue immediately.
         _ = RunDatabaseScanAsync();
         _ = RunXsdScanAsync();
+        _ = RunXmlUsageScanAsync();
     }
 
     /// <summary>
@@ -274,15 +310,15 @@ public partial class X4DatabaseManager : Node
             GD.Print($"Found {AllElements.Count} unique elements");
             GD.Print($"Found {AllAttributeNames.Count} unique attribute names");
             GD.Print($"Found {AllEnumTypes.Count} enum types");
-            
+
             // Documentation coverage stats
             var documentedElements = AllElements.Values.Count(e => !string.IsNullOrEmpty(e.Documentation));
             var totalAttributes = AllElements.Values.Sum(e => e.Attributes.Count);
             var documentedAttributes = AllElements.Values.Sum(e => e.Attributes.Count(a => !string.IsNullOrEmpty(a.Documentation)));
-            
+
             GD.Print($"\n--- DOCUMENTATION COVERAGE ---");
-            GD.Print($"Elements with docs: {documentedElements}/{AllElements.Count} ({(AllElements.Count > 0 ? (100.0 * documentedElements / AllElements.Count):0):F1}%)");
-            GD.Print($"Attributes with docs: {documentedAttributes}/{totalAttributes} ({(totalAttributes > 0 ? (100.0 * documentedAttributes / totalAttributes):0):F1}%)");
+            GD.Print($"Elements with docs: {documentedElements}/{AllElements.Count} ({(AllElements.Count > 0 ? (100.0 * documentedElements / AllElements.Count) : 0):F1}%)");
+            GD.Print($"Attributes with docs: {documentedAttributes}/{totalAttributes} ({(totalAttributes > 0 ? (100.0 * documentedAttributes / totalAttributes) : 0):F1}%)");
         }
         catch (Exception ex)
         {
@@ -631,6 +667,222 @@ public partial class X4DatabaseManager : Node
                     {
                         childElem.ParentElements.Add(elem.Name);
                     }
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // XML USAGE SCANNING
+    // =========================================================================
+
+    /// <summary>
+    /// Handles the UI/Main Thread coordination for XML usage scanning.
+    /// </summary>
+    private async Task RunXmlUsageScanAsync()
+    {
+        GD.Print($"[XML Usage Scanner] Starting XML file scan in: {SearchDirectory}");
+
+        try
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            string path = SearchDirectory;
+
+            var (usageStats, fileCount) = await Task.Run(() => ScanXmlUsage(path));
+
+            sw.Stop();
+
+            ElementUsageStats = usageStats;
+            TotalXmlFilesScanned = fileCount;
+
+            GD.Print($"\n--- XML USAGE SCAN COMPLETE ({sw.ElapsedMilliseconds}ms) ---");
+            GD.Print($"Scanned {TotalXmlFilesScanned} XML files");
+            GD.Print($"Found {ElementUsageStats.Count} unique element names in use");
+
+            // Show top 10 most used elements
+            var topElements = ElementUsageStats.Values
+                .OrderByDescending(e => e.TotalUsageCount)
+                .Take(10)
+                .ToList();
+
+            GD.Print($"\n--- TOP 10 MOST USED ELEMENTS ---");
+            foreach (var elem in topElements)
+            {
+                GD.Print($"  {elem.ElementName}: {elem.TotalUsageCount} usages in {elem.FilesUsedIn.Count} files");
+            }
+
+            // Show elements defined in XSD but never used
+            var unusedElements = AllElements.Keys
+                .Where(name => !ElementUsageStats.ContainsKey(name))
+                .Take(20)
+                .ToList();
+
+            if (unusedElements.Count > 0)
+            {
+                GD.Print($"\n--- ELEMENTS DEFINED BUT NOT USED (first 20) ---");
+                GD.Print($"  {string.Join(", ", unusedElements)}");
+            }
+
+            // Show elements used but not defined in XSD
+            var undefinedElements = ElementUsageStats.Keys
+                .Where(name => !AllElements.ContainsKey(name))
+                .Take(20)
+                .ToList();
+
+            if (undefinedElements.Count > 0)
+            {
+                GD.Print($"\n--- ELEMENTS USED BUT NOT IN XSD (first 20) ---");
+                GD.Print($"  {string.Join(", ", undefinedElements)}");
+            }
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[XML Usage Scanner] Error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Scans all XML files and collects element usage statistics.
+    /// Pure logic - safe to run on background thread.
+    /// </summary>
+    static (System.Collections.Generic.Dictionary<string, XmlElementUsageStats> stats, int fileCount)
+        ScanXmlUsage(string rootPath)
+    {
+        var usageStats = new ConcurrentDictionary<string, XmlElementUsageStats>();
+        int fileCount = 0;
+
+        if (!Directory.Exists(rootPath))
+            return (new(), 0);
+
+        var enumOptions = new EnumerationOptions
+        {
+            RecurseSubdirectories = true,
+            IgnoreInaccessible = true,
+            ReturnSpecialDirectories = false
+        };
+
+        var xmlFiles = Directory.EnumerateFiles(rootPath, "*.xml", enumOptions).ToList();
+        fileCount = xmlFiles.Count;
+
+        Parallel.ForEach(xmlFiles, (xmlPath) =>
+        {
+            try
+            {
+                ParseXmlFileForUsage(xmlPath, usageStats);
+            }
+            catch (Exception ex)
+            {
+                // Log but continue with other files
+                Console.WriteLine($"Error parsing {xmlPath}: {ex.Message}");
+            }
+        });
+
+        return (
+            new System.Collections.Generic.Dictionary<string, XmlElementUsageStats>(usageStats),
+            fileCount
+        );
+    }
+
+    /// <summary>
+    /// Parses a single XML file and records element usage.
+    /// Uses XmlReader for line number tracking.
+    /// </summary>
+    static void ParseXmlFileForUsage(string filePath, ConcurrentDictionary<string, XmlElementUsageStats> usageStats)
+    {
+        // Read file content to get line information
+        var lines = File.ReadAllLines(filePath);
+
+        // Use regex to find XML elements with line numbers
+        // This approach gives us accurate line numbers
+        var elementPattern = new Regex(@"<([a-zA-Z_][a-zA-Z0-9_\-\.]*)\s*([^>]*)(?:/>|>)", RegexOptions.Compiled);
+        var attributePattern = new Regex(@"([a-zA-Z_][a-zA-Z0-9_\-\.]*)\s*=\s*""([^""]*)""", RegexOptions.Compiled);
+
+        // Track parent elements using a stack
+        var parentStack = new Stack<string>();
+
+        for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+        {
+            string line = lines[lineIndex];
+            int lineNumber = lineIndex + 1; // 1-based line numbers
+
+            // Check for closing tags to pop parent stack
+            var closingTagPattern = new Regex(@"</([a-zA-Z_][a-zA-Z0-9_\-\.]*)>");
+            foreach (Match closeMatch in closingTagPattern.Matches(line))
+            {
+                string closingName = closeMatch.Groups[1].Value;
+                if (parentStack.Count > 0 && parentStack.Peek() == closingName)
+                {
+                    parentStack.Pop();
+                }
+            }
+
+            // Find element usages
+            foreach (Match match in elementPattern.Matches(line))
+            {
+                string elementName = match.Groups[1].Value;
+                string attributesPart = match.Groups[2].Value;
+                bool isSelfClosing = match.Value.EndsWith("/>");
+
+                // Skip XML declarations and comments
+                if (elementName.StartsWith("?") || elementName.StartsWith("!"))
+                    continue;
+
+                // Get or create usage stats for this element
+                var stats = usageStats.GetOrAdd(elementName, _ => new XmlElementUsageStats
+                {
+                    ElementName = elementName
+                });
+
+                // Create usage record
+                var usage = new XmlElementUsage
+                {
+                    FilePath = filePath,
+                    LineNumber = lineNumber,
+                    ParentElement = parentStack.Count > 0 ? parentStack.Peek() : ""
+                };
+
+                // Parse attributes
+                foreach (Match attrMatch in attributePattern.Matches(attributesPart))
+                {
+                    string attrName = attrMatch.Groups[1].Value;
+                    string attrValue = attrMatch.Groups[2].Value;
+                    usage.Attributes[attrName] = attrValue;
+
+                    // Track observed attribute values (limit to prevent memory explosion)
+                    lock (stats.ObservedAttributeValues)
+                    {
+                        if (!stats.ObservedAttributeValues.ContainsKey(attrName))
+                        {
+                            stats.ObservedAttributeValues[attrName] = new HashSet<string>();
+                        }
+                        if (stats.ObservedAttributeValues[attrName].Count < 100) // Limit unique values stored
+                        {
+                            stats.ObservedAttributeValues[attrName].Add(attrValue);
+                        }
+                    }
+                }
+
+                // Update stats (thread-safe)
+                lock (stats)
+                {
+                    stats.TotalUsageCount++;
+                    stats.FilesUsedIn.Add(filePath);
+                    if (!string.IsNullOrEmpty(usage.ParentElement))
+                    {
+                        stats.ObservedParents.Add(usage.ParentElement);
+                    }
+
+                    // Only store first 1000 usages to prevent memory issues
+                    if (stats.Usages.Count < 1000)
+                    {
+                        stats.Usages.Add(usage);
+                    }
+                }
+
+                // Push to parent stack if not self-closing
+                if (!isSelfClosing)
+                {
+                    parentStack.Push(elementName);
                 }
             }
         }
