@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -84,6 +85,44 @@ public class XsdSchemaInfo
     public List<string> Imports { get; set; } = new(); // Other schemas this one imports
 }
 
+/// <summary>
+/// Cache data structure for XSD schemas
+/// </summary>
+public class XsdCacheData
+{
+    public DateTime CacheCreatedAt { get; set; } = DateTime.MinValue;
+    public string SourceDirectory { get; set; } = "";
+    public System.Collections.Generic.Dictionary<string, DateTime> FileModificationTimes { get; set; } = new();
+    public System.Collections.Generic.Dictionary<string, XsdElementInfo> AllElements { get; set; } = new();
+    public List<string> AllAttributeNames { get; set; } = new();
+    public System.Collections.Generic.Dictionary<string, List<string>> AllEnumTypes { get; set; } = new();
+}
+
+/// <summary>
+/// Serializable version of XmlElementUsageStats (HashSets converted to Lists for JSON)
+/// </summary>
+public class XmlUsageStatsSerialized
+{
+    public string ElementName { get; set; } = "";
+    public int TotalUsageCount { get; set; } = 0;
+    public List<string> FilesUsedIn { get; set; } = new();
+    public List<string> ObservedParents { get; set; } = new();
+    public System.Collections.Generic.Dictionary<string, List<string>> ObservedAttributeValues { get; set; } = new();
+    // Note: We don't cache individual Usages to keep cache size reasonable
+}
+
+/// <summary>
+/// Cache data structure for XML usage statistics
+/// </summary>
+public class XmlUsageCacheData
+{
+    public DateTime CacheCreatedAt { get; set; } = DateTime.MinValue;
+    public string SourceDirectory { get; set; } = "";
+    public int TotalXmlFilesScanned { get; set; } = 0;
+    public System.Collections.Generic.Dictionary<string, DateTime> FileModificationTimes { get; set; } = new();
+    public System.Collections.Generic.Dictionary<string, XmlUsageStatsSerialized> ElementUsageStats { get; set; } = new();
+}
+
 public partial class X4DatabaseManager : Node
 {
     // SIGNAL: Emitted when the background thread finishes and data is ready.
@@ -93,6 +132,15 @@ public partial class X4DatabaseManager : Node
 
     [Export]
     public string SearchDirectory { get; set; } = @"C:\Your\Project\Path";
+
+    [Export]
+    public string CacheDirectory { get; set; } = @"user://cache";
+
+    [Export]
+    public bool UseCache { get; set; } = true;
+
+    private const string XSD_CACHE_FILE = "xsd_cache.json";
+    private const string XML_USAGE_CACHE_FILE = "xml_usage_cache.json";
 
     [Export]
     public string[] FileExtensions { get; set; } = ["*.cs", "*.txt", "*.json", "*.xml"];
@@ -280,6 +328,294 @@ public partial class X4DatabaseManager : Node
     }
 
     // =========================================================================
+    // CACHE MANAGEMENT
+    // =========================================================================
+
+    /// <summary>
+    /// Gets the absolute path to the cache directory, creating it if necessary.
+    /// </summary>
+    private string GetCacheDirectoryPath()
+    {
+        string cachePath;
+        if (CacheDirectory.StartsWith("user://"))
+        {
+            // Convert Godot user:// path to absolute path
+            cachePath = ProjectSettings.GlobalizePath(CacheDirectory);
+        }
+        else
+        {
+            cachePath = CacheDirectory;
+        }
+
+        if (!Directory.Exists(cachePath))
+        {
+            Directory.CreateDirectory(cachePath);
+        }
+
+        return cachePath;
+    }
+
+    /// <summary>
+    /// Gets modification times for all files matching a pattern in a directory.
+    /// </summary>
+    static System.Collections.Generic.Dictionary<string, DateTime> GetFileModificationTimes(string rootPath, string pattern)
+    {
+        var times = new System.Collections.Generic.Dictionary<string, DateTime>();
+
+        if (!Directory.Exists(rootPath))
+            return times;
+
+        var enumOptions = new EnumerationOptions
+        {
+            RecurseSubdirectories = true,
+            IgnoreInaccessible = true,
+            ReturnSpecialDirectories = false
+        };
+
+        foreach (var file in Directory.EnumerateFiles(rootPath, pattern, enumOptions))
+        {
+            try
+            {
+                times[file] = File.GetLastWriteTimeUtc(file);
+            }
+            catch { /* Ignore inaccessible files */ }
+        }
+
+        return times;
+    }
+
+    /// <summary>
+    /// Checks if a cache is still valid by comparing file modification times.
+    /// </summary>
+    static bool IsCacheValid(System.Collections.Generic.Dictionary<string, DateTime> cachedTimes, System.Collections.Generic.Dictionary<string, DateTime> currentTimes)
+    {
+        // If file counts differ, cache is invalid
+        if (cachedTimes.Count != currentTimes.Count)
+            return false;
+
+        // Check each file's modification time
+        foreach (var kvp in currentTimes)
+        {
+            if (!cachedTimes.TryGetValue(kvp.Key, out var cachedTime))
+                return false; // New file not in cache
+
+            // Allow 1 second tolerance for filesystem precision
+            if (Math.Abs((kvp.Value - cachedTime).TotalSeconds) > 1)
+                return false; // File was modified
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Saves XSD cache data to disk.
+    /// </summary>
+    void SaveXsdCache(System.Collections.Generic.Dictionary<string, XsdElementInfo> elements,
+                      HashSet<string> attributes,
+                      System.Collections.Generic.Dictionary<string, List<string>> enums,
+                      System.Collections.Generic.Dictionary<string, DateTime> fileTimes)
+    {
+        try
+        {
+            var cacheData = new XsdCacheData
+            {
+                CacheCreatedAt = DateTime.UtcNow,
+                SourceDirectory = SearchDirectory,
+                FileModificationTimes = fileTimes,
+                AllElements = elements,
+                AllAttributeNames = attributes.ToList(),
+                AllEnumTypes = enums
+            };
+
+            var cachePath = Path.Combine(GetCacheDirectoryPath(), XSD_CACHE_FILE);
+            var options = new JsonSerializerOptions { WriteIndented = false };
+            var json = JsonSerializer.Serialize(cacheData, options);
+            File.WriteAllText(cachePath, json);
+
+            GD.Print($"[Cache] Saved XSD cache ({elements.Count} elements) to {cachePath}");
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[Cache] Failed to save XSD cache: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Loads XSD cache data from disk if valid.
+    /// </summary>
+    XsdCacheData? LoadXsdCache(System.Collections.Generic.Dictionary<string, DateTime> currentFileTimes)
+    {
+        try
+        {
+            var cachePath = Path.Combine(GetCacheDirectoryPath(), XSD_CACHE_FILE);
+            if (!File.Exists(cachePath))
+                return null;
+
+            var json = File.ReadAllText(cachePath);
+            var cacheData = JsonSerializer.Deserialize<XsdCacheData>(json);
+
+            if (cacheData == null)
+                return null;
+
+            // Verify cache is for the same directory
+            if (cacheData.SourceDirectory != SearchDirectory)
+            {
+                GD.Print("[Cache] XSD cache is for different directory, ignoring");
+                return null;
+            }
+
+            // Verify files haven't changed
+            if (!IsCacheValid(cacheData.FileModificationTimes, currentFileTimes))
+            {
+                GD.Print("[Cache] XSD files have changed, cache invalid");
+                return null;
+            }
+
+            GD.Print($"[Cache] Loaded valid XSD cache ({cacheData.AllElements.Count} elements)");
+            return cacheData;
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[Cache] Failed to load XSD cache: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Saves XML usage cache data to disk.
+    /// </summary>
+    void SaveXmlUsageCache(System.Collections.Generic.Dictionary<string, XmlElementUsageStats> stats,
+                           int fileCount,
+                           System.Collections.Generic.Dictionary<string, DateTime> fileTimes)
+    {
+        try
+        {
+            // Convert to serializable format
+            var serializedStats = new System.Collections.Generic.Dictionary<string, XmlUsageStatsSerialized>();
+            foreach (var kvp in stats)
+            {
+                serializedStats[kvp.Key] = new XmlUsageStatsSerialized
+                {
+                    ElementName = kvp.Value.ElementName,
+                    TotalUsageCount = kvp.Value.TotalUsageCount,
+                    FilesUsedIn = kvp.Value.FilesUsedIn.ToList(),
+                    ObservedParents = kvp.Value.ObservedParents.ToList(),
+                    ObservedAttributeValues = kvp.Value.ObservedAttributeValues
+                        .ToDictionary(x => x.Key, x => x.Value.ToList())
+                };
+            }
+
+            var cacheData = new XmlUsageCacheData
+            {
+                CacheCreatedAt = DateTime.UtcNow,
+                SourceDirectory = SearchDirectory,
+                TotalXmlFilesScanned = fileCount,
+                FileModificationTimes = fileTimes,
+                ElementUsageStats = serializedStats
+            };
+
+            var cachePath = Path.Combine(GetCacheDirectoryPath(), XML_USAGE_CACHE_FILE);
+            var options = new JsonSerializerOptions { WriteIndented = false };
+            var json = JsonSerializer.Serialize(cacheData, options);
+            File.WriteAllText(cachePath, json);
+
+            GD.Print($"[Cache] Saved XML usage cache ({stats.Count} elements) to {cachePath}");
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[Cache] Failed to save XML usage cache: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Loads XML usage cache data from disk if valid.
+    /// </summary>
+    XmlUsageCacheData? LoadXmlUsageCache(System.Collections.Generic.Dictionary<string, DateTime> currentFileTimes)
+    {
+        try
+        {
+            var cachePath = Path.Combine(GetCacheDirectoryPath(), XML_USAGE_CACHE_FILE);
+            if (!File.Exists(cachePath))
+                return null;
+
+            var json = File.ReadAllText(cachePath);
+            var cacheData = JsonSerializer.Deserialize<XmlUsageCacheData>(json);
+
+            if (cacheData == null)
+                return null;
+
+            // Verify cache is for the same directory
+            if (cacheData.SourceDirectory != SearchDirectory)
+            {
+                GD.Print("[Cache] XML usage cache is for different directory, ignoring");
+                return null;
+            }
+
+            // Verify files haven't changed
+            if (!IsCacheValid(cacheData.FileModificationTimes, currentFileTimes))
+            {
+                GD.Print("[Cache] XML files have changed, cache invalid");
+                return null;
+            }
+
+            GD.Print($"[Cache] Loaded valid XML usage cache ({cacheData.ElementUsageStats.Count} elements)");
+            return cacheData;
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[Cache] Failed to load XML usage cache: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Converts cached usage stats back to the runtime format.
+    /// </summary>
+    static System.Collections.Generic.Dictionary<string, XmlElementUsageStats> ConvertFromCachedUsageStats(
+        System.Collections.Generic.Dictionary<string, XmlUsageStatsSerialized> cached)
+    {
+        var result = new System.Collections.Generic.Dictionary<string, XmlElementUsageStats>();
+
+        foreach (var kvp in cached)
+        {
+            result[kvp.Key] = new XmlElementUsageStats
+            {
+                ElementName = kvp.Value.ElementName,
+                TotalUsageCount = kvp.Value.TotalUsageCount,
+                FilesUsedIn = kvp.Value.FilesUsedIn.ToHashSet(),
+                ObservedParents = kvp.Value.ObservedParents.ToHashSet(),
+                ObservedAttributeValues = kvp.Value.ObservedAttributeValues
+                    .ToDictionary(x => x.Key, x => x.Value.ToHashSet()),
+                Usages = new List<XmlElementUsage>() // Not cached to save space
+            };
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Clears all cached data.
+    /// </summary>
+    public void ClearCache()
+    {
+        try
+        {
+            var cacheDir = GetCacheDirectoryPath();
+            var xsdCache = Path.Combine(cacheDir, XSD_CACHE_FILE);
+            var xmlCache = Path.Combine(cacheDir, XML_USAGE_CACHE_FILE);
+
+            if (File.Exists(xsdCache)) File.Delete(xsdCache);
+            if (File.Exists(xmlCache)) File.Delete(xmlCache);
+
+            GD.Print("[Cache] Cache cleared successfully");
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[Cache] Failed to clear cache: {ex.Message}");
+        }
+    }
+
+    // =========================================================================
     // XSD SCHEMA PARSING
     // =========================================================================
 
@@ -297,6 +633,29 @@ public partial class X4DatabaseManager : Node
             var sw = System.Diagnostics.Stopwatch.StartNew();
             string path = SearchDirectory;
 
+            // Get current file modification times for cache validation
+            var currentFileTimes = await Task.Run(() => GetFileModificationTimes(path, "*.xsd"));
+
+            // Try to load from cache first
+            if (UseCache)
+            {
+                var cachedData = LoadXsdCache(currentFileTimes);
+                if (cachedData != null)
+                {
+                    sw.Stop();
+                    AllElements = cachedData.AllElements;
+                    AllAttributeNames = cachedData.AllAttributeNames.ToHashSet();
+                    AllEnumTypes = cachedData.AllEnumTypes;
+                    ParsedSchemas = new(); // Not cached, but rarely needed after load
+
+                    GD.Print($"\n--- XSD LOADED FROM CACHE ({sw.ElapsedMilliseconds}ms) ---");
+                    GD.Print($"Found {AllElements.Count} unique elements");
+                    GD.Print($"Found {AllAttributeNames.Count} unique attribute names");
+                    return;
+                }
+            }
+
+            // Cache miss or disabled - do full scan
             var (schemas, elements, attributes, enums) = await Task.Run(() => ScanXsdSchemas(path));
 
             sw.Stop();
@@ -305,6 +664,12 @@ public partial class X4DatabaseManager : Node
             AllElements = elements;
             AllAttributeNames = attributes;
             AllEnumTypes = enums;
+
+            // Save to cache for next time
+            if (UseCache)
+            {
+                SaveXsdCache(elements, attributes, enums, currentFileTimes);
+            }
 
             GD.Print($"\n--- XSD SCAN COMPLETE ({sw.ElapsedMilliseconds}ms) ---");
             GD.Print($"Found {ParsedSchemas.Count} schema files");
@@ -964,12 +1329,39 @@ public partial class X4DatabaseManager : Node
             var sw = System.Diagnostics.Stopwatch.StartNew();
             string path = SearchDirectory;
 
+            // Get current file modification times for cache validation
+            var currentFileTimes = await Task.Run(() => GetFileModificationTimes(path, "*.xml"));
+
+            // Try to load from cache first
+            if (UseCache)
+            {
+                var cachedData = LoadXmlUsageCache(currentFileTimes);
+                if (cachedData != null)
+                {
+                    sw.Stop();
+                    ElementUsageStats = ConvertFromCachedUsageStats(cachedData.ElementUsageStats);
+                    TotalXmlFilesScanned = cachedData.TotalXmlFilesScanned;
+
+                    GD.Print($"\n--- XML USAGE LOADED FROM CACHE ({sw.ElapsedMilliseconds}ms) ---");
+                    GD.Print($"Scanned {TotalXmlFilesScanned} XML files");
+                    GD.Print($"Found {ElementUsageStats.Count} unique element names in use");
+                    return;
+                }
+            }
+
+            // Cache miss or disabled - do full scan
             var (usageStats, fileCount) = await Task.Run(() => ScanXmlUsage(path));
 
             sw.Stop();
 
             ElementUsageStats = usageStats;
             TotalXmlFilesScanned = fileCount;
+
+            // Save to cache for next time
+            if (UseCache)
+            {
+                SaveXmlUsageCache(usageStats, fileCount, currentFileTimes);
+            }
 
             GD.Print($"\n--- XML USAGE SCAN COMPLETE ({sw.ElapsedMilliseconds}ms) ---");
             GD.Print($"Scanned {TotalXmlFilesScanned} XML files");
