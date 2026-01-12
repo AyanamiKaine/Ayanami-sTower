@@ -29,6 +29,10 @@ extends Node2D
 	set(value):
 		grid_color = value
 		queue_redraw()
+@export var outline_scale: float = 0.95:
+	set(value):
+		outline_scale = value
+		queue_redraw()
 
 const SQRT_3 = 1.7320508
 
@@ -121,10 +125,11 @@ func _draw():
 
 func _draw_hex_outline(center: Vector2):
 	var points = PackedVector2Array()
+	var scaled_radius = hex_radius * outline_scale
 	for i in range(7):
 		var angle_deg = 60 * i - 30 if orientation == 0 else 60 * i
 		var rad = deg_to_rad(angle_deg)
-		points.append(center + Vector2(cos(rad), sin(rad)) * hex_radius)
+		points.append(center + Vector2(cos(rad), sin(rad)) * scaled_radius)
 	draw_polyline(points, grid_color, 1.0)
 
 func _offset_to_axial(offset: Vector2i) -> Vector2i:

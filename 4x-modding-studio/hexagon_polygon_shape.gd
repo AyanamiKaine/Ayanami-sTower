@@ -112,7 +112,7 @@ func update_outline(poly_points: PackedVector2Array):
 	line_node.points = line_points
 	line_node.width = outline_width
 	line_node.default_color = outline_color
-	line_node.joint_mode = Line2D.LINE_JOINT_SHARP
+	line_node.joint_mode = Line2D.LINE_CAP_ROUND
 
 # --- SNAPPING LOGIC ---
 func _perform_snap():
