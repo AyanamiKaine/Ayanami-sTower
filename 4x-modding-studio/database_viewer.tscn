@@ -82,9 +82,12 @@ size_flags_horizontal = 3
 layout_mode = 2
 text = "Data Name:"
 
-[node name="DocLabel" type="Label" parent="HSplitContainer/HBoxContainer/MarginContainer/VBoxContainer"]
+[node name="DocLabel" type="TextEdit" parent="HSplitContainer/HBoxContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 text = "Documentation: "
+editable = false
+wrap_mode = 1
 autowrap_mode = 2
 
 [node name="TypeLabel" type="Label" parent="HSplitContainer/HBoxContainer/MarginContainer/VBoxContainer"]
@@ -97,6 +100,7 @@ text = "Attributes:"
 
 [node name="AttributesItemList" type="ItemList" parent="HSplitContainer/HBoxContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
+size_flags_vertical = 3
 
 [node name="MarginContainer2" type="MarginContainer" parent="HSplitContainer/HBoxContainer"]
 layout_mode = 2

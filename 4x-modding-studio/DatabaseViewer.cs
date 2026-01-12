@@ -21,7 +21,7 @@ public partial class DatabaseViewer : Control
     public Label? NameLabel { get; set; }
 
     [Export]
-    public Label? DocLabel { get; set; }
+    public TextEdit? DocLabel { get; set; }
 
     [Export]
     public Label? TypeLabel { get; set; }

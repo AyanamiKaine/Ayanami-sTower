@@ -393,11 +393,25 @@ public partial class X4DatabaseManager : Node
                 // Merge into global collections
                 foreach (var elem in schemaInfo.Elements)
                 {
+                    // Debug logging for specific elements
+                    if (elem.Key.Contains("discovered_mission"))
+                    {
+                        GD.Print($"[XSD Merge] Element '{elem.Key}' has {elem.Value.Attributes.Count} attributes before merge");
+                    }
+
                     // Prefer elements with documentation, more attributes, or more children
                     allElements.AddOrUpdate(
                         elem.Key,
                         elem.Value,
-                        (key, existing) => ShouldReplaceElement(existing, elem.Value) ? elem.Value : existing
+                        (key, existing) =>
+                        {
+                            var shouldReplace = ShouldReplaceElement(existing, elem.Value);
+                            if (key.Contains("discovered_mission"))
+                            {
+                                GD.Print($"[XSD Merge] '{key}' merge decision: existing={existing.Attributes.Count} attrs, new={elem.Value.Attributes.Count} attrs, replacing={shouldReplace}");
+                            }
+                            return shouldReplace ? elem.Value : existing;
+                        }
                     );
 
                     foreach (var attr in elem.Value.Attributes)
@@ -648,6 +662,8 @@ public partial class X4DatabaseManager : Node
             if (!string.IsNullOrEmpty(attrInfo.Name))
             {
                 elemInfo.Attributes.Add(attrInfo);
+                if (elemInfo.Name.Contains("discovered_mission"))
+                    GD.Print($"[XSD Debug] Added attribute '{attrInfo.Name}' to element '{elemInfo.Name}'");
             }
         }
 
@@ -745,6 +761,8 @@ public partial class X4DatabaseManager : Node
                     if (hasName)
                     {
                         var inlineElemInfo = ParseElement(child, sourceFile, schemaInfo);
+                        if (inlineElemInfo.Name.Contains("discovered_mission"))
+                            GD.Print($"[XSD Debug] ParseChildElements: Parsed inline element '{inlineElemInfo.Name}' with {inlineElemInfo.Attributes.Count} attributes");
                         if (!string.IsNullOrEmpty(inlineElemInfo.Name))
                         {
                             // Add or replace if the new one has more info (documentation, attributes, etc.)
@@ -752,6 +770,13 @@ public partial class X4DatabaseManager : Node
                                 ShouldReplaceElement(existing, inlineElemInfo))
                             {
                                 schemaInfo.Elements[inlineElemInfo.Name] = inlineElemInfo;
+                                if (inlineElemInfo.Name.Contains("discovered_mission"))
+                                    GD.Print($"[XSD Debug] Added/replaced element '{inlineElemInfo.Name}' in schema with {inlineElemInfo.Attributes.Count} attributes");
+                            }
+                            else
+                            {
+                                if (inlineElemInfo.Name.Contains("discovered_mission"))
+                                    GD.Print($"[XSD Debug] Kept existing element '{childName}' (existing has {existing.Attributes.Count} attrs, new has {inlineElemInfo.Attributes.Count})");
                             }
                         }
                     }
