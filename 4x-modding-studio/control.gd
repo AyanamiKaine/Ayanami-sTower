@@ -34,7 +34,8 @@ var drag_from_output: bool = false # True if dragging FROM a node's output, Fals
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("Show Node Searcher"):
-		node_searcher_position = Vector2i(get_local_mouse_position())
+		# Use GraphEdit's local mouse position for correct placement
+		node_searcher_position = Vector2i(graph_edit.get_local_mouse_position())
 		# Reset allowed_types when opening node searcher manually
 		allowed_types = []
 		pending_connection = {}
@@ -195,7 +196,8 @@ func _remove_connections_to_node(node_name: StringName):
 	xml_editor_window.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
 
 func _on_graph_edit_connection_to_empty(_from_node: StringName, _from_port: int, _release_position: Vector2) -> void:
-	node_searcher_position = Vector2i(get_local_mouse_position())
+	# Use release_position which is already in GraphEdit's local coordinates
+	node_searcher_position = Vector2i(_release_position)
 	
 	# Get the source node's expected_child_types (what types of children it accepts)
 	var source_node = graph_edit.get_node(NodePath(_from_node))
@@ -212,7 +214,8 @@ func _on_graph_edit_connection_to_empty(_from_node: StringName, _from_port: int,
 	node_searcher.popup()
 
 func _on_graph_edit_connection_from_empty(_to_node: StringName, _to_port: int, _release_position: Vector2) -> void:
-	node_searcher_position = Vector2i(get_local_mouse_position())
+	# Use release_position which is already in GraphEdit's local coordinates
+	node_searcher_position = Vector2i(_release_position)
 	
 	# Get the target node's expected_parent_types (what types of parents it accepts)
 	var target_node = graph_edit.get_node(NodePath(_to_node))
