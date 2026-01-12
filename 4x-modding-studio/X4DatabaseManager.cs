@@ -641,10 +641,9 @@ public partial class X4DatabaseManager : Node
         var restriction = simpleType?.Element(xs + "restriction");
         if (restriction != null)
         {
-            attrInfo.EnumValues = restriction.Elements(xs + "enumeration")
+            attrInfo.EnumValues = [.. restriction.Elements(xs + "enumeration")
                 .Select(e => e.Attribute("value")?.Value ?? "")
-                .Where(v => !string.IsNullOrEmpty(v))
-                .ToList();
+                .Where(v => !string.IsNullOrEmpty(v))];
         }
 
         return attrInfo;
@@ -719,7 +718,7 @@ public partial class X4DatabaseManager : Node
 
             if (unusedElements.Count > 0)
             {
-                GD.Print($"\n--- ELEMENTS DEFINED BUT NOT USED (first 20) ---");
+                GD.Print("\n--- ELEMENTS DEFINED BUT NOT USED (first 20) ---");
                 GD.Print($"  {string.Join(", ", unusedElements)}");
             }
 
@@ -851,13 +850,14 @@ public partial class X4DatabaseManager : Node
                     // Track observed attribute values (limit to prevent memory explosion)
                     lock (stats.ObservedAttributeValues)
                     {
-                        if (!stats.ObservedAttributeValues.ContainsKey(attrName))
+                        if (!stats.ObservedAttributeValues.TryGetValue(attrName, out HashSet<string>? value))
                         {
-                            stats.ObservedAttributeValues[attrName] = new HashSet<string>();
+                            value = [];
+                            stats.ObservedAttributeValues[attrName] = value;
                         }
-                        if (stats.ObservedAttributeValues[attrName].Count < 100) // Limit unique values stored
+                        if (value.Count < 100) // Limit unique values stored
                         {
-                            stats.ObservedAttributeValues[attrName].Add(attrValue);
+                            value.Add(attrValue);
                         }
                     }
                 }
