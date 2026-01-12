@@ -1,6 +1,7 @@
-[gd_scene load_steps=13 format=3 uid="uid://bq3huk364skd3"]
+[gd_scene load_steps=14 format=3 uid="uid://bq3huk364skd3"]
 
 [ext_resource type="Script" uid="uid://ckp4b53u6oy0k" path="res://control.gd" id="1_h2yge"]
+[ext_resource type="Theme" uid="uid://2l817y2oek51" path="res://default_theme.tres" id="1_ycdy4"]
 [ext_resource type="Script" uid="uid://3trabpx82cr7" path="res://NodeSearcher.gd" id="2_1bvp3"]
 [ext_resource type="PackedScene" uid="uid://dyps4os5j3yaa" path="res://script_text_editor.tscn" id="2_5vw27"]
 [ext_resource type="Script" uid="uid://d1qk1n50dr25f" path="res://FileSystem.cs" id="2_272bh"]
@@ -20,6 +21,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("1_ycdy4")
 script = ExtResource("1_h2yge")
 node_searcher = NodePath("VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/Node Searcher")
 context_menu = NodePath("VBoxContainer/SplitContainer/ModDesignerTab/ScriptDesigner/ContextMenu")

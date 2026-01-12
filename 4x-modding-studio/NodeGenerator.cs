@@ -614,4 +614,63 @@ public partial class NodeGenerator : Node
 
         return elemInfo.ParentElements;
     }
+
+    // --- GDScript-callable helper methods ---
+
+    /// <summary>
+    /// Gets allowed children for an element as a Godot Array (callable from GDScript)
+    /// </summary>
+    public Godot.Collections.Array<string> GetAllowedChildrenGodot(string elementName)
+    {
+        var result = new Godot.Collections.Array<string>();
+        var children = GetAllowedChildren(elementName);
+        foreach (var child in children)
+        {
+            result.Add(child);
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Gets allowed parents for an element as a Godot Array (callable from GDScript)
+    /// </summary>
+    public Godot.Collections.Array<string> GetAllowedParentsGodot(string elementName)
+    {
+        var result = new Godot.Collections.Array<string>();
+        var parents = GetAllowedParents(elementName);
+        foreach (var parent in parents)
+        {
+            result.Add(parent);
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Checks if an element can have parents (callable from GDScript)
+    /// Root elements return false
+    /// </summary>
+    public bool CanHaveParent(string elementName)
+    {
+        if (DatabaseManager == null)
+            return true; // Default to allowing parents if we can't check
+
+        if (!DatabaseManager.AllElements.TryGetValue(elementName, out var elemInfo))
+            return true; // Unknown elements default to allowing parents
+
+        return elemInfo.ParentElements.Count > 0;
+    }
+
+    /// <summary>
+    /// Checks if an element can have children (callable from GDScript)
+    /// </summary>
+    public bool CanHaveChildren(string elementName)
+    {
+        if (DatabaseManager == null)
+            return true;
+
+        if (!DatabaseManager.AllElements.TryGetValue(elementName, out var elemInfo))
+            return true;
+
+        return elemInfo.AllowedChildren.Count > 0;
+    }
 }

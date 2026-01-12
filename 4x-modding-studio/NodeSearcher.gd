@@ -215,14 +215,17 @@ func update_item_list(filter_text: String) -> void:
 	# Get the allowed types from the Control node (grandparent)
 	var allowed_types: Array = main_app.allowed_types if main_app else []
 	
+	# Get allowed element names based on pending connection
+	var allowed_element_names: Array[String] = _get_allowed_elements_from_connection()
+	
 	# 3. Find Matches and Score them
 	var matches: Array[Dictionary] = []
 	
 	# Use dynamic elements if loaded, otherwise fall back to hand-crafted
 	if is_database_loaded and use_dynamic_generation:
-		matches = _search_dynamic_elements(filter_text, allowed_types)
+		matches = _search_dynamic_elements(filter_text, allowed_types, allowed_element_names)
 	else:
-		matches = _search_handcrafted_nodes(filter_text, allowed_types)
+		matches = _search_handcrafted_nodes(filter_text, allowed_types, allowed_element_names)
 	
 	# 4. Sort Matches by Score (Highest score first)
 	matches.sort_custom(func(a, b): return a.score > b.score)
@@ -253,7 +256,62 @@ func update_item_list(filter_text: String) -> void:
 			var color = _get_category_color(match_data.get("category", ""))
 			item_list.set_item_custom_fg_color(idx, color)
 
-func _search_dynamic_elements(filter_text: String, allowed_types: Array) -> Array[Dictionary]:
+## Gets allowed element names based on the pending connection
+## Returns empty array if no filtering needed
+func _get_allowed_elements_from_connection() -> Array[String]:
+	var allowed: Array[String] = []
+	
+	if main_app == null or node_generator == null:
+		return allowed
+	
+	var pending = main_app.pending_connection
+	if pending.is_empty():
+		return allowed # No connection pending, show all elements
+	
+	var graph_edit = main_app.graph_edit
+	if graph_edit == null:
+		return allowed
+	
+	if main_app.drag_from_output:
+		# Dragging FROM output - need elements that can be children of the source
+		var from_node_name = pending.get("from_node", "")
+		if from_node_name.is_empty():
+			return allowed
+		
+		var source_node = graph_edit.get_node_or_null(NodePath(from_node_name))
+		if source_node == null:
+			return allowed
+		
+		# Get the xml element name from the source node
+		var source_element = source_node.get("xml_element_name")
+		if source_element == null or (source_element is String and source_element.is_empty()):
+			return allowed
+		
+		# Get allowed children for this element
+		allowed = Array(node_generator.GetAllowedChildrenGodot(source_element), TYPE_STRING, "", null)
+		print("[NodeSearcher] Filtering by allowed children of '%s': %d elements" % [source_element, allowed.size()])
+	else:
+		# Dragging TO input - need elements that can be parents of the target
+		var to_node_name = pending.get("to_node", "")
+		if to_node_name.is_empty():
+			return allowed
+		
+		var target_node = graph_edit.get_node_or_null(NodePath(to_node_name))
+		if target_node == null:
+			return allowed
+		
+		# Get the xml element name from the target node
+		var target_element = target_node.get("xml_element_name")
+		if target_element == null or (target_element is String and target_element.is_empty()):
+			return allowed
+		
+		# Get allowed parents for this element
+		allowed = Array(node_generator.GetAllowedParentsGodot(target_element), TYPE_STRING, "", null)
+		print("[NodeSearcher] Filtering by allowed parents of '%s': %d elements" % [target_element, allowed.size()])
+	
+	return allowed
+
+func _search_dynamic_elements(filter_text: String, allowed_types: Array, allowed_element_names: Array[String] = []) -> Array[Dictionary]:
 	var matches: Array[Dictionary] = []
 	
 	for elem in all_elements:
@@ -262,6 +320,11 @@ func _search_dynamic_elements(filter_text: String, allowed_types: Array) -> Arra
 		var documentation: String = elem.documentation
 		var elem_lower = elem_name.to_lower()
 		var display_lower = display_name.to_lower()
+		
+		# Filter by allowed element names if specified (from pending connection)
+		if not allowed_element_names.is_empty():
+			if elem_name not in allowed_element_names:
+				continue
 		
 		# Check if the item matches the search filter
 		var matches_filter = filter_text.is_empty()
@@ -272,9 +335,6 @@ func _search_dynamic_elements(filter_text: String, allowed_types: Array) -> Arra
 		
 		if not matches_filter:
 			continue
-		
-		# TODO: Check slot type compatibility with allowed_types
-		# For now, we show all matching elements
 		
 		var score = _calculate_match_score(elem_name, display_name, filter_text)
 		
@@ -289,11 +349,18 @@ func _search_dynamic_elements(filter_text: String, allowed_types: Array) -> Arra
 	
 	return matches
 
-func _search_handcrafted_nodes(filter_text: String, allowed_types: Array) -> Array[Dictionary]:
+func _search_handcrafted_nodes(filter_text: String, allowed_types: Array, allowed_element_names: Array[String] = []) -> Array[Dictionary]:
 	var matches: Array[Dictionary] = []
 	
 	for item_name in handcrafted_nodes:
 		var item_lower = item_name.to_lower()
+		# Convert display name to element name format (e.g., "Debug Text" -> "debug_text")
+		var elem_name = item_name.to_lower().replace(" ", "_")
+		
+		# Filter by allowed element names if specified
+		if not allowed_element_names.is_empty():
+			if elem_name not in allowed_element_names:
+				continue
 		
 		# Check if the item matches the search filter
 		if not filter_text.is_empty() and filter_text not in item_lower:

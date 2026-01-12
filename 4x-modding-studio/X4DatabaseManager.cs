@@ -715,9 +715,24 @@ public partial class X4DatabaseManager : Node
     /// <summary>
     /// Determines if newElement should replace existingElement based on completeness.
     /// Prefers elements with documentation, more attributes, and more allowed children.
+    /// IMPORTANT: Never replaces an attributeGroup with a regular element - they serve different purposes.
     /// </summary>
     static bool ShouldReplaceElement(XsdElementInfo existing, XsdElementInfo newElem)
     {
+        // Never replace an attributeGroup with a non-attributeGroup (or vice versa)
+        // They serve different purposes even if they share the same name
+        bool existingIsAttrGroup = existing.Type == "attributeGroup";
+        bool newIsAttrGroup = newElem.Type == "attributeGroup";
+
+        if (existingIsAttrGroup != newIsAttrGroup)
+        {
+            // If existing is an attributeGroup, keep it (don't replace with element)
+            // If new is an attributeGroup and existing is an element, don't replace
+            // Essentially: first one wins when types differ
+            return false;
+        }
+
+        // Same type comparison - use normal logic
         // If existing has no documentation but new one does, replace
         bool existingHasDoc = !string.IsNullOrEmpty(existing.Documentation);
         bool newHasDoc = !string.IsNullOrEmpty(newElem.Documentation);
@@ -1316,6 +1331,15 @@ public partial class X4DatabaseManager : Node
 
         if (allElements.TryGetValue(groupName, out var groupInfo))
         {
+            // IMPORTANT: Only use this entry if it's actually an attribute group!
+            // Elements and attribute groups can have the same name (e.g., "condition")
+            // and we must only copy attributes from attribute groups, not from elements.
+            if (groupInfo.Type != "attributeGroup")
+            {
+                // This is not an attribute group, skip it
+                return;
+            }
+
             // Copy attributes from the group if they don't already exist
             foreach (var attr in groupInfo.Attributes)
             {
