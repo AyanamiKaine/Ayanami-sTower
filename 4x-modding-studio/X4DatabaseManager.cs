@@ -61,6 +61,7 @@ public class XsdElementInfo
     public string Type { get; set; } = ""; // Named type if using ref or type attribute
     public string Documentation { get; set; } = "";
     public List<XsdAttributeInfo> Attributes { get; set; } = new();
+    public List<string> AttributeGroups { get; set; } = new(); // Referenced attribute groups (e.g., "action", "condition")
     public List<string> AllowedChildren { get; set; } = new(); // Element names that can be children
     public List<string> ParentElements { get; set; } = new(); // Elements that can contain this element
     public int MinOccurs { get; set; } = 1;
@@ -327,6 +328,35 @@ public partial class X4DatabaseManager : Node
     }
 
     /// <summary>
+    /// Determines if newElement should replace existingElement based on completeness.
+    /// Prefers elements with documentation, more attributes, and more allowed children.
+    /// </summary>
+    static bool ShouldReplaceElement(XsdElementInfo existing, XsdElementInfo newElem)
+    {
+        // If existing has no documentation but new one does, replace
+        bool existingHasDoc = !string.IsNullOrEmpty(existing.Documentation);
+        bool newHasDoc = !string.IsNullOrEmpty(newElem.Documentation);
+
+        if (!existingHasDoc && newHasDoc)
+            return true;
+
+        // If both have or both lack documentation, prefer the one with more info
+        if (existingHasDoc == newHasDoc)
+        {
+            // Calculate "completeness score"
+            int existingScore = existing.Attributes.Count + existing.AllowedChildren.Count +
+                               existing.Attributes.Count(a => !string.IsNullOrEmpty(a.Documentation));
+            int newScore = newElem.Attributes.Count + newElem.AllowedChildren.Count +
+                          newElem.Attributes.Count(a => !string.IsNullOrEmpty(a.Documentation));
+
+            return newScore > existingScore;
+        }
+
+        // Existing has doc, new doesn't - keep existing
+        return false;
+    }
+
+    /// <summary>
     /// Scans all XSD files in the directory and parses their structure.
     /// Pure logic - safe to run on background thread.
     /// </summary>
@@ -363,7 +393,12 @@ public partial class X4DatabaseManager : Node
                 // Merge into global collections
                 foreach (var elem in schemaInfo.Elements)
                 {
-                    allElements[elem.Key] = elem.Value;
+                    // Prefer elements with documentation, more attributes, or more children
+                    allElements.AddOrUpdate(
+                        elem.Key,
+                        elem.Value,
+                        (key, existing) => ShouldReplaceElement(existing, elem.Value) ? elem.Value : existing
+                    );
 
                     foreach (var attr in elem.Value.Attributes)
                     {
@@ -385,6 +420,9 @@ public partial class X4DatabaseManager : Node
 
         // Build parent-child relationships after all elements are parsed
         BuildParentChildRelationships(allElements);
+
+        // Resolve type references - copy attributes from complexTypes to elements that reference them
+        ResolveTypeReferences(allElements);
 
         return (
             new System.Collections.Generic.Dictionary<string, XsdSchemaInfo>(schemas),
@@ -428,7 +466,7 @@ public partial class X4DatabaseManager : Node
         // Parse top-level elements
         foreach (var element in root.Elements(xs + "element"))
         {
-            var elemInfo = ParseElement(element, filePath);
+            var elemInfo = ParseElement(element, filePath, schemaInfo);
             if (!string.IsNullOrEmpty(elemInfo.Name))
             {
                 schemaInfo.Elements[elemInfo.Name] = elemInfo;
@@ -449,8 +487,83 @@ public partial class X4DatabaseManager : Node
                 SourceFile = filePath
             };
 
-            ParseComplexTypeContent(complexType, elemInfo);
+            ParseComplexTypeContent(complexType, elemInfo, filePath, schemaInfo);
             schemaInfo.Elements[typeName] = elemInfo;
+        }
+
+        // Parse groups (xs:group) which contain reusable element definitions
+        foreach (var group in root.Elements(xs + "group"))
+        {
+            var groupName = group.Attribute("name")?.Value ?? "";
+            if (string.IsNullOrEmpty(groupName)) continue;
+
+            // Create a pseudo-element for the group
+            var groupElem = new XsdElementInfo
+            {
+                Name = groupName,
+                Type = "group",
+                SourceFile = filePath
+            };
+
+            // Parse documentation on the group itself
+            var annotation = group.Element(xs + "annotation");
+            var documentation = annotation?.Element(xs + "documentation");
+            groupElem.Documentation = documentation?.Value?.Trim() ?? "";
+
+            // Parse sequence/choice/all inside the group
+            var sequence = group.Element(xs + "sequence");
+            var choice = group.Element(xs + "choice");
+            var all = group.Element(xs + "all");
+            var childContainer = sequence ?? choice ?? all;
+
+            if (childContainer != null)
+            {
+                ParseChildElements(childContainer, groupElem, filePath, schemaInfo);
+            }
+
+            schemaInfo.Elements[groupName] = groupElem;
+        }
+
+        // Parse attribute groups (xs:attributeGroup) which define reusable sets of attributes
+        foreach (var attrGroup in root.Elements(xs + "attributeGroup"))
+        {
+            var groupName = attrGroup.Attribute("name")?.Value ?? "";
+            if (string.IsNullOrEmpty(groupName)) continue;
+
+            // Create a pseudo-element for the attribute group
+            var groupElem = new XsdElementInfo
+            {
+                Name = groupName,
+                Type = "attributeGroup",
+                SourceFile = filePath
+            };
+
+            // Parse documentation
+            var annotation = attrGroup.Element(xs + "annotation");
+            var documentation = annotation?.Element(xs + "documentation");
+            groupElem.Documentation = documentation?.Value?.Trim() ?? "";
+
+            // Parse attributes in the group
+            foreach (var attr in attrGroup.Elements(xs + "attribute"))
+            {
+                var attrInfo = ParseAttribute(attr);
+                if (!string.IsNullOrEmpty(attrInfo.Name))
+                {
+                    groupElem.Attributes.Add(attrInfo);
+                }
+            }
+
+            // Parse nested attributeGroup references
+            foreach (var nestedGroup in attrGroup.Elements(xs + "attributeGroup"))
+            {
+                var refName = nestedGroup.Attribute("ref")?.Value;
+                if (!string.IsNullOrEmpty(refName) && !groupElem.AttributeGroups.Contains(refName))
+                {
+                    groupElem.AttributeGroups.Add(refName);
+                }
+            }
+
+            schemaInfo.Elements[groupName] = groupElem;
         }
 
         return schemaInfo;
@@ -481,7 +594,7 @@ public partial class X4DatabaseManager : Node
     /// <summary>
     /// Parses an xs:element and returns its info.
     /// </summary>
-    static XsdElementInfo ParseElement(XElement element, string sourceFile)
+    static XsdElementInfo ParseElement(XElement element, string sourceFile, XsdSchemaInfo schemaInfo)
     {
         var elemInfo = new XsdElementInfo
         {
@@ -507,7 +620,7 @@ public partial class X4DatabaseManager : Node
         var complexType = element.Element(xs + "complexType");
         if (complexType != null)
         {
-            ParseComplexTypeContent(complexType, elemInfo);
+            ParseComplexTypeContent(complexType, elemInfo, sourceFile, schemaInfo);
         }
 
         return elemInfo;
@@ -516,8 +629,18 @@ public partial class X4DatabaseManager : Node
     /// <summary>
     /// Parses the content of a complexType (attributes and child elements).
     /// </summary>
-    static void ParseComplexTypeContent(XElement complexType, XsdElementInfo elemInfo)
+    static void ParseComplexTypeContent(XElement complexType, XsdElementInfo elemInfo, string sourceFile, XsdSchemaInfo schemaInfo)
     {
+        // Parse attribute groups (e.g., <xs:attributeGroup ref="action" />)
+        foreach (var attrGroup in complexType.Elements(xs + "attributeGroup"))
+        {
+            var groupRef = attrGroup.Attribute("ref")?.Value;
+            if (!string.IsNullOrEmpty(groupRef) && !elemInfo.AttributeGroups.Contains(groupRef))
+            {
+                elemInfo.AttributeGroups.Add(groupRef);
+            }
+        }
+
         // Parse attributes
         foreach (var attr in complexType.Elements(xs + "attribute"))
         {
@@ -536,7 +659,7 @@ public partial class X4DatabaseManager : Node
         var childContainer = sequence ?? choice ?? all;
         if (childContainer != null)
         {
-            ParseChildElements(childContainer, elemInfo);
+            ParseChildElements(childContainer, elemInfo, sourceFile, schemaInfo);
         }
 
         // Check for complexContent with extension
@@ -546,6 +669,16 @@ public partial class X4DatabaseManager : Node
             var extension = complexContent.Element(xs + "extension");
             if (extension != null)
             {
+                // Parse attribute groups from extension
+                foreach (var attrGroup in extension.Elements(xs + "attributeGroup"))
+                {
+                    var groupRef = attrGroup.Attribute("ref")?.Value;
+                    if (!string.IsNullOrEmpty(groupRef) && !elemInfo.AttributeGroups.Contains(groupRef))
+                    {
+                        elemInfo.AttributeGroups.Add(groupRef);
+                    }
+                }
+
                 // Parse attributes from extension
                 foreach (var attr in extension.Elements(xs + "attribute"))
                 {
@@ -563,7 +696,7 @@ public partial class X4DatabaseManager : Node
                 var extChildContainer = extSequence ?? extChoice ?? extAll;
                 if (extChildContainer != null)
                 {
-                    ParseChildElements(extChildContainer, elemInfo);
+                    ParseChildElements(extChildContainer, elemInfo, sourceFile, schemaInfo);
                 }
             }
         }
@@ -589,23 +722,45 @@ public partial class X4DatabaseManager : Node
 
     /// <summary>
     /// Parses child elements from a sequence/choice/all container.
+    /// Also adds inline element definitions to the schema.
     /// </summary>
-    static void ParseChildElements(XElement container, XsdElementInfo parentElem)
+    static void ParseChildElements(XElement container, XsdElementInfo parentElem, string sourceFile, XsdSchemaInfo schemaInfo)
     {
         foreach (var child in container.Elements())
         {
             if (child.Name == xs + "element")
             {
                 var childName = child.Attribute("name")?.Value ?? child.Attribute("ref")?.Value ?? "";
-                if (!string.IsNullOrEmpty(childName) && !parentElem.AllowedChildren.Contains(childName))
+                if (!string.IsNullOrEmpty(childName))
                 {
-                    parentElem.AllowedChildren.Add(childName);
+                    // Add to allowed children
+                    if (!parentElem.AllowedChildren.Contains(childName))
+                    {
+                        parentElem.AllowedChildren.Add(childName);
+                    }
+
+                    // If this is an inline element definition (has name attribute, not just ref),
+                    // parse it fully and add to schema
+                    var hasName = child.Attribute("name") != null;
+                    if (hasName)
+                    {
+                        var inlineElemInfo = ParseElement(child, sourceFile, schemaInfo);
+                        if (!string.IsNullOrEmpty(inlineElemInfo.Name))
+                        {
+                            // Add or replace if the new one has more info (documentation, attributes, etc.)
+                            if (!schemaInfo.Elements.TryGetValue(childName, out var existing) ||
+                                ShouldReplaceElement(existing, inlineElemInfo))
+                            {
+                                schemaInfo.Elements[inlineElemInfo.Name] = inlineElemInfo;
+                            }
+                        }
+                    }
                 }
             }
             else if (child.Name == xs + "sequence" || child.Name == xs + "choice" || child.Name == xs + "all")
             {
                 // Recursively parse nested containers
-                ParseChildElements(child, parentElem);
+                ParseChildElements(child, parentElem, sourceFile, schemaInfo);
             }
             else if (child.Name == xs + "any")
             {
@@ -667,6 +822,103 @@ public partial class X4DatabaseManager : Node
                         childElem.ParentElements.Add(elem.Name);
                     }
                 }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Resolves type references by copying attributes, children, and other info from
+    /// referenced complexTypes/groups to elements that reference them via type attribute.
+    /// </summary>
+    static void ResolveTypeReferences(ConcurrentDictionary<string, XsdElementInfo> allElements)
+    {
+        foreach (var elem in allElements.Values)
+        {
+            // Skip if this element is itself a type definition (no need to resolve)
+            if (elem.Type == elem.Name || elem.Type == "group")
+                continue;
+
+            // If element has a type reference, look it up
+            if (!string.IsNullOrEmpty(elem.Type))
+            {
+                // Remove xs: prefix if present
+                var typeName = elem.Type;
+                if (typeName.StartsWith("xs:") || typeName.StartsWith("xsd:"))
+                    continue; // Built-in types like xs:string don't have attributes to copy
+
+                if (allElements.TryGetValue(typeName, out var typeInfo))
+                {
+                    // Copy attributes from the type to the element if element has none
+                    if (elem.Attributes.Count == 0 && typeInfo.Attributes.Count > 0)
+                    {
+                        foreach (var attr in typeInfo.Attributes)
+                        {
+                            elem.Attributes.Add(attr);
+                        }
+                    }
+
+                    // Copy allowed children if element has none
+                    if (elem.AllowedChildren.Count == 0 && typeInfo.AllowedChildren.Count > 0)
+                    {
+                        foreach (var child in typeInfo.AllowedChildren)
+                        {
+                            if (!elem.AllowedChildren.Contains(child))
+                                elem.AllowedChildren.Add(child);
+                        }
+                    }
+
+                    // Copy attribute groups if element has none
+                    if (elem.AttributeGroups.Count == 0 && typeInfo.AttributeGroups.Count > 0)
+                    {
+                        foreach (var group in typeInfo.AttributeGroups)
+                        {
+                            if (!elem.AttributeGroups.Contains(group))
+                                elem.AttributeGroups.Add(group);
+                        }
+                    }
+
+                    // Copy documentation if element has none
+                    if (string.IsNullOrEmpty(elem.Documentation) && !string.IsNullOrEmpty(typeInfo.Documentation))
+                    {
+                        elem.Documentation = typeInfo.Documentation;
+                    }
+                }
+            }
+
+            // Also resolve attribute groups - copy attributes from referenced groups
+            foreach (var groupName in elem.AttributeGroups.ToList())
+            {
+                ResolveAttributeGroupRecursive(elem, groupName, allElements, new HashSet<string>());
+            }
+        }
+    }
+
+    /// <summary>
+    /// Recursively resolves an attribute group, copying its attributes to the element.
+    /// Handles nested attribute group references.
+    /// </summary>
+    static void ResolveAttributeGroupRecursive(XsdElementInfo elem, string groupName, ConcurrentDictionary<string, XsdElementInfo> allElements, HashSet<string> visited)
+    {
+        // Prevent infinite loops
+        if (visited.Contains(groupName))
+            return;
+        visited.Add(groupName);
+
+        if (allElements.TryGetValue(groupName, out var groupInfo))
+        {
+            // Copy attributes from the group if they don't already exist
+            foreach (var attr in groupInfo.Attributes)
+            {
+                if (!elem.Attributes.Any(a => a.Name == attr.Name))
+                {
+                    elem.Attributes.Add(attr);
+                }
+            }
+
+            // Recursively resolve nested attribute groups
+            foreach (var nestedGroupName in groupInfo.AttributeGroups)
+            {
+                ResolveAttributeGroupRecursive(elem, nestedGroupName, allElements, visited);
             }
         }
     }

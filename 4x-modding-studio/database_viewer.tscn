@@ -1,8 +1,9 @@
-[gd_scene load_steps=2 format=3 uid="uid://dd3up6482irwd"]
+[gd_scene load_steps=3 format=3 uid="uid://dd3up6482irwd"]
 
-[ext_resource type="Script" uid="uid://djaj26sut8xrm" path="res://database_viewer.gd" id="1_h7d0f"]
+[ext_resource type="Script" uid="uid://cbhsajp64vp8q" path="res://DatabaseViewer.cs" id="1_h7d0f"]
+[ext_resource type="PackedScene" uid="uid://cqxn8vs5hgvwv" path="res://x_4_database_manager.tscn" id="2_b0iqs"]
 
-[node name="DatabaseViewer" type="Control"]
+[node name="DatabaseViewer" type="Control" node_paths=PackedStringArray("X4DatabaseManager", "DataItemList", "DataSearchLineEdit", "NameLabel", "DocLabel", "TypeLabel", "AttributesItemList")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -10,6 +11,13 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_h7d0f")
+X4DatabaseManager = NodePath("X4DatabaseManager")
+DataItemList = NodePath("HSplitContainer/MarginContainer/VBoxContainer/DataItemList")
+DataSearchLineEdit = NodePath("HSplitContainer/MarginContainer/VBoxContainer/DataSeachLineEdit")
+NameLabel = NodePath("HSplitContainer/HBoxContainer/MarginContainer/VBoxContainer/NameLabel")
+DocLabel = NodePath("HSplitContainer/HBoxContainer/MarginContainer/VBoxContainer/DocLabel")
+TypeLabel = NodePath("HSplitContainer/HBoxContainer/MarginContainer/VBoxContainer/TypeLabel")
+AttributesItemList = NodePath("HSplitContainer/HBoxContainer/MarginContainer/VBoxContainer/AttributesItemList")
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 1
@@ -37,7 +45,7 @@ theme_override_constants/margin_bottom = 10
 custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
 
-[node name="LineEdit" type="LineEdit" parent="HSplitContainer/MarginContainer/VBoxContainer"]
+[node name="DataSeachLineEdit" type="LineEdit" parent="HSplitContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 placeholder_text = "Search"
 
@@ -51,10 +59,9 @@ theme_override_constants/margin_bottom = 5
 layout_mode = 2
 text = "Data"
 
-[node name="ItemList" type="ItemList" parent="HSplitContainer/MarginContainer/VBoxContainer"]
+[node name="DataItemList" type="ItemList" parent="HSplitContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
-item_count = 1
 
 [node name="HBoxContainer" type="HBoxContainer" parent="HSplitContainer"]
 layout_mode = 2
@@ -71,9 +78,25 @@ theme_override_constants/margin_bottom = 15
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Label" type="Label" parent="HSplitContainer/HBoxContainer/MarginContainer/VBoxContainer"]
+[node name="NameLabel" type="Label" parent="HSplitContainer/HBoxContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "Data Name"
+text = "Data Name:"
+
+[node name="DocLabel" type="Label" parent="HSplitContainer/HBoxContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Documentation: "
+autowrap_mode = 2
+
+[node name="TypeLabel" type="Label" parent="HSplitContainer/HBoxContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Type:"
+
+[node name="AttributesLabel" type="Label" parent="HSplitContainer/HBoxContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Attributes:"
+
+[node name="AttributesItemList" type="ItemList" parent="HSplitContainer/HBoxContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
 
 [node name="MarginContainer2" type="MarginContainer" parent="HSplitContainer/HBoxContainer"]
 layout_mode = 2
@@ -90,3 +113,5 @@ size_flags_horizontal = 3
 [node name="Label" type="Label" parent="HSplitContainer/HBoxContainer/MarginContainer2/ElementNotes"]
 layout_mode = 2
 text = "Development Notes"
+
+[node name="X4DatabaseManager" parent="." instance=ExtResource("2_b0iqs")]
