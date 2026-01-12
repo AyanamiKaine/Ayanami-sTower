@@ -12,6 +12,7 @@ hexagon_shape = NodePath("HexagonPolygonShape")
 color = Color(1, 1, 1, 0)
 polygon = PackedVector2Array(92, 0, 46, 79.67434, -46, 79.67434, -92, 1.12663785e-14, -46, -79.67434, 46, -79.67434)
 script = ExtResource("2_hlu12")
+debug_snap = true
 radius = 92.0
 orientation = 1
 outline_width = 8.0

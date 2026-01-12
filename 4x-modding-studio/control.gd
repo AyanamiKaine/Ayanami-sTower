@@ -16,6 +16,12 @@ const GraphXmlUtils = preload("res://GraphXmlUtils.cs")
 
 @export var script_editor: PackedScene
 @export var mod_explorer: Tree ## Reference to the ModExplorer Tree node
+@export var file_context_menu: PopupMenu ## Context menu for file explorer right-click
+
+# Dialog for new file/folder and rename operations
+var _input_dialog: ConfirmationDialog = null
+var _delete_dialog: ConfirmationDialog = null
+var _pending_operation: Dictionary = {} ## Stores info about pending operation (type, path)
 
 signal node_created(node)
 signal node_destroyed(node)
@@ -398,3 +404,243 @@ func _on_mod_explorer_item_activated() -> void:
 	
 	# Switch to the new tab
 	tab_container.current_tab = tab_container.get_child_count() - 1
+
+## Handle file explorer context menu actions
+func _on_mod_explorer_context_action_requested(action: String, file_path: String, is_directory: bool) -> void:
+	match action:
+		"open":
+			_open_file_in_editor(file_path)
+		"new_file":
+			_create_new_file(file_path)
+		"new_folder":
+			_create_new_folder(file_path)
+		"rename":
+			_rename_file_or_folder(file_path)
+		"delete":
+			_delete_file_or_folder(file_path, is_directory)
+		"refresh":
+			mod_explorer.RefreshTree()
+		"show_in_explorer":
+			_show_in_file_explorer(file_path, is_directory)
+
+func _open_file_in_editor(file_path: String) -> void:
+	# Reuse the existing file opening logic
+	var extension = file_path.get_extension().to_lower()
+	if extension not in TEXT_FILE_EXTENSIONS:
+		print("Cannot open binary file: ", file_path)
+		return
+	
+	var tab_container = $VBoxContainer/SplitContainer/ModDesignerTab
+	for i in range(tab_container.get_child_count()):
+		var child = tab_container.get_child(i)
+		if child.has_method("open_file") and child.current_file_path == file_path:
+			tab_container.current_tab = i
+			return
+	
+	var instance = script_editor.instantiate()
+	tab_container.add_child(instance)
+	instance.open_file(file_path)
+	tab_container.current_tab = tab_container.get_child_count() - 1
+
+func _create_new_file(directory_path: String) -> void:
+	_show_input_dialog("New File", "Enter file name:", directory_path, "new_file")
+
+func _create_new_folder(directory_path: String) -> void:
+	_show_input_dialog("New Folder", "Enter folder name:", directory_path, "new_folder")
+
+func _rename_file_or_folder(file_path: String) -> void:
+	var current_name = file_path.get_file()
+	_show_input_dialog("Rename", "Enter new name:", file_path, "rename", current_name)
+
+func _delete_file_or_folder(file_path: String, is_directory: bool) -> void:
+	var file_name = file_path.get_file()
+	var type_text = "folder" if is_directory else "file"
+	
+	_show_delete_dialog("Delete %s?" % type_text,
+		"Are you sure you want to delete '%s'?" % file_name,
+		file_path, is_directory)
+
+## Show input dialog for new file/folder and rename
+func _show_input_dialog(title: String, prompt: String, path: String, operation: String, initial_text: String = "") -> void:
+	if _input_dialog == null:
+		_input_dialog = ConfirmationDialog.new()
+		_input_dialog.dialog_hide_on_ok = false
+		add_child(_input_dialog)
+		_input_dialog.confirmed.connect(_on_input_dialog_confirmed)
+		_input_dialog.canceled.connect(_on_input_dialog_canceled)
+	
+	_input_dialog.title = title
+	_input_dialog.ok_button_text = "Create" if operation in ["new_file", "new_folder"] else "Rename"
+	
+	# Clear and recreate the dialog content
+	for child in _input_dialog.get_children():
+		if child is VBoxContainer:
+			child.queue_free()
+	
+	var vbox = VBoxContainer.new()
+	_input_dialog.add_child(vbox)
+	
+	var label = Label.new()
+	label.text = prompt
+	vbox.add_child(label)
+	
+	var line_edit = LineEdit.new()
+	line_edit.text = initial_text
+	line_edit.custom_minimum_size = Vector2(300, 0)
+	vbox.add_child(line_edit)
+	
+	# Store operation info
+	_pending_operation = {
+		"type": operation,
+		"path": path,
+		"line_edit": line_edit
+	}
+	
+	_input_dialog.popup_centered()
+	line_edit.grab_focus()
+	line_edit.select_all()
+
+## Show delete confirmation dialog
+func _show_delete_dialog(title: String, message: String, file_path: String, is_directory: bool) -> void:
+	if _delete_dialog == null:
+		_delete_dialog = ConfirmationDialog.new()
+		_delete_dialog.dialog_hide_on_ok = false
+		_delete_dialog.ok_button_text = "Delete"
+		_delete_dialog.cancel_button_text = "Cancel"
+		add_child(_delete_dialog)
+		_delete_dialog.confirmed.connect(_on_delete_dialog_confirmed)
+	
+	_delete_dialog.title = title
+	
+	# Clear and recreate the dialog content
+	for child in _delete_dialog.get_children():
+		if child is VBoxContainer:
+			child.queue_free()
+	
+	var vbox = VBoxContainer.new()
+	_delete_dialog.add_child(vbox)
+	
+	var label = Label.new()
+	label.text = message
+	label.custom_minimum_size = Vector2(350, 0)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	vbox.add_child(label)
+	
+	# Store operation info
+	_pending_operation = {
+		"type": "delete",
+		"path": file_path,
+		"is_directory": is_directory
+	}
+	
+	_delete_dialog.popup_centered()
+
+## Called when input dialog is confirmed
+func _on_input_dialog_confirmed() -> void:
+	if _pending_operation.is_empty():
+		return
+	
+	var line_edit: LineEdit = _pending_operation.get("line_edit")
+	var new_name = line_edit.text.strip_edges()
+	
+	if new_name.is_empty():
+		print("Error: Name cannot be empty")
+		return
+	
+	var operation: String = _pending_operation.get("type", "")
+	var path: String = _pending_operation.get("path", "")
+	
+	match operation:
+		"new_file":
+			_perform_create_file(path, new_name)
+		"new_folder":
+			_perform_create_folder(path, new_name)
+		"rename":
+			_perform_rename(path, new_name)
+	
+	_input_dialog.hide()
+
+## Called when input dialog is canceled
+func _on_input_dialog_canceled() -> void:
+	_pending_operation.clear()
+
+## Called when delete dialog is confirmed
+func _on_delete_dialog_confirmed() -> void:
+	if _pending_operation.is_empty():
+		return
+	
+	var file_path: String = _pending_operation.get("path", "")
+	var is_directory: bool = _pending_operation.get("is_directory", false)
+	
+	_perform_delete(file_path, is_directory)
+	_delete_dialog.hide()
+
+## Actually create a new file
+func _perform_create_file(directory_path: String, file_name: String) -> void:
+	var global_dir = ProjectSettings.globalize_path(directory_path)
+	var file_path = global_dir.path_join(file_name)
+	
+	
+	var file = FileAccess.open(file_path, FileAccess.WRITE)
+	if file:
+		file.close()
+		print("Created file: ", file_path)
+	else:
+		print("Error: Could not create file: ", file_path)
+
+## Actually create a new folder
+func _perform_create_folder(parent_path: String, folder_name: String) -> void:
+	var global_parent = ProjectSettings.globalize_path(parent_path)
+	var folder_path = global_parent.path_join(folder_name)
+	var dir = DirAccess.open(global_parent)
+	if dir:
+		var result = dir.make_dir(folder_name)
+		if result == OK:
+			print("Created folder: ", folder_path)
+		else:
+			print("Error: Could not create folder: ", folder_name)
+
+## Actually rename a file or folder
+func _perform_rename(old_path: String, new_name: String) -> void:
+	var global_old_path = ProjectSettings.globalize_path(old_path)
+	var parent_dir = global_old_path.get_base_dir()
+	var new_path = parent_dir.path_join(new_name)
+	
+	var dir = DirAccess.open(parent_dir)
+	if dir:
+		var result = dir.rename(old_path.get_file(), new_name)
+		if result == OK:
+			print("Renamed to: ", new_path)
+		else:
+			print("Error: Could not rename file")
+
+## Actually delete a file or folder
+func _perform_delete(file_path: String, is_directory: bool) -> void:
+	var global_path = ProjectSettings.globalize_path(file_path)
+	var parent_dir = global_path.get_base_dir()
+	var file_name = global_path.get_file()
+	
+	
+	var dir = DirAccess.open(parent_dir)
+	if dir:
+		var result: Error
+		if is_directory:
+			result = dir.remove(file_name)
+		else:
+			result = dir.remove(file_name)
+			
+		if result == OK:
+			print("Deleted: ", file_path)
+		else:
+			print("Error: Could not delete file/folder")
+
+
+func _show_in_file_explorer(file_path: String, is_directory: bool) -> void:
+	# Convert Godot path to system path
+	var global_path = ProjectSettings.globalize_path(file_path)
+	
+	if is_directory:
+		OS.shell_open(global_path)
+	else:
+		# Open the containing folder and select the file (Windows)
+		OS.shell_open(global_path.get_base_dir())

@@ -32,13 +32,25 @@ cluster_radius = 94.0
 orientation = 1
 hex_grid = NodePath("..")
 
+[node name="Cluster2" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("4_lj2th")]
+position = Vector2(4351, 2512)
+cluster_radius = 94.0
+orientation = 1
+hex_grid = NodePath("..")
+
 [node name="Asteroid BeldSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(2550, 2338.2686)
 sector_name = "Asteroid Beld"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
-[node name="VenusSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+[node name="Adventure\'s PromiseSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(1950, 2338.2686)
+sector_name = "Adventure's Promise"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="VenusSector2" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(2250, 2165.0635)
 sector_name = "Venus"
 hex_grid = NodePath("..")
@@ -71,6 +83,24 @@ auto_snap_to_grid = true
 [node name="Heretic\'s EndSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(3300, 1732.0508)
 sector_name = "Heretic's End"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Wretched Skies V Family PhiSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3300, 1558.8457)
+sector_name = "Wretched Skies V Family Phi"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Wretched Skies XSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3150, 1472.2432)
+sector_name = "Wretched Skies X"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Wretched Skies IV Family ValkaSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3450, 1472.2432)
+sector_name = "Wretched Skies IV Family Valka"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
@@ -218,6 +248,54 @@ sector_name = "True Sight"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
+[node name="Second Contact II FlashpointSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3750, 2338.2686)
+sector_name = "Second Contact II Flashpoint"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Windfall IV Aurora\'s DreamSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3900, 2251.666)
+sector_name = "Windfall IV Aurora's Dream"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Windfall III The HoardSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3900, 2078.461)
+sector_name = "Windfall III The Hoard"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Windfall I Union SummitSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4050, 1991.8584)
+sector_name = "Windfall I Union Summit"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Eigtheen BillionSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4200, 2078.461)
+sector_name = "Eigtheen Billion"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Path to ProfitSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4050, 2511.4736)
+sector_name = "Path to Profit"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Second Contact VIISector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3600, 2424.871)
+sector_name = "Second Contact VII"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Second Contact XISector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(3600, 2251.666)
+sector_name = "Second Contact XI"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
 [node name="Pontifex\'s ClaimSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(4050, 2857.8838)
 sector_name = "Pontifex's Claim"
@@ -278,15 +356,15 @@ sector_name = "Loomanchstra's Legacy"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
-[node name="Pious Mists XISector2" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+[node name="Mi Ton\'s RefugeSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(4800, 2771.2813)
-sector_name = "Pious Mists XI"
+sector_name = "Mi Ton's Refuge"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
-[node name="Pious Mists XISector3" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+[node name="Moo-Kye\'s RevengeSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(4800, 2944.4863)
-sector_name = "Pious Mists XI"
+sector_name = "Moo-Kye's Revenge"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
@@ -299,6 +377,180 @@ auto_snap_to_grid = true
 [node name="CEO\'s DoubtSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
 position = Vector2(4500, 2424.871)
 sector_name = "CEO's Doubt"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Memory of Profit XSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4350, 2338.2686)
+sector_name = "Memory of Profit X"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Memory of Profit IXSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4350, 2165.0635)
+sector_name = "Memory of Profit IX"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Trinity Sanctum VIISector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4500, 2251.666)
+sector_name = "Trinity Sanctum VII"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Trinity Sanctum IIISector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4650, 2338.2686)
+sector_name = "Trinity Sanctum III"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Bright PromiseSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4650, 1991.8584)
+sector_name = "Bright Promise"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Profit Center AlphaSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4500, 1905.2559)
+sector_name = "Profit Center Alpha"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Two GrandSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4650, 1645.4482)
+sector_name = "Two Grand"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Matrix #9Sector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4950, 1818.6533)
+sector_name = "Matrix #9"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Matrix #451Sector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(5100, 1905.2559)
+sector_name = "Matrix #451"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Family TkrSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(5250, 1818.6533)
+sector_name = "Family Tkr"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Fires of DefeatSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(5250, 1645.4482)
+sector_name = "Fires of Defeat"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Tharka\'s Ravine XXIVSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(5400, 1732.0508)
+sector_name = "Tharka's Ravine XXIV"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Tharka\'s Ravine XVISector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(5550, 1645.4482)
+sector_name = "Tharka's Ravine XVI"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Tharka\'s Ravine VIISector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(5700, 1732.0508)
+sector_name = "Tharka's Ravine VII"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Tharka\'s Ravine IV Tharka\'s FallSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(5850, 1645.4482)
+sector_name = "Tharka's Ravine IV Tharka's Fall"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Heart of Acrimony IISector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(5550, 1472.2432)
+sector_name = "Heart of Acrimony II"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Heart of Acrimony I The BoneyardSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(5400, 1385.6406)
+sector_name = "Heart of Acrimony I The Boneyard"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Hewa\'s Twin VSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4950, 2165.0635)
+sector_name = "Hewa's Twin V"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Company RegardSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4950, 2511.4736)
+sector_name = "Company Regard"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Mitsuno\'s RevelationSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(5250, 2165.0635)
+sector_name = "Mitsuno's Revelation"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Mitsuno\'s DefianceSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(5400, 2251.666)
+sector_name = "Mitsuno's Defiance"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Mitsuno\'s SacrificeSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(5400, 2424.871)
+sector_name = "Mitsuno's Sacrifice"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Open MarketSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4500, 1558.8457)
+sector_name = "Open Market"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Zyarth\'s Dominion IVSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4500, 1385.6406)
+sector_name = "Zyarth's Dominion IV"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Family NhuutSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4350, 1472.2432)
+sector_name = "Family Nhuut"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Zyarth\'s Dominion ISector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4350, 1299.0381)
+sector_name = "Zyarth's Dominion I"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Zyarth\'s Dominion XSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4500, 1212.4355)
+sector_name = "Zyarth's Dominion X"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Eleventh HourSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4800, 1039.2305)
+sector_name = "Eleventh Hour"
+hex_grid = NodePath("..")
+auto_snap_to_grid = true
+
+[node name="Unkown SystemSector" parent="HexGrid" node_paths=PackedStringArray("hex_grid") instance=ExtResource("3_41uo7")]
+position = Vector2(4200, 2251.666)
+sector_name = "Unkown System"
 hex_grid = NodePath("..")
 auto_snap_to_grid = true
 
