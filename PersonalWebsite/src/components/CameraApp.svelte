@@ -16,12 +16,19 @@
         
         try {
           stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: facingMode }
+            video: { 
+                facingMode: facingMode,
+                width: { ideal: 4096 },
+                height: { ideal: 2160 }
+            }
           });
         } catch (e) {
             console.warn("Specific facingMode failed, falling back to any video camera", e);
             stream = await navigator.mediaDevices.getUserMedia({
-                video: true
+                video: {
+                    width: { ideal: 4096 },
+                    height: { ideal: 2160 }
+                }
             });
         }
         
