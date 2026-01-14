@@ -14,9 +14,16 @@
           stream.getTracks().forEach(track => track.stop());
         }
         
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: facingMode }
-        });
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: facingMode }
+          });
+        } catch (e) {
+            console.warn("Specific facingMode failed, falling back to any video camera", e);
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: true
+            });
+        }
         
         video.srcObject = stream;
         video.play();
