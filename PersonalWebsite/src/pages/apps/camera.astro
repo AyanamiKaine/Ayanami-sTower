@@ -1,0 +1,17 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import CameraApp from "../../components/CameraApp.svelte";
+---
+
+<BaseLayout title="Camera App">
+    <link rel="manifest" href="/camera-manifest.json" slot="head" />
+    <meta name="theme-color" content="#000000" slot="head" />
+    <meta name="apple-mobile-web-app-capable" content="yes" slot="head" />
+    <meta
+        name="apple-mobile-web-app-status-bar-style"
+        content="black-translucent"
+        slot="head"
+    />
+
+    <CameraApp client:only="svelte" />
+</BaseLayout>
