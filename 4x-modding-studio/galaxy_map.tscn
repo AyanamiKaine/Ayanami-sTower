@@ -709,7 +709,6 @@ sector_owner = "terran protectorate"
 hex_grid = NodePath("..")
 
 [node name="GateConnections" type="Node2D" parent="."]
-visible = false
 
 [node name="GateConnection" type="Node2D" parent="GateConnections"]
 position = Vector2(160, 378)

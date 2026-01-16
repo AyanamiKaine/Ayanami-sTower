@@ -46,20 +46,6 @@ func show_context_menu() -> void:
 
 func _ready() -> void:
 	set_slot(0, true, 0, Color(1, 1, 1, 1), true, 0, Color(1, 1, 1, 1))
-	if type != null and type == Types.NodeType.ACTION:
-		var hbox = HBoxContainer.new()
-		var chance_lable = Label.new()
-		chance_lable.text = "Chance:"
-		
-		hbox.tooltip_text = "Chance percentage of action being performed\n(action is skipped if not -- in case of a conditional action such as\n, any following / actions will still be performed as if the condition had failed)"
-		
-		var spinbox_chance_value = LineEdit.new()
-		spinbox_chance_value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		hbox.add_child(chance_lable)
-		hbox.add_child(spinbox_chance_value)
-		
-		add_child(hbox)
-		pass
 
 
 func _on_popup_menu_id_pressed(id: int) -> void:
