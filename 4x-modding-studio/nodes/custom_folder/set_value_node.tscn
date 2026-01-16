@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://5cvu5yjxp40s"]
 
 [ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="1_2tbda"]
-[ext_resource type="Script" uid="uid://byy7ijs8x77cb" path="res://nodes/set_value_node.gd" id="2_gomhd"]
+[ext_resource type="Script" uid="uid://byy7ijs8x77cb" path="res://nodes/custom_folder/set_value_node.gd" id="2_gomhd"]
 
 [node name="SetValueNode" instance=ExtResource("1_2tbda")]
 tooltip_text = "Set a variable, userdata, a list element or a table entry to an exact or random value.

@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://c5rm2kfk8616a"]
 
 [ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="1_10wqc"]
-[ext_resource type="Script" uid="uid://dww4lh8hrrey1" path="res://nodes/delay_node.gd" id="2_b4526"]
+[ext_resource type="Script" uid="uid://dww4lh8hrrey1" path="res://nodes/custom_folder/delay_node.gd" id="2_b4526"]
 
 [node name="DelayNode" instance=ExtResource("1_10wqc")]
 tooltip_text = "Range of delay time between activation and performing actions 

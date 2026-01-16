@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://chx655w4pipgo"]
 
 [ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="1_i05m1"]
-[ext_resource type="Script" uid="uid://b6ex8n62f8f2d" path="res://nodes/signal_cue_node.gd" id="2_xr1ly"]
+[ext_resource type="Script" uid="uid://b6ex8n62f8f2d" path="res://nodes/custom_folder/signal_cue_node.gd" id="2_xr1ly"]
 
 [node name="SignalCueNode" instance=ExtResource("1_i05m1")]
 title = "Signal Cue"

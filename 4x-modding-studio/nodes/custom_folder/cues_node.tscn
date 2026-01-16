@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://5mj8coh2xpaq"]
 
 [ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="1_nwfpu"]
-[ext_resource type="Script" uid="uid://qkb4lqd8uim6" path="res://nodes/cues_node.gd" id="2_5gcqe"]
+[ext_resource type="Script" uid="uid://qkb4lqd8uim6" path="res://nodes/custom_folder/cues_node.gd" id="2_5gcqe"]
 
 [node name="CuesNode" instance=ExtResource("1_nwfpu")]
 title = "Cues"

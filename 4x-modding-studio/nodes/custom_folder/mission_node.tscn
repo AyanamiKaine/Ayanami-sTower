@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://bx1wqtd670u3g"]
 
 [ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="1_b2e2t"]
-[ext_resource type="Script" uid="uid://dp8wag1ftqc31" path="res://nodes/mission_node.gd" id="2_vcin7"]
+[ext_resource type="Script" uid="uid://dp8wag1ftqc31" path="res://nodes/custom_folder/mission_node.gd" id="2_vcin7"]
 
 [node name="MissionNode" instance=ExtResource("1_b2e2t")]
 offset_left = -96.75

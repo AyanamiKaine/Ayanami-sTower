@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 /// <summary>
 /// Generates GraphNode instances dynamically based on XSD element definitions.
@@ -14,6 +15,9 @@ public partial class NodeGenerator : Node
 
     [Export]
     public PackedScene? BaseNodeScene { get; set; }
+
+    [Export]
+    public bool DebugMode { get; set; } = false;
 
     /// <summary>
     /// Cache of generated node scenes by element name
@@ -52,10 +56,11 @@ public partial class NodeGenerator : Node
     }
 
     /// <summary>
-    /// Creates a GraphNode instance for the given XML element name.
+    /// Creates a GraphNode instance for the given XML element name or unique key.
     /// Uses cached data if available, otherwise generates from XSD info.
+    /// Supports both element names and unique keys (e.g., "actions" or "actions@md").
     /// </summary>
-    public GraphNode? CreateNodeForElement(string elementName)
+    public GraphNode? CreateNodeForElement(string elementNameOrKey)
     {
         if (DatabaseManager == null)
         {
@@ -63,10 +68,11 @@ public partial class NodeGenerator : Node
             return null;
         }
 
-        // Try to get element info from database
-        if (!DatabaseManager.AllElements.TryGetValue(elementName, out var elemInfo))
+        // Try to get element info from database (supports both unique key and name lookup)
+        var elemInfo = DatabaseManager.GetElement(elementNameOrKey);
+        if (elemInfo == null)
         {
-            GD.PrintErr($"[NodeGenerator] Unknown element: {elementName}");
+            GD.PrintErr($"[NodeGenerator] Unknown element: {elementNameOrKey}");
             return null;
         }
 
@@ -127,8 +133,69 @@ public partial class NodeGenerator : Node
         // Add attribute controls
         AddAttributeControls(node, elemInfo, xmlAttributes);
 
+        // For elements with no attributes, add a dedicated row for slots
+        // Note: GetChildCount() may include PopupMenu or other non-visible children,
+        // so we check if any visible attribute controls were actually added
+        if (elemInfo.Attributes.Count == 0)
+        {
+            // Add a minimal label for the slot row
+            var slotLabel = new Label();
+            slotLabel.Text = " "; 
+            slotLabel.CustomMinimumSize = new Vector2(0, 10);
+            node.AddChild(slotLabel);
+        }
+
         // Set slot configuration based on node type
         ConfigureSlots(node, elemInfo);
+
+        // Generate debug info if enabled
+        if (DebugMode)
+        {
+            GenerateDebugInfo(node, elemInfo);
+        }
+    }
+
+    private void GenerateDebugInfo(GraphNode node, XsdElementInfo elemInfo)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"[NodeGenerator] Debug Info for '{elemInfo.Name}':");
+        sb.AppendLine($"  Display Name: {node.Title}");
+        sb.AppendLine($"  Documentation Length: {(elemInfo.Documentation?.Length ?? 0)} chars");
+        
+        // Explain Node Type
+        int nodeType = (int)node.Get("type");
+        string reason = "Default";
+        if (elemInfo.AttributeGroups.Contains("action")) reason = "Has 'action' attribute group";
+        else if (elemInfo.AttributeGroups.Contains("condition")) reason = "Has 'condition' attribute group";
+        else if (elemInfo.Name == "cue" || elemInfo.Name == "cues") reason = "Name is 'cue' or 'cues'";
+        else if (elemInfo.Name.StartsWith("event_")) reason = "Name starts with 'event_'";
+        
+        sb.AppendLine($"  Node Type: {nodeType} ({reason})");
+
+        // Explain Slots
+        bool hasParents = elemInfo.ParentElements.Count > 0;
+        bool hasChildren = elemInfo.AllowedChildren.Count > 0 || elemInfo.AllowedChildren.Contains("*");
+        sb.AppendLine($"  Slots - Inputs (Left): {hasParents} (Parents: {elemInfo.ParentElements.Count})");
+        sb.AppendLine($"  Slots - Outputs (Right): {hasChildren} (Allowed Children: {elemInfo.AllowedChildren.Count})");
+
+        // Explain Attributes
+        sb.AppendLine($"  Attributes ({elemInfo.Attributes.Count}):");
+        foreach (var attr in elemInfo.Attributes)
+        {
+            string controlType = "LineEdit (Default)";
+            string attrType = attr.Type.ToLowerInvariant();
+            
+            if (attr.EnumValues.Count > 0) controlType = "OptionButton (Enum)";
+            else if (attrType.Contains("boolean") || attrType == "xs:boolean") controlType = "CheckBox";
+            else if (attrType.Contains("integer") || attrType.Contains("int") || 
+                     attrType.Contains("decimal") || attrType.Contains("float") || 
+                     attrType.Contains("double")) controlType = "SpinBox";
+                     
+            sb.AppendLine($"    - {attr.Name} ({attr.Type}): {controlType} [Required: {attr.IsRequired}, Default: '{attr.DefaultValue}']");
+        }
+
+        GD.Print(sb.ToString());
+        node.Set("debug_creation_info", sb.ToString());
     }
 
     /// <summary>
@@ -505,7 +572,8 @@ public partial class NodeGenerator : Node
 
     /// <summary>
     /// Gets element info for display in a node searcher - GDScript compatible version.
-    /// Returns a Godot Array of Godot Arrays: [[elementName, displayName, documentation, category], ...]
+    /// Returns a Godot Array of Godot Arrays: [[uniqueKey, displayName, documentation, category, sourceContext], ...]
+    /// When an element has multiple variants, sourceContext will be non-empty.
     /// </summary>
     public Godot.Collections.Array<Godot.Collections.Array<string>> GetElementsForSearcherGodot()
     {
@@ -524,20 +592,28 @@ public partial class NodeGenerator : Node
             {
                 Info = elemInfo,
                 Category = DetermineCategory(elemInfo),
-                DisplayName = FormatElementName(elemInfo.Name)
+                DisplayName = FormatElementName(elemInfo.Name),
+                HasVariants = DatabaseManager.HasMultipleVariants(elemInfo.Name)
             })
             .OrderBy(x => x.Category)
             .ThenBy(x => x.DisplayName)
+            .ThenBy(x => x.Info.SourceContext)
             .ToList();
 
         foreach (var item in sortedElements)
         {
+            // If there are multiple variants, show source context to distinguish them
+            var displayName = item.HasVariants 
+                ? $"{item.DisplayName} ({item.Info.SourceContext})"
+                : item.DisplayName;
+            
             var elemArray = new Godot.Collections.Array<string>
             {
-                item.Info.Name,
-                item.DisplayName,
+                item.Info.UniqueKey,  // Use UniqueKey for node creation
+                displayName,
                 item.Info.Documentation ?? "",
-                item.Category
+                item.Category,
+                item.HasVariants ? item.Info.SourceContext : ""  // Source context for filtering
             };
             result.Add(elemArray);
         }
@@ -573,14 +649,17 @@ public partial class NodeGenerator : Node
         if (DatabaseManager == null)
             return false;
 
-        if (!DatabaseManager.AllElements.TryGetValue(parentElement, out var parentInfo))
+        var parentInfo = DatabaseManager.GetElement(parentElement);
+        if (parentInfo == null)
             return false;
 
         // Check if parent allows any children
         if (parentInfo.AllowedChildren.Contains("*"))
             return true;
 
-        return parentInfo.AllowedChildren.Contains(childElement);
+        // Extract base name from child element if it has @
+        var childBaseName = childElement.Contains("@") ? childElement.Split('@')[0] : childElement;
+        return parentInfo.AllowedChildren.Contains(childElement) || parentInfo.AllowedChildren.Contains(childBaseName);
     }
 
     /// <summary>
@@ -591,12 +670,13 @@ public partial class NodeGenerator : Node
         if (DatabaseManager == null)
             return new List<string>();
 
-        if (!DatabaseManager.AllElements.TryGetValue(elementName, out var elemInfo))
+        var elemInfo = DatabaseManager.GetElement(elementName);
+        if (elemInfo == null)
             return new List<string>();
 
-        // If allows any, return all elements
+        // If allows any, return all base element names
         if (elemInfo.AllowedChildren.Contains("*"))
-            return DatabaseManager.AllElements.Keys.ToList();
+            return DatabaseManager.ElementsByName.Keys.ToList();
 
         return elemInfo.AllowedChildren;
     }
@@ -609,7 +689,8 @@ public partial class NodeGenerator : Node
         if (DatabaseManager == null)
             return new List<string>();
 
-        if (!DatabaseManager.AllElements.TryGetValue(elementName, out var elemInfo))
+        var elemInfo = DatabaseManager.GetElement(elementName);
+        if (elemInfo == null)
             return new List<string>();
 
         return elemInfo.ParentElements;
@@ -654,7 +735,8 @@ public partial class NodeGenerator : Node
         if (DatabaseManager == null)
             return true; // Default to allowing parents if we can't check
 
-        if (!DatabaseManager.AllElements.TryGetValue(elementName, out var elemInfo))
+        var elemInfo = DatabaseManager.GetElement(elementName);
+        if (elemInfo == null)
             return true; // Unknown elements default to allowing parents
 
         return elemInfo.ParentElements.Count > 0;
@@ -668,7 +750,8 @@ public partial class NodeGenerator : Node
         if (DatabaseManager == null)
             return true;
 
-        if (!DatabaseManager.AllElements.TryGetValue(elementName, out var elemInfo))
+        var elemInfo = DatabaseManager.GetElement(elementName);
+        if (elemInfo == null)
             return true;
 
         return elemInfo.AllowedChildren.Count > 0;

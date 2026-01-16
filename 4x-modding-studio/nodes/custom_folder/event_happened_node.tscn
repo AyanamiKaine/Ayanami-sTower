@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://bb8ptnrskv23q"]
 
 [ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="1_wmmwy"]
-[ext_resource type="Script" uid="uid://blgi3qlapr436" path="res://nodes/event_happened_node.gd" id="2_xvp5h"]
+[ext_resource type="Script" uid="uid://blgi3qlapr436" path="res://nodes/custom_folder/event_happened_node.gd" id="2_xvp5h"]
 
 [node name="EventHappenedNode" instance=ExtResource("1_wmmwy")]
 title = "Event Happened"

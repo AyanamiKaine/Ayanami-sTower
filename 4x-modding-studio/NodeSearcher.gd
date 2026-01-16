@@ -116,13 +116,14 @@ func _load_elements_from_database() -> void:
 		return
 	
 	for elem_array in elements_data:
-		# elem_array is [elementName, displayName, documentation, category]
-		var elem_name: String = elem_array[0] if elem_array.size() > 0 else ""
+		# elem_array is [uniqueKey, displayName, documentation, category, sourceContext]
+		var unique_key: String = elem_array[0] if elem_array.size() > 0 else ""
 		var display_name: String = elem_array[1] if elem_array.size() > 1 else ""
 		var documentation: String = elem_array[2] if elem_array.size() > 2 else ""
 		var category: String = elem_array[3] if elem_array.size() > 3 else ""
+		var source_context: String = elem_array[4] if elem_array.size() > 4 else ""
 		
-		if elem_name.is_empty():
+		if unique_key.is_empty():
 			continue
 		
 		# Skip undocumented elements if filter is enabled
@@ -130,10 +131,11 @@ func _load_elements_from_database() -> void:
 			continue
 		
 		var elem_dict = {
-			"name": elem_name,
+			"name": unique_key, # Use uniqueKey for node creation
 			"display_name": display_name,
 			"documentation": documentation,
 			"category": category,
+			"source_context": source_context,
 			"is_dynamic": true
 		}
 		
@@ -315,31 +317,35 @@ func _search_dynamic_elements(filter_text: String, allowed_types: Array, allowed
 	var matches: Array[Dictionary] = []
 	
 	for elem in all_elements:
-		var elem_name: String = elem.name
+		var unique_key: String = elem.name # This is now the uniqueKey
 		var display_name: String = elem.display_name
 		var documentation: String = elem.documentation
-		var elem_lower = elem_name.to_lower()
+		var unique_key_lower = unique_key.to_lower()
 		var display_lower = display_name.to_lower()
+		
+		# Extract base name from unique key (e.g., "actions@md" -> "actions")
+		var base_name = unique_key.split("@")[0] if "@" in unique_key else unique_key
 		
 		# Filter by allowed element names if specified (from pending connection)
 		if not allowed_element_names.is_empty():
-			if elem_name not in allowed_element_names:
+			# Check if either the unique key or base name is in allowed list
+			if unique_key not in allowed_element_names and base_name not in allowed_element_names:
 				continue
 		
 		# Check if the item matches the search filter
 		var matches_filter = filter_text.is_empty()
 		if not matches_filter:
-			matches_filter = elem_lower.contains(filter_text) or \
+			matches_filter = unique_key_lower.contains(filter_text) or \
 							 display_lower.contains(filter_text) or \
 							 documentation.to_lower().contains(filter_text)
 		
 		if not matches_filter:
 			continue
 		
-		var score = _calculate_match_score(elem_name, display_name, filter_text)
+		var score = _calculate_match_score(unique_key, display_name, filter_text)
 		
 		matches.append({
-			"name": elem_name,
+			"name": unique_key, # Use unique key for node creation
 			"display_name": display_name,
 			"documentation": documentation,
 			"category": elem.category,

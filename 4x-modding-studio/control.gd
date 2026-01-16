@@ -5,7 +5,7 @@ const GraphXmlUtils = preload("res://GraphXmlUtils.cs")
 @export var node_searcher: Popup
 @export var context_menu: PopupMenu
 @export var graph_edit: GraphEdit
-@export var xml_editor_window: Window;
+@export var xml_editor: Control;
 @export var xml_validation_timer: Timer
 @export var path_to_unpacked_4x_directory: String = ""
 
@@ -63,7 +63,7 @@ func _on_graph_edit_connection_request(from_node: StringName, from_port: int, to
 	undo_redo.add_undo_method(graph_edit.disconnect_node.bind(from_node, from_port, to_node, to_port))
 	
 	undo_redo.commit_action()
-	xml_editor_window.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
+	xml_editor.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
 
 func _on_node_clear_connections_requested(node_to_clear):
 	# 1. Capture connections involving this node
@@ -87,7 +87,7 @@ func _on_node_clear_connections_requested(node_to_clear):
 		undo_redo.add_undo_method(graph_edit.connect_node.bind(conn.from_node, conn.from_port, conn.to_node, conn.to_port))
 		
 	undo_redo.commit_action()
-	xml_editor_window.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
+	xml_editor.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
 
 func spawn_node(node_name: String) -> void:
 	# String manipulation to match file naming convention
@@ -153,7 +153,7 @@ func spawn_node(node_name: String) -> void:
 		# Clear the pending connection and reset allowed types
 		pending_connection = {}
 		allowed_types = []
-	xml_editor_window.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
+	xml_editor.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
 	xml_validation_timer.start()
 
 func _on_node_delete_requested(node_to_delete):
@@ -183,7 +183,7 @@ func _on_node_delete_requested(node_to_delete):
 		undo_redo.add_undo_method(graph_edit.connect_node.bind(conn.from_node, conn.from_port, conn.to_node, conn.to_port))
 		
 	undo_redo.commit_action()
-	xml_editor_window.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
+	xml_editor.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
 	xml_validation_timer.start()
 
 func _remove_connections_to_node(node_name: StringName):
@@ -193,7 +193,7 @@ func _remove_connections_to_node(node_name: StringName):
 				connection.from_node, connection.from_port,
 				connection.to_node, connection.to_port
 			)
-	xml_editor_window.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
+	xml_editor.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
 
 func _on_graph_edit_connection_to_empty(_from_node: StringName, _from_port: int, _release_position: Vector2) -> void:
 	# Use release_position which is already in GraphEdit's local coordinates
@@ -237,25 +237,25 @@ func _on_button_pressed() -> void:
 	print(xml_string)
 	# Also validate the XML against schema
 	var validation_result = GraphXmlUtils.ValidateXmlAgainstSchema(xml_string)
-	xml_editor_window.output_text_edit.text = validation_result
+	xml_editor.output_text_edit.text = validation_result
 	# Report validation errors to specific nodes
 	GraphXmlUtils.ReportValidationErrorsToNodes(validation_result, graph_edit, xml_string)
 
 
 func _on_xml_output_about_to_popup() -> void:
-	xml_editor_window.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
+	xml_editor.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
 
 
 func _on_button_2_pressed() -> void:
-	xml_editor_window.popup()
+	xml_editor.popup()
 
 
 func _on_xml_output_close_requested() -> void:
-	xml_editor_window.hide()
+	xml_editor.hide()
 
 # Validate the current XML against its XSD schema
 func validate_xml() -> String:
-	var xml_string = xml_editor_window.xml_editor.text
+	var xml_string = xml_editor.xml_editor.text
 	if xml_string.is_empty():
 		return "Error: XML editor is empty"
 	var result = GraphXmlUtils.ValidateXmlAgainstSchema(xml_string)
@@ -263,23 +263,23 @@ func validate_xml() -> String:
 	return result
 
 func _xml_refresh_requested(_node_instance) -> void:
-	xml_editor_window.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
+	xml_editor.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
 	xml_validation_timer.start()
 
 func _on_node_destroyed(_node: Variant) -> void:
-	xml_editor_window.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
+	xml_editor.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
 	xml_validation_timer.start()
 
 func _on_node_created(_node: Variant) -> void:
-	xml_editor_window.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
+	xml_editor.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
 	xml_validation_timer.start()
 
 func _on_graph_edit_end_node_move() -> void:
-	xml_editor_window.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
+	xml_editor.xml_editor.text = GraphXmlUtils.GetGraphXmlString(graph_edit)
 	xml_validation_timer.start()
 # Load graph from XML in the xml_editor
 func load_graph_from_xml() -> void:
-	var xml_string = xml_editor_window.xml_editor.text
+	var xml_string = xml_editor.xml_editor.text
 	if xml_string.is_empty():
 		push_error("XML editor is empty")
 		return
@@ -334,14 +334,10 @@ func _build_graph_from_xml_data(node_data: Dictionary, parent_node_name: String 
 
 
 func _on_timer_timeout() -> void:
-	var xml = xml_editor_window.xml_editor.text
+	var xml = xml_editor.xml_editor.text
 	var validation_result = GraphXmlUtils.ValidateXmlAgainstSchema(xml)
-	xml_editor_window.output_text_edit.text = validation_result
+	xml_editor.output_text_edit.text = validation_result
 	GraphXmlUtils.ReportValidationErrorsToNodes(validation_result, graph_edit, xml)
-
-
-func _on_xml_output_window_close_requested() -> void:
-	xml_editor_window.hide()
 
 
 func _on_mod_designer_tab_tab_changed(tab: int) -> void:

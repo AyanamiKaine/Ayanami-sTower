@@ -45,8 +45,8 @@ func show_context_menu() -> void:
 	context_menu.popup()
 
 func _ready() -> void:
-	set_slot(0, true, 0, Color(1, 1, 1, 1), true, 0, Color(1, 1, 1, 1))
-
+	#set_slot(0, true, 0, Color(1, 1, 1, 1), true, 0, Color(1, 1, 1, 1))
+	pass
 
 func _on_popup_menu_id_pressed(id: int) -> void:
 	match id:

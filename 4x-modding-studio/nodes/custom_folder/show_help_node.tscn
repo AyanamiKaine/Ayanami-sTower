@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://dlbccnq8u7gpi"]
 
 [ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="1_ivhu8"]
-[ext_resource type="Script" uid="uid://dacxvasjoqrm" path="res://nodes/show_help_node.gd" id="2_ges3p"]
+[ext_resource type="Script" uid="uid://dacxvasjoqrm" path="res://nodes/custom_folder/show_help_node.gd" id="2_ges3p"]
 
 [node name="ShowHelpNode" instance=ExtResource("1_ivhu8")]
 tooltip_text = "Show text from help text page if it was not shown before (when using line attribute), or show custom text (when using custom attribute)."

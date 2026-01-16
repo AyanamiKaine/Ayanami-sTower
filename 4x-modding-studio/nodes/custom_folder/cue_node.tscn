@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://yu4eofdw1quc"]
 
-[ext_resource type="Script" uid="uid://bgofuice5i8pk" path="res://nodes/cue_node.gd" id="1_i3xek"]
+[ext_resource type="Script" uid="uid://bgofuice5i8pk" path="res://nodes/custom_folder/cue_node.gd" id="1_i3xek"]
 [ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="2_f4x4p"]
 
 [node name="CueNode" instance=ExtResource("2_f4x4p")]

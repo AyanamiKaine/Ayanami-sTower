@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://cy4bym2vad7do"]
 
 [ext_resource type="PackedScene" uid="uid://cxlrmygm25tcy" path="res://nodes/base_node.tscn" id="1_j7f5d"]
-[ext_resource type="Script" uid="uid://bcanxqiubl3ob" path="res://nodes/debug_text_node.gd" id="2_1kcxr"]
+[ext_resource type="Script" uid="uid://bcanxqiubl3ob" path="res://nodes/custom_folder/debug_text_node.gd" id="2_1kcxr"]
 
 [node name="debug_text" instance=ExtResource("1_j7f5d")]
 title = "Debug Text"
