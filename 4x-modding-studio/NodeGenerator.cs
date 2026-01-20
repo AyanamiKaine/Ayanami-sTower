@@ -638,6 +638,10 @@ public partial class NodeGenerator : Node
         if (elemInfo.Type == "group" || elemInfo.Type == "attributeGroup")
             return "Groups";
 
+        // Fallback: Use the SourceFile (which now holds the directory/registry name) as the category
+        if (!string.IsNullOrEmpty(elemInfo.SourceFile))
+            return char.ToUpper(elemInfo.SourceFile[0]) + elemInfo.SourceFile.Substring(1).ToLower();
+
         return "Other";
     }
 

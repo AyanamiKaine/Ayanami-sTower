@@ -220,12 +220,17 @@ func update_item_list(filter_text: String) -> void:
 	# Get allowed element names based on pending connection
 	var allowed_element_names: Array[String] = _get_allowed_elements_from_connection()
 	
+	# Detect current context (e.g. "md", "aiscripts") based on existing nodes
+	var required_context: String = _detect_current_context()
+	if not required_context.is_empty():
+		print("[NodeSearcher] Filtering context: ", required_context)
+
 	# 3. Find Matches and Score them
 	var matches: Array[Dictionary] = []
 	
 	# Use dynamic elements if loaded, otherwise fall back to hand-crafted
 	if is_database_loaded and use_dynamic_generation:
-		matches = _search_dynamic_elements(filter_text, allowed_types, allowed_element_names)
+		matches = _search_dynamic_elements(filter_text, allowed_types, allowed_element_names, required_context)
 	else:
 		matches = _search_handcrafted_nodes(filter_text, allowed_types, allowed_element_names)
 	
@@ -257,6 +262,32 @@ func update_item_list(filter_text: String) -> void:
 		if match_data.get("is_dynamic", false):
 			var color = _get_category_color(match_data.get("category", ""))
 			item_list.set_item_custom_fg_color(idx, color)
+
+func _detect_current_context() -> String:
+	if main_app == null or main_app.graph_edit == null:
+		return ""
+	
+	# Look for specific root nodes first
+	for child in main_app.graph_edit.get_children():
+		if child is GraphNode:
+			var elem_name = child.get("xml_element_name")
+			if elem_name == "mdscript":
+				return "md"
+			if elem_name == "aiscript":
+				return "aiscripts"
+	
+	# If no specific root found, try to infer from any node
+	# (This assumes typically you don't mix md and aiscript nodes in one file)
+	for child in main_app.graph_edit.get_children():
+		if child is GraphNode:
+			var elem_name = child.get("xml_element_name")
+			# Find this element in our db to check its context
+			for db_elem in all_elements:
+				if db_elem.name == elem_name:
+					var ctx = db_elem.get("source_context", "")
+					if not ctx.is_empty():
+						return ctx
+	return ""
 
 ## Gets allowed element names based on the pending connection
 ## Returns empty array if no filtering needed
@@ -313,8 +344,9 @@ func _get_allowed_elements_from_connection() -> Array[String]:
 	
 	return allowed
 
-func _search_dynamic_elements(filter_text: String, allowed_types: Array, allowed_element_names: Array[String] = []) -> Array[Dictionary]:
+func _search_dynamic_elements(filter_text: String, allowed_types: Array, allowed_element_names: Array[String] = [], required_context: String = "") -> Array[Dictionary]:
 	var matches: Array[Dictionary] = []
+	
 	
 	for elem in all_elements:
 		var unique_key: String = elem.name # This is now the uniqueKey
@@ -322,6 +354,13 @@ func _search_dynamic_elements(filter_text: String, allowed_types: Array, allowed
 		var documentation: String = elem.documentation
 		var unique_key_lower = unique_key.to_lower()
 		var display_lower = display_name.to_lower()
+		var source_context = elem.get("source_context", "")
+
+		# Context Filtering
+		if not required_context.is_empty():
+			# If the element has a specific context, it MUST match the required context
+			if not source_context.is_empty() and source_context != required_context:
+				continue
 		
 		# Extract base name from unique key (e.g., "actions@md" -> "actions")
 		var base_name = unique_key.split("@")[0] if "@" in unique_key else unique_key
