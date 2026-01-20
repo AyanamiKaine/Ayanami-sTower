@@ -33,7 +33,8 @@ const chapterOrder = ["getting-started", "cookbooks", "references", "advanced"];
 const chapterDescriptions = {
     "getting-started":
         "Begin your modding journey with setup guides and first mod tutorials",
-    cookbooks: "Step-by-step recipes for common modding tasks",
+    cookbooks:
+        "Step-by-step recipes for common modding tasks, often including a common troubleshooting section",
     references: "Data reference for ships, DLC, races, factions, and more",
     advanced:
         "Complex topics including scripting, AI behavior, and engine deep dives",
@@ -58,13 +59,13 @@ function formatCategoryName(name) {
                 X4 Modding
             </h1>
             <p class="text-2xl text-gray-600 dark:text-gray-400 font-light">
-                The comprehensive knowledge base for X4: Foundations.
+                The comprehensive modding guide for X4: Foundations. (V8.00)
             </p>
         </div>
 
         <!-- Content Sections -->
 
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-x-12 gap-y-16 mb-24">
+        <div class="grid grid-cols-1 xl:grid-cols-1 gap-x-12 gap-y-16 mb-24">
             {
                 chapterOrder.map((category, index) => (
                     <section id={category} class="scroll-mt-24">
@@ -90,14 +91,14 @@ function formatCategoryName(name) {
                                                     <td class="py-3 pr-4 align-top w-2/5">
                                                         <a
                                                             href={post.url}
-                                                            class="font-semibold text-gray-900 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors block leading-tight"
+                                                            class="ml-4 font-semibold text-gray-900 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors block leading-tight"
                                                         >
                                                             {
                                                                 post.frontmatter
                                                                     .title
                                                             }
                                                         </a>
-                                                        <span class="text-xs font-mono text-gray-400 dark:text-gray-500 mt-1 block">
+                                                        <span class="ml-4 text-xs font-mono text-gray-400 dark:text-gray-500 mt-1 block">
                                                             {new Date(
                                                                 post.frontmatter
                                                                     .created,
