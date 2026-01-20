@@ -7,7 +7,10 @@ import "../styles/global.css";
 const { frontmatter } = Astro.props;
 
 // Fetch other literature for the "Read Next" section
-const allLiterature = await Astro.glob("../pages/literature/*.mdx");
+const allLiteratureGlob = import.meta.glob("../pages/literature/*.mdx", {
+    eager: true,
+});
+const allLiterature = Object.values(allLiteratureGlob);
 const otherLiterature = allLiterature
     .filter((post) => post.frontmatter.title !== frontmatter.title)
     .slice(0, 2);

@@ -1,7 +1,8 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 
-const allPosts = await Astro.glob("./*/*.mdx");
+const allPostsGlob = import.meta.glob("./*/*.mdx", { eager: true });
+const allPosts = Object.values(allPostsGlob);
 const now = new Date();
 const publishedPosts = allPosts.filter((post) => {
     return post.frontmatter.published && new Date(post.frontmatter.date) <= now;
@@ -37,10 +38,10 @@ const sortedCategories = Object.keys(postsByCategory).sort((a, b) => {
     const indexA = chapterOrder.indexOf(a);
     const indexB = chapterOrder.indexOf(b);
 
-    if (indexA !== -1 && indexB !== -1) return indexA - indexB; 
-    if (indexA !== -1) return -1; 
-    if (indexB !== -1) return 1; 
-    return a.localeCompare(b); 
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return a.localeCompare(b);
 });
 
 const finalOrderedPosts = [];

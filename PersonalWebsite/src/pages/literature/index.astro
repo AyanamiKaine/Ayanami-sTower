@@ -1,6 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-const allLiterature = await Astro.glob("./*.mdx");
+const allLiteratureGlob = import.meta.glob("./*.mdx", { eager: true });
+const allLiterature = Object.values(allLiteratureGlob);
 ---
 
 <Layout title="Literature">

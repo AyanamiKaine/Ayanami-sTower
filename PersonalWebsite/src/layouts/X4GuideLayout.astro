@@ -1,0 +1,209 @@
+---
+import Container from "../components/Container.astro";
+import Footer from "../components/Footer.astro";
+import Header from "../components/Header.astro";
+import "../styles/global.css";
+const { frontmatter } = Astro.props;
+
+// Generate GitHub edit URL based on the current file path
+// Assuming the path follows /X4Foundations/category/slug
+const filePath = Astro.url.pathname
+    .replace(/^\/X4Foundations\//, "")
+    .replace(/\/$/, "");
+
+const githubEditUrl = `https://github.com/AyanamiKaine/Ayanami-sTower/blob/main/PersonalWebsite/src/pages/X4Foundations/${filePath}.mdx`;
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <link rel="icon" href="/favicon-light.svg" />
+
+        <link
+            rel="icon"
+            href="/favicon-light.svg"
+            media="(prefers-color-scheme: light)"
+        />
+
+        <link
+            rel="icon"
+            href="/favicon-dark.svg"
+            media="(prefers-color-scheme: dark)"
+        />
+        <meta name="generator" content={Astro.generator} />
+        <title>{frontmatter.title} - X4 Guide</title>
+    </head>
+
+    <body>
+        <Header />
+
+        <Container>
+            <main class="note-content text-justify">
+                <div class="note-header">
+                    <div class="category-badge">
+                        {
+                            frontmatter.category
+                                ? frontmatter.category
+                                      .split("-")
+                                      .map(
+                                          (w) =>
+                                              w.charAt(0).toUpperCase() +
+                                              w.slice(1),
+                                      )
+                                      .join(" ")
+                                : "Guide"
+                        }
+                    </div>
+                    <h1 class="note-title">{frontmatter.title}</h1>
+                    <div class="note-meta">
+                        <span>By {frontmatter.author}</span>
+                        <span class="separator">|</span>
+                        <span>
+                            Last updated on {
+                                new Date(
+                                    frontmatter.created,
+                                ).toLocaleDateString("en-us", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                })
+                            }
+                        </span>
+                    </div>
+                </div>
+
+                <div class="prose dark:prose-invert max-w-none">
+                    <slot />
+                </div>
+
+                <div class="edit-section">
+                    <a
+                        href={githubEditUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="edit-link"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="edit-icon"
+                        >
+                            <path
+                                d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                            ></path>
+                            <path
+                                d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                            ></path>
+                        </svg>
+                        Edit this guide on GitHub
+                    </a>
+                </div>
+            </main>
+            <Footer />
+        </Container>
+    </body>
+</html>
+
+<style>
+    html,
+    body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .note-content {
+        padding: 2rem 0;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .note-header {
+        margin-bottom: 3rem;
+        text-align: center;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 2rem;
+    }
+
+    .category-badge {
+        display: inline-block;
+        background-color: #dbeafe;
+        color: #1e40af;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .note-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1.2;
+        margin: 0 0 1rem;
+    }
+
+    .note-meta {
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+
+    .note-meta .separator {
+        margin: 0 0.5rem;
+    }
+
+    /* Edit section */
+    .edit-section {
+        margin-top: 4rem;
+        padding-top: 2rem;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .edit-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #6b7280;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .edit-link:hover {
+        color: #111827;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .category-badge {
+            background-color: #1e3a8a;
+            color: #dbeafe;
+        }
+
+        .edit-section {
+            border-top-color: #374151;
+        }
+
+        .note-header {
+            border-bottom-color: #374151;
+        }
+
+        .edit-link {
+            color: #9ca3af;
+        }
+
+        .edit-link:hover {
+            color: #f3f4f6;
+        }
+    }
+</style>
