@@ -6,9 +6,11 @@
     let stream;
     let facingMode = "environment";
     let error = null;
-    let capturedImage = null;
     let torchSupported = false;
     let torchEnabled = false;
+    let pendingUploads = 0;
+    let isFlashing = false;
+    let lastUploadStatus = "";
 
     async function startCamera() {
         try {
@@ -73,33 +75,78 @@
         }
     }
 
+    async function uploadBlob(blob) {
+        pendingUploads++;
+        lastUploadStatus = "Uploading...";
+
+        const formData = new FormData();
+        formData.append("file", blob, `capture-${Date.now()}.jpg`);
+
+        const apiUrl = "https://api.ayanamikaine.com/upload";
+        const password = "SecretPassword123";
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: "POST",
+                headers: {
+                    "X-Password": password,
+                },
+                body: formData,
+            });
+
+            if (response.ok) {
+                lastUploadStatus = "Upload successful";
+                console.log("Image uploaded successfully");
+            } else {
+                console.error(
+                    "Upload failed:",
+                    response.status,
+                    response.statusText,
+                );
+                lastUploadStatus = `Failed: ${response.status}`;
+                error = `Upload failed: ${response.statusText}`;
+            }
+        } catch (err) {
+            console.error("Error uploading:", err);
+            lastUploadStatus = "Network Error";
+            error = "Network error during upload";
+        } finally {
+            pendingUploads--;
+            if (pendingUploads === 0) {
+                setTimeout(() => {
+                    if (pendingUploads === 0) lastUploadStatus = "";
+                }, 2000);
+            }
+        }
+    }
+
+    function triggerFlash() {
+        isFlashing = true;
+        setTimeout(() => {
+            isFlashing = false;
+        }, 150);
+    }
+
     function capturePhoto() {
         if (!video || !canvas) return;
+
+        triggerFlash();
 
         const context = canvas.getContext("2d");
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        capturedImage = canvas.toDataURL("image/jpeg", 0.85);
-    }
-
-    function downloadPhoto() {
-        if (!capturedImage) return;
-
-        const a = document.createElement("a");
-        a.href = capturedImage;
-        a.download = `photo-${new Date().toISOString()}.jpg`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
-
-    function retakePhoto() {
-        capturedImage = null;
-        // Need to restart camera since the video element was destroyed
-        // Use tick to wait for the DOM to update first
-        setTimeout(() => startCamera(), 0);
+        canvas.toBlob(
+            (blob) => {
+                if (blob) {
+                    // Fire and forget (it handles its own state)
+                    uploadBlob(blob);
+                }
+            },
+            "image/jpeg",
+            0.85,
+        ); // High quality JPEG
     }
 
     onMount(() => {
@@ -117,116 +164,124 @@
     {#if error}
         <div class="error-message">
             <p>{error}</p>
-            <button on:click={startCamera}>Try Again</button>
-        </div>
-    {:else if capturedImage}
-        <div class="preview-container">
-            <img src={capturedImage} alt="Captured" />
-            <div class="controls">
-                <button on:click={retakePhoto} class="btn secondary"
-                    >Retake</button
+            <div class="error-actions">
+                <button on:click={() => (error = null)} class="btn secondary"
+                    >Dismiss</button
                 >
-                <button on:click={downloadPhoto} class="btn primary"
-                    >Save Photo</button
+                <button on:click={startCamera} class="btn primary"
+                    >Restart Camera</button
                 >
-            </div>
-        </div>
-    {:else}
-        <div class="viewfinder">
-            <!-- svelte-ignore a11y-media-has-caption -->
-            <video bind:this={video} playsinline muted></video>
-            <canvas bind:this={canvas} style="display: none;"></canvas>
-
-            <div class="controls">
-                <button
-                    on:click={switchCamera}
-                    class="btn icon-btn"
-                    title="Switch Camera"
-                    aria-label="Switch Camera"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        ><path
-                            d="M20 5H9l-7 7 7 7h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Z"
-                        /><line x1="18" y1="9" x2="12" y2="15" /><line
-                            x1="12"
-                            y1="9"
-                            x2="18"
-                            y2="15"
-                        /></svg
-                    >
-                </button>
-
-                {#if torchSupported}
-                    <button
-                        on:click={toggleTorch}
-                        class="btn icon-btn"
-                        class:active={torchEnabled}
-                        title={torchEnabled
-                            ? "Turn off flash"
-                            : "Turn on flash"}
-                    >
-                        {#if torchEnabled}
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                ><path
-                                    d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"
-                                /><path d="M9 18h6" /><path d="M10 22h4" /></svg
-                            >
-                        {:else}
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                ><path
-                                    d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"
-                                /><path d="M9 18h6" /><path d="M10 22h4" /><line
-                                    x1="4"
-                                    x2="20"
-                                    y1="2"
-                                    y2="22"
-                                /></svg
-                            >
-                        {/if}
-                    </button>
-                {:else}
-                    <div class="spacer"></div>
-                {/if}
-
-                <button
-                    on:click={capturePhoto}
-                    class="capture-btn"
-                    aria-label="Take Photo"
-                ></button>
-
-                {#if !torchSupported}
-                    <div class="spacer"></div>
-                {/if}
             </div>
         </div>
     {/if}
+
+    <div class="viewfinder">
+        <!-- svelte-ignore a11y-media-has-caption -->
+        <video bind:this={video} playsinline muted></video>
+        <canvas bind:this={canvas} style="display: none;"></canvas>
+
+        {#if isFlashing}
+            <div class="flash-overlay"></div>
+        {/if}
+
+        {#if pendingUploads > 0 || lastUploadStatus}
+            <div class="status-indicator">
+                {#if pendingUploads > 0}
+                    <span class="spinner"></span>
+                    {pendingUploads} sending...
+                {:else}
+                    {lastUploadStatus}
+                {/if}
+            </div>
+        {/if}
+
+        <div class="controls">
+            <button
+                on:click={switchCamera}
+                class="btn icon-btn"
+                title="Switch Camera"
+                aria-label="Switch Camera"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path
+                        d="M20 5H9l-7 7 7 7h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Z"
+                    /><line x1="18" y1="9" x2="12" y2="15" /><line
+                        x1="12"
+                        y1="9"
+                        x2="18"
+                        y2="15"
+                    /></svg
+                >
+            </button>
+
+            {#if torchSupported}
+                <button
+                    on:click={toggleTorch}
+                    class="btn icon-btn"
+                    class:active={torchEnabled}
+                    title={torchEnabled ? "Turn off flash" : "Turn on flash"}
+                >
+                    {#if torchEnabled}
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            ><path
+                                d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"
+                            /><path d="M9 18h6" /><path d="M10 22h4" /></svg
+                        >
+                    {:else}
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            ><path
+                                d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"
+                            /><path d="M9 18h6" /><path d="M10 22h4" /><line
+                                x1="4"
+                                x2="20"
+                                y1="2"
+                                y2="22"
+                            /></svg
+                        >
+                    {/if}
+                </button>
+            {:else}
+                <div class="spacer"></div>
+            {/if}
+
+            <button
+                on:click={capturePhoto}
+                class="capture-btn"
+                aria-label="Take Photo"
+            ></button>
+
+            {#if !torchSupported}
+                <div class="spacer"></div>
+            {/if}
+        </div>
+    </div>
 </div>
 
 <style>
@@ -251,10 +306,17 @@
         height: 100%;
         padding: 2rem;
         text-align: center;
+        z-index: 20;
+        background: #000;
     }
 
-    .viewfinder,
-    .preview-container {
+    .error-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .viewfinder {
         position: relative;
         width: 100%;
         height: 100%;
@@ -265,11 +327,66 @@
         overflow: hidden;
     }
 
-    video,
-    img {
+    video {
         width: 100%;
         height: 100%;
         object-fit: cover;
+    }
+
+    .flash-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: white;
+        z-index: 10;
+        pointer-events: none;
+        opacity: 0;
+        animation: flash 150ms ease-out;
+    }
+
+    @keyframes flash {
+        0% {
+            opacity: 0.8;
+        }
+        100% {
+            opacity: 0;
+        }
+    }
+
+    .status-indicator {
+        position: absolute;
+        top: env(safe-area-inset-top, 20px);
+        margin-top: 1rem;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        z-index: 5;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+    }
+
+    .spinner {
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     .controls {
@@ -289,6 +406,7 @@
         align-items: center;
         gap: 1rem;
         margin-bottom: env(safe-area-inset-bottom, 0px);
+        z-index: 5;
     }
 
     .btn {
@@ -316,6 +434,10 @@
     .btn.primary {
         background: white;
         color: black;
+    }
+
+    .btn.secondary {
+        background: rgba(255, 255, 255, 0.2);
     }
 
     .btn.icon-btn {
