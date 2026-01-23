@@ -595,7 +595,7 @@ static class DeploymentService
         }
     }
 
-    private static Task<string> RunProcessAsync(
+    private static async Task<string> RunProcessAsync(
         string command,
         string args,
         string workingDirectory,
@@ -613,9 +613,8 @@ static class DeploymentService
         _logger.Log($"Timeout set to: {effectiveTimeout.TotalSeconds:F0}s", appName, LogLevel.Debug);
 
         var processStopwatch = Stopwatch.StartNew();
-        var tcs = new TaskCompletionSource<string>();
 
-        var process = new Process
+        using var process = new Process
         {
             StartInfo =
             {
@@ -634,7 +633,36 @@ static class DeploymentService
         using var timeoutCts = new CancellationTokenSource(effectiveTimeout);
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
-        var registration = linkedCts.Token.Register(() =>
+        try
+        {
+            process.Start();
+            _logger.Log($"Process started with PID: {process.Id}", appName, LogLevel.Debug);
+        }
+        catch (Exception ex)
+        {
+            _logger.Log($"Failed to start process '{command}': {ex.Message}", appName, LogLevel.Error);
+            throw new Exception($"Failed to start process '{command}'. Is it in your PATH? Error: {ex.Message}");
+        }
+
+        // Write input if provided
+        if (input != null)
+        {
+            await process.StandardInput.WriteAsync(input);
+            process.StandardInput.Close();
+        }
+
+        // Read stdout and stderr ASYNCHRONOUSLY to prevent buffer deadlock.
+        // This is critical: if we wait for the process to exit before reading,
+        // and the output buffer fills up, the process will block forever waiting
+        // for the buffer to be drained, causing a deadlock.
+        var stdoutTask = process.StandardOutput.ReadToEndAsync(linkedCts.Token);
+        var stderrTask = process.StandardError.ReadToEndAsync(linkedCts.Token);
+
+        try
+        {
+            await process.WaitForExitAsync(linkedCts.Token);
+        }
+        catch (OperationCanceledException)
         {
             bool isTimeout = timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested;
 
@@ -652,85 +680,47 @@ static class DeploymentService
                 var timeoutMsg = $"Process TIMED OUT after {effectiveTimeout.TotalSeconds:F0}s: {command} {args}";
                 Console.WriteLine($"!!! {timeoutMsg}");
                 _logger.Log(timeoutMsg, appName, LogLevel.Error);
-                tcs.TrySetException(new TimeoutException(timeoutMsg));
-            }
-            else
-            {
-                _logger.Log($"Process cancelled: {command} {args}", appName, LogLevel.Warning);
-                tcs.TrySetCanceled();
-            }
-        });
-
-        process.EnableRaisingEvents = true;
-        process.Exited += async (sender, e) =>
-        {
-            registration.Dispose();
-            processStopwatch.Stop();
-
-            // Check if we already handled this via timeout/cancellation
-            if (tcs.Task.IsCompleted)
-            {
-                process.Dispose();
-                return;
+                throw new TimeoutException(timeoutMsg);
             }
 
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-
-            // Log all output to the deployment log
-            _logger.LogProcessOutput(command, output, appName);
-            if (!string.IsNullOrWhiteSpace(error))
-            {
-                _logger.LogProcessError(command, error, appName);
-            }
-            _logger.LogProcessComplete(command, process.ExitCode, processStopwatch.Elapsed, appName);
-
-            if (process.ExitCode == 0)
-            {
-                if (!string.IsNullOrEmpty(error))
-                {
-                    Console.WriteLine($"Warning from command '{command} {args}': {error}");
-                }
-                tcs.TrySetResult(output);
-            }
-            else
-            {
-                if (ignoreErrors)
-                {
-                    tcs.TrySetResult(string.Empty);
-                }
-                else
-                {
-                    var fullError = new StringBuilder();
-                    fullError.AppendLine($"Command '{command} {args}' failed with exit code {process.ExitCode}.");
-                    if (!string.IsNullOrWhiteSpace(output)) fullError.AppendLine($"Output:\n{output}");
-                    if (!string.IsNullOrWhiteSpace(error)) fullError.AppendLine($"Error:\n{error}");
-                    tcs.TrySetException(new Exception(fullError.ToString()));
-                    await SendNotificationAsync(StatusLevel.Error, "Deployment FAILED", fullError.ToString());
-                }
-            }
-            process.Dispose();
-        };
-
-        try
-        {
-            process.Start();
-            _logger.Log($"Process started with PID: {process.Id}", appName, LogLevel.Debug);
-        }
-        catch (Exception ex)
-        {
-            _logger.Log($"Failed to start process '{command}': {ex.Message}", appName, LogLevel.Error);
-            tcs.SetException(new Exception($"Failed to start process '{command}'. Is it in your PATH? Error: {ex.Message}"));
-            return tcs.Task;
+            _logger.Log($"Process cancelled: {command} {args}", appName, LogLevel.Warning);
+            throw;
         }
 
-        if (input != null)
+        processStopwatch.Stop();
+
+        // Now safely read the output (process has exited, buffers are complete)
+        string output = await stdoutTask;
+        string error = await stderrTask;
+
+        // Log all output to the deployment log
+        _logger.LogProcessOutput(command, output, appName);
+        if (!string.IsNullOrWhiteSpace(error))
         {
-            process.StandardInput.Write(input);
-            process.StandardInput.Close();
+            _logger.LogProcessError(command, error, appName);
+        }
+        _logger.LogProcessComplete(command, process.ExitCode, processStopwatch.Elapsed, appName);
+
+        if (process.ExitCode == 0)
+        {
+            if (!string.IsNullOrEmpty(error))
+            {
+                Console.WriteLine($"Warning from command '{command} {args}': {error}");
+            }
+            return output;
         }
 
-        return tcs.Task;
+        if (ignoreErrors)
+        {
+            return string.Empty;
+        }
+
+        var fullError = new StringBuilder();
+        fullError.AppendLine($"Command '{command} {args}' failed with exit code {process.ExitCode}.");
+        if (!string.IsNullOrWhiteSpace(output)) fullError.AppendLine($"Output:\n{output}");
+        if (!string.IsNullOrWhiteSpace(error)) fullError.AppendLine($"Error:\n{error}");
+        await SendNotificationAsync(StatusLevel.Error, "Deployment FAILED", fullError.ToString());
+        throw new Exception(fullError.ToString());
     }
 }
 
