@@ -3,6 +3,7 @@
     "short_name": "Camera",
     "description": "A simple camera application.",
     "start_url": "/apps/camera",
+    "scope": "/apps/camera/",
     "display": "standalone",
     "background_color": "#000000",
     "theme_color": "#000000",

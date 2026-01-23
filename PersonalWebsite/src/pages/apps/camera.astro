@@ -15,4 +15,22 @@ import CameraApp from "../../components/CameraApp.svelte";
     />
 
     <CameraApp client:only="svelte" />
+
+    <script is:inline>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker
+                    .register("/camera-sw.js", { scope: "/apps/camera/" })
+                    .then((registration) => {
+                        console.log("SW registered: ", registration);
+                    })
+                    .catch((registrationError) => {
+                        console.log(
+                            "SW registration failed: ",
+                            registrationError,
+                        );
+                    });
+            });
+        }
+    </script>
 </BaseLayout>
