@@ -10,9 +10,167 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Http;
 using System.Linq;
+using System.Globalization;
 using AyanamisTower.Email;
 
 namespace AyanamisTower.MultiDeployer;
+
+/// <summary>
+/// A simple file-based logger for deployment diagnostics.
+/// Logs are written to a timestamped file and can be reviewed to understand failures or hangs.
+/// </summary>
+public sealed class DeploymentLogger : IDisposable
+{
+    private readonly StreamWriter _writer;
+    private readonly Stopwatch _sessionStopwatch;
+    private readonly object _lock = new();
+    private readonly string _logFilePath;
+
+    /// <summary>Gets the full path to the current log file.</summary>
+    public string LogFilePath => _logFilePath;
+
+    /// <summary>
+    /// Creates a new deployment logger that writes to a timestamped file in the specified directory.
+    /// </summary>
+    /// <param name="logDirectory">The directory where log files will be stored.</param>
+    public DeploymentLogger(string logDirectory)
+    {
+        Directory.CreateDirectory(logDirectory);
+
+        string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture);
+        _logFilePath = Path.Combine(logDirectory, $"deployment_{timestamp}.log");
+
+        _writer = new StreamWriter(_logFilePath, append: false, Encoding.UTF8) { AutoFlush = true };
+        _sessionStopwatch = Stopwatch.StartNew();
+
+        WriteHeader();
+    }
+
+    private void WriteHeader()
+    {
+        _writer.WriteLine("================================================================================");
+        _writer.WriteLine($"  DEPLOYMENT LOG - Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        _writer.WriteLine($"  Machine: {Environment.MachineName}");
+        _writer.WriteLine($"  Log File: {_logFilePath}");
+        _writer.WriteLine("================================================================================");
+        _writer.WriteLine();
+    }
+
+    /// <summary>Logs a message with optional app context and log level.</summary>
+    public void Log(string message, string? appName = null, LogLevel level = LogLevel.Info)
+    {
+        lock (_lock)
+        {
+            string elapsed = _sessionStopwatch.Elapsed.ToString(@"hh\:mm\:ss\.fff", CultureInfo.InvariantCulture);
+            string levelStr = level switch
+            {
+                LogLevel.Debug => "DEBUG",
+                LogLevel.Info => "INFO ",
+                LogLevel.Warning => "WARN ",
+                LogLevel.Error => "ERROR",
+                LogLevel.Process => "PROC ",
+                _ => "     "
+            };
+
+            string prefix = string.IsNullOrEmpty(appName) ? "" : $"[{appName}] ";
+            _writer.WriteLine($"[{elapsed}] [{levelStr}] {prefix}{message}");
+        }
+    }
+
+    /// <summary>Logs the start of a process execution.</summary>
+    public void LogProcessStart(string command, string args, string? appName = null)
+    {
+        Log($">>> STARTING: {command} {args}", appName, LogLevel.Process);
+    }
+
+    /// <summary>Logs process standard output.</summary>
+    public void LogProcessOutput(string command, string output, string? appName = null)
+    {
+        if (string.IsNullOrWhiteSpace(output)) return;
+
+        lock (_lock)
+        {
+            foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            {
+                Log($"    [stdout] {line.TrimEnd()}", appName, LogLevel.Debug);
+            }
+        }
+    }
+
+    /// <summary>Logs process standard error output.</summary>
+    public void LogProcessError(string command, string error, string? appName = null)
+    {
+        if (string.IsNullOrWhiteSpace(error)) return;
+
+        lock (_lock)
+        {
+            foreach (var line in error.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            {
+                Log($"    [stderr] {line.TrimEnd()}", appName, LogLevel.Warning);
+            }
+        }
+    }
+
+    /// <summary>Logs the completion of a process with exit code and duration.</summary>
+    public void LogProcessComplete(string command, int exitCode, TimeSpan duration, string? appName = null)
+    {
+        string status = exitCode == 0 ? "SUCCESS" : $"FAILED (exit code {exitCode})";
+        Log($"<<< FINISHED: {command} - {status} - Duration: {duration.TotalSeconds:F2}s", appName, LogLevel.Process);
+    }
+
+    /// <summary>Logs a section header for organizing log output.</summary>
+    public void LogSection(string sectionName, string? appName = null)
+    {
+        lock (_lock)
+        {
+            _writer.WriteLine();
+            _writer.WriteLine($"--- {(appName != null ? $"[{appName}] " : "")}{sectionName} ---");
+            _writer.WriteLine();
+        }
+    }
+
+    /// <summary>Logs an exception with full stack trace.</summary>
+    public void LogException(Exception ex, string context, string? appName = null)
+    {
+        lock (_lock)
+        {
+            Log($"EXCEPTION in {context}: {ex.Message}", appName, LogLevel.Error);
+            foreach (var line in (ex.StackTrace ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            {
+                Log($"    {line.TrimEnd()}", appName, LogLevel.Error);
+            }
+        }
+    }
+
+    /// <summary>Disposes the logger and writes the footer.</summary>
+    public void Dispose()
+    {
+        lock (_lock)
+        {
+            _writer.WriteLine();
+            _writer.WriteLine("================================================================================");
+            _writer.WriteLine($"  DEPLOYMENT LOG - Ended: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            _writer.WriteLine($"  Total Duration: {_sessionStopwatch.Elapsed}");
+            _writer.WriteLine("================================================================================");
+            _writer.Dispose();
+        }
+    }
+}
+
+/// <summary>Log severity levels for deployment logging.</summary>
+public enum LogLevel
+{
+    /// <summary>Detailed diagnostic information.</summary>
+    Debug,
+    /// <summary>General informational messages.</summary>
+    Info,
+    /// <summary>Warning messages that don't prevent deployment.</summary>
+    Warning,
+    /// <summary>Error messages indicating deployment failures.</summary>
+    Error,
+    /// <summary>Process execution tracking.</summary>
+    Process
+}
 
 /// <summary>
 /// Represents the configuration for a single deployable application
@@ -57,9 +215,19 @@ static class DeploymentService
 {
     // --- Global Configuration ---
     private const string RepoPath = "/home/ayanami/Ayanami-sTower/";
+    private const string LogDirectory = "/home/ayanami/deployment_logs/";
     private static readonly EmailStatusService _emailService = new();
+    private static DeploymentLogger _logger = null!;
     // The current HEAD commit hash after pulling (used to compare against last deployed commit)
     private static string _currentHeadCommit = string.Empty;
+
+    // --- Timeout Configuration ---
+    // Different operations have different expected durations
+    private static readonly TimeSpan GitTimeout = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan BuildTimeout = TimeSpan.FromMinutes(30);  // Container builds can take a while
+    private static readonly TimeSpan ContainerStartTimeout = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan CleanupTimeout = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan NginxTimeout = TimeSpan.FromSeconds(30);
 
     // --- Application Definitions ---
     // A list of all applications to be managed by this script.
@@ -94,25 +262,37 @@ static class DeploymentService
 
     public static async Task Main(string[] args)
     {
+        using var logger = new DeploymentLogger(LogDirectory);
+        _logger = logger;
+
         Console.WriteLine($"\n--- {DateTime.Now}: C# Multi-Deployer started. ---");
+        Console.WriteLine($"Log file: {logger.LogFilePath}");
+
+        _logger.Log("Multi-Deployer started");
+
         bool isForced = args.Contains("-f") || args.Contains("--force");
         if (isForced)
         {
             Console.WriteLine("Force flag detected. All applications will be redeployed regardless of git changes.");
+            _logger.Log("Force flag detected - all applications will be redeployed");
         }
 
         // Always fetch and pull to ensure we're at the latest commit
         Console.WriteLine("Fetching and pulling latest changes...");
+        _logger.LogSection("Git Fetch & Pull");
         await FetchAndPullLatest();
 
         // Iterate through each defined application and trigger its deployment logic.
         foreach (var app in AppsToDeploy)
         {
             Console.WriteLine($"\n>>>>>> Processing Application: {app.Name} <<<<<<");
+            _logger.LogSection($"Processing Application", app.Name);
             await TriggerDeploymentForApp(app, isForced);
         }
 
         Console.WriteLine("\n--- Multi-Deployer run complete. ---\n");
+        _logger.Log("Multi-Deployer run complete");
+        Console.WriteLine($"Full log available at: {logger.LogFilePath}");
     }
 
     /// <summary>
@@ -120,10 +300,11 @@ static class DeploymentService
     /// </summary>
     private static async Task FetchAndPullLatest()
     {
-        await RunProcessAsync("git", "fetch", RepoPath);
-        await RunProcessAsync("git", "pull", RepoPath);
-        _currentHeadCommit = (await RunProcessAsync("git", "rev-parse HEAD", RepoPath)).Trim();
+        await RunProcessAsync("git", "fetch", RepoPath, timeout: GitTimeout);
+        await RunProcessAsync("git", "pull", RepoPath, timeout: GitTimeout);
+        _currentHeadCommit = (await RunProcessAsync("git", "rev-parse HEAD", RepoPath, timeout: GitTimeout)).Trim();
         Console.WriteLine($"Current HEAD commit: {_currentHeadCommit}");
+        _logger.Log($"Current HEAD commit: {_currentHeadCommit}");
     }
 
     /// <summary>
@@ -136,15 +317,18 @@ static class DeploymentService
         if (!File.Exists(app.DeployedCommitFile))
         {
             Console.WriteLine($"[{app.Name}] No deployed commit record found. Will deploy.");
+            _logger.Log("No deployed commit record found. Will deploy.", app.Name);
             return true;
         }
 
         string lastDeployedCommit = (await File.ReadAllTextAsync(app.DeployedCommitFile)).Trim();
+        _logger.Log($"Last deployed commit: {lastDeployedCommit}", app.Name);
 
         // If commits are identical, no changes
         if (string.Equals(lastDeployedCommit, _currentHeadCommit, StringComparison.OrdinalIgnoreCase))
         {
             Console.WriteLine($"[{app.Name}] Already at deployed commit {lastDeployedCommit[..Math.Min(8, lastDeployedCommit.Length)]}. No changes.");
+            _logger.Log($"Already at deployed commit. No changes.", app.Name);
             return false;
         }
 
@@ -152,11 +336,15 @@ static class DeploymentService
         try
         {
             string relativePath = Path.GetRelativePath(RepoPath, app.ProjectPath).Replace('\\', '/');
+            _logger.Log($"Checking for changes in path: {relativePath}", app.Name);
+
             string diffResult = await RunProcessAsync(
                 "git",
                 $"diff --name-only {lastDeployedCommit} {_currentHeadCommit} -- \"{relativePath}\"",
                 RepoPath,
-                ignoreErrors: true);
+                ignoreErrors: true,
+                appName: app.Name,
+                timeout: GitTimeout);
 
             var changedFiles = diffResult
                 .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
@@ -166,9 +354,11 @@ static class DeploymentService
             if (changedFiles.Count > 0)
             {
                 Console.WriteLine($"[{app.Name}] {changedFiles.Count} file(s) changed since last deploy:");
+                _logger.Log($"{changedFiles.Count} file(s) changed since last deploy", app.Name);
                 foreach (var file in changedFiles.Take(10)) // Show first 10
                 {
                     Console.WriteLine($"  - {file}");
+                    _logger.Log($"  Changed: {file}", app.Name, LogLevel.Debug);
                 }
                 if (changedFiles.Count > 10)
                 {
@@ -178,12 +368,15 @@ static class DeploymentService
             }
 
             Console.WriteLine($"[{app.Name}] No changes in project path since last deploy.");
+            _logger.Log("No changes in project path since last deploy.", app.Name);
             return false;
         }
         catch (Exception ex)
         {
             // If git diff fails (e.g., commit doesn't exist after force push), treat as needing deployment
             Console.WriteLine($"[{app.Name}] Warning: Could not compare commits ({ex.Message}). Will redeploy to be safe.");
+            _logger.LogException(ex, "HasChangesForApp", app.Name);
+            _logger.Log("Will redeploy to be safe.", app.Name, LogLevel.Warning);
             return true;
         }
     }
@@ -195,19 +388,27 @@ static class DeploymentService
     {
         await File.WriteAllTextAsync(app.DeployedCommitFile, _currentHeadCommit);
         Console.WriteLine($"[{app.Name}] Recorded deployed commit: {_currentHeadCommit[..Math.Min(8, _currentHeadCommit.Length)]}");
+        _logger.Log($"Recorded deployed commit: {_currentHeadCommit}", app.Name);
     }
 
 
 
     private static async Task<bool> IsLiveContainerRunning(AppConfig app)
     {
-        if (!File.Exists(app.StateFile)) return false;
+        if (!File.Exists(app.StateFile))
+        {
+            _logger.Log("State file does not exist - no live container", app.Name, LogLevel.Debug);
+            return false;
+        }
 
         string liveColor = await File.ReadAllTextAsync(app.StateFile);
         string containerName = $"{app.ImageName}-{liveColor}";
 
-        string result = await RunProcessAsync("podman", $"ps --filter name={containerName} --filter status=running --format \"{{{{.ID}}}}\"", RepoPath, ignoreErrors: true);
-        return !string.IsNullOrWhiteSpace(result);
+        _logger.Log($"Checking if container '{containerName}' is running", app.Name, LogLevel.Debug);
+        string result = await RunProcessAsync("podman", $"ps --filter name={containerName} --filter status=running --format \"{{{{.ID}}}}\"", RepoPath, ignoreErrors: true, appName: app.Name, timeout: CleanupTimeout);
+        bool isRunning = !string.IsNullOrWhiteSpace(result);
+        _logger.Log($"Container '{containerName}' running: {isRunning}", app.Name, LogLevel.Debug);
+        return isRunning;
     }
 
     private static async Task SendNotificationAsync(StatusLevel level, string subject, string message)
@@ -215,24 +416,33 @@ static class DeploymentService
         try
         {
             Console.WriteLine($"Sending {level} email: {subject}");
+            _logger.Log($"Sending email notification: {subject}", level: LogLevel.Debug);
             await _emailService.SendStatusUpdateAsync(subject, message, level);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"!!! CRITICAL: Failed to send email notification. Error: {ex.Message}");
+            _logger.LogException(ex, "SendNotificationAsync");
         }
     }
 
     private static async Task TriggerDeploymentForApp(AppConfig app, bool isForced, CancellationToken cancellationToken = default)
     {
+        var deploymentStopwatch = Stopwatch.StartNew();
+
         try
         {
+            _logger.Log("Starting deployment evaluation", app.Name);
+
             bool isLive = await IsLiveContainerRunning(app);
             bool hasChanges = await HasChangesForApp(app);
+
+            _logger.Log($"Live container running: {isLive}, Has changes: {hasChanges}, Forced: {isForced}", app.Name);
 
             if (isLive && !hasChanges && !isForced)
             {
                 Console.WriteLine($"[{app.Name}] Site is running and no changes detected. Skipping.");
+                _logger.Log("Site is running and no changes detected. Skipping deployment.", app.Name);
                 return;
             }
 
@@ -250,11 +460,15 @@ static class DeploymentService
                 startReason = $"[{app.Name}] Changes detected since last deployment. Starting deployment.";
             }
 
-
             Console.WriteLine(startReason);
+            _logger.Log(startReason, app.Name);
             await SendNotificationAsync(StatusLevel.Info, $"[{app.Name}] Deployment Started", startReason);
 
-            if (cancellationToken.IsCancellationRequested) return;
+            if (cancellationToken.IsCancellationRequested)
+            {
+                _logger.Log("Cancellation requested before deployment started", app.Name, LogLevel.Warning);
+                return;
+            }
 
             string liveColor = File.Exists(app.StateFile) ? await File.ReadAllTextAsync(app.StateFile, cancellationToken) : "blue";
             string standbyColor = liveColor == "blue" ? "green" : "blue";
@@ -264,79 +478,103 @@ static class DeploymentService
             string liveContainerName = $"{app.ImageName}-{liveColor}";
 
             Console.WriteLine($"[{app.Name}] Current LIVE: {liveColor} ({livePort}). Deploying to STANDBY: {standbyColor} ({standbyPort}).");
+            _logger.Log($"Blue-Green state: LIVE={liveColor}:{livePort}, STANDBY={standbyColor}:{standbyPort}", app.Name);
 
-            // The git pull is now done once at the start.
-            // We now build the specific Docker image for the application.
-            // Note: Dockerfile should be present in the app.ProjectPath directory.
-            await RunProcessAsync("podman", $"build -t {app.ImageName}:latest .", app.ProjectPath, cancellationToken: cancellationToken);
+            // Build Docker image
+            _logger.LogSection("Building Container Image", app.Name);
+            await RunProcessAsync("podman", $"build -t {app.ImageName}:latest .", app.ProjectPath, cancellationToken: cancellationToken, appName: app.Name, timeout: BuildTimeout);
 
-            // --- FIX STARTS HERE ---
-            // Proactively clean up any leftover resources from a previously failed deployment.
-            // This prevents the 'Unit was already loaded' error from systemd.
-
+            // Cleanup old standby resources
+            _logger.LogSection("Cleanup Old Standby Resources", app.Name);
             Console.WriteLine($"[{app.Name}] Cleaning up old standby resources for '{standbyContainerName}' before starting...");
 
-            // 1. Stop any running systemd service with the standby name.
-            await RunProcessAsync("systemctl", $"--user stop {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
+            await RunProcessAsync("systemctl", $"--user stop {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken, appName: app.Name, timeout: CleanupTimeout);
+            await RunProcessAsync("systemctl", $"--user reset-failed {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken, appName: app.Name, timeout: CleanupTimeout);
+            await RunProcessAsync("podman", $"rm -f {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken, appName: app.Name, timeout: CleanupTimeout);
 
-            // 2. Reset the failed state of the service, in case it failed previously.
-            await RunProcessAsync("systemctl", $"--user reset-failed {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
-
-            // 3. Force-remove any existing podman container with the standby name. (This was already here and is correct)
-            await RunProcessAsync("podman", $"rm -f {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
-            // --- FIX ENDS HERE ---
-
-            // Now we can safely create the new service.
+            // Start new container
+            _logger.LogSection("Starting New Container", app.Name);
             await RunProcessAsync(
                 "systemd-run",
                 $"--user --service-type=exec --unit={standbyContainerName} podman run --rm --name {standbyContainerName} -p {standbyPort}:80 {app.ImageName}:latest",
                 RepoPath,
-                cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken,
+                appName: app.Name,
+                timeout: ContainerStartTimeout);
 
+            // Health check
+            _logger.LogSection("Health Check", app.Name);
             Console.WriteLine($"[{app.Name}] Performing health check... waiting 5 seconds.");
+            _logger.Log("Waiting 5 seconds before health check...", app.Name);
             await Task.Delay(5000, cancellationToken);
+
+            _logger.Log($"Performing health check on port {standbyPort}", app.Name);
             if (!await IsHealthy(standbyPort, cancellationToken))
             {
                 var failureMsg = $"Health check FAILED for container {standbyContainerName} on port {standbyPort}. Aborting deployment.";
                 Console.WriteLine($"!!! [{app.Name}] {failureMsg}");
+                _logger.Log(failureMsg, app.Name, LogLevel.Error);
+                _logger.Log($"Deployment failed after {deploymentStopwatch.Elapsed.TotalSeconds:F2}s", app.Name, LogLevel.Error);
                 await SendNotificationAsync(StatusLevel.Error, $"[{app.Name}] Deployment FAILED", failureMsg);
-                // Also attempt to clean up the failed container and service
-                await RunProcessAsync("systemctl", $"--user stop {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
-                await RunProcessAsync("systemctl", $"--user reset-failed {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
+
+                // Cleanup failed container
+                _logger.Log("Cleaning up failed container...", app.Name);
+                await RunProcessAsync("systemctl", $"--user stop {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken, appName: app.Name, timeout: CleanupTimeout);
+                await RunProcessAsync("systemctl", $"--user reset-failed {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken, appName: app.Name, timeout: CleanupTimeout);
                 return;
             }
             Console.WriteLine($"[{app.Name}] Health check PASSED.");
+            _logger.Log("Health check PASSED", app.Name);
 
+            // Switch Nginx traffic
+            _logger.LogSection("Switching Nginx Traffic", app.Name);
             Console.WriteLine($"[{app.Name}] Switching Nginx traffic...");
-            await RunProcessAsync("sudo", $"tee {app.NginxUpstreamConfig}", workingDirectory: RepoPath, input: $"server 127.0.0.1:{standbyPort};", cancellationToken: cancellationToken);
-            await RunProcessAsync("sudo", "systemctl reload nginx", RepoPath, cancellationToken: cancellationToken);
+            await RunProcessAsync("sudo", $"tee {app.NginxUpstreamConfig}", workingDirectory: RepoPath, input: $"server 127.0.0.1:{standbyPort};", cancellationToken: cancellationToken, appName: app.Name, timeout: NginxTimeout);
+            await RunProcessAsync("sudo", "systemctl reload nginx", RepoPath, cancellationToken: cancellationToken, appName: app.Name, timeout: NginxTimeout);
 
             await File.WriteAllTextAsync(app.StateFile, standbyColor, cancellationToken);
+            _logger.Log($"Updated state file to: {standbyColor}", app.Name);
 
             // Record the commit hash that was successfully deployed
             await RecordDeployedCommit(app);
 
-            var successMsg = $"Deployment successful! {standbyColor} is now LIVE. Commit: {_currentHeadCommit[..Math.Min(8, _currentHeadCommit.Length)]}";
+            deploymentStopwatch.Stop();
+            var successMsg = $"Deployment successful! {standbyColor} is now LIVE. Commit: {_currentHeadCommit[..Math.Min(8, _currentHeadCommit.Length)]}. Duration: {deploymentStopwatch.Elapsed.TotalSeconds:F2}s";
             Console.WriteLine($"SUCCESS! [{app.Name}] {successMsg}");
+            _logger.Log(successMsg, app.Name);
             await SendNotificationAsync(StatusLevel.Success, $"[{app.Name}] Deployment Successful", successMsg);
 
             // Stop the old live service via systemd, which will in turn stop the container.
-            await RunProcessAsync("systemctl", $"--user stop {liveContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
+            _logger.LogSection("Cleanup Old Live Container", app.Name);
+            await RunProcessAsync("systemctl", $"--user stop {liveContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken, appName: app.Name, timeout: CleanupTimeout);
 
             Console.WriteLine($"[{app.Name}] Pruning old container images...");
-            await RunProcessAsync("podman", "image prune -f", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
+            _logger.Log("Pruning old container images", app.Name);
+            await RunProcessAsync("podman", "image prune -f", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken, appName: app.Name, timeout: CleanupTimeout);
 
             Console.WriteLine($"--- [{app.Name}] Deployment Complete ---");
+            _logger.Log($"Deployment complete. Total time: {deploymentStopwatch.Elapsed}", app.Name);
         }
         catch (OperationCanceledException)
         {
             Console.WriteLine($"[{app.Name}] Deployment cancelled.");
+            _logger.Log("Deployment was cancelled", app.Name, LogLevel.Warning);
             await SendNotificationAsync(StatusLevel.Warning, $"[{app.Name}] Deployment Cancelled", "The deployment process was cancelled.");
+        }
+        catch (TimeoutException tex)
+        {
+            var errorMsg = $"[{app.Name}] Deployment TIMED OUT: {tex.Message}\n\nA process hung and was terminated after exceeding its timeout.";
+            Console.WriteLine($"!!! {errorMsg}");
+            _logger.Log(tex.Message, app.Name, LogLevel.Error);
+            _logger.Log($"Deployment timed out after {deploymentStopwatch.Elapsed.TotalSeconds:F2}s", app.Name, LogLevel.Error);
+            await SendNotificationAsync(StatusLevel.Error, $"[{app.Name}] Deployment TIMED OUT", errorMsg);
         }
         catch (Exception ex)
         {
             var errorMsg = $"An unexpected error occurred during [{app.Name}] deployment: {ex.Message}\n\nStack Trace:\n{ex.StackTrace}";
             Console.WriteLine($"!!! {errorMsg}");
+            _logger.LogException(ex, "TriggerDeploymentForApp", app.Name);
+            _logger.Log($"Deployment failed after {deploymentStopwatch.Elapsed.TotalSeconds:F2}s", app.Name, LogLevel.Error);
             await SendNotificationAsync(StatusLevel.Error, $"[{app.Name}] Deployment FAILED", errorMsg);
         }
     }
@@ -347,17 +585,34 @@ static class DeploymentService
         try
         {
             var response = await client.GetAsync($"http://localhost:{port}", cancellationToken);
+            _logger.Log($"Health check response: {(int)response.StatusCode} {response.StatusCode}", level: LogLevel.Debug);
             return response.IsSuccessStatusCode;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.Log($"Health check failed with exception: {ex.Message}", level: LogLevel.Warning);
             return false;
         }
     }
 
-    private static Task<string> RunProcessAsync(string command, string args, string workingDirectory, string? input = null, bool ignoreErrors = false, CancellationToken cancellationToken = default)
+    private static Task<string> RunProcessAsync(
+        string command,
+        string args,
+        string workingDirectory,
+        string? input = null,
+        bool ignoreErrors = false,
+        CancellationToken cancellationToken = default,
+        string? appName = null,
+        TimeSpan? timeout = null)
     {
+        // Default timeout of 10 minutes for most operations
+        var effectiveTimeout = timeout ?? TimeSpan.FromMinutes(10);
+
         Console.WriteLine($"> Running: {command} {args}");
+        _logger.LogProcessStart(command, args, appName);
+        _logger.Log($"Timeout set to: {effectiveTimeout.TotalSeconds:F0}s", appName, LogLevel.Debug);
+
+        var processStopwatch = Stopwatch.StartNew();
         var tcs = new TaskCompletionSource<string>();
 
         var process = new Process
@@ -375,18 +630,60 @@ static class DeploymentService
             }
         };
 
-        var registration = cancellationToken.Register(() =>
+        // Create a combined cancellation token that includes both the user cancellation and the timeout
+        using var timeoutCts = new CancellationTokenSource(effectiveTimeout);
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+
+        var registration = linkedCts.Token.Register(() =>
         {
-            try { process?.Kill(true); } catch { }
-            tcs.TrySetCanceled();
+            bool isTimeout = timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested;
+
+            try
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill(true);
+                }
+            }
+            catch { }
+
+            if (isTimeout)
+            {
+                var timeoutMsg = $"Process TIMED OUT after {effectiveTimeout.TotalSeconds:F0}s: {command} {args}";
+                Console.WriteLine($"!!! {timeoutMsg}");
+                _logger.Log(timeoutMsg, appName, LogLevel.Error);
+                tcs.TrySetException(new TimeoutException(timeoutMsg));
+            }
+            else
+            {
+                _logger.Log($"Process cancelled: {command} {args}", appName, LogLevel.Warning);
+                tcs.TrySetCanceled();
+            }
         });
 
         process.EnableRaisingEvents = true;
         process.Exited += async (sender, e) =>
         {
             registration.Dispose();
+            processStopwatch.Stop();
+
+            // Check if we already handled this via timeout/cancellation
+            if (tcs.Task.IsCompleted)
+            {
+                process.Dispose();
+                return;
+            }
+
             string output = process.StandardOutput.ReadToEnd();
             string error = process.StandardError.ReadToEnd();
+
+            // Log all output to the deployment log
+            _logger.LogProcessOutput(command, output, appName);
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                _logger.LogProcessError(command, error, appName);
+            }
+            _logger.LogProcessComplete(command, process.ExitCode, processStopwatch.Elapsed, appName);
 
             if (process.ExitCode == 0)
             {
@@ -418,9 +715,11 @@ static class DeploymentService
         try
         {
             process.Start();
+            _logger.Log($"Process started with PID: {process.Id}", appName, LogLevel.Debug);
         }
         catch (Exception ex)
         {
+            _logger.Log($"Failed to start process '{command}': {ex.Message}", appName, LogLevel.Error);
             tcs.SetException(new Exception($"Failed to start process '{command}'. Is it in your PATH? Error: {ex.Message}"));
             return tcs.Task;
         }
