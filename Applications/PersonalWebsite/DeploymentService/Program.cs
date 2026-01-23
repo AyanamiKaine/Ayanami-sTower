@@ -36,6 +36,10 @@ public class AppConfig
     /// </summary>
     public required string StateFile { get; init; } // Path to the file storing the current color (blue/green)
     /// <summary>
+    /// The path to the file that stores the last successfully deployed commit hash for this app.
+    /// </summary>
+    public required string DeployedCommitFile { get; init; }
+    /// <summary>
     ///     The path to the Nginx upstream configuration file that needs to be updated during deployment.
     /// </summary>
     public required string NginxUpstreamConfig { get; init; } // Path to the Nginx upstream .conf file
@@ -54,10 +58,8 @@ static class DeploymentService
     // --- Global Configuration ---
     private const string RepoPath = "/home/ayanami/Ayanami-sTower/";
     private static readonly EmailStatusService _emailService = new();
-    // Cached refs & changed files between local and remote (populated after fetch)
-    private static string? _latestLocalRef;
-    private static string? _latestRemoteRef;
-    private static List<string> _changedFilesBetweenRefs = new();
+    // The current HEAD commit hash after pulling (used to compare against last deployed commit)
+    private static string _currentHeadCommit = string.Empty;
 
     // --- Application Definitions ---
     // A list of all applications to be managed by this script.
@@ -70,6 +72,7 @@ static class DeploymentService
             ProjectPath = "/home/ayanami/Ayanami-sTower/PersonalWebsite/",
             ImageName = "my-personal-website",
             StateFile = "/home/ayanami/deployment.state",
+            DeployedCommitFile = "/home/ayanami/deployment_commit_personalwebsite.txt",
             NginxUpstreamConfig = "/etc/nginx/astro_upstream.conf",
             BluePort = 8080,
             GreenPort = 8081
@@ -82,6 +85,7 @@ static class DeploymentService
             ProjectPath = "/home/ayanami/Ayanami-sTower/StellaEcs/AyanamisTower.StellaEcs.Wiki/",
             ImageName = "stella-wiki",
             StateFile = "/home/ayanami/wiki_deployment.state",
+            DeployedCommitFile = "/home/ayanami/deployment_commit_stellawiki.txt",
             NginxUpstreamConfig = "/etc/nginx/wiki_upstream.conf",
             BluePort = 9080,
             GreenPort = 9081
@@ -97,90 +101,103 @@ static class DeploymentService
             Console.WriteLine("Force flag detected. All applications will be redeployed regardless of git changes.");
         }
 
-        // Check for new commits in the entire repo first.
-        bool hasAnyNewCommits = await HasNewCommitsInRepo();
-        if (hasAnyNewCommits)
-        {
-            Console.WriteLine("New commits detected in the repository. Pulling latest changes...");
-            // _changedFilesBetweenRefs was populated by HasNewCommitsInRepo (it runs after fetch)
-            await RunProcessAsync("git", "pull", RepoPath);
-        }
+        // Always fetch and pull to ensure we're at the latest commit
+        Console.WriteLine("Fetching and pulling latest changes...");
+        await FetchAndPullLatest();
 
         // Iterate through each defined application and trigger its deployment logic.
         foreach (var app in AppsToDeploy)
         {
             Console.WriteLine($"\n>>>>>> Processing Application: {app.Name} <<<<<<");
-            await TriggerDeploymentForApp(app, hasAnyNewCommits, isForced);
+            await TriggerDeploymentForApp(app, isForced);
         }
 
         Console.WriteLine("\n--- Multi-Deployer run complete. ---\n");
     }
 
-    private static async Task<bool> HasNewCommitsInRepo()
+    /// <summary>
+    /// Fetches and pulls latest changes, then captures current HEAD commit.
+    /// </summary>
+    private static async Task FetchAndPullLatest()
     {
-        // Fetch remote refs first, then compare local vs remote and capture changed files
         await RunProcessAsync("git", "fetch", RepoPath);
+        await RunProcessAsync("git", "pull", RepoPath);
+        _currentHeadCommit = (await RunProcessAsync("git", "rev-parse HEAD", RepoPath)).Trim();
+        Console.WriteLine($"Current HEAD commit: {_currentHeadCommit}");
+    }
+
+    /// <summary>
+    /// Checks if the app has changes that need deployment by comparing current HEAD 
+    /// against the last successfully deployed commit for this specific app.
+    /// </summary>
+    private static async Task<bool> HasChangesForApp(AppConfig app)
+    {
+        // If we don't have a record of what was deployed, we need to deploy
+        if (!File.Exists(app.DeployedCommitFile))
+        {
+            Console.WriteLine($"[{app.Name}] No deployed commit record found. Will deploy.");
+            return true;
+        }
+
+        string lastDeployedCommit = (await File.ReadAllTextAsync(app.DeployedCommitFile)).Trim();
+
+        // If commits are identical, no changes
+        if (string.Equals(lastDeployedCommit, _currentHeadCommit, StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine($"[{app.Name}] Already at deployed commit {lastDeployedCommit[..Math.Min(8, lastDeployedCommit.Length)]}. No changes.");
+            return false;
+        }
+
+        // Check if there are any changes in the app's project path between the two commits
         try
         {
-            _latestLocalRef = (await RunProcessAsync("git", "rev-parse @", RepoPath)).Trim();
-            _latestRemoteRef = (await RunProcessAsync("git", "rev-parse @{u}", RepoPath)).Trim();
+            string relativePath = Path.GetRelativePath(RepoPath, app.ProjectPath).Replace('\\', '/');
+            string diffResult = await RunProcessAsync(
+                "git",
+                $"diff --name-only {lastDeployedCommit} {_currentHeadCommit} -- \"{relativePath}\"",
+                RepoPath,
+                ignoreErrors: true);
 
-            if (string.Equals(_latestLocalRef, _latestRemoteRef, StringComparison.Ordinal))
-            {
-                _changedFilesBetweenRefs = new List<string>();
-                return false;
-            }
-
-            var nameOnly = await RunProcessAsync("git", $"diff --name-only {_latestLocalRef} {_latestRemoteRef}", RepoPath);
-            _changedFilesBetweenRefs = nameOnly
+            var changedFiles = diffResult
                 .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(s => s.Trim())
-                .Where(s => !string.IsNullOrEmpty(s))
+                .Where(s => !string.IsNullOrWhiteSpace(s))
                 .ToList();
 
-            if (_changedFilesBetweenRefs.Count > 0)
+            if (changedFiles.Count > 0)
             {
-                Console.WriteLine($"Changed files detected: {string.Join(", ", _changedFilesBetweenRefs)}");
+                Console.WriteLine($"[{app.Name}] {changedFiles.Count} file(s) changed since last deploy:");
+                foreach (var file in changedFiles.Take(10)) // Show first 10
+                {
+                    Console.WriteLine($"  - {file}");
+                }
+                if (changedFiles.Count > 10)
+                {
+                    Console.WriteLine($"  ... and {changedFiles.Count - 10} more");
+                }
+                return true;
             }
 
-            return true;
+            Console.WriteLine($"[{app.Name}] No changes in project path since last deploy.");
+            return false;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Warning: failed to determine changed files between refs: {ex.Message}");
-            // Fallback to conservative behavior: indicate there are changes so we pull, but per-path checks will be less precise.
-            _changedFilesBetweenRefs = new List<string>();
+            // If git diff fails (e.g., commit doesn't exist after force push), treat as needing deployment
+            Console.WriteLine($"[{app.Name}] Warning: Could not compare commits ({ex.Message}). Will redeploy to be safe.");
             return true;
         }
     }
 
-    // Check whether any of the changed files affect the given project path
-    private static bool ChangedFilesAffectPath(string projectPath)
+    /// <summary>
+    /// Records the current HEAD as the successfully deployed commit for this app.
+    /// </summary>
+    private static async Task RecordDeployedCommit(AppConfig app)
     {
-        if (_changedFilesBetweenRefs == null || _changedFilesBetweenRefs.Count == 0)
-            return false;
-
-        // Convert projectPath into repo-relative path (unix-style) and trim trailing slashes
-        var relProject = Path.GetRelativePath(RepoPath, projectPath).Replace('\\', '/').Trim('/');
-        if (string.IsNullOrEmpty(relProject)) return true; // defensive: root changes affect everything
-
-        foreach (var changed in _changedFilesBetweenRefs)
-        {
-            var norm = changed.Replace('\\', '/').Trim('/');
-            if (string.Equals(norm, relProject, StringComparison.Ordinal) || norm.StartsWith(relProject + "/", StringComparison.Ordinal))
-                return true;
-        }
-
-        return false;
+        await File.WriteAllTextAsync(app.DeployedCommitFile, _currentHeadCommit);
+        Console.WriteLine($"[{app.Name}] Recorded deployed commit: {_currentHeadCommit[..Math.Min(8, _currentHeadCommit.Length)]}");
     }
 
-    // Checks if a specific path within the repo has new commits.
-    private static async Task<bool> HasNewCommitsForPath(string projectPath)
-    {
-        string relativePath = Path.GetRelativePath(RepoPath, projectPath);
-        string result = await RunProcessAsync("git", $"log HEAD..@{{u}} --oneline -- \"{relativePath}\"", RepoPath);
-        return !string.IsNullOrWhiteSpace(result.Trim());
-    }
+
 
     private static async Task<bool> IsLiveContainerRunning(AppConfig app)
     {
@@ -206,17 +223,16 @@ static class DeploymentService
         }
     }
 
-    private static async Task TriggerDeploymentForApp(AppConfig app, bool repoHasChanges, bool isForced, CancellationToken cancellationToken = default)
+    private static async Task TriggerDeploymentForApp(AppConfig app, bool isForced, CancellationToken cancellationToken = default)
     {
         try
         {
             bool isLive = await IsLiveContainerRunning(app);
-            // We deploy if the container isn't running, OR if the repo was updated AND the specific project has changes.
-            bool hasNewCommitsForApp = repoHasChanges && ChangedFilesAffectPath(app.ProjectPath);
+            bool hasChanges = await HasChangesForApp(app);
 
-            if (isLive && !hasNewCommitsForApp && !isForced)
+            if (isLive && !hasChanges && !isForced)
             {
-                Console.WriteLine($"[{app.Name}] Site is running and no new commits found for this project. Skipping.");
+                Console.WriteLine($"[{app.Name}] Site is running and no changes detected. Skipping.");
                 return;
             }
 
@@ -231,7 +247,7 @@ static class DeploymentService
             }
             else
             {
-                startReason = $"[{app.Name}] New commits detected for this project. Starting deployment.";
+                startReason = $"[{app.Name}] Changes detected since last deployment. Starting deployment.";
             }
 
 
@@ -257,15 +273,15 @@ static class DeploymentService
             // --- FIX STARTS HERE ---
             // Proactively clean up any leftover resources from a previously failed deployment.
             // This prevents the 'Unit was already loaded' error from systemd.
-            
+
             Console.WriteLine($"[{app.Name}] Cleaning up old standby resources for '{standbyContainerName}' before starting...");
 
             // 1. Stop any running systemd service with the standby name.
             await RunProcessAsync("systemctl", $"--user stop {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
-            
+
             // 2. Reset the failed state of the service, in case it failed previously.
             await RunProcessAsync("systemctl", $"--user reset-failed {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
-            
+
             // 3. Force-remove any existing podman container with the standby name. (This was already here and is correct)
             await RunProcessAsync("podman", $"rm -f {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
             // --- FIX ENDS HERE ---
@@ -297,7 +313,10 @@ static class DeploymentService
 
             await File.WriteAllTextAsync(app.StateFile, standbyColor, cancellationToken);
 
-            var successMsg = $"Deployment successful! {standbyColor} is now LIVE.";
+            // Record the commit hash that was successfully deployed
+            await RecordDeployedCommit(app);
+
+            var successMsg = $"Deployment successful! {standbyColor} is now LIVE. Commit: {_currentHeadCommit[..Math.Min(8, _currentHeadCommit.Length)]}";
             Console.WriteLine($"SUCCESS! [{app.Name}] {successMsg}");
             await SendNotificationAsync(StatusLevel.Success, $"[{app.Name}] Deployment Successful", successMsg);
 
