@@ -141,12 +141,18 @@
                 stream.getTracks().forEach((track) => track.stop());
             }
 
-            // Initial request: Ask for high resolution to encourage the browser to pick a high-res mode
+            // Check for hardware stabilization support
+            const supported = navigator.mediaDevices.getSupportedConstraints();
+            const stabilization = supported.imageStabilization || false;
+
+            // Initial request: Ask for high resolution + stabilization
             const constraints = {
                 video: {
                     facingMode: facingMode,
                     width: { ideal: 4096 },
                     height: { ideal: 2160 },
+                    // Request stabilization if supported (browser might ignore if not 'exact', but 'ideal' is safer)
+                    ...(stabilization ? { imageStabilization: true } : {}),
                 },
             };
 
@@ -285,42 +291,162 @@
         }, 150);
     }
 
-    function capturePhoto() {
+    async function capturePhoto() {
         if (!video || !canvas) return;
 
         triggerFlash();
 
+        // Use Smart Capture (Burst) if OpenCV is available to find the sharpest image
+        if (cvLoaded && cv.Mat && !isReviewing) {
+            try {
+                isProcessing = true;
+                const bestImage = await captureBurst(3); // Capture 3 frames
+                if (bestImage) {
+                    capturedImage = bestImage;
+                    finalizeCapture(bestImage);
+                } else {
+                    // Fallback to single capture
+                    captureSingleFrame();
+                }
+            } catch (e) {
+                console.error("Smart capture failed, falling back", e);
+                captureSingleFrame();
+            }
+        } else {
+            captureSingleFrame();
+        }
+    }
+
+    function captureSingleFrame() {
+        if (!video || !canvas) return;
         const context = canvas.getContext("2d");
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Convert canvas to Image object for processing
         const img = new Image();
-        img.onload = () => {
-            originalImage = img; // Save original
-            capturedImage = img;
-
-            // If libraries are ready
-            if (cvLoaded && scannerLoaded) {
-                if (reviewModeEnabled) {
-                    startCrop(); // Go to crop mode first
-                } else {
-                    // Burst mode: skip crop, straight to process
-                    processImage(true);
-                }
-            } else {
-                // Fallback direct upload if libs NOT ready
-                canvas.toBlob(
-                    (blob) => {
-                        if (blob) uploadBlob(blob);
-                    },
-                    "image/jpeg",
-                    0.85,
-                );
-            }
-        };
+        img.onload = () => finalizeCapture(img);
         img.src = canvas.toDataURL("image/jpeg");
+    }
+
+    function finalizeCapture(img) {
+        capturedImage = img;
+        originalImage = img; // Save original
+
+        // If libraries are ready
+        if (cvLoaded && scannerLoaded) {
+            if (reviewModeEnabled) {
+                startCrop(); // Go to crop mode first
+            } else {
+                // Burst mode: skip crop, straight to process
+                processImage(true);
+            }
+        } else {
+            // Fallback direct upload if libs NOT ready
+            canvas.toBlob(
+                (blob) => {
+                    if (blob) uploadBlob(blob);
+                },
+                "image/jpeg",
+                0.85,
+            );
+        }
+    }
+
+    // --- Smart Capture Logic ---
+
+    function wait(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    async function captureBurst(frameCount = 3) {
+        console.log("Starting Smart Burst Capture...");
+        let bestScore = -1;
+        let bestImg = null;
+
+        // Create a temporary canvas for analysis resizing (speed up cv.Laplacian)
+        const analysisCanvas = document.createElement("canvas");
+        const ctx = analysisCanvas.getContext("2d");
+        // Analysis size: 512px width is enough for sharpness check
+        const aWidth = 512;
+
+        for (let i = 0; i < frameCount; i++) {
+            // Capture raw frame
+            const frameCanvas = document.createElement("canvas");
+            frameCanvas.width = video.videoWidth;
+            frameCanvas.height = video.videoHeight;
+            frameCanvas.getContext("2d").drawImage(video, 0, 0);
+
+            // Calculate sharpness score
+            let score = 0;
+            try {
+                // Downscale for analysis
+                const ar = video.videoHeight / video.videoWidth;
+                analysisCanvas.width = aWidth;
+                analysisCanvas.height = aWidth * ar;
+                ctx.drawImage(
+                    frameCanvas,
+                    0,
+                    0,
+                    analysisCanvas.width,
+                    analysisCanvas.height,
+                );
+
+                score = calculateSharpness(analysisCanvas);
+            } catch (e) {
+                console.warn("Sharpness calc failed", e);
+            }
+
+            console.log(`Frame ${i + 1} Score: ${score.toFixed(2)}`);
+
+            if (score > bestScore) {
+                bestScore = score;
+                // Convert best frame to Image object immediately to hold it
+                bestImg = await new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.src = frameCanvas.toDataURL("image/jpeg");
+                });
+            }
+
+            // Small delay between frames
+            await wait(100);
+        }
+
+        console.log(`Selected best frame with score: ${bestScore.toFixed(2)}`);
+        return bestImg;
+    }
+
+    function calculateSharpness(canvasSource) {
+        if (!cvLoaded || !cv.Mat) return 0;
+
+        let src = cv.imread(canvasSource);
+        let gray = new cv.Mat();
+        let laplacian = new cv.Mat();
+        let score = 0;
+
+        try {
+            cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+            cv.Laplacian(gray, laplacian, cv.CV_64F);
+
+            let meanStd = new cv.Mat();
+            let meanStdDev = new cv.Mat();
+            cv.meanStdDev(laplacian, meanStd, meanStdDev);
+
+            // Variance = stddev^2. Higher variance = more edges = sharper.
+            let stddev = meanStdDev.doubleAt(0, 0);
+            score = stddev * stddev;
+
+            meanStd.delete();
+            meanStdDev.delete();
+        } catch (e) {
+            console.warn("CV Error", e);
+        } finally {
+            src.delete();
+            gray.delete();
+            laplacian.delete();
+        }
+        return score;
     }
 
     // --- Cropping Logic ---
