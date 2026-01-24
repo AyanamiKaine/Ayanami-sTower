@@ -16,12 +16,15 @@
     let cvLoaded = false;
     let scannerLoaded = false;
     let isReviewing = false;
+    let isCropping = false; // New state for cropping
     let reviewModeEnabled = false; // Toggle for "Review every shot"
     let isProcessing = false;
     let resultCanvas; // Canvas for the processed result
-    let capturedImage = null; // Stores the raw captured Image object
+    let capturedImage = null; // Stores the current working image (may be cropped)
+    let originalImage = null; // Stores the raw captured image for re-cropping
     let processedBlob = null; // The blob ready to upload
     let scanner; // jscanify instance
+    let cropper; // Cropper.js instance
 
     // Processing Parameters
     let filters = {
@@ -31,13 +34,16 @@
         blockSize: 31,
         threshold: 12,
         denoise: 1,
-        autoCrop: true,
+        denoise: 1,
+        autoCrop: false, // Default to false now
     };
 
     const libraries = {
         opencv: "https://docs.opencv.org/4.7.0/opencv.js",
         jscanify:
             "https://cdn.jsdelivr.net/gh/ColonelParrot/jscanify@master/src/jscanify.min.js",
+        cropperjs:
+            "https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js",
     };
 
     // --- Persistence ---
@@ -86,11 +92,27 @@
         });
     }
 
+    function loadCSS(href) {
+        if (document.querySelector(`link[href="${href}"]`)) return;
+        const link = document.createElement("link");
+        link.href = href;
+        link.rel = "stylesheet";
+        document.head.appendChild(link);
+    }
+
     async function initLibraries() {
         try {
+            // Load Cropper CSS
+            loadCSS(
+                "https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css",
+            );
+
             await loadScript(libraries.jscanify, "jscanify");
             scannerLoaded = true;
             console.log("jscanify loaded");
+
+            await loadScript(libraries.cropperjs, "Cropper");
+            console.log("Cropper loaded");
 
             // Initialize scanner if loaded
             if (typeof jscanify !== "undefined") {
@@ -246,15 +268,17 @@
         // Convert canvas to Image object for processing
         const img = new Image();
         img.onload = () => {
+            originalImage = img; // Save original
             capturedImage = img;
 
-            // If libraries are ready, apply filters (always)
+            // If libraries are ready
             if (cvLoaded && scannerLoaded) {
                 if (reviewModeEnabled) {
-                    isReviewing = true;
+                    startCrop(); // Go to crop mode first
+                } else {
+                    // Burst mode: skip crop, straight to process
+                    processImage(true);
                 }
-                // Process image. If NOT reviewing, enable autoUpload
-                processImage(!reviewModeEnabled);
             } else {
                 // Fallback direct upload if libs NOT ready
                 canvas.toBlob(
@@ -267,6 +291,61 @@
             }
         };
         img.src = canvas.toDataURL("image/jpeg");
+    }
+
+    // --- Cropping Logic ---
+
+    function startCrop() {
+        isCropping = true;
+        isReviewing = false; // Not in filter review yet
+        // Wait for DOM to render the crop image container
+        setTimeout(() => {
+            const imageElement = document.getElementById("crop-image");
+            if (imageElement && window.Cropper) {
+                if (cropper) cropper.destroy();
+                cropper = new Cropper(imageElement, {
+                    viewMode: 1,
+                    dragMode: "move",
+                    autoCropArea: 0.8,
+                    restore: false,
+                    guides: true,
+                    center: true,
+                    highlight: false,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    toggleDragModeOnDblclick: false,
+                });
+            }
+        }, 100);
+    }
+
+    function applyCrop() {
+        if (!cropper) return;
+        const canvas = cropper.getCroppedCanvas();
+        if (canvas) {
+            // Update capturedImage to the cropped version
+            const img = new Image();
+            img.onload = () => {
+                capturedImage = img;
+                isCropping = false;
+                cropper.destroy();
+                cropper = null;
+                isReviewing = true; // Go to filter review
+                processImage(false); // Process but don't auto-upload
+            };
+            img.src = canvas.toDataURL("image/jpeg");
+        }
+    }
+
+    function cancelCrop() {
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        isCropping = false;
+        isReviewing = false;
+        capturedImage = null;
+        originalImage = null;
     }
 
     // --- OCR Processing Logic ---
@@ -287,18 +366,8 @@
 
                 let srcCanvas = tempCanvas;
 
-                // 2. Auto Crop (jscanify)
-                if (filters.autoCrop && scanner) {
-                    try {
-                        srcCanvas = scanner.extractPaper(
-                            tempCanvas,
-                            capturedImage.width,
-                            capturedImage.height,
-                        );
-                    } catch (e) {
-                        console.warn("Auto-crop failed, using original", e);
-                    }
-                }
+                // 2. Auto Crop (DISABLED/REMOVED in favor of manual crop)
+                /* if (filters.autoCrop && scanner) { ... } */
 
                 // 3. OpenCV Processing
                 if (cvLoaded && cv.Mat) {
@@ -412,7 +481,9 @@
 
     function cancelReview() {
         isReviewing = false;
+        isCropping = false;
         capturedImage = null;
+        originalImage = null;
         processedBlob = null;
     }
 
@@ -475,6 +546,7 @@
     });
 
     onDestroy(() => {
+        if (cropper) cropper.destroy();
         if (stream) {
             stream.getTracks().forEach((track) => track.stop());
         }
@@ -496,7 +568,10 @@
         </div>
     {/if}
 
-    <div class="viewfinder" style:display={isReviewing ? "none" : "flex"}>
+    <div
+        class="viewfinder"
+        style:display={isReviewing || isCropping ? "none" : "flex"}
+    >
         <!-- svelte-ignore a11y-media-has-caption -->
         <video bind:this={video} playsinline muted></video>
         <canvas bind:this={canvas} style="display: none;"></canvas>
@@ -655,6 +730,24 @@
         </div>
     </div>
 
+    <!-- Crop View -->
+    <div class="crop-view" style:display={isCropping ? "flex" : "none"}>
+        <div class="crop-container">
+            {#if originalImage}
+                <img
+                    id="crop-image"
+                    src={originalImage.src}
+                    alt="Crop target"
+                    style="max-width: 100%; display: block;"
+                />
+            {/if}
+        </div>
+        <div class="crop-controls">
+            <button class="btn secondary" on:click={cancelCrop}>Cancel</button>
+            <button class="btn primary" on:click={applyCrop}>Done</button>
+        </div>
+    </div>
+
     <!-- Review / Editor View -->
     <div class="editor" style:display={isReviewing ? "flex" : "none"}>
         <div class="editor-canvas-container">
@@ -739,16 +832,7 @@
                     </div>
                 {/if}
 
-                <div class="setting-row toggle-row">
-                    <label for="autocrop-toggle">Auto-Crop Paper</label>
-                    <input
-                        id="autocrop-toggle"
-                        type="checkbox"
-                        checked={filters.autoCrop}
-                        on:change={(e) =>
-                            updateParams("autoCrop", e.target.checked)}
-                    />
-                </div>
+                <!-- Remove Auto-Crop toggle from UI since we have manual crop now -->
             </div>
 
             <!-- Action Buttons -->
@@ -1135,12 +1219,6 @@
         gap: 0.5rem;
     }
 
-    .setting-row.toggle-row {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }
-
     .setting-row label {
         color: #aaa;
         font-size: 0.8rem;
@@ -1165,11 +1243,6 @@
         cursor: pointer;
     }
 
-    .setting-row input[type="checkbox"] {
-        width: 20px;
-        height: 20px;
-    }
-
     .action-buttons {
         display: flex;
         gap: 1rem;
@@ -1177,5 +1250,35 @@
 
     .action-buttons button {
         flex: 1;
+    }
+
+    /* --- Crop View Styles --- */
+    .crop-view {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: black;
+        z-index: 40;
+        flex-direction: column;
+    }
+
+    .crop-container {
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+        background: #111;
+    }
+
+    .crop-controls {
+        height: 80px;
+        background: #222;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        gap: 1rem;
+        padding: 0 1rem;
+        padding-bottom: env(safe-area-inset-bottom);
     }
 </style>
