@@ -223,11 +223,11 @@ static class DeploymentService
 
     // --- Timeout Configuration ---
     // Different operations have different expected durations
-    private static readonly TimeSpan GitTimeout = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan GitTimeout = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan BuildTimeout = TimeSpan.FromMinutes(30);  // Container builds can take a while
-    private static readonly TimeSpan ContainerStartTimeout = TimeSpan.FromMinutes(2);
-    private static readonly TimeSpan CleanupTimeout = TimeSpan.FromMinutes(1);
-    private static readonly TimeSpan NginxTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan ContainerStartTimeout = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan CleanupTimeout = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan NginxTimeout = TimeSpan.FromSeconds(300);
 
     // --- Application Definitions ---
     // A list of all applications to be managed by this script.
