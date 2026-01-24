@@ -542,7 +542,7 @@ static class DeploymentService
             _logger.LogSection("Building Container Image", app.Name);
             await RunProcessAsync(
                 "nice",
-                $"-n 10 ionice -c 2 -n 7 podman build --memory 1g --cpu-period 100000 --cpu-quota 150000 --jobs 1 -t {app.ImageName}:latest .",
+                $"-n 10 ionice -c 2 -n 7 podman build -t {app.ImageName}:latest .",
                 app.ProjectPath,
                 cancellationToken: cancellationToken,
                 appName: app.Name,
