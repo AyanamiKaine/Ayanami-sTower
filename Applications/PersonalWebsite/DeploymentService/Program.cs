@@ -483,13 +483,13 @@ static class DeploymentService
             // Build Docker image with resource limits and reduced priority
             // nice -n 10: Lower CPU priority (range -20 to 19, higher = less priority)
             // ionice -c 2 -n 7: Best-effort I/O class with low priority (0-7, higher = less priority)
-            // --memory 2g: Limit build memory to 2GB to prevent OOM
-            // --cpus 1.5: Limit to 1.5 CPU cores (leaves headroom for SSH/system)
-            // --jobs 2: Limit bun parallelism (passed via build-arg if Dockerfile supports it)
+            // --memory 1g: Limit build memory to 1GB to prevent OOM
+            // --cpu-period/--cpu-quota: Limit CPU (100000 period with 150000 quota = 1.5 cores)
+            // --jobs 1: Limit parallelism during build
             _logger.LogSection("Building Container Image", app.Name);
             await RunProcessAsync(
                 "nice",
-                $"-n 10 ionice -c 2 -n 7 podman build --memory 1g --cpus 1 -t {app.ImageName}:latest .",
+                $"-n 10 ionice -c 2 -n 7 podman build --memory 1g --cpu-period 100000 --cpu-quota 150000 --jobs 1 -t {app.ImageName}:latest .",
                 app.ProjectPath,
                 cancellationToken: cancellationToken,
                 appName: app.Name,
