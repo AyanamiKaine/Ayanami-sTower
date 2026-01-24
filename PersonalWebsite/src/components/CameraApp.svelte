@@ -141,33 +141,63 @@
                 stream.getTracks().forEach((track) => track.stop());
             }
 
+            // Initial request: Ask for high resolution to encourage the browser to pick a high-res mode
+            const constraints = {
+                video: {
+                    facingMode: facingMode,
+                    width: { ideal: 4096 },
+                    height: { ideal: 2160 },
+                },
+            };
+
             try {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: facingMode,
-                        width: { ideal: 4096 },
-                        height: { ideal: 2160 },
-                    },
-                });
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
             } catch (e) {
                 console.warn(
                     "Specific facingMode failed, falling back to any video camera",
                     e,
                 );
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        width: { ideal: 4096 },
-                        height: { ideal: 2160 },
-                    },
-                });
+                // Fallback: remove facingMode constraint
+                delete constraints.video.facingMode;
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+            }
+
+            // Optimization: dynamic resolution scaling based on capabilities
+            const track = stream.getVideoTracks()[0];
+            const capabilities = track.getCapabilities
+                ? track.getCapabilities()
+                : {};
+
+            console.log("Camera Capabilities:", capabilities);
+
+            // If the camera reports resolution capabilities, try to maximize them
+            if (capabilities.width && capabilities.height) {
+                const maxWidth = capabilities.width.max;
+                const maxHeight = capabilities.height.max;
+
+                // Only apply if they are significantly different/better than what we might have got (or just force max)
+                // We apply 'ideal' max to ensure we get the best possible quality
+                try {
+                    await track.applyConstraints({
+                        ...constraints.video,
+                        width: { ideal: maxWidth },
+                        height: { ideal: maxHeight },
+                    });
+                    console.log(
+                        `Applied max resolution: ${maxWidth}x${maxHeight}`,
+                    );
+                } catch (err) {
+                    console.warn(
+                        "Failed to apply max resolution constraints:",
+                        err,
+                    );
+                }
             }
 
             video.srcObject = stream;
             video.play();
 
             // Check for torch support
-            const track = stream.getVideoTracks()[0];
-            const capabilities = track.getCapabilities();
             torchSupported = !!capabilities.torch;
             torchEnabled = false; // Reset state
 
