@@ -12,6 +12,76 @@
     let isFlashing = false;
     let lastUploadStatus = "";
 
+    // OCR & Review Mode State
+    let cvLoaded = false;
+    let scannerLoaded = false;
+    let isReviewing = false;
+    let reviewModeEnabled = false; // Toggle for "Review every shot"
+    let isProcessing = false;
+    let resultCanvas; // Canvas for the processed result
+    let capturedImage = null; // Stores the raw captured Image object
+    let processedBlob = null; // The blob ready to upload
+    let scanner; // jscanify instance
+
+    // Processing Parameters
+    let filters = {
+        type: "bw", // 'original', 'gray', 'bw'
+        brightness: 0,
+        contrast: 1.0,
+        blockSize: 31,
+        threshold: 12,
+        denoise: 1,
+        autoCrop: true,
+    };
+
+    const libraries = {
+        opencv: "https://docs.opencv.org/4.7.0/opencv.js",
+        jscanify:
+            "https://cdn.jsdelivr.net/gh/ColonelParrot/jscanify@master/src/jscanify.min.js",
+    };
+
+    async function loadScript(src, checkVar) {
+        return new Promise((resolve, reject) => {
+            if (window[checkVar]) {
+                resolve();
+                return;
+            }
+            const script = document.createElement("script");
+            script.src = src;
+            script.async = true;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    async function initLibraries() {
+        try {
+            await loadScript(libraries.jscanify, "jscanify");
+            scannerLoaded = true;
+            console.log("jscanify loaded");
+
+            // Initialize scanner if loaded
+            if (typeof jscanify !== "undefined") {
+                scanner = new jscanify();
+            }
+
+            // OpenCV takes a bit longer and sets 'cv'
+            await loadScript(libraries.opencv, "cv");
+            // Wait for cv to be fully ready
+            const checkCv = setInterval(() => {
+                if (typeof cv !== "undefined" && cv.Mat) {
+                    clearInterval(checkCv);
+                    cvLoaded = true;
+                    console.log("OpenCV loaded");
+                }
+            }, 100);
+        } catch (e) {
+            console.error("Failed to load libraries", e);
+            error = "Failed to load image processing libraries.";
+        }
+    }
+
     async function startCamera() {
         try {
             if (stream) {
@@ -79,6 +149,11 @@
         pendingUploads++;
         lastUploadStatus = "Uploading...";
 
+        // If reviewing, exit review mode immediately so user can take next pic
+        if (isReviewing) {
+            cancelReview();
+        }
+
         const formData = new FormData();
         formData.append("file", blob, `capture-${Date.now()}.jpg`);
 
@@ -137,20 +212,179 @@
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        canvas.toBlob(
-            (blob) => {
-                if (blob) {
-                    // Fire and forget (it handles its own state)
-                    uploadBlob(blob);
+        // Convert canvas to Image object for processing
+        const img = new Image();
+        img.onload = () => {
+            capturedImage = img;
+            if (reviewModeEnabled && cvLoaded && scannerLoaded) {
+                isReviewing = true;
+                // Initial processing with default settings
+                processImage();
+            } else {
+                // Direct upload (legacy behavior or if libs not ready)
+                canvas.toBlob(
+                    (blob) => {
+                        if (blob) uploadBlob(blob);
+                    },
+                    "image/jpeg",
+                    0.85,
+                );
+            }
+        };
+        img.src = canvas.toDataURL("image/jpeg");
+    }
+
+    // --- OCR Processing Logic ---
+
+    function processImage() {
+        if (!capturedImage) return;
+        isProcessing = true;
+
+        // Use requestAnimationFrame to prevent UI freeze
+        requestAnimationFrame(() => {
+            try {
+                // 1. Prepare Source
+                const tempCanvas = document.createElement("canvas");
+                tempCanvas.width = capturedImage.width;
+                tempCanvas.height = capturedImage.height;
+                const tempCtx = tempCanvas.getContext("2d");
+                tempCtx.drawImage(capturedImage, 0, 0);
+
+                let srcCanvas = tempCanvas;
+
+                // 2. Auto Crop (jscanify)
+                if (filters.autoCrop && scanner) {
+                    try {
+                        srcCanvas = scanner.extractPaper(
+                            tempCanvas,
+                            capturedImage.width,
+                            capturedImage.height,
+                        );
+                    } catch (e) {
+                        console.warn("Auto-crop failed, using original", e);
+                    }
                 }
-            },
-            "image/jpeg",
-            0.85,
-        ); // High quality JPEG
+
+                // 3. OpenCV Processing
+                if (cvLoaded && cv.Mat) {
+                    executeOpenCV(srcCanvas);
+                } else {
+                    // Fallback just draw canvas
+                    const ctx = resultCanvas.getContext("2d");
+                    resultCanvas.width = srcCanvas.width;
+                    resultCanvas.height = srcCanvas.height;
+                    ctx.drawImage(srcCanvas, 0, 0);
+                    isProcessing = false;
+                }
+            } catch (e) {
+                console.error("Processing failed", e);
+                isProcessing = false;
+                error = "Image processing failed. Try again/Turn off filters.";
+            }
+        });
+    }
+
+    function executeOpenCV(sourceCanvas) {
+        let src = cv.imread(sourceCanvas);
+        let dst = new cv.Mat();
+
+        try {
+            // Brightness & Contrast
+            // dst = alpha * src + beta
+            const alpha = parseFloat(filters.contrast);
+            const beta = parseFloat(filters.brightness);
+            src.convertTo(src, -1, alpha, beta);
+
+            if (filters.type === "original") {
+                cv.imshow(resultCanvas, src);
+            } else {
+                // Grayscale
+                cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
+
+                if (filters.type === "bw") {
+                    // Denoise
+                    const denoiseLevel = parseInt(filters.denoise);
+                    if (denoiseLevel > 0) {
+                        const kSize = denoiseLevel * 2 + 1;
+                        cv.GaussianBlur(
+                            src,
+                            src,
+                            new cv.Size(kSize, kSize),
+                            0,
+                            0,
+                            cv.BORDER_DEFAULT,
+                        );
+                    }
+
+                    // Adaptive Threshold
+                    const blockSize = parseInt(filters.blockSize);
+                    const validBlockSize =
+                        blockSize % 2 === 0 ? blockSize + 1 : blockSize; // Must be odd
+                    const thresholdC = parseInt(filters.threshold);
+
+                    cv.adaptiveThreshold(
+                        src,
+                        dst,
+                        255,
+                        cv.ADAPTIVE_THRESH_GAUSSIAN_C,
+                        cv.THRESH_BINARY,
+                        validBlockSize,
+                        thresholdC,
+                    );
+                    cv.imshow(resultCanvas, dst);
+                } else {
+                    // Gray only
+                    cv.imshow(resultCanvas, src);
+                }
+            }
+
+            // Update the blob for uploading
+            resultCanvas.toBlob(
+                (blob) => {
+                    processedBlob = blob;
+                },
+                "image/jpeg",
+                0.85,
+            );
+        } catch (err) {
+            console.error("OpenCV error", err);
+        } finally {
+            src.delete();
+            dst.delete();
+            isProcessing = false;
+        }
+    }
+
+    function uploadProcessed() {
+        if (processedBlob) {
+            uploadBlob(processedBlob);
+        }
+    }
+
+    function cancelReview() {
+        isReviewing = false;
+        capturedImage = null;
+        processedBlob = null;
+    }
+
+    // Debounced updater for sliders
+    let debounceTimer;
+    function updateParams(key, value) {
+        filters[key] = value;
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            processImage();
+        }, 100); // 100ms debounce
+    }
+
+    function setFilterType(type) {
+        filters.type = type;
+        processImage();
     }
 
     onMount(() => {
         startCamera();
+        initLibraries();
     });
 
     onDestroy(() => {
@@ -175,7 +409,7 @@
         </div>
     {/if}
 
-    <div class="viewfinder">
+    <div class="viewfinder" style:display={isReviewing ? "none" : "flex"}>
         <!-- svelte-ignore a11y-media-has-caption -->
         <video bind:this={video} playsinline muted></video>
         <canvas bind:this={canvas} style="display: none;"></canvas>
@@ -194,6 +428,20 @@
                 {/if}
             </div>
         {/if}
+
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="toggle-container">
+                <label class="switch-label">
+                    <span>Review Mode</span>
+                    <input type="checkbox" bind:checked={reviewModeEnabled} />
+                    <div class="switch"></div>
+                </label>
+            </div>
+            {#if !cvLoaded}
+                <span class="loading-badge">Loading AI...</span>
+            {/if}
+        </div>
 
         <div class="controls">
             <button
@@ -282,6 +530,109 @@
             {/if}
         </div>
     </div>
+
+    <!-- Review / Editor View -->
+    <div class="editor" style:display={isReviewing ? "flex" : "none"}>
+        <div class="editor-canvas-container">
+            <canvas bind:this={resultCanvas}></canvas>
+            {#if isProcessing}
+                <div class="processing-overlay">
+                    <span class="spinner"></span>
+                </div>
+            {/if}
+        </div>
+
+        <div class="editor-controls">
+            <!-- Filter Tabs -->
+            <div class="filter-tabs">
+                <button
+                    class:active={filters.type === "original"}
+                    on:click={() => setFilterType("original")}>Original</button
+                >
+                <button
+                    class:active={filters.type === "gray"}
+                    on:click={() => setFilterType("gray")}>Gray</button
+                >
+                <button
+                    class:active={filters.type === "bw"}
+                    on:click={() => setFilterType("bw")}>B&W (OCR)</button
+                >
+            </div>
+
+            <!-- Sliders -->
+            <div class="settings-panel">
+                <div class="setting-row">
+                    <label>Brightness</label>
+                    <input
+                        type="range"
+                        min="-100"
+                        max="100"
+                        value={filters.brightness}
+                        on:input={(e) =>
+                            updateParams("brightness", e.target.value)}
+                    />
+                </div>
+                <div class="setting-row">
+                    <label>Contrast</label>
+                    <input
+                        type="range"
+                        min="0.1"
+                        max="3.0"
+                        step="0.1"
+                        value={filters.contrast}
+                        on:input={(e) =>
+                            updateParams("contrast", e.target.value)}
+                    />
+                </div>
+
+                {#if filters.type === "bw"}
+                    <div class="setting-row">
+                        <label>Threshold</label>
+                        <input
+                            type="range"
+                            min="0"
+                            max="50"
+                            value={filters.threshold}
+                            on:input={(e) =>
+                                updateParams("threshold", e.target.value)}
+                        />
+                    </div>
+                    <div class="setting-row">
+                        <label>Block Size</label>
+                        <input
+                            type="range"
+                            min="3"
+                            max="151"
+                            step="2"
+                            value={filters.blockSize}
+                            on:input={(e) =>
+                                updateParams("blockSize", e.target.value)}
+                        />
+                    </div>
+                {/if}
+
+                <div class="setting-row toggle-row">
+                    <label>Auto-Crop Paper</label>
+                    <input
+                        type="checkbox"
+                        checked={filters.autoCrop}
+                        on:change={(e) =>
+                            updateParams("autoCrop", e.target.checked)}
+                    />
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn secondary" on:click={cancelReview}
+                    >Retake</button
+                >
+                <button class="btn primary" on:click={uploadProcessed}
+                    >Upload</button
+                >
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -296,6 +647,10 @@
         display: flex;
         flex-direction: column;
         z-index: 9999; /* Ensure it stays on top */
+        font-family:
+            system-ui,
+            -apple-system,
+            sans-serif;
     }
 
     .error-message {
@@ -330,7 +685,7 @@
     video {
         width: 100%;
         height: 100%;
-        object-fit: contain;
+        object-fit: cover;
     }
 
     .flash-overlay {
@@ -357,7 +712,7 @@
 
     .status-indicator {
         position: absolute;
-        top: env(safe-area-inset-top, 20px);
+        top: env(safe-area-inset-top, 50px);
         margin-top: 1rem;
         left: 50%;
         transform: translateX(-50%);
@@ -365,13 +720,83 @@
         color: white;
         padding: 0.5rem 1rem;
         border-radius: 20px;
-        z-index: 5;
+        z-index: 25;
         font-size: 0.9rem;
         display: flex;
         align-items: center;
         gap: 0.6rem;
         backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
+    }
+
+    /* Top Bar for Review Mode Toggle */
+    .top-bar {
+        position: absolute;
+        top: env(safe-area-inset-top, 10px);
+        left: 0;
+        width: 100%;
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 20;
+    }
+
+    .toggle-container {
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+    }
+
+    .switch-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+
+    .switch-label input {
+        display: none;
+    }
+
+    .switch {
+        width: 40px;
+        height: 22px;
+        background: #555;
+        border-radius: 20px;
+        position: relative;
+        transition: background 0.3s;
+    }
+
+    .switch::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 18px;
+        height: 18px;
+        background: white;
+        border-radius: 50%;
+        transition: transform 0.3s;
+    }
+
+    .switch-label input:checked + .switch {
+        background: #4ade80; /* green */
+    }
+
+    .switch-label input:checked + .switch::after {
+        transform: translateX(18px);
+    }
+
+    .loading-badge {
+        font-size: 0.8rem;
+        background: rgba(234, 179, 8, 0.8);
+        color: black;
+        padding: 0.2rem 0.6rem;
+        border-radius: 10px;
+        font-weight: 600;
     }
 
     .spinner {
@@ -420,6 +845,9 @@
         cursor: pointer;
         font-size: 1rem;
         transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .btn.active {
@@ -443,9 +871,6 @@
     .btn.icon-btn {
         padding: 0.8rem;
         border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
     }
 
     .capture-btn {
@@ -479,5 +904,136 @@
 
     .spacer {
         width: 40px; /* Balance the layout for icon button */
+    }
+
+    /* --- Editor Styles --- */
+    .editor {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background: #111;
+        z-index: 30;
+    }
+
+    .editor-canvas-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        position: relative;
+        padding: 20px;
+    }
+
+    .editor-canvas-container canvas {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    }
+
+    .processing-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .editor-controls {
+        background: #222;
+        padding: 1.5rem;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    }
+
+    .filter-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        background: #333;
+        padding: 4px;
+        border-radius: 12px;
+    }
+
+    .filter-tabs button {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: #888;
+        padding: 8px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .filter-tabs button.active {
+        background: #555;
+        color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .settings-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .setting-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .setting-row.toggle-row {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .setting-row label {
+        color: #aaa;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .setting-row input[type="range"] {
+        width: 100%;
+        height: 4px;
+        background: #444;
+        border-radius: 2px;
+        appearance: none;
+    }
+
+    .setting-row input[type="range"]::-webkit-slider-thumb {
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        background: white;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    .setting-row input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .action-buttons button {
+        flex: 1;
     }
 </style>
