@@ -260,39 +260,92 @@ static class DeploymentService
         }
     };
 
+    // Lock file path to prevent concurrent deployments
+    private const string LockFilePath = "/home/ayanami/deployment.lock";
+
     public static async Task Main(string[] args)
     {
-        using var logger = new DeploymentLogger(LogDirectory);
-        _logger = logger;
-
-        Console.WriteLine($"\n--- {DateTime.Now}: C# Multi-Deployer started. ---");
-        Console.WriteLine($"Log file: {logger.LogFilePath}");
-
-        _logger.Log("Multi-Deployer started");
-
-        bool isForced = args.Contains("-f") || args.Contains("--force");
-        if (isForced)
+        // Acquire exclusive lock to prevent concurrent deployments
+        FileStream? lockFile = null;
+        try
         {
-            Console.WriteLine("Force flag detected. All applications will be redeployed regardless of git changes.");
-            _logger.Log("Force flag detected - all applications will be redeployed");
+            try
+            {
+                lockFile = new FileStream(
+                    LockFilePath,
+                    FileMode.OpenOrCreate,
+                    FileAccess.ReadWrite,
+                    FileShare.None,
+                    bufferSize: 1,
+                    FileOptions.DeleteOnClose);
+
+                // Write our PID to the lock file for debugging purposes
+                var pidBytes = Encoding.UTF8.GetBytes($"{Environment.ProcessId}\n{DateTime.Now:O}");
+                await lockFile.WriteAsync(pidBytes);
+                await lockFile.FlushAsync();
+            }
+            catch (IOException)
+            {
+                // Another instance is running - try to read info from lock file
+                string lockInfo = "";
+                try
+                {
+                    if (File.Exists(LockFilePath))
+                    {
+                        lockInfo = await File.ReadAllTextAsync(LockFilePath);
+                    }
+                }
+                catch { }
+
+                Console.WriteLine("!!! ERROR: Another deployment is already in progress.");
+                Console.WriteLine($"    Lock file: {LockFilePath}");
+                if (!string.IsNullOrWhiteSpace(lockInfo))
+                {
+                    Console.WriteLine($"    Lock info: {lockInfo.Trim()}");
+                }
+                Console.WriteLine("    If you believe this is stale, delete the lock file and retry.");
+                Environment.Exit(1);
+                return;
+            }
+
+            using var logger = new DeploymentLogger(LogDirectory);
+            _logger = logger;
+
+            Console.WriteLine($"\n--- {DateTime.Now}: C# Multi-Deployer started. ---");
+            Console.WriteLine($"Log file: {logger.LogFilePath}");
+
+            _logger.Log("Multi-Deployer started");
+            _logger.Log($"Acquired exclusive lock: {LockFilePath}");
+
+            bool isForced = args.Contains("-f") || args.Contains("--force");
+            if (isForced)
+            {
+                Console.WriteLine("Force flag detected. All applications will be redeployed regardless of git changes.");
+                _logger.Log("Force flag detected - all applications will be redeployed");
+            }
+
+            // Always fetch and pull to ensure we're at the latest commit
+            Console.WriteLine("Fetching and pulling latest changes...");
+            _logger.LogSection("Git Fetch & Pull");
+            await FetchAndPullLatest();
+
+            // Iterate through each defined application and trigger its deployment logic.
+            foreach (var app in AppsToDeploy)
+            {
+                Console.WriteLine($"\n>>>>>> Processing Application: {app.Name} <<<<<<");
+                _logger.LogSection($"Processing Application", app.Name);
+                await TriggerDeploymentForApp(app, isForced);
+            }
+
+            Console.WriteLine("\n--- Multi-Deployer run complete. ---\n");
+            _logger.Log("Multi-Deployer run complete");
+            Console.WriteLine($"Full log available at: {logger.LogFilePath}");
         }
-
-        // Always fetch and pull to ensure we're at the latest commit
-        Console.WriteLine("Fetching and pulling latest changes...");
-        _logger.LogSection("Git Fetch & Pull");
-        await FetchAndPullLatest();
-
-        // Iterate through each defined application and trigger its deployment logic.
-        foreach (var app in AppsToDeploy)
+        finally
         {
-            Console.WriteLine($"\n>>>>>> Processing Application: {app.Name} <<<<<<");
-            _logger.LogSection($"Processing Application", app.Name);
-            await TriggerDeploymentForApp(app, isForced);
+            // Release the lock - FileOptions.DeleteOnClose will remove the file
+            lockFile?.Dispose();
         }
-
-        Console.WriteLine("\n--- Multi-Deployer run complete. ---\n");
-        _logger.Log("Multi-Deployer run complete");
-        Console.WriteLine($"Full log available at: {logger.LogFilePath}");
     }
 
     /// <summary>
@@ -624,6 +677,8 @@ static class DeploymentService
         _logger.Log($"Timeout set to: {effectiveTimeout.TotalSeconds:F0}s", appName, LogLevel.Debug);
 
         var processStopwatch = Stopwatch.StartNew();
+        var stdoutBuilder = new StringBuilder();
+        var stderrBuilder = new StringBuilder();
 
         using var process = new Process
         {
@@ -640,6 +695,27 @@ static class DeploymentService
             }
         };
 
+        // Stream output to console in real-time using event handlers
+        process.OutputDataReceived += (sender, e) =>
+        {
+            if (e.Data != null)
+            {
+                Console.WriteLine($"  [out] {e.Data}");
+                lock (stdoutBuilder) { stdoutBuilder.AppendLine(e.Data); }
+                _logger.Log($"    [stdout] {e.Data}", appName, LogLevel.Debug);
+            }
+        };
+
+        process.ErrorDataReceived += (sender, e) =>
+        {
+            if (e.Data != null)
+            {
+                Console.WriteLine($"  [err] {e.Data}");
+                lock (stderrBuilder) { stderrBuilder.AppendLine(e.Data); }
+                _logger.Log($"    [stderr] {e.Data}", appName, LogLevel.Warning);
+            }
+        };
+
         // Create a combined cancellation token that includes both the user cancellation and the timeout
         using var timeoutCts = new CancellationTokenSource(effectiveTimeout);
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
@@ -647,6 +723,8 @@ static class DeploymentService
         try
         {
             process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
             _logger.Log($"Process started with PID: {process.Id}", appName, LogLevel.Debug);
         }
         catch (Exception ex)
@@ -661,13 +739,6 @@ static class DeploymentService
             await process.StandardInput.WriteAsync(input);
             process.StandardInput.Close();
         }
-
-        // Read stdout and stderr ASYNCHRONOUSLY to prevent buffer deadlock.
-        // This is critical: if we wait for the process to exit before reading,
-        // and the output buffer fills up, the process will block forever waiting
-        // for the buffer to be drained, causing a deadlock.
-        var stdoutTask = process.StandardOutput.ReadToEndAsync(linkedCts.Token);
-        var stderrTask = process.StandardError.ReadToEndAsync(linkedCts.Token);
 
         try
         {
@@ -700,24 +771,15 @@ static class DeploymentService
 
         processStopwatch.Stop();
 
-        // Now safely read the output (process has exited, buffers are complete)
-        string output = await stdoutTask;
-        string error = await stderrTask;
+        // Get the accumulated output
+        string output, error;
+        lock (stdoutBuilder) { output = stdoutBuilder.ToString(); }
+        lock (stderrBuilder) { error = stderrBuilder.ToString(); }
 
-        // Log all output to the deployment log
-        _logger.LogProcessOutput(command, output, appName);
-        if (!string.IsNullOrWhiteSpace(error))
-        {
-            _logger.LogProcessError(command, error, appName);
-        }
         _logger.LogProcessComplete(command, process.ExitCode, processStopwatch.Elapsed, appName);
 
         if (process.ExitCode == 0)
         {
-            if (!string.IsNullOrEmpty(error))
-            {
-                Console.WriteLine($"Warning from command '{command} {args}': {error}");
-            }
             return output;
         }
 
