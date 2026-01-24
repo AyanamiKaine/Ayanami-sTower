@@ -40,6 +40,37 @@
             "https://cdn.jsdelivr.net/gh/ColonelParrot/jscanify@master/src/jscanify.min.js",
     };
 
+    // --- Persistence ---
+    function loadSettings() {
+        try {
+            const savedFilters = localStorage.getItem("cameraApp_filters");
+            const savedReviewMode = localStorage.getItem(
+                "cameraApp_reviewMode",
+            );
+
+            if (savedFilters) {
+                filters = { ...filters, ...JSON.parse(savedFilters) };
+            }
+            if (savedReviewMode !== null) {
+                reviewModeEnabled = JSON.parse(savedReviewMode);
+            }
+        } catch (e) {
+            console.error("Failed to load settings", e);
+        }
+    }
+
+    function saveSettings() {
+        try {
+            localStorage.setItem("cameraApp_filters", JSON.stringify(filters));
+            localStorage.setItem(
+                "cameraApp_reviewMode",
+                JSON.stringify(reviewModeEnabled),
+            );
+        } catch (e) {
+            console.error("Failed to save settings", e);
+        }
+    }
+
     async function loadScript(src, checkVar) {
         return new Promise((resolve, reject) => {
             if (window[checkVar]) {
@@ -216,12 +247,16 @@
         const img = new Image();
         img.onload = () => {
             capturedImage = img;
-            if (reviewModeEnabled && cvLoaded && scannerLoaded) {
-                isReviewing = true;
-                // Initial processing with default settings
-                processImage();
+
+            // If libraries are ready, apply filters (always)
+            if (cvLoaded && scannerLoaded) {
+                if (reviewModeEnabled) {
+                    isReviewing = true;
+                }
+                // Process image. If NOT reviewing, enable autoUpload
+                processImage(!reviewModeEnabled);
             } else {
-                // Direct upload (legacy behavior or if libs not ready)
+                // Fallback direct upload if libs NOT ready
                 canvas.toBlob(
                     (blob) => {
                         if (blob) uploadBlob(blob);
@@ -236,7 +271,7 @@
 
     // --- OCR Processing Logic ---
 
-    function processImage() {
+    function processImage(autoUpload = false) {
         if (!capturedImage) return;
         isProcessing = true;
 
@@ -267,13 +302,24 @@
 
                 // 3. OpenCV Processing
                 if (cvLoaded && cv.Mat) {
-                    executeOpenCV(srcCanvas);
+                    executeOpenCV(srcCanvas, autoUpload);
                 } else {
                     // Fallback just draw canvas
                     const ctx = resultCanvas.getContext("2d");
                     resultCanvas.width = srcCanvas.width;
                     resultCanvas.height = srcCanvas.height;
                     ctx.drawImage(srcCanvas, 0, 0);
+
+                    // Fallback simple upload for non-OpenCV path
+                    resultCanvas.toBlob(
+                        (blob) => {
+                            processedBlob = blob;
+                            if (autoUpload) uploadProcessed();
+                        },
+                        "image/jpeg",
+                        0.85,
+                    );
+
                     isProcessing = false;
                 }
             } catch (e) {
@@ -284,7 +330,7 @@
         });
     }
 
-    function executeOpenCV(sourceCanvas) {
+    function executeOpenCV(sourceCanvas, autoUpload = false) {
         let src = cv.imread(sourceCanvas);
         let dst = new cv.Mat();
 
@@ -342,6 +388,9 @@
             resultCanvas.toBlob(
                 (blob) => {
                     processedBlob = blob;
+                    if (autoUpload) {
+                        uploadProcessed();
+                    }
                 },
                 "image/jpeg",
                 0.85,
@@ -371,6 +420,7 @@
     let debounceTimer;
     function updateParams(key, value) {
         filters[key] = value;
+        saveSettings(); // Save whenever changed
         if (debounceTimer) clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
             processImage();
@@ -379,10 +429,16 @@
 
     function setFilterType(type) {
         filters.type = type;
+        saveSettings(); // Save whenever changed
         processImage();
     }
 
+    function toggleReviewMode() {
+        saveSettings(); // Save checking status
+    }
+
     onMount(() => {
+        loadSettings();
         startCamera();
         initLibraries();
     });
@@ -418,11 +474,14 @@
             <div class="flash-overlay"></div>
         {/if}
 
-        {#if pendingUploads > 0 || lastUploadStatus}
+        {#if pendingUploads > 0 || lastUploadStatus || (isProcessing && !isReviewing)}
             <div class="status-indicator">
                 {#if pendingUploads > 0}
                     <span class="spinner"></span>
                     {pendingUploads} sending...
+                {:else if isProcessing && !isReviewing}
+                    <span class="spinner"></span>
+                    Processing...
                 {:else}
                     {lastUploadStatus}
                 {/if}
@@ -432,9 +491,14 @@
         <!-- Top Bar -->
         <div class="top-bar">
             <div class="toggle-container">
-                <label class="switch-label">
+                <label class="switch-label" for="review-mode-toggle">
                     <span>Review Mode</span>
-                    <input type="checkbox" bind:checked={reviewModeEnabled} />
+                    <input
+                        id="review-mode-toggle"
+                        type="checkbox"
+                        bind:checked={reviewModeEnabled}
+                        on:change={toggleReviewMode}
+                    />
                     <div class="switch"></div>
                 </label>
             </div>
@@ -562,8 +626,9 @@
             <!-- Sliders -->
             <div class="settings-panel">
                 <div class="setting-row">
-                    <label>Brightness</label>
+                    <label for="brightness-slider">Brightness</label>
                     <input
+                        id="brightness-slider"
                         type="range"
                         min="-100"
                         max="100"
@@ -573,8 +638,9 @@
                     />
                 </div>
                 <div class="setting-row">
-                    <label>Contrast</label>
+                    <label for="contrast-slider">Contrast</label>
                     <input
+                        id="contrast-slider"
                         type="range"
                         min="0.1"
                         max="3.0"
@@ -587,8 +653,9 @@
 
                 {#if filters.type === "bw"}
                     <div class="setting-row">
-                        <label>Threshold</label>
+                        <label for="threshold-slider">Threshold</label>
                         <input
+                            id="threshold-slider"
                             type="range"
                             min="0"
                             max="50"
@@ -598,8 +665,9 @@
                         />
                     </div>
                     <div class="setting-row">
-                        <label>Block Size</label>
+                        <label for="blocksize-slider">Block Size</label>
                         <input
+                            id="blocksize-slider"
                             type="range"
                             min="3"
                             max="151"
@@ -612,8 +680,9 @@
                 {/if}
 
                 <div class="setting-row toggle-row">
-                    <label>Auto-Crop Paper</label>
+                    <label for="autocrop-toggle">Auto-Crop Paper</label>
                     <input
+                        id="autocrop-toggle"
                         type="checkbox"
                         checked={filters.autoCrop}
                         on:change={(e) =>
