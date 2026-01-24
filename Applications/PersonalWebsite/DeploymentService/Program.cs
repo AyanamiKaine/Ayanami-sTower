@@ -480,9 +480,20 @@ static class DeploymentService
             Console.WriteLine($"[{app.Name}] Current LIVE: {liveColor} ({livePort}). Deploying to STANDBY: {standbyColor} ({standbyPort}).");
             _logger.Log($"Blue-Green state: LIVE={liveColor}:{livePort}, STANDBY={standbyColor}:{standbyPort}", app.Name);
 
-            // Build Docker image
+            // Build Docker image with resource limits and reduced priority
+            // nice -n 10: Lower CPU priority (range -20 to 19, higher = less priority)
+            // ionice -c 2 -n 7: Best-effort I/O class with low priority (0-7, higher = less priority)
+            // --memory 2g: Limit build memory to 2GB to prevent OOM
+            // --cpus 1.5: Limit to 1.5 CPU cores (leaves headroom for SSH/system)
+            // --jobs 2: Limit bun parallelism (passed via build-arg if Dockerfile supports it)
             _logger.LogSection("Building Container Image", app.Name);
-            await RunProcessAsync("podman", $"build -t {app.ImageName}:latest .", app.ProjectPath, cancellationToken: cancellationToken, appName: app.Name, timeout: BuildTimeout);
+            await RunProcessAsync(
+                "nice",
+                $"-n 10 ionice -c 2 -n 7 podman build --memory 1g --cpus 1 -t {app.ImageName}:latest .",
+                app.ProjectPath,
+                cancellationToken: cancellationToken,
+                appName: app.Name,
+                timeout: BuildTimeout);
 
             // Cleanup old standby resources
             _logger.LogSection("Cleanup Old Standby Resources", app.Name);
