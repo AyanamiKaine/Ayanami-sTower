@@ -1,0 +1,166 @@
+---
+title: "Adding New Gamestarts"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Gamestarts"]
+category: "cookbooks"
+order: 32
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "Complete guide to creating custom gamestarts with cutscenes, loadouts, and faction relations."
+---
+
+This guide explains how to create custom gamestarts with full features like cutscenes, detailed info displays, custom loadouts, inventory, and faction relations.
+
+## 1. File Structure
+
+Create or patch `libraries/gamestarts.xml` in your extension:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<diff>
+  <!-- Add a new group for your gamestarts (optional) -->
+  <add sel="/gamestarts/groups/group[@group='3']" pos="before">
+    <group group="1000" name="My Mod Name" />
+  </add>
+
+  <!-- Add the gamestart -->
+  <add sel="/gamestarts/gamestart[1]" pos="before">
+    <gamestart id="my_gamestart_id" ... >
+      <!-- content -->
+    </gamestart>
+  </add>
+</diff>
+```
+
+## 2. Complete Gamestart Structure
+
+```xml
+<gamestart id="unique_id"
+           name="{PageID,EntryID}"
+           description="{PageID,EntryID}"
+           image="gamestart_terran1"
+           introvoice="gamestart_started_voiceline"
+           group="1000">
+
+  <!-- Info Panel (displayed in gamestart selection menu) -->
+  <info>
+    <item name="@playerimage" value="briefing_character_image"/>  <!-- Character portrait -->
+    <item name="{1021,8}"  value="Character Name" />              <!-- Name -->
+    <item name="{1021,13}" value="Terran" />                      <!-- Race -->
+    <item name="{1021,9}"  value="{1021,51}" />                   <!-- Difficulty (Easy/Medium/Hard) -->
+    <item />                                                       <!-- Empty spacer -->
+    <item name="{1021,1}"  value="Argon Prime" />                 <!-- Location -->
+    <item />
+    <item name="{1021,2}"  value="Elite Vanguard" />              <!-- Starting Ship -->
+    <item name="{1021,3}"  value="10,000 Cr" />                   <!-- Starting Cash -->
+    <item name="{1021,5}"  value="{1021,41}" />                   <!-- Property: None -->
+  </info>
+
+  <!-- Cutscene (plays when start is selected in menu) -->
+  <cutscene ref="gamestart_terran2" voice="gamestart_selected_voiceline" />
+
+  <!-- Intro Sequence (plays after pressing Start) -->
+  <intro ref="gamestart5" voice="gamestart_intro_voiceline" length="35.0" fadeout="2.0" />
+
+  <!-- Scenario Type (categorization in menu) -->
+  <type name="{1021,92}" description="{1021,93}" recommendation="10" />
+
+  <!-- Custom Loading Screen -->
+  <loadingscreen ref="loading_demo_screen_3" text="{PageID,EntryID}" length="25"/>
+
+  <!-- Starting Location -->
+  <location galaxy="xu_ep2_universe_macro" sector="cluster_14_sector001_macro">
+    <position x="0" y="0" z="0" />
+    <rotation yaw="0" pitch="0" roll="0" />
+  </location>
+
+  <!-- Player Configuration -->
+  <player macro="character_player_scenario_combat_argon_macro"
+          female="true"
+          money="50000"
+          name="Stella">
+
+    <!-- Starting Ship -->
+    <ship macro="ship_arg_s_fighter_04_a_macro">
+      <loadout>
+        <macros>
+          <engine macro="engine_arg_s_combat_01_mk1_macro" path="../con_engine_01"/>
+          <shield macro="shield_arg_s_standard_01_mk1_macro" path="../con_shield_01"/>
+          <weapon macro="weapon_arg_s_pulse_01_mk1_macro" path="../con_primaryweapon_01"/>
+        </macros>
+        <ammunition>
+          <ammunition macro="eq_arg_satellite_01_macro" exact="5" optional="true"/>
+        </ammunition>
+        <software>
+          <software ware="software_flightassistmk1"/>
+          <software ware="software_scannerobjectmk1"/>
+        </software>
+        <virtualmacros>
+          <thruster macro="thruster_gen_s_allround_01_mk1_macro" />
+        </virtualmacros>
+      </loadout>
+    </ship>
+
+    <!-- Personal Inventory -->
+    <inventory>
+      <ware ware="engine_gen_spacesuit_01_mk2" amount="1" />
+      <ware ware="weapon_gen_spacesuit_laser_01_mk1" amount="1" />
+    </inventory>
+
+    <!-- Station Blueprints -->
+    <blueprints>
+      <ware ware="module_arg_dock_m_01"/>
+    </blueprints>
+
+    <!-- Player Paint Theme -->
+    <theme paint="painttheme_player_01" />
+  </player>
+
+  <!-- Universe Configuration -->
+  <universe>
+    <factions>
+      <relations>
+        <relation faction="argon" otherfaction="player" relation="0.1"/>
+      </relations>
+    </factions>
+  </universe>
+
+</gamestart>
+```
+
+## 3. Info Panel Label IDs
+
+These are the standard label IDs from page `1021`:
+
+| ID | Label | Description |
+|----|-------|-------------|
+| `{1021,8}` | Name | Character/Player name |
+| `{1021,13}` | Race | Race of the character |
+| `{1021,9}` | Difficulty | Use `{1021,51}` (Easy), `{1021,52}` (Medium), `{1021,53}` (Hard) |
+| `{1021,1}` | Location | Starting sector name |
+| `{1021,2}` | Starting Ship | Ship name |
+| `{1021,3}` | Cash | Starting credits |
+| `{1021,5}` | Property | Property owned (`{1021,41}` = None) |
+
+## 4. Available Cutscene References
+
+- `gamestart_terran1`, `gamestart_terran2`
+- `gamestart_split1`, `gamestart_split2`
+- `gamestart_pirate1`, `gamestart_pirate2`
+- `scenario_flightschool`, `scenario_combat`, `scenario_advanced`
+
+## 5. Common Pitfalls
+
+### Ship Won't Move
+Missing `<virtualmacros>` thruster definition:
+```xml
+<virtualmacros>
+  <thruster macro="thruster_gen_s_allround_01_mk1_macro" />
+</virtualmacros>
+```
+
+### Game Returns to Menu
+- Invalid XML structure
+- Invalid sector macro (case-sensitive!)
+- Missing required macro references

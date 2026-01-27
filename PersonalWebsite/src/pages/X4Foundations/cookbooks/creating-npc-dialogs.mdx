@@ -1,0 +1,163 @@
+---
+title: "Creating NPC Dialogs"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Dialog", "NPC"]
+category: "cookbooks"
+order: 24
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to add custom conversation options to NPCs."
+---
+
+This guide explains how to add custom conversation options to NPCs in X4.
+
+## Basic Structure
+
+Custom dialog requires:
+1. A cue that waits for the NPC to exist
+2. Child cues that listen for conversation events
+3. Actions that add NPC lines and player choices
+
+## Example: Faction Representative Dialog
+
+```xml
+<cue name="Dialog_Setup" namespace="this">
+    <conditions>
+        <check_any>
+            <event_cue_signalled cue="md.Setup.GameStart" />
+            <event_game_loaded />
+        </check_any>
+    </conditions>
+    <actions>
+        <!-- Initialize state tracking -->
+        <do_if value="not global.$DialogState?">
+            <set_value name="global.$DialogState" exact="table[]" />
+        </do_if>
+    </actions>
+    <cues>
+        <!-- Wait for NPC to exist -->
+        <cue name="Wait_For_NPC" checkinterval="5s">
+            <conditions>
+                <check_value value="$MyNPC?" />
+            </conditions>
+            <actions>
+                <set_value name="$NPC" exact="$MyNPC" />
+            </actions>
+            <cues>
+                <!-- Handle conversation start -->
+                <cue name="Conversation_Start" instantiate="true">
+                    <conditions>
+                        <check_any>
+                            <event_conversation_started actor="$NPC" />
+                            <event_conversation_returned_to_section actor="$NPC" />
+                        </check_any>
+                        <check_value value="event.param == 'default'" />
+                    </conditions>
+                    <actions>
+                        <add_npc_line speaker="$NPC" line="2001" />
+                        <add_player_choice text="'Ask about topic'" section="topic_section" />
+                    </actions>
+                </cue>
+
+                <!-- Handle section changes -->
+                <cue name="Section_Handler" instantiate="true">
+                    <conditions>
+                        <event_conversation_next_section actor="$NPC" sectionprefix="topic_" />
+                    </conditions>
+                    <actions>
+                        <do_if value="event.param == 'topic_section'">
+                            <add_npc_line speaker="$NPC" line="2001" hidechoices="true" />
+                            <add_npc_line speaker="$NPC" line="2002" />
+                            <add_player_choice text="'Back'" section="default" />
+                        </do_if>
+                    </actions>
+                </cue>
+            </cues>
+        </cue>
+    </cues>
+</cue>
+```
+
+## Key Elements
+
+### Conversation Events
+
+| Event | Purpose |
+|-------|---------|
+| `event_conversation_started` | Player initiates conversation |
+| `event_conversation_returned_to_section` | Player returns to a section |
+| `event_conversation_next_section` | Player selects a choice |
+
+### Adding NPC Lines
+
+```xml
+<add_npc_line speaker="$NPC" line="2001" />
+<add_npc_line speaker="$NPC" line="2002" hidechoices="true" />
+```
+
+- `speaker` - The NPC actor
+- `line` - Voice line ID (2001-2010 are generic)
+- `hidechoices="true"` - Hides player choices until next line
+
+### Adding Player Choices
+
+```xml
+<add_player_choice text="'Option text'" section="section_name" />
+```
+
+- `text` - Displayed choice text (requires quotes inside quotes)
+- `section` - Target section when clicked (use `default` to return to main)
+
+## Voice Lines
+
+X4 uses predefined voice lines. Common generic line IDs:
+- `2001` - Neutral greeting
+- `2002` - Information response
+- `2003` - Explanation
+- `2004` - Concern/warning
+
+## State Tracking
+
+Track which topics the player has heard:
+
+```xml
+<set_value name="global.$DialogState.$HeardTopic" exact="true" />
+
+<do_if value="not global.$DialogState.$HeardTopic">
+    <add_player_choice text="'Ask about topic'" section="topic" />
+</do_if>
+```
+
+## Troubleshooting
+
+### Event conditions inside check_all cause schema errors
+
+**Solution**: Put events inside `check_any` at conditions level:
+
+```xml
+<!-- CORRECT -->
+<conditions>
+    <check_any>
+        <event_conversation_started actor="$NPC" />
+        <event_conversation_returned_to_section actor="$NPC" />
+    </check_any>
+    <check_value value="event.param == 'default'" />
+</conditions>
+```
+
+### Custom text not displaying
+
+**Solution**: Create a t-file with your text:
+
+```xml
+<!-- In t/0001-L044.xml -->
+<page id="999850">
+    <t id="1001">Your custom text here</t>
+</page>
+```
+
+Then reference it:
+```xml
+<add_npc_line speaker="$NPC" line="1001" page="999850" />
+```

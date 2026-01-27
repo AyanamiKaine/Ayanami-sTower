@@ -1,0 +1,72 @@
+---
+title: "Permanent NPC Walkthrough"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "NPC"]
+category: "cookbooks"
+order: 53
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "Walkthrough for spawning a persistent, interactable NPC in a specific station room."
+---
+
+This document outlines the implementation and logic for spawning a persistent NPC in the X4 Foundations universe.
+
+## Goal
+Spawn a unique NPC in a specific, high-importance room on a station. The NPC must be persistent, interactable (start a conversation), and placed reliably without errors.
+
+## Implementation Details
+
+### 1. Location Finding
+The script first locates the target station.
+```xml
+<find_station name="$Wharf" space="$TargetSector" owner="faction.argon" ... />
+```
+
+### 2. Room Selection Strategy
+To ensure the NPC appears in a relevant location (like an office), we search for specific "Important NPCs" on the station and use their room.
+
+Priority Order:
+1.  **Faction Representative** (`entitytype.factionrepresentative`) -> usually has a nice office.
+2.  **Station Manager** (`controlpost.manager`) -> has a manager's office.
+3.  **Ship Trader** (`controlpost.shiptrader`) -> has a "Trader's Corner".
+
+We iterate through all NPCs on the station to find the best match:
+```xml
+<do_all exact="$AllNPCs.count" counter="$i">
+    <!-- Check for Faction Rep -->
+    <do_if value="$CurrentNPC.type == entitytype.factionrepresentative"> ... </do_if>
+    <!-- Check for Manager -->
+    <do_if value="$CurrentNPC.controlpost == controlpost.manager"> ... </do_if>
+    ...
+</do_all>
+```
+
+### 3. NPC Creation
+The NPC is created as a "cue actor", meaning it is attached to the MD cue and will persist as long as the cue exists (which is forever).
+```xml
+<create_cue_actor name="$StellaContact" cue="Start_Permanent_NPC"> ... </create_cue_actor>
+<set_entity_traits entity="$StellaContact" missionactor="true" />
+```
+
+### 4. Placement Logic (The Tricky Part)
+Placing an NPC requires finding a free "slot" (a specific coordinate markers in the room model).
+The script tries the following in order:
+1.  **Standing Slot** (`tag.stand`): A polite standing position.
+2.  **Generic NPC Slot** (`tag.npc_generic`): Any standard NPC spot.
+3.  **Any Slot** (Excluding filled): Any empty spot.
+4.  **Auto-Placement Fallback (Engine Magic)**: If all manual slot finding fails, we call `add_actor_to_room` without a slot argument. This forces the game engine to find *any* valid position.
+
+```xml
+<!-- Final Fallback -->
+<add_actor_to_room actor="$StellaContact" object="$TargetRoom" result="$Placed" />
+```
+
+## Verification
+- **Runtime Errors Fixed**: "Property lookup failed" errors were resolved by using correct `entitytype` vs `controlpost` checks.
+- **Successful Placement**: Logs confirm the NPC is placed via the auto-placement fallback.
+- **Persistence**: The NPC is attached to the persistent cue.
+
+## Future Improvements
+- Add more dialogue options.
+- Give the NPC a custom character macro (appearance).

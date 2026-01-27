@@ -1,0 +1,160 @@
+---
+title: "Adding New Sectors"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Sectors", "Galaxy"]
+category: "cookbooks"
+order: 31
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to add a new sector to the X4 galaxy and connect it to existing clusters."
+---
+
+This guide explains how to add a new sector to the X4 galaxy and connect it to an existing cluster (e.g., Argon Prime).
+
+## Required Files
+
+| File | Path | Purpose |
+|------|------|---------|
+| Cluster Def | `maps/xu_ep2_universe/stella_cluster.xml` | Defines the new cluster macro |
+| Sector Def | `maps/xu_ep2_universe/stella_sector.xml` | Defines the new sector macro |
+| Zone Defs | `maps/xu_ep2_universe/stella_zones.xml` | Defines zones (gates, empty space) |
+| Galaxy Patch | `maps/xu_ep2_universe/galaxy.xml` | Connects cluster to galaxy and links gates |
+| Sector Patch | `maps/xu_ep2_universe/sectors.xml` | Adds gate zone to existing sector (Argon Prime) |
+| Defaults | `libraries/mapdefaults.xml` | Defines name, description, sunlight, etc. |
+| Macros Index | `index/macros.xml` | **CRITICAL**: Registers new macros for the game engine |
+| Text | `t/0001.xml` | Localized names and descriptions |
+
+## Step 1: Define Cluster, Sector, and Zones
+
+Create the macro files for your new location.
+
+### Cluster Macro
+```xml
+<macro name="Cluster_99_macro" class="cluster">
+  <component ref="standardcluster" />
+  <connections>
+    <connection name="Cluster_99_Sector001_connection" ref="sectors">
+      <macro ref="Cluster_99_Sector001_macro" connection="cluster" />
+    </connection>
+    <!-- Content reference for background space -->
+    <connection ref="content">
+      <macro><component connection="space" ref="Cluster_14" /></macro>
+    </connection>
+  </connections>
+</macro>
+```
+
+### Sector Macro
+```xml
+<macro name="Cluster_99_Sector001_macro" class="sector">
+  <component ref="standardsector" />
+  <connections>
+    <!-- Add zones here -->
+    <connection name="Zone001_Cluster_99_Sector001_connection" ref="zones">
+      <offset><position x="0" y="0" z="0" /></offset>
+      <macro ref="Zone001_Cluster_99_Sector001_macro" connection="sector" />
+    </connection>
+  </connections>
+</macro>
+```
+
+### Zone Macro (Gate)
+To allow travel, you need a zone with a gate.
+```xml
+<macro name="Zone001_Cluster_99_Sector001_macro" class="zone">
+  <component ref="standardzone" />
+  <connections>
+    <connection name="connection_ClusterGate099To014" ref="gates">
+      <macro ref="props_gates_anc_gate_macro" connection="space" />
+    </connection>
+  </connections>
+</macro>
+```
+
+## Step 2: Register Macros
+
+> **Important:** This step is mandatory. If you skip it, the game will report "Missing component macro" errors and your sector will not appear.
+
+You must explicitly register your new macros in `index/macros.xml` so the game engine can find them.
+
+```xml
+<!-- index/macros.xml -->
+<index>
+  <entry name="Cluster_99_macro" value="extensions\stella_x4\maps\xu_ep2_universe\stella_cluster" />
+  <entry name="Cluster_99_Sector001_macro" value="extensions\stella_x4\maps\xu_ep2_universe\stella_sector" />
+  <entry name="Zone001_Cluster_99_Sector001_macro" value="extensions\stella_x4\maps\xu_ep2_universe\stella_zones" />
+  <!-- Don't forget the zone you added to Argon Prime! -->
+  <entry name="Zone005_Cluster_14_Sector001_macro" value="extensions\stella_x4\maps\xu_ep2_universe\stella_zones" />
+</index>
+```
+
+## Step 3: Establish Connections (Galaxy & Sectors)
+
+### Add Gate to Origin Sector
+If connecting to an existing sector (like Argon Prime), you must patch `sectors.xml` to add a new zone for the return gate.
+
+```xml
+<!-- maps/xu_ep2_universe/sectors.xml -->
+<diff>
+  <add sel="/macros/macro[@name='Cluster_14_Sector001_macro']/connections">
+    <connection name="Zone005_Cluster_14_Sector001_connection" ref="zones">
+      <offset><position x="60000" y="0" z="60000" /></offset>
+      <macro ref="Zone005_Cluster_14_Sector001_macro" connection="sector" />
+    </connection>
+  </add>
+</diff>
+```
+
+### Link Gates in Galaxy
+Patch `galaxy.xml` to add your cluster and link the gates.
+
+```xml
+<!-- maps/xu_ep2_universe/galaxy.xml -->
+<diff>
+  <!-- Add Cluster -->
+  <add sel="/macros/macro[@name='XU_EP2_universe_macro']/connections">
+    <connection name="Cluster_99_connection" ref="clusters">
+      <offset><position x="-90000000" y="10000000" z="34640000" /></offset>
+      <macro ref="Cluster_99_macro" connection="galaxy" />
+    </connection>
+  </add>
+
+  <!-- Connect Gates -->
+  <add sel="/macros/macro[@name='XU_EP2_universe_macro']/connections">
+    <connection name="ClusterGate014To099" ref="destination" path="../Cluster_14_connection/.../connection_ClusterGate014To099">
+      <macro connection="destination" path="../../../../../Cluster_99_connection/.../connection_ClusterGate099To014" />
+    </connection>
+  </add>
+</diff>
+```
+
+## Step 4: Set Properties
+
+Define the name and description in `libraries/mapdefaults.xml`.
+
+```xml
+<dataset macro="Cluster_99_macro">
+  <properties>
+    <identification name="{999840,30}" description="{999840,32}" />
+  </properties>
+</dataset>
+```
+
+## Troubleshooting
+
+### Text Issues
+> **Caution:** Do not use newlines in `<t>` elements.
+
+If you see `[XLib::TextDB::ConvertTextDBString] Found newline in text` errors, check your `t/0001.xml`. Ensure all text is on a single line.
+
+**INCORRECT:**
+```xml
+<t id="1">Line 1
+Line 2</t>
+```
+
+**CORRECT:**
+```xml
+<t id="1">Line 1 Line 2</t>
+```

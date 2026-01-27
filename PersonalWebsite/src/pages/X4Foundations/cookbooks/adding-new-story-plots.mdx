@@ -1,0 +1,151 @@
+---
+title: "Adding New Story Plots"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Missions", "Plots"]
+category: "cookbooks"
+order: 10
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "Complete guide to creating custom missions using the Mission Director."
+---
+
+This guide explains how to create a custom mission using the Mission Director (MD).
+
+## 1. File Structure
+
+Missions are defined in `.xml` files within the `md` folder of your extension.
+Example: `extensions/stella_x4/md/stella_example_plot.xml`.
+
+## 2. Basic Mission Script Structure
+
+A mission script usually consists of:
+1.  **Root Cue**: Initializes variables, finds sectors/stations, creates the actor and offer.
+2.  **Accepted Cue**: Triggers when player accepts, creates the actual mission.
+3.  **Objective Management**: Setting objectives (`set_objective`) and checking for completion.
+
+### Working Example: Simple "Fly To" Mission
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="My_Custom_Plot" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <cue name="Start_Plot" namespace="this">
+      <conditions>
+        <check_any>
+          <event_cue_signalled cue="md.Setup.GameStart" />
+          <event_game_loaded />
+        </check_any>
+      </conditions>
+      <actions>
+        <!-- Step 1: Find location -->
+        <find_sector name="$TargetSector" macro="macro.cluster_14_sector001_macro" required="true" />
+        <find_station name="$OfferStation" space="$TargetSector" owner="faction.argon"
+                      canbuildclass="class.ship_s" required="true" />
+
+        <!-- Step 2: Create a mission actor -->
+        <create_cue_actor name="$MissionContact" cue="Start_Plot">
+          <select faction="faction.argon" race="race.argon" tags="tag.manager" />
+          <owner exact="faction.argon" />
+        </create_cue_actor>
+        <set_entity_traits entity="$MissionContact" missionactor="true" />
+
+        <!-- Step 3: Create the offer -->
+        <create_offer cue="Start_Plot" actor="$MissionContact" location="$OfferStation"
+                      type="missiontype.plot" name="'My Mission'"
+                      description="'Mission description.'"
+                      faction="faction.argon" reward="100000Cr" />
+      </actions>
+
+      <cues>
+        <!-- Step 4: Handle acceptance via actor signal -->
+        <cue name="Mission_Accepted" instantiate="true">
+          <conditions>
+            <event_object_signalled object="$MissionContact" param="'accept'" />
+          </conditions>
+          <actions>
+            <remove_offer cue="Start_Plot" />
+            <create_mission cue="Mission_Accepted" name="'Fly to Position'"
+                            description="'Go there.'" type="missiontype.plot"
+                            faction="faction.argon" difficulty="level.trivial" />
+
+            <get_safe_pos result="$TargetPos" sector="$TargetSector"
+                          object="$OfferStation" min="10km" max="15km" />
+            <set_objective cue="Mission_Accepted" step="1" action="objective.flyto"
+                           object="$TargetSector" offset="$TargetPos" />
+          </actions>
+
+          <cues>
+            <cue name="Arrived" checkinterval="1s">
+              <conditions>
+                <check_value value="player.entity.distanceto.[$TargetSector, $TargetPos] le 2km" />
+              </conditions>
+              <actions>
+                <reward_player money="100000Cr" />
+                <show_notification text="'Mission Completed!'" />
+                <remove_mission cue="Mission_Accepted" type="completed" />
+                <cancel_cue cue="Mission_Accepted" />
+              </actions>
+            </cue>
+          </cues>
+        </cue>
+      </cues>
+    </cue>
+  </cues>
+</mdscript>
+```
+
+## 3. Key Commands
+
+| Command | Purpose |
+|---------|---------|
+| `<find_sector>` / `<find_station>` | Locate objects in the universe |
+| `<create_cue_actor>` | Create a virtual NPC to act as mission contact |
+| `<set_entity_traits missionactor="true">` | Mark actor as mission-related |
+| `<create_offer>` | Display mission in Mission Offers tab |
+| `<create_mission>` | Add mission to active Mission Manager |
+| `<set_objective>` | Set guidance arrows for player |
+| `<remove_offer>` | Remove the offer after accepting |
+| `<remove_mission>` | End mission (success/failure) |
+
+## 4. Common Pitfalls & Solutions
+
+### Offer not appearing in Mission Offers tab
+
+**Causes & Solutions**:
+1. **Missing `location` attribute** - The `<create_offer>` MUST have `location="$YourStation"`
+2. **Nested cue structure issues** - Put `create_offer` directly in the Start cue's actions
+
+### Clicking "Accept" does nothing
+
+**Cause**: Using `event_offer_accepted` doesn't work reliably for plot missions.
+
+**Solution**: Use `event_object_signalled` on your actor instead:
+```xml
+<cue name="Mission_Accepted" instantiate="true">
+  <conditions>
+    <event_object_signalled object="$MissionContact" param="'accept'" />
+  </conditions>
+</cue>
+```
+
+### Variables created inside `do_if` not accessible to child cues
+
+**Cause**: Variables created inside a `<do_if>` block are scoped to that block.
+
+**Solution**: Create the actor BEFORE any conditionals so it's in the parent scope.
+
+### Pilot ejects when ship is heavily damaged
+
+**Cause**: NPC pilots with low `morale` skill will abandon their ship.
+
+**Solution**: Set the pilot's morale skill to maximum (15):
+```xml
+<pilot>
+    <select faction="faction.argon" tags="tag.pilot" />
+    <skills>
+        <skill type="morale" exact="15" />
+    </skills>
+</pilot>
+```

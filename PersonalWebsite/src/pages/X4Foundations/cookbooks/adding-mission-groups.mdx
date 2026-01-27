@@ -1,0 +1,112 @@
+---
+title: "Adding Mission Groups"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Missions"]
+category: "cookbooks"
+order: 22
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to create mission groups to organize related missions under a common storyline."
+---
+
+This guide explains how to create and use Mission Groups in X4 Foundations mods. Mission groups allow you to display a group title above your missions (like "Kingdom End" or "Hatikvah" in the base game).
+
+## Overview
+
+Mission groups are displayed as a header above missions in the player's mission log and offer screens. This helps organize related missions under a common storyline or theme.
+
+## Step 1: Define the Group Text
+
+First, add text entries for your group name in your text file (`t/0001.xml`):
+
+```xml
+<!-- MISSION THREADS -->
+<t id="100">Stella Invicta</t>
+<t id="101">A series of missions from the Stella faction.</t>
+```
+
+## Step 2: Create Mission Groups Definition
+
+Create or modify `libraries/missiongroups.xml` to define your mission group:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<diff>
+    <add sel="/missiongroups">
+        <!-- Stella Invicta mission group -->
+        <group id="stella_invicta" name="{999840,100}" story="true"/>
+    </add>
+</diff>
+```
+
+### Attributes:
+
+| Attribute | Description |
+|-----------|-------------|
+| `id` | Unique identifier for the group (used as `missiongroup.<id>`) |
+| `name` | Text reference for the display name (e.g., `{999840,100}`) |
+| `story` | Set to `"true"` for story missions (appears differently in UI) |
+| `faction` | Optional: Associated faction (e.g., `"argon"`) |
+| `enemy` | Optional: Enemy faction for war-related groups |
+
+## Step 3: Reference the Group in Missions
+
+Add the `group` attribute to both `create_offer` and `create_mission` elements:
+
+### In create_offer:
+```xml
+<create_offer cue="Start_Mission"
+    actor="$MissionContact"
+    location="$OfferStation"
+    type="missiontype.plot"
+    group="missiongroup.stella_invicta"
+    name="'Mission Name'"
+    description="'Mission Description'"
+    faction="faction.argon" />
+```
+
+### In create_mission:
+```xml
+<create_mission cue="Mission_Accepted"
+    group="missiongroup.stella_invicta"
+    name="'Mission Name'"
+    description="'Mission Description'"
+    type="missiontype.plot"
+    faction="faction.argon"
+    difficulty="level.medium">
+    <briefing>
+        <objective step="1" action="objective.flyto" text="'Objective text'" />
+    </briefing>
+</create_mission>
+```
+
+## Common Mission Group Examples
+
+From the base game:
+
+| Group ID | Display Name | Usage |
+|----------|--------------|-------|
+| `story_boso` | "Boron Mentor" | Boso Ta storyline |
+| `story_hatikvah` | "Hatikvah Free League" | Reen storyline |
+| `story_paranid` | "Paranid Conflict" | Paranid storyline |
+| `terraforming` | "Terraforming" | Terraforming projects |
+| `argon_police` | "Argon Police" | Argon patrol missions |
+
+## Important Notes
+
+> **Warning:** Do NOT use `create_mission_thread` for simple group titles. Mission threads create separate "Important" entries in the mission manager and are intended for complex multi-part missions, not just for grouping.
+
+> **Tip:** The `group` attribute should be added to BOTH `create_offer` (for the mission offer screen) AND `create_mission` (for the active mission). This ensures the group title appears consistently.
+
+## File Structure
+
+```
+extensions/your_mod/
+├── libraries/
+│   └── missiongroups.xml    # Mission group definitions
+├── md/
+│   └── your_mission.xml     # Mission scripts with group references
+└── t/
+    └── 0001.xml             # Text entries for group names
+```

@@ -1,0 +1,163 @@
+---
+title: "Common Errors"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Reference", "Troubleshooting"]
+category: "references"
+order: 20
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "Common X4 modding errors and their solutions."
+---
+
+This document lists common errors and their solutions.
+
+## Invalid SoundID - No definition found in SoundLibrary
+
+**Error Message:**
+```
+Invalid SoundID "hash(XXXXXXX)" (soundidext={lineID}) on macro: "character_XXX_macro"! No definition found in SoundLibrary.
+```
+
+**Cause:** The game cannot find the voice line audio because the sound library entry is missing or incorrectly configured.
+
+**Solution:**
+1. Add entry to `libraries/sound_library.xml`:
+   ```xml
+   <sound id="{pageID}_normal" repeat="1" is3d="1" preload="0">
+     <sample start="extensions\your_mod\voice\{pageID}\normal"/>
+     <volume start="1.212" distance="0.090"/>
+   </sound>
+   ```
+
+2. Ensure audio files are in the correct location:
+   ```
+   voice/{pageID}/normal/{lineID}.ogg
+   ```
+
+3. Files must be in **OGG format**, not WAV or MP3.
+
+## Engine destruction event not firing
+
+**Symptom:** `event_object_destroyed` or `event_object_hull_damaged` doesn't trigger when shooting engines.
+
+**Cause:** Large ship engines often become "wrecked" (0 hull) rather than being destroyed/removed.
+
+**Solution:** Use `event_object_hull_below_function_threshold` with `ship.maxspeed` check:
+```xml
+<conditions>
+    <event_object_hull_below_function_threshold object="$Ship"/>
+    <check_value value="event.param.isclass.engine"/>
+    <check_value value="not $Ship.maxspeed"/>
+</conditions>
+```
+
+## Property lookup failed
+
+**Error Message:**
+```
+Property lookup failed for 'something' on object
+```
+
+**Cause:** Trying to access a property that doesn't exist on the object type or the object is null.
+
+**Solution:**
+1. Use `@` prefix for null-safe access: `@$object.property`
+2. Verify the object exists before accessing: `<do_if value="$object">`
+3. Check that the property name is correct for the object type
+
+## No corresponding listeners (signal_cue_instantly)
+
+**Error Message:**
+```
+No corresponding listeners for signal_cue_instantly
+```
+
+**Cause:** Using `signal_cue_instantly` to signal a child cue that isn't active yet.
+
+**Solution:** Use `signal_cue` instead of `signal_cue_instantly` when signaling child cues from parent actions.
+
+## Pink Checkerboard Texture
+
+**Symptom:** Ships owned by custom faction have pink/purple checkerboard texture.
+
+**Cause:** Missing paint theme mapping in `themes.xml`.
+
+**Solution:** Add entry to `libraries/themes.xml`:
+```xml
+<diff>
+  <add sel="/themes/theme[@id='painttheme_race_default']">
+    <group faction="yourfaction" paintmod="paintmod_0002" />
+  </add>
+</diff>
+```
+
+## NPCGenerator not found
+
+**Error Message:**
+```
+NPCGenerator not found for faction 'yourfaction'
+```
+
+**Cause:** Custom factions don't have NPC definition files.
+
+**Solution:** When spawning pilots or staff, use a vanilla faction for selection but set owner to your custom faction:
+```xml
+<pilot>
+    <select faction="faction.argon" tags="tag.pilot" />
+</pilot>
+<owner exact="faction.yourfaction" overridenpc="true"/>
+```
+
+## Offer not appearing
+
+**Symptom:** `create_offer` executes but mission doesn't appear in Mission Offers.
+
+**Causes & Solutions:**
+
+1. **Missing `location` attribute**
+   ```xml
+   <!-- WRONG -->
+   <create_offer cue="MyCue" actor="$Contact" ... />
+
+   <!-- CORRECT -->
+   <create_offer cue="MyCue" actor="$Contact" location="$Station" ... />
+   ```
+
+2. **Actor not properly initialized**
+   - Ensure `set_entity_traits entity="$Actor" missionactor="true"` is called
+
+## Mission objective shows "Invalid Target"
+
+**Cause:** Setting objective to an NPC that has no physical location.
+
+**Solution:** Use two-step objectives:
+1. First objective: Fly to station
+2. Second objective: Talk to NPC (set after player docks and NPC is placed)
+
+## Variables not accessible in child cues
+
+**Cause:** Variables created inside `<do_if>` blocks are scoped to that block.
+
+**Solution:** Create important variables in the parent scope before conditionals:
+```xml
+<actions>
+    <!-- Create here, not inside do_if -->
+    <create_cue_actor name="$Contact" cue="this" ... />
+
+    <do_if value="someCondition">
+        <!-- $Contact is accessible here -->
+    </do_if>
+</actions>
+```
+
+## Cue only triggers once
+
+**Cause:** Missing `instantiate="true"` attribute.
+
+**Solution:** Add `instantiate="true"` to cues that should trigger multiple times:
+```xml
+<cue name="RepeatingCue" instantiate="true">
+    ...
+</cue>
+```

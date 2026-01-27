@@ -1,0 +1,115 @@
+---
+title: "Adding Renegade Missions"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Missions", "Combat"]
+category: "cookbooks"
+order: 26
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to create missions where you fight ships that are hostile to everyone."
+---
+
+This guide explains how to create missions where you fight ships that are hostile to everyone, including their original faction.
+
+## The Challenge
+
+If you spawn an Argon ship owned by Argon:
+1. It might not fight back (if you are friendly).
+2. Police/stations will attack **YOU** for shooting their ally.
+3. Relation boosts are **one-directional** and complex.
+
+## The Solution: Ownership Transfer
+
+Spawn the ship with the original faction (for proper loadout), then transfer to a universally hostile faction like **Pirates (Buccaneers)**.
+
+### 1. Spawn with Loadout
+
+```xml
+<create_ship name="$RenegadeShip" macro="macro.ship_arg_s_heavyfighter_01_a_macro" sector="$Sector">
+    <pilot><select faction="faction.argon" tags="tag.pilot" /></pilot>
+    <loadout><level min="0.5" max="1.0" /></loadout>
+    <owner exact="faction.argon" />  <!-- Argon for loadout -->
+    <safepos value="$SpawnPos" />
+</create_ship>
+```
+
+### 2. Transfer to Pirates
+
+```xml
+<set_owner object="$RenegadeShip" faction="faction.buccaneers" />
+```
+
+Now:
+- Ship has Argon weapons (loadout generated before transfer).
+- Everyone (Argon stations, player, police) attacks it.
+- Ship attacks everyone (Pirates are universally hostile).
+
+### 3. Extra Hostility to Player (Optional)
+
+```xml
+<set_relation_boost object="$RenegadeShip" faction="faction.player"
+                    value="-1" decay="0" silent="true" />
+```
+
+## Advanced: Fight or Flight Behavior
+
+### 1. Attack then Flee (Order Queueing)
+
+```xml
+<create_order object="$RenegadeShip" id="'Attack'">
+    <param name="primarytarget" value="player.occupiedship" />
+    <param name="pursuetargets" value="true" />
+</create_order>
+
+<find_gate name="$EscapeGate" space="$TargetSector" active="true" required="false"/>
+<do_if value="$EscapeGate">
+    <create_order object="$RenegadeShip" id="'MoveGeneric'">
+        <param name="destination" value="$EscapeGate.exit.sector"/>
+        <param name="endintargetzone" value="true"/>
+    </create_order>
+</do_if>
+```
+
+### 2. Panic (Low Health < 25%)
+
+```xml
+<cue name="Renegade_Panic">
+    <conditions>
+        <event_object_hull_damaged object="$RenegadeShip" />
+        <check_value value="$RenegadeShip.hullpercentage lt 25" />
+    </conditions>
+    <actions>
+        <cancel_all_orders object="$RenegadeShip" />
+        <create_order object="$RenegadeShip" id="'MoveGeneric'">
+            <param name="destination" value="$EscapeGate.exit.sector"/>
+        </create_order>
+        <speak actor="$RenegadeShip.pilot" line="10034" />
+    </actions>
+</cue>
+```
+
+> **Warning:** Do **NOT** use `instantiate="true"` for this kind of "one-off" trigger. Without `instantiate`, the cue triggers once and then is "complete".
+
+### 3. Flee When Target Lost
+
+```xml
+<!-- Player leaves sector -->
+<cue name="Player_Left_Sector">
+    <conditions>
+        <event_object_changed_sector object="player.occupiedship" />
+    </conditions>
+    <actions>
+        <cancel_all_orders object="$RenegadeShip" />
+        <create_order object="$RenegadeShip" id="'MoveGeneric'">
+            <param name="destination" value="$EscapeGate.exit.sector"/>
+        </create_order>
+    </actions>
+</cue>
+```
+
+## Troubleshooting
+
+- **Ship has no weapons**: Spawn with Argon owner BEFORE `set_owner` to pirates.
+- **Ship is idle**: Ensure pilot created with valid tag (`tag.pilot`).
+- **Station doesn't attack**: Confirm ship is owned by hostile faction.

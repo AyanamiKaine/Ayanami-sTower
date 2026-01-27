@@ -1,0 +1,86 @@
+---
+title: "Adding Mission Briefings"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Missions", "Briefings"]
+category: "cookbooks"
+order: 23
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to add detailed briefings with objectives to mission offers."
+---
+
+This guide explains how to add detailed briefings to your mission offers. Briefings allow players to see specific objectives and targets (e.g., "Destroy Xenon K", "Dock at Station") in the mission offer screen before they accept the mission.
+
+## The `<briefing>` Element
+
+You can add a `<briefing>` block inside both `<create_offer>` and `<create_mission>`. The briefing consists of a list of `<objective>` elements.
+
+```xml
+<create_offer ... >
+    <briefing>
+        <objective step="1" action="objective.flyto" object="$TargetStation" text="'Fly to the station'" />
+        <objective step="2" action="objective.talkto" object="$MissionContact" text="'Speak with contact'" />
+    </briefing>
+</create_offer>
+```
+
+## Critical Rule: Objects Must Exist
+
+**Important:** To display a specific object (like a ship or station) in the briefing, that object **must already exist** and be defined in a variable *before* the `<create_offer>` action runs.
+
+- **Good:** Finding a station, storing it in `$OfferStation`, and then using `$OfferStation` in the briefing.
+- **Bad:** Trying to use `$EnemyShip` in the offer briefing if that ship is only spawned *after* the mission is accepted.
+
+## Example: Defend Station
+
+If your mission is to defend a station, you likely found the station before creating the offer. You can show it in the briefing:
+
+```xml
+<find_station name="$Shipyard" ... />
+
+<create_offer ... >
+    <briefing>
+        <objective step="1" action="objective.protect" object="$Shipyard" text="'Defend the Shipyard'" />
+    </briefing>
+</create_offer>
+```
+
+## Example: Destroy Target (Spawned Later)
+
+If your target is spawned *after* acceptance (to save performance), you cannot show the specific ship in the offer briefing. Instead, show the general location or a proxy object:
+
+**In Offer (Target doesn't exist yet):**
+```xml
+<create_offer ... >
+    <briefing>
+        <!-- Show the sector or the mission giver's station -->
+        <objective step="1" action="objective.patrol" object="$TargetSector" text="'Patrol Sector'" />
+    </briefing>
+</create_offer>
+```
+
+**In Mission (Target now exists):**
+```xml
+<cue name="Mission_Accepted">
+    <actions>
+        <create_ship name="$EnemyShip" ... />
+
+        <create_mission ... >
+            <briefing>
+                <!-- Now we can link the actual ship -->
+                <objective step="1" action="objective.destroy" object="$EnemyShip" />
+            </briefing>
+        </create_mission>
+    </actions>
+</cue>
+```
+
+## Objective Attributes
+
+| Attribute | Description |
+|-----------|-------------|
+| `step` | The step number (1, 2, 3...). Used to order objectives. |
+| `action` | The type of objective (e.g., `objective.flyto`, `objective.destroy`, `objective.talkto`, `objective.protect`). |
+| `object` | The target object (Ship, Station, Sector, etc.). |
+| `text` | Custom text to display. If omitted, standard text for the action is used. |

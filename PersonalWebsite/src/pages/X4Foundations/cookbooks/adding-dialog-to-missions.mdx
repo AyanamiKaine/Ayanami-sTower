@@ -1,0 +1,162 @@
+---
+title: "Adding Dialog to Missions"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Dialog", "Missions"]
+category: "cookbooks"
+order: 20
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to create missions with interactive NPC dialog, player choices, and branching conversations."
+---
+
+This guide explains how to create missions with interactive NPC dialog in X4 Foundations.
+
+## Overview
+
+X4's dialog system allows:
+- NPCs placed in station rooms
+- Multi-line spoken dialog
+- Player choice selections
+- Branching conversations
+- Mission progression based on dialog outcomes
+
+## Key Concepts
+
+### 1. Creating an NPC Actor
+
+```xml
+<create_cue_actor name="$MissionContact" cue="Start_Plot">
+    <select faction="faction.argon" race="race.argon" tags="tag.manager" />
+    <owner exact="faction.argon" />
+</create_cue_actor>
+<set_entity_traits entity="$MissionContact" missionactor="true" />
+```
+
+### 2. Placing NPC in a Station Room
+
+```xml
+<!-- Find walkable area in station -->
+<find_object_component name="$WalkableModule" object="$Station"
+    class="class.walkablemodule" checkoperational="true" />
+
+<do_if value="$WalkableModule">
+    <find_npc_slot name="$NPC_Slot" object="$WalkableModule" />
+    <do_if value="$NPC_Slot">
+        <add_actor_to_room actor="$MissionContact" slot="$NPC_Slot" />
+    </do_if>
+</do_if>
+```
+
+> **Important:** NPCs created with `create_cue_actor` have no physical location until placed with `add_actor_to_room`. Using them as objective targets before placement will fail.
+
+### 3. Detecting Conversation Start
+
+```xml
+<cue name="Conversation_Started" instantiate="true">
+    <conditions>
+        <event_conversation_started actor="$MissionContact" />
+    </conditions>
+    <actions>
+        <!-- NPC says a line -->
+        <add_npc_line speaker="$MissionContact" line="2001" comment="Greeting" />
+
+        <!-- Player choice options -->
+        <add_player_choice text="'Ask about trade.'" section="trade_info" />
+        <add_player_choice text="'Goodbye.'" section="goodbye" position="bottom_right" />
+    </actions>
+</cue>
+```
+
+### 4. Handling Player Choices
+
+```xml
+<cue name="Handle_Dialog" instantiate="true">
+    <conditions>
+        <event_conversation_next_section actor="$MissionContact" />
+    </conditions>
+    <actions>
+        <do_if value="event.param == 'trade_info'">
+            <add_npc_line speaker="$MissionContact" line="2002" hidechoices="true" />
+            <add_player_choice text="'Thanks!'" section="complete" />
+        </do_if>
+        <do_elseif value="event.param == 'goodbye'">
+            <add_npc_line speaker="$MissionContact" line="2003" hidechoices="true" />
+        </do_elseif>
+    </actions>
+</cue>
+```
+
+## Key Elements Reference
+
+| Element | Purpose |
+|---------|---------|
+| `event_conversation_started` | Triggers when player talks to NPC |
+| `event_conversation_next_section` | Triggers when player selects a choice |
+| `event_conversation_returned_to_section` | Player returned to a section |
+| `add_npc_line` | Display NPC dialog with voice |
+| `add_player_choice` | Show clickable player response |
+
+### `add_npc_line` Attributes
+
+| Attribute | Description |
+|-----------|-------------|
+| `speaker` | The NPC actor speaking |
+| `line` | Voice line ID |
+| `hidechoices` | Hide player choices until line finishes |
+| `comment` | Developer note (not shown) |
+
+### `add_player_choice` Attributes
+
+| Attribute | Description |
+|-----------|-------------|
+| `text` | Button text shown to player |
+| `section` | Section ID passed to `event_conversation_next_section` |
+| `position` | `bottom_right` for exit/goodbye options |
+
+### Common Voice Line IDs
+
+| ID | Description |
+|----|-------------|
+| `2001` | Friendly greeting |
+| `2002` | Neutral greeting |
+| `2003` | Enemy greeting |
+| `2005` | Comms greeting |
+| `2006` | Staff/trader greeting |
+
+## Mission Flow with Dialog
+
+1. **Create offer** with mission actor
+2. **Accept** → Set objective to fly to station
+3. **Player docks** → Place NPC in room, update objective to "Talk to"
+4. **Player talks to NPC** → `event_conversation_started` fires
+5. **Player selects option** → `event_conversation_next_section` fires
+6. **Loop dialog** or complete mission
+
+## Common Pitfalls
+
+### "Target invalid" for NPC objectives
+
+**Problem**: Autopilot can't target the NPC.
+
+**Cause**: NPC has no physical location yet.
+
+**Solution**: Use a two-step objective:
+1. Step 1: `objective.flyto` → Station
+2. Step 2: `objective.talkto` → NPC (set after player docks)
+
+### NPC not found on station
+
+**Problem**: `find_npc_slot` returns null.
+
+**Cause**: Station has no walkable modules.
+
+**Solution**: Ensure station has walkable interior or choose different station.
+
+### Dialog choices not appearing
+
+**Problem**: Player sees no response options.
+
+**Cause**: `add_player_choice` not called in same action block.
+
+**Solution**: Add choices in `event_conversation_started` handler.

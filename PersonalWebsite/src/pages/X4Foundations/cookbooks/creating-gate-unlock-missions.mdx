@@ -1,0 +1,141 @@
+---
+title: "Creating Gate Unlock Missions"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Missions", "Gates"]
+category: "cookbooks"
+order: 40
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to create missions that unlock jump gates as rewards with cutscenes."
+---
+
+This guide explains how to create missions that unlock jump gates as rewards.
+
+## Overview
+
+Gate unlock missions are a common pattern in X4 story content:
+1. Player receives mission at a station (often faction HQ)
+2. Player must complete an objective (fly to gate, complete task, etc.)
+3. Gate unlocks when objective is completed
+4. Optional: Cutscene plays to celebrate the event
+
+## Key Components
+
+### 1. Finding the Gate
+
+```xml
+<!-- Find the locked gate in your sector -->
+<find_gate name="$TargetGate" space="$MySector" required="true" />
+```
+
+### 2. Creating the Mission Offer
+
+```xml
+<create_offer cue="Start_Gate_Mission"
+    actor="$MissionContact"
+    location="$FactionHQ"
+    type="missiontype.plot"
+    group="missiongroup.stella_invicta"
+    name="'Activate Star Gate'"
+    description="'Fly to the gate and activate it.'"
+    faction="faction.yourfaction"
+    reward="500000Cr">
+    <briefing>
+        <objective step="1" action="objective.flyto" object="$TargetGate"
+            text="'Fly to the Jump Gate'" />
+    </briefing>
+</create_offer>
+```
+
+### 3. Setting the Objective
+
+```xml
+<set_objective cue="Mission_Accepted" step="1"
+    action="objective.flyto" object="$TargetGate"
+    text="'Approach the Jump Gate'" />
+```
+
+### 4. Detecting Arrival
+
+```xml
+<cue name="Check_Arrival" checkinterval="1s">
+    <conditions>
+        <check_value value="player.occupiedship.distanceto.{$TargetGate} le 2km" />
+    </conditions>
+    <actions>
+        <!-- Player arrived! -->
+    </actions>
+</cue>
+```
+
+### 5. Unlocking the Gate
+
+```xml
+<!-- Signal the gate control script to unlock -->
+<signal_cue cue="md.Stella_Gate_Control.Unlock_Stella_Gate" />
+```
+
+### 6. Playing a Cutscene
+
+```xml
+<!-- Orbit around the now-active gate -->
+<play_cutscene key="'OrbitParameterized'" result="$CutsceneId"
+    cinematicmode="true" abortable="true">
+    <param name="targetobject" object="$TargetGate" />
+    <param name="orbitdist" number="1500m" />
+    <param name="orbitelevation" number="200m" />
+</play_cutscene>
+
+<!-- Wait for cutscene to play -->
+<delay exact="6s" />
+
+<!-- Stop the cutscene -->
+<stop_cutscene key="'OrbitParameterized'" />
+```
+
+### 7. Completing the Mission
+
+```xml
+<reward_player money="$RewardAmount" />
+<show_notification
+    text="'Gate Activated!'"
+    sound="notification_achievement"
+    timeout="10s" />
+<remove_mission cue="Mission_Accepted" type="completed" />
+```
+
+## Available Cutscenes
+
+Common built-in cutscene keys:
+
+| Key | Description |
+|-----|-------------|
+| `OrbitParameterized` | Orbits around a target object |
+| `FlybyParameterized` | Flybys past a target |
+| `ApproachParameterized` | Approaches a target |
+
+### OrbitParameterized Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `targetobject` | object | Object to orbit around |
+| `orbitdist` | number | Distance from target (meters) |
+| `orbitelevation` | number | Height offset (meters) |
+
+## Troubleshooting
+
+### Mission offer doesn't appear
+
+**Possible Causes:**
+- Gate already unlocked
+- HQ station not found
+- Script not loaded (check content.xml)
+
+### Gate doesn't unlock
+
+**Possible Causes:**
+- Wrong signal cue path
+- Gate control script not running
+
+**Solution:** Verify the signal path matches exactly.

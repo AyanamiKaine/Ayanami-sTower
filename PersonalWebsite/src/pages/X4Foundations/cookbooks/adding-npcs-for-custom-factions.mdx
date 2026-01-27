@@ -1,0 +1,145 @@
+---
+title: "Adding NPCs for Custom Factions"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "NPCs", "Factions"]
+category: "cookbooks"
+order: 35
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to set up NPC generation for custom factions with proper character definitions."
+---
+
+This guide explains how to properly set up NPC generation for a custom faction in X4 Foundations.
+
+## Overview
+
+When creating a custom faction, the game needs to know:
+1. **What NPCs can be generated** for the faction (the NPC Generator registry)
+2. **How those NPCs look** (the Character Groups definitions)
+
+These are defined in two separate files that work together.
+
+## The Two-File System
+
+### 1. `libraries/characters.xml` - NPC Generator Registry
+
+This file registers **which NPCs can be spawned** for your faction. Each entry maps:
+- **Tags** (e.g., `crew`, `manager`, `pilot`)
+- **Faction** (e.g., `imperialremnants`)
+- **Race** (e.g., `terran`, `argon`)
+- **Character Group** (references `charactergroups.xml`)
+
+Without this file, you'll see errors like:
+```
+CharacterDB::FindNPCGenerator(): unable to find NPC generator for tags crew, race null, factions YourFaction
+```
+
+### 2. `libraries/charactergroups.xml` - Visual Appearance
+
+This file defines **how NPCs look** by linking character group names to either:
+- Specific character macros
+- Other character groups (e.g., `argon.pilot.male`)
+
+## Example Implementation
+
+### characters.xml
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<diff>
+  <add sel="/characters">
+    <!-- Service Crew - Regular -->
+    <character id="service_myfaction_random" group="myfaction.service">
+      <category tags="[crew, service, regular, recruitable]"
+                faction="[myfaction, faction.player]"
+                race="argon"/>
+      <skills>
+        <skill type="engineering" min="2" max="4"/>
+        <skill type="morale" min="2" max="4"/>
+      </skills>
+      <owner exact="myfaction"/>
+    </character>
+
+    <!-- Manager -->
+    <character id="manager_myfaction_random" group="myfaction.manager">
+      <category tags="[crew, officer, manager]"
+                faction="[myfaction, faction.player]"
+                race="argon"/>
+      <skills>
+        <skill type="management" min="5" max="9"/>
+      </skills>
+      <owner exact="myfaction"/>
+    </character>
+  </add>
+</diff>
+```
+
+### charactergroups.xml
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<diff>
+  <add sel="/characters">
+    <!-- Reference existing Argon character groups for visuals -->
+    <character name="myfaction.service">
+      <select character="myfaction.service.male" />
+      <select character="myfaction.service.female" />
+    </character>
+    <character name="myfaction.service.male">
+      <select character="argon.service.male" />
+    </character>
+    <character name="myfaction.service.female">
+      <select character="argon.service.female" />
+    </character>
+
+    <!-- Manager uses commander appearance -->
+    <character name="myfaction.manager">
+      <select character="myfaction.manager.male" />
+      <select character="myfaction.manager.female" />
+    </character>
+    <character name="myfaction.manager.male">
+      <select character="argon.manager.male" />
+    </character>
+  </add>
+</diff>
+```
+
+## Required NPC Types
+
+For a fully functional faction, define these roles in both files:
+
+| Role | Tags | Purpose |
+|------|------|---------|
+| service | `[crew, service, regular/rookie/veteran/elite]` | Ship crew |
+| pilot | `[crew, officer, pilot, aipilot, fighterpilot, commander]` | Ship pilots |
+| manager | `[crew, officer, manager]` | Station managers |
+| shiptrader | `[trader, shiptrader]` | Ship traders at wharfs/shipyards |
+| marine | `[crew, marine]` | Boarding crew |
+| factionrepresentative | `[factionrepresentative]` | Faction HQ representative |
+
+## Best Practices
+
+### 1. Reference Existing Character Groups
+Instead of defining macros directly, reference existing groups:
+```xml
+<!-- GOOD - References existing group -->
+<character name="myfaction.pilot.male">
+  <select character="argon.pilot.male" />
+</character>
+```
+
+### 2. Match Race to Appearance
+If using `race="terran"` in characters.xml, reference Terran character groups.
+
+### 3. Include faction.player in Faction Lists
+Allow player-owned ships/stations to use your faction's NPCs:
+```xml
+<category faction="[myfaction, faction.player]" .../>
+```
+
+## Troubleshooting
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| "race null" | Faction not in any `<category>` | Add character entries with your faction |
+| "Missing component macro" | Macro name doesn't match | Reference character groups instead |
+| "No suitable NPCGenerator found" | Missing tag/faction combo | Add appropriate `<character>` entry |

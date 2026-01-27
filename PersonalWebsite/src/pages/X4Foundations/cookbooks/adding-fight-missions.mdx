@@ -1,0 +1,89 @@
+---
+title: "Adding Fight Missions"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Combat", "Missions"]
+category: "cookbooks"
+order: 21
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to create combat missions with enemy spawning and destruction detection."
+---
+
+This guide explains how to create missions that involve spawning enemy ships and verifying their destruction.
+
+## Overview
+
+A basic fight mission involves:
+1.  **Calculating a Spawn Position**: Finding a safe spot near the player/station.
+2.  **Spawning a Ship**: Using `<create_ship>` to generate an enemy.
+3.  **Setting the Objective**: Pointing the player to destroy the ship.
+4.  **Detecting Destruction**: Listening for `event_object_destroyed`.
+
+## Key Concepts
+
+### 1. Calculating Spawn Position
+Use `<get_safe_pos>` to find a coordinate that isn't inside a station or asteroid.
+
+```xml
+<get_safe_pos result="$SpawnPos" sector="$MissionSector"
+              object="$ReferenceObject" min="10km" max="15km" />
+```
+
+### 2. Spawning the Enemy
+Use `<create_ship>` to spawn the ship at the calculated position.
+
+```xml
+<create_ship name="$EnemyShip" macro="macro.ship_xen_s_fighter_01_a_macro" sector="$MissionSector">
+    <!-- Attributes like pilot and loadout should come before position/rotation -->
+    <pilot>
+        <select faction="faction.xenon" tags="tag.pilot" />
+    </pilot>
+    <loadout>
+        <level min="0.4" max="0.8" />
+    </loadout>
+    <owner exact="faction.xenon" />
+    <safepos value="$SpawnPos" />
+    <rotation yaw="[0deg, 360deg].randominrange" />
+</create_ship>
+```
+
+> **Tip:** Always assign a pilot, otherwise the ship will just sit there and not display certain behaviors correctly.
+
+### 3. Setting the Destroy Objective
+Use `action="objective.destroy"` with the enemy ship object.
+
+```xml
+<create_mission cue="Mission_Accepted" name="'Destroy Enemy'" type="missiontype.fight" ...>
+    <briefing>
+        <objective step="1" action="objective.destroy" object="$EnemyShip" />
+    </briefing>
+</create_mission>
+
+<set_objective cue="Mission_Accepted" step="1" action="objective.destroy" object="$EnemyShip" />
+```
+
+### 4. Detecting Destruction
+Listen for the `event_object_destroyed` event on the specific enemy object.
+
+```xml
+<cue name="Enemy_Destroyed">
+    <conditions>
+        <event_object_destroyed object="$EnemyShip" />
+    </conditions>
+    <actions>
+        <speak actor="$MissionContact" line="1010" /> <!-- Victory voice line -->
+        <reward_player money="150000Cr" />
+        <remove_mission cue="Mission_Accepted" type="completed" />
+    </actions>
+</cue>
+```
+
+## Common Script Components
+
+| Element | Attribute | Description |
+|---------|-----------|-------------|
+| `<create_ship>` | `macro` | The ID of the ship to spawn (e.g., `macro.ship_xen_m_fighter_01_a_macro`) |
+| `<create_ship>` | `safepos` | Ensures the ship doesn't spawn inside something else |
+| `<create_ship>` | `loadout` | Defines the equipment level (0.0 - 1.0) |
+| `<set_objective>` | `action="objective.destroy"` | Creates the red crosshair guidance |

@@ -1,0 +1,140 @@
+---
+title: "Creating Stations via Scripts"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Stations", "MD Scripts"]
+category: "cookbooks"
+order: 34
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to spawn functional stations dynamically using MD scripts."
+---
+
+This guide explains how to spawn functional stations dynamically using MD scripts.
+
+## Basic Station Creation
+
+Use the `create_station` action to spawn a station:
+
+```xml
+<create_station name="$MyStation"
+    macro="macro.station_gen_factory_base_01_macro"
+    sector="$TargetSector"
+    owner="faction.argon"
+    state="componentstate.operational"
+    constructionplan="'scenario2_spp'">
+    <safepos value="$Position" />
+</create_station>
+```
+
+### Important: Construction Plans
+
+> **Warning:** Using a construction plan ID that doesn't exist (e.g. `'arg_energycell_01'`) will result in an **empty station** (dock only, no modules).
+
+Always use valid plan IDs defined in `libraries/constructionplans.xml`.
+Common valid vanilla plans:
+- `'scenario2_spp'` (Solar Power Plant)
+- `'scenario2_silicon_refinery'` (Silicon Refinery)
+- `'scenario2_microchip_factory'` (Microchip Factory)
+- `'arg_tradestation'` (Argon Trade Station)
+- `'par_wharf'` (Paranid Wharf)
+
+## Essential Station Setup
+
+A station needs more than just a model to function. You must configure its economy and staff.
+
+### 1. Adding Staff (The Simple Way)
+
+The easiest way to add a manager and defence officer is `create_control_entity`.
+
+```xml
+<!-- Add Manager -->
+<create_control_entity object="$MyStation" post="controlpost.manager">
+    <!-- Select a vanilla faction that has NPC definitions (e.g. Terran, Argon) -->
+    <select faction="faction.terran" tags="controlpost.manager.tag"/>
+    <!-- Set the owner to your custom faction -->
+    <owner exact="faction.imperialremnants"/>
+</create_control_entity>
+
+<!-- Add Defence Officer -->
+<create_control_entity object="$MyStation" post="controlpost.defence">
+    <select tags="controlpost.defence.tag"/>
+    <owner exact="faction.imperialremnants"/>
+</create_control_entity>
+```
+
+### 2. Adding Workforce
+
+Workforce is required for optimal production.
+
+```xml
+<add_workforce object="$MyStation" race="race.terran" exact="50" />
+```
+
+### 3. Configuring Production & Funding
+
+To make the station start producing and trading immediately:
+
+```xml
+<!-- Set up the bank account -->
+<set_object_account object="$MyStation" />
+
+<!-- Add default wares (needed to kickstart production cycles) -->
+<add_default_production_wares object="$MyStation" lowerlimit="10" upperlimit="10"/>
+
+<!-- Give the manager money to buy resources -->
+<transfer_money to="$MyStation" from="faction.imperialremnants" amount="5000000Cr"/>
+```
+
+## Complete Example
+
+```xml
+<cue name="Spawn_Functional_Station" namespace="this">
+    <actions>
+        <find_sector name="$Sector" macro="macro.cluster_14_sector001_macro" required="true" />
+        <get_safe_pos result="$Pos" sector="$Sector" radius="3000" />
+
+        <!-- 1. Create Station with VALID plan -->
+        <create_station name="$Station"
+            macro="macro.station_gen_factory_base_01_macro"
+            sector="$Sector"
+            owner="faction.imperialremnants"
+            state="componentstate.operational"
+            constructionplan="'scenario2_spp'">
+            <safepos value="$Pos" />
+        </create_station>
+
+        <!-- 2. setup Account & Visibility -->
+        <set_object_account object="$Station" />
+        <set_known object="$Station" known="true" />
+
+        <!-- 3. Add Staff -->
+        <create_control_entity object="$Station" post="controlpost.manager">
+            <select faction="faction.terran" tags="controlpost.manager.tag"/>
+            <owner exact="faction.imperialremnants"/>
+        </create_control_entity>
+
+        <!-- 4. Add Workforce & Economy -->
+        <add_workforce object="$Station" race="race.terran" exact="50" />
+        <add_default_production_wares object="$Station" lowerlimit="10" upperlimit="10"/>
+        <transfer_money to="$Station" from="faction.imperialremnants" amount="5000000Cr"/>
+    </actions>
+</cue>
+```
+
+## Troubleshooting
+
+### "No suitable NPCGenerator found" Errors
+**Cause**: Custom factions lack generic NPC definitions.
+**Solution**: When adding staff/pilots, always explicitly select a vanilla race/faction in the `<select>` tag.
+
+### Station Spawns Empty (No Modules)
+**Cause**: The `constructionplan` ID is invalid.
+**Solution**: Check `libraries/constructionplans.xml` for valid plan IDs.
+
+### Station Spawns but Doesn't Produce
+**Checklist**:
+1. Does it have a **Manager**?
+2. Does it have **Workforce**?
+3. Did you run `add_default_production_wares`?
+4. Did you `transfer_money` to the station account?

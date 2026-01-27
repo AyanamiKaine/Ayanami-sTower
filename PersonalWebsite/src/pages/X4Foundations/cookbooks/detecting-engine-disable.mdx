@@ -1,0 +1,77 @@
+---
+title: "Detecting Engine Disable"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Combat", "Events"]
+category: "cookbooks"
+order: 28
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to detect when all engines on a ship are disabled for mission scripts."
+---
+
+This guide explains how to detect when all engines on a ship are disabled (non-functional), which is useful for mission scripts that need to react to a ship being immobilized.
+
+## The Problem
+
+When shooting at large ship engines, they often become "wrecked" (0 hull) rather than being fully destroyed and removed. This means:
+- `event_object_destroyed` may not fire for engines
+- `find_object_component` with `checkoperational="true"` might still find them
+
+## The Solution
+
+Use `event_object_hull_below_function_threshold` and check `ship.maxspeed`:
+
+```xml
+<cue name="Target_Engines_Down" instantiate="true">
+    <conditions>
+        <!-- Fires when any component falls below its operational threshold -->
+        <event_object_hull_below_function_threshold object="$TargetShip"/>
+        <!-- Only proceed if the affected component is an engine -->
+        <check_value value="event.param.isclass.engine"/>
+        <!-- Check if ship can no longer move (all engines non-functional) -->
+        <check_value value="not $TargetShip.maxspeed"/>
+    </conditions>
+    <actions>
+        <debug_text text="'All engines disabled! Ship maxspeed = ' + $TargetShip.maxspeed" chance="100"/>
+        <!-- Your reaction code here -->
+        <speak actor="$MissionContact" page="999840" line="601207" priority="90" />
+        <!-- Cancel this cue so it only triggers once -->
+        <cancel_cue cue="Target_Engines_Down"/>
+    </actions>
+</cue>
+```
+
+## Key Points
+
+| Element | Purpose |
+|---------|---------|
+| `event_object_hull_below_function_threshold` | Fires when a component (engine, turret, etc.) goes below its function threshold |
+| `event.param.isclass.engine` | Filters to only react to engine damage |
+| `not $Ship.maxspeed` | Returns true when ship's max speed is 0 (all engines disabled) |
+
+## Reference
+
+This pattern was derived from the base game's `notifications.xml` (lines 1155-1167) which uses it to notify players when their ship is immobilized.
+
+## Common Mistakes
+
+### Wrong: Using `event_object_destroyed`
+```xml
+<!-- This may not fire for large ship engines that become wrecks -->
+<event_object_destroyed group="$EngineGroup"/>
+```
+
+### Wrong: Counting remaining engines
+```xml
+<!-- Engines at 0 hull may still be found, giving incorrect count -->
+<find_object_component name="$Engines" object="$Ship" class="class.engine"
+    checkoperational="true" multiple="true"/>
+<do_if value="$Engines.count == 0">
+```
+
+### Correct: Check ship's maxspeed
+```xml
+<!-- Ship maxspeed is 0 only when ALL engines are truly non-functional -->
+<check_value value="not $TargetShip.maxspeed"/>
+```

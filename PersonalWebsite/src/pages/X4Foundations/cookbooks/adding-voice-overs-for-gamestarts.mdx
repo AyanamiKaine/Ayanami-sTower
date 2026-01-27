@@ -1,0 +1,92 @@
+---
+title: "Adding Voice Overs for Gamestarts"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Voice", "Gamestarts"]
+category: "cookbooks"
+order: 50
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to add voice over cutscenes and subtitles to custom gamestarts."
+---
+
+We need to define a t file where the text can be found. Here we need to define the right page and text id, if we want to play a voice line we add the voice attribute. It then should search the voice/page_id/t_id.ogg file and play it.
+
+## What files need to be added/changed
+
+### SoundLibrary
+
+You need to register the sounds found at a page so the game knows where to load them from
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<diff>
+  <add sel="/soundlibrary">
+    <sound id="999840_normal" description="Betty2" repeat="1" is3d="1" preload="0">
+      <sample start="extensions\stella_x4\voice\999840\normal"/>
+      </sound>
+    </add>
+</diff>
+```
+
+### VoiceSequences
+
+You need to register which voice sequence corresponds to the id when playing a cutscene.
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<diff>
+    <add sel="/voicesequences">
+        <voicesequence id="x4ep1_stella1_selected" page="999840">
+            <delay time="1.0" />
+            <speak line="600160" /> <!--the filename for the audio to play. Here it would be voice/999840/600160.ogg-->
+        </voicesequence>
+    </add>
+</diff>
+```
+
+### t
+
+Because voice lines have subtitles you also need to define them correctly.
+
+Here they are defined in a 0001.xml file it is the default for all text ids if no specific language one is defined.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<diff>
+    <add sel="/language">
+        <page id="999840" title="Stella Mod" desc="Default language (english) text content" voice="yes">
+
+            	<!-- GAME STARTS -->
+
+            <t id="600110">Imperial Remnants</t>
+            <t id="600120">After the gates closed our ambitious died too. Now it seems we finally found a way to open our gate again connectection us to our destiny to rule the galaxy. All citizens are called to witness this holy moment.</t>
+            <t id="600160">After the gates closed our ambitious died too. Now it seems we finally found a way to open our gate again connectection us to our destiny to rule the galaxy. All citizens are called to witness this holy moment.</t>
+
+        </page>
+    </add>
+</diff>
+```
+
+### Gamestart
+
+In the gamestart the import part is the voice we define at the cutscene to play here `x4ep1_stella1_selected`
+
+```xml
+<diff>
+  <add sel="/gamestarts/groups/group[@group='3']" pos="before">
+    <group group="1000" name="Stella X4" />
+  </add>
+
+  <add sel="/gamestarts/gamestart[1]" pos="before">
+
+    <gamestart id="x4ep1_stella1"
+               name="{999840,600110}"
+               description="{999840,600120}"
+               image="gamestart_tutorial1"
+               group="1000"> <!-- 999840 is the page id searched in the t file and 600110/600120 is the t id.-->
+      <cutscene ref="gamestart_terran2" voice="x4ep1_stella1_selected"/>
+    </gamestart>
+     </add>
+</diff>
+```
