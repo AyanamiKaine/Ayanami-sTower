@@ -100,13 +100,13 @@ import Quiz from "../components/Quiz.astro";
             into your main.py?
         </h3>
         <CodeBlock
-            code={`project/ 
-    main.py 
+            code={`project/
+    main.py
     LIBARY/
-        __init__.py 
+        __init__.py
         classes.py
-    
-    LIBARY/__init__.py: 
+
+    LIBARY/__init__.py:
         from.classes import Person`}
         />
     </Fragment>
@@ -114,3 +114,1623 @@ import Quiz from "../components/Quiz.astro";
         <CodeBlock lang="python" code={`from LIBARY import Person`} />
     </Fragment>
 </Flashcard>
+
+<!-- ========================================== -->
+<!-- Core Python Data Types & Structures        -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-7"
+    tags={["programming", "python", "data-types"]}
+    source="python.astro"
+    priority={50}
+>
+    <Fragment slot="front">
+        <h3>What is the difference between mutable and immutable types in Python? Give examples of each.</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <ul>
+            <li>
+                <strong>Immutable</strong> (cannot be changed after creation):
+                <code>int</code>, <code>float</code>, <code>str</code>, <code>tuple</code>, <code>frozenset</code>, <code>bool</code>
+            </li>
+            <li>
+                <strong>Mutable</strong> (can be changed in-place):
+                <code>list</code>, <code>dict</code>, <code>set</code>, <code>bytearray</code>
+            </li>
+        </ul>
+        <p>This matters because mutable default arguments in functions are a common bug source:</p>
+        <CodeBlock
+            lang="python"
+            code={`# BUG: The default list is shared across all calls!
+def add_item(item, lst=[]):
+    lst.append(item)
+    return lst
+
+# CORRECT: Use None as default
+def add_item(item, lst=None):
+    if lst is None:
+        lst = []
+    lst.append(item)
+    return lst`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="python-8"
+    tags={["programming", "python", "data-structures"]}
+    source="python.astro"
+    priority={50}
+>
+    <Fragment slot="front">
+        <h3>How do you create, access, and modify a dictionary in Python?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <CodeBlock
+            lang="python"
+            code={`# Create
+person = {"name": "Alice", "age": 30}
+
+# Access
+person["name"]        # "Alice" (KeyError if missing)
+person.get("name")    # "Alice" (None if missing)
+person.get("job", "N/A")  # "N/A" (custom default)
+
+# Modify
+person["age"] = 31
+person["job"] = "Dev"  # adds new key
+
+# Useful methods
+person.keys()     # dict_keys(["name", "age", "job"])
+person.values()   # dict_values(["Alice", 31, "Dev"])
+person.items()    # dict_items([("name","Alice"), ...])
+person.pop("job") # removes and returns "Dev"`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-python-dict-access"
+    question="What happens when you access a dictionary key that doesn't exist using bracket notation (d['missing_key'])?"
+    options={[
+        "It returns None",
+        "It returns an empty string",
+        "It raises a KeyError",
+        "It creates the key with a default value",
+    ]}
+    correctIndex={2}
+    tags={["programming", "python", "data-structures"]}
+    priority={45}
+    source="python.astro"
+    explanation="Bracket notation raises a KeyError for missing keys. Use d.get('key') to safely return None, or d.get('key', default) for a custom fallback."
+/>
+
+<Flashcard
+    id="python-9"
+    tags={["programming", "python", "slicing"]}
+    source="python.astro"
+    priority={48}
+>
+    <Fragment slot="front">
+        <h3>How does slicing work in Python? What does <code>sequence[start:stop:step]</code> mean?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            Slicing extracts a portion of a sequence. The syntax is <code>[start:stop:step]</code> where <strong>start</strong> is inclusive, <strong>stop</strong> is exclusive, and <strong>step</strong> is the increment.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`nums = [0, 1, 2, 3, 4, 5, 6, 7]
+
+nums[2:5]     # [2, 3, 4]
+nums[:3]      # [0, 1, 2]       (from start)
+nums[5:]      # [5, 6, 7]       (to end)
+nums[::2]     # [0, 2, 4, 6]    (every 2nd)
+nums[::-1]    # [7, 6, 5, 4, 3, 2, 1, 0] (reversed)
+nums[-3:]     # [5, 6, 7]       (last 3)
+
+# Also works on strings
+"Hello"[1:4]  # "ell"`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-python-slicing"
+    question="Given nums = [10, 20, 30, 40, 50], what does nums[1:4] return?"
+    options={[
+        "[10, 20, 30, 40]",
+        "[20, 30, 40]",
+        "[20, 30, 40, 50]",
+        "[10, 20, 30]",
+    ]}
+    correctIndex={1}
+    tags={["programming", "python", "slicing"]}
+    priority={45}
+    source="python.astro"
+    explanation="Slicing is [start:stop) — start index is inclusive (index 1 = 20), stop index is exclusive (index 4 = 50 is excluded). Result: [20, 30, 40]."
+/>
+
+<!-- ========================================== -->
+<!-- List Comprehensions & Generators           -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-10"
+    tags={["programming", "python", "comprehensions"]}
+    source="python.astro"
+    priority={50}
+>
+    <Fragment slot="front">
+        <h3>What are list comprehensions in Python and how do you use them?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            A concise way to create lists by transforming and/or filtering elements from an iterable in a single expression.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`# Basic: [expression for item in iterable]
+squares = [x**2 for x in range(5)]
+# [0, 1, 4, 9, 16]
+
+# With filter: [expression for item in iterable if condition]
+evens = [x for x in range(10) if x % 2 == 0]
+# [0, 2, 4, 6, 8]
+
+# With transform + filter
+names = ["alice", "BOB", "Charlie"]
+upper_long = [n.upper() for n in names if len(n) > 3]
+# ["ALICE", "CHARLIE"]
+
+# Dict comprehension
+{k: v**2 for k, v in {"a": 1, "b": 2}.items()}
+# {"a": 1, "b": 4}`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-python-listcomp"
+    question="What does [x * 2 for x in [1, 2, 3] if x != 2] produce?"
+    options={[
+        "[2, 4, 6]",
+        "[2, 6]",
+        "[1, 3]",
+        "[4]",
+    ]}
+    correctIndex={1}
+    tags={["programming", "python", "comprehensions"]}
+    priority={45}
+    source="python.astro"
+    explanation="The filter 'if x != 2' removes 2 from the list, leaving [1, 3]. Each is then multiplied by 2, giving [2, 6]."
+/>
+
+<Flashcard
+    id="python-11"
+    tags={["programming", "python", "generators"]}
+    source="python.astro"
+    priority={35}
+>
+    <Fragment slot="front">
+        <h3>What is a generator in Python and how does <code>yield</code> work?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            A generator is a function that produces a sequence of values <strong>lazily</strong> (one at a time) using <code>yield</code> instead of <code>return</code>. It pauses execution and resumes where it left off on the next call.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`def count_up(n):
+    i = 0
+    while i < n:
+        yield i   # pauses here, returns i
+        i += 1    # resumes here on next()
+
+gen = count_up(3)
+next(gen)  # 0
+next(gen)  # 1
+next(gen)  # 2
+
+# Most common usage: in a for loop
+for num in count_up(1000000):
+    print(num)  # Memory-efficient: only 1 value in memory at a time`}
+        />
+    </Fragment>
+</Flashcard>
+
+<!-- ========================================== -->
+<!-- Exception Handling                         -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-12"
+    tags={["programming", "python", "exceptions"]}
+    source="python.astro"
+    priority={48}
+>
+    <Fragment slot="front">
+        <h3>How does exception handling work in Python with <code>try</code>/<code>except</code>?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <CodeBlock
+            lang="python"
+            code={`try:
+    result = 10 / 0
+except ZeroDivisionError as e:
+    print(f"Error: {e}")
+except (TypeError, ValueError):
+    print("Type or value error")
+except Exception as e:
+    print(f"Unexpected: {e}")  # catches all other exceptions
+else:
+    print("No errors occurred")  # runs only if no exception
+finally:
+    print("Always runs")  # cleanup, runs no matter what
+
+# Raising exceptions
+def divide(a, b):
+    if b == 0:
+        raise ValueError("Cannot divide by zero")
+    return a / b`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-python-exception-order"
+    question="In a try/except/else/finally block, when does the 'else' clause execute?"
+    options={[
+        "When an exception is caught",
+        "When no exception occurs in the try block",
+        "Always, regardless of exceptions",
+        "Only if the finally block succeeds",
+    ]}
+    correctIndex={1}
+    tags={["programming", "python", "exceptions"]}
+    priority={40}
+    source="python.astro"
+    explanation="The 'else' clause runs only when the try block completes without raising any exception. 'finally' is the one that always runs."
+/>
+
+<!-- ========================================== -->
+<!-- Functions: *args, **kwargs, Lambdas        -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-13"
+    tags={["programming", "python", "functions"]}
+    source="python.astro"
+    priority={45}
+>
+    <Fragment slot="front">
+        <h3>What are <code>*args</code> and <code>**kwargs</code> in Python?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            They let a function accept a variable number of arguments.
+        </p>
+        <ul>
+            <li><code>*args</code> collects extra <strong>positional</strong> arguments into a <strong>tuple</strong>.</li>
+            <li><code>**kwargs</code> collects extra <strong>keyword</strong> arguments into a <strong>dict</strong>.</li>
+        </ul>
+        <CodeBlock
+            lang="python"
+            code={`def example(required, *args, **kwargs):
+    print(required)  # "hello"
+    print(args)      # (1, 2, 3)
+    print(kwargs)    # {"name": "Alice", "age": 30}
+
+example("hello", 1, 2, 3, name="Alice", age=30)
+
+# Also used for unpacking when calling:
+def add(a, b, c):
+    return a + b + c
+
+nums = [1, 2, 3]
+add(*nums)  # unpacks list -> add(1, 2, 3)`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="python-14"
+    tags={["programming", "python", "functions"]}
+    source="python.astro"
+    priority={40}
+>
+    <Fragment slot="front">
+        <h3>What are lambda functions in Python?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            Anonymous, single-expression functions defined inline with the <code>lambda</code> keyword. Useful for short operations passed as arguments.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`# Syntax: lambda arguments: expression
+square = lambda x: x ** 2
+square(5)  # 25
+
+# Common use: sorting with a key
+users = [("Bob", 25), ("Alice", 30), ("Charlie", 20)]
+sorted(users, key=lambda u: u[1])
+# [("Charlie", 20), ("Bob", 25), ("Alice", 30)]
+
+# Common use: filtering
+nums = [1, 2, 3, 4, 5, 6]
+list(filter(lambda x: x % 2 == 0, nums))
+# [2, 4, 6]`}
+        />
+    </Fragment>
+</Flashcard>
+
+<!-- ========================================== -->
+<!-- Decorators                                 -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-15"
+    tags={["programming", "python", "decorators"]}
+    source="python.astro"
+    priority={38}
+>
+    <Fragment slot="front">
+        <h3>What are decorators in Python and how do they work?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            A decorator is a function that <strong>wraps another function</strong> to extend its behavior without modifying it. The <code>@decorator</code> syntax is shorthand for <code>func = decorator(func)</code>.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`import functools
+
+def log_calls(func):
+    @functools.wraps(func)  # preserves original name/docstring
+    def wrapper(*args, **kwargs):
+        print(f"Calling {func.__name__}")
+        result = func(*args, **kwargs)
+        print(f"Returned {result}")
+        return result
+    return wrapper
+
+@log_calls
+def add(a, b):
+    return a + b
+
+add(2, 3)
+# Calling add
+# Returned 5`}
+        />
+    </Fragment>
+</Flashcard>
+
+<!-- ========================================== -->
+<!-- Iteration Tools: enumerate, zip            -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-16"
+    tags={["programming", "python", "iteration"]}
+    source="python.astro"
+    priority={45}
+>
+    <Fragment slot="front">
+        <h3>How do <code>enumerate()</code> and <code>zip()</code> work in Python?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p><code>enumerate()</code> gives you both the index and the value while iterating.</p>
+        <p><code>zip()</code> combines multiple iterables element-by-element into tuples.</p>
+        <CodeBlock
+            lang="python"
+            code={`# enumerate: get index + value
+fruits = ["apple", "banana", "cherry"]
+for i, fruit in enumerate(fruits):
+    print(f"{i}: {fruit}")
+# 0: apple
+# 1: banana
+# 2: cherry
+
+# zip: pair up elements from multiple iterables
+names = ["Alice", "Bob"]
+scores = [95, 87]
+for name, score in zip(names, scores):
+    print(f"{name}: {score}")
+# Alice: 95
+# Bob: 87
+
+# zip stops at the shortest iterable
+dict(zip(names, scores))  # {"Alice": 95, "Bob": 87}`}
+        />
+    </Fragment>
+</Flashcard>
+
+<!-- ========================================== -->
+<!-- Tuple Unpacking                            -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-17"
+    tags={["programming", "python", "unpacking"]}
+    source="python.astro"
+    priority={42}
+>
+    <Fragment slot="front">
+        <h3>How does tuple unpacking (destructuring) work in Python?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <CodeBlock
+            lang="python"
+            code={`# Basic unpacking
+x, y, z = (1, 2, 3)
+
+# Swap variables (no temp needed!)
+a, b = b, a
+
+# Star expression: capture the rest
+first, *middle, last = [1, 2, 3, 4, 5]
+# first=1, middle=[2, 3, 4], last=5
+
+# Ignore values with _
+name, _, age = ("Alice", "unused", 30)
+
+# Nested unpacking
+(a, b), (c, d) = (1, 2), (3, 4)
+
+# In for loops
+pairs = [(1, "a"), (2, "b")]
+for num, letter in pairs:
+    print(f"{num} -> {letter}")`}
+        />
+    </Fragment>
+</Flashcard>
+
+<!-- ========================================== -->
+<!-- Context Managers (with statement)          -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-18"
+    tags={["programming", "python", "context-managers"]}
+    source="python.astro"
+    priority={40}
+>
+    <Fragment slot="front">
+        <h3>What is a context manager and how does the <code>with</code> statement work?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            A context manager guarantees <strong>setup and cleanup</strong> actions, even if an error occurs. The <code>with</code> statement calls <code>__enter__</code> on entry and <code>__exit__</code> on exit.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`# Most common: file handling
+# File is automatically closed, even if an error occurs
+with open("data.txt", "r") as f:
+    content = f.read()
+# f is closed here
+
+# Without 'with' you'd need:
+f = open("data.txt", "r")
+try:
+    content = f.read()
+finally:
+    f.close()
+
+# Multiple context managers
+with open("in.txt") as src, open("out.txt", "w") as dst:
+    dst.write(src.read())`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-python-with"
+    question="What is the primary benefit of using 'with open(file) as f' instead of 'f = open(file)'?"
+    options={[
+        "It makes the file read faster",
+        "It automatically closes the file even if an exception occurs",
+        "It opens the file in binary mode by default",
+        "It prevents the file from being modified",
+    ]}
+    correctIndex={1}
+    tags={["programming", "python", "context-managers"]}
+    priority={38}
+    source="python.astro"
+    explanation="The 'with' statement guarantees that the file's __exit__ method (which calls close()) runs when the block ends, even if an exception is raised inside the block."
+/>
+
+<!-- ========================================== -->
+<!-- OOP: Inheritance & Dunder Methods          -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-19"
+    tags={["programming", "python", "OOP"]}
+    source="python.astro"
+    priority={40}
+>
+    <Fragment slot="front">
+        <h3>How does class inheritance work in Python?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <CodeBlock
+            lang="python"
+            code={`class Animal:
+    def __init__(self, name):
+        self.name = name
+
+    def speak(self):
+        raise NotImplementedError
+
+class Dog(Animal):
+    def speak(self):
+        return f"{self.name} says Woof!"
+
+class Cat(Animal):
+    def __init__(self, name, indoor=True):
+        super().__init__(name)  # call parent constructor
+        self.indoor = indoor
+
+    def speak(self):
+        return f"{self.name} says Meow!"
+
+dog = Dog("Rex")
+dog.speak()              # "Rex says Woof!"
+isinstance(dog, Animal)  # True`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="python-20"
+    tags={["programming", "python", "OOP", "dunder-methods"]}
+    source="python.astro"
+    priority={35}
+>
+    <Fragment slot="front">
+        <h3>What are dunder (magic) methods in Python? Name the most important ones.</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            Dunder methods (double underscore, e.g. <code>__init__</code>) let you define how objects behave with built-in operations and functions.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`class Vector:
+    def __init__(self, x, y):     # constructor
+        self.x = x
+        self.y = y
+
+    def __repr__(self):           # repr(obj), debugging
+        return f"Vector({self.x}, {self.y})"
+
+    def __str__(self):            # str(obj), print(obj)
+        return f"({self.x}, {self.y})"
+
+    def __len__(self):            # len(obj)
+        return 2
+
+    def __eq__(self, other):      # obj == other
+        return self.x == other.x and self.y == other.y
+
+    def __add__(self, other):     # obj + other
+        return Vector(self.x + other.x, self.y + other.y)
+
+v = Vector(1, 2) + Vector(3, 4)  # Vector(4, 6)`}
+        />
+    </Fragment>
+</Flashcard>
+
+<!-- ========================================== -->
+<!-- Type Hints                                 -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-21"
+    tags={["programming", "python", "type-hints"]}
+    source="python.astro"
+    priority={30}
+>
+    <Fragment slot="front">
+        <h3>How do type hints work in Python?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            Type hints are <strong>optional annotations</strong> that document expected types. Python does <strong>not</strong> enforce them at runtime — use tools like <code>mypy</code> for static checking.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`# Variables
+name: str = "Alice"
+age: int = 30
+
+# Functions
+def greet(name: str, times: int = 1) -> str:
+    return f"Hello, {name}! " * times
+
+# Collections (Python 3.9+)
+scores: list[int] = [90, 85, 92]
+lookup: dict[str, int] = {"alice": 95}
+
+# Optional values
+from typing import Optional
+def find(name: str) -> Optional[str]:
+    ...  # returns str or None
+
+# Union types (Python 3.10+)
+def process(value: int | str) -> None:
+    ...`}
+        />
+    </Fragment>
+</Flashcard>
+
+<!-- ========================================== -->
+<!-- Strings                                    -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-22"
+    tags={["programming", "python", "strings"]}
+    source="python.astro"
+    priority={42}
+>
+    <Fragment slot="front">
+        <h3>What are the most important string methods in Python?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <CodeBlock
+            lang="python"
+            code={`s = "  Hello, World!  "
+
+s.strip()        # "Hello, World!"  (removes whitespace)
+s.lower()        # "  hello, world!  "
+s.upper()        # "  HELLO, WORLD!  "
+s.replace("World", "Python")  # "  Hello, Python!  "
+
+s.split(",")     # ["  Hello", " World!  "]
+"-".join(["a", "b", "c"])  # "a-b-c"
+
+s.startswith("  He")   # True
+s.endswith("!  ")      # True
+"World" in s            # True  (membership test)
+
+s.find("World")  # 9  (index, or -1 if not found)
+s.count("l")     # 3`}
+        />
+    </Fragment>
+</Flashcard>
+
+<!-- ========================================== -->
+<!-- Truthiness & None                          -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-23"
+    tags={["programming", "python", "truthiness"]}
+    source="python.astro"
+    priority={45}
+>
+    <Fragment slot="front">
+        <h3>What values are falsy in Python? What is the difference between <code>==</code> and <code>is</code>?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p><strong>Falsy values</strong> (evaluate to <code>False</code> in a boolean context):</p>
+        <ul>
+            <li><code>None</code></li>
+            <li><code>False</code></li>
+            <li>Zero: <code>0</code>, <code>0.0</code>, <code>0j</code></li>
+            <li>Empty sequences: <code>""</code>, <code>[]</code>, <code>()</code>, <code>{}</code>, <code>set()</code></li>
+        </ul>
+        <p><strong>Everything else is truthy.</strong></p>
+        <CodeBlock
+            lang="python"
+            code={`# == checks VALUE equality
+# is checks IDENTITY (same object in memory)
+
+a = [1, 2, 3]
+b = [1, 2, 3]
+a == b   # True  (same contents)
+a is b   # False (different objects)
+
+# Always use 'is' for None checks
+x = None
+if x is None:     # CORRECT
+    ...
+if x == None:     # WRONG (can be overridden by __eq__)
+    ...`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-python-is-vs-eq"
+    question="What is the correct way to check if a variable is None in Python?"
+    options={[
+        "if x == None:",
+        "if x is None:",
+        "if x.isNone():",
+        "if None(x):",
+    ]}
+    correctIndex={1}
+    tags={["programming", "python", "truthiness"]}
+    priority={43}
+    source="python.astro"
+    explanation="Always use 'is' for None checks because 'is' checks identity (same object), not equality. '==' can be overridden by __eq__ and may give wrong results."
+/>
+
+<!-- ========================================== -->
+<!-- Scope & LEGB Rule                          -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-24"
+    tags={["programming", "python", "scope"]}
+    source="python.astro"
+    priority={35}
+>
+    <Fragment slot="front">
+        <h3>What is the LEGB rule for variable scope in Python?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>Python resolves variable names by searching four scopes in order:</p>
+        <ol>
+            <li><strong>L</strong>ocal — inside the current function</li>
+            <li><strong>E</strong>nclosing — in any enclosing (outer) function</li>
+            <li><strong>G</strong>lobal — at the module level</li>
+            <li><strong>B</strong>uilt-in — Python's built-in names (<code>print</code>, <code>len</code>, etc.)</li>
+        </ol>
+        <CodeBlock
+            lang="python"
+            code={`x = "global"
+
+def outer():
+    x = "enclosing"
+    def inner():
+        x = "local"
+        print(x)  # "local" (L)
+    inner()
+
+# To modify outer scope variables:
+def counter():
+    count = 0
+    def increment():
+        nonlocal count  # refer to enclosing scope
+        count += 1
+    increment()
+    return count  # 1`}
+        />
+    </Fragment>
+</Flashcard>
+
+<!-- ========================================== -->
+<!-- Common Built-in Functions                  -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-25"
+    tags={["programming", "python", "builtins"]}
+    source="python.astro"
+    priority={42}
+>
+    <Fragment slot="front">
+        <h3>What are the most essential built-in functions in Python?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <CodeBlock
+            lang="python"
+            code={`# Type conversion
+int("42")        # 42
+float("3.14")    # 3.14
+str(42)          # "42"
+list("abc")      # ["a", "b", "c"]
+bool(0)          # False
+
+# Math
+abs(-5)          # 5
+max(3, 7, 2)     # 7
+min(3, 7, 2)     # 2
+sum([1, 2, 3])   # 6
+round(3.14159, 2) # 3.14
+
+# Inspection
+type(42)         # <class 'int'>
+isinstance(42, int)  # True
+len([1, 2, 3])   # 3
+dir(obj)         # list all attributes/methods
+
+# Iteration
+range(5)         # 0, 1, 2, 3, 4
+sorted([3,1,2])  # [1, 2, 3]
+reversed([1,2])  # iterator: 2, 1
+map(str, [1,2])  # iterator: "1", "2"
+any([F, T, F])   # True
+all([T, T, F])   # False`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-python-any-all"
+    question="What does all([True, True, False]) return?"
+    options={[
+        "True",
+        "False",
+        "[True, True]",
+        "2",
+    ]}
+    correctIndex={1}
+    tags={["programming", "python", "builtins"]}
+    priority={35}
+    source="python.astro"
+    explanation="all() returns True only if ALL elements are truthy. Since one element is False, all() returns False. any() would return True because at least one element is truthy."
+/>
+
+<!-- ========================================== -->
+<!-- Dataclasses                                -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-26"
+    tags={["programming", "python", "dataclasses"]}
+    source="python.astro"
+    priority={32}
+>
+    <Fragment slot="front">
+        <h3>What are dataclasses and why should you use them?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            <code>@dataclass</code> automatically generates <code>__init__</code>, <code>__repr__</code>, <code>__eq__</code>, and more from class field definitions. Reduces boilerplate for classes that primarily store data.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`from dataclasses import dataclass, field
+
+@dataclass
+class Point:
+    x: float
+    y: float
+    label: str = "origin"  # default value
+
+p = Point(1.0, 2.0)
+print(p)  # Point(x=1.0, y=2.0, label='origin')
+
+# Immutable version
+@dataclass(frozen=True)
+class Color:
+    r: int
+    g: int
+    b: int
+
+red = Color(255, 0, 0)
+red.r = 128  # FrozenInstanceError!`}
+        />
+    </Fragment>
+</Flashcard>
+
+<!-- ========================================== -->
+<!-- Walrus Operator & Ternary                  -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-27"
+    tags={["programming", "python", "operators"]}
+    source="python.astro"
+    priority={28}
+>
+    <Fragment slot="front">
+        <h3>What is the ternary (conditional) expression and the walrus operator (<code>:=</code>) in Python?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <CodeBlock
+            lang="python"
+            code={`# Ternary expression: value_if_true if condition else value_if_false
+status = "adult" if age >= 18 else "minor"
+
+# Walrus operator := (Python 3.8+)
+# Assigns AND returns a value in a single expression
+
+# Without walrus:
+line = input()
+while line != "quit":
+    print(line)
+    line = input()
+
+# With walrus:
+while (line := input()) != "quit":
+    print(line)
+
+# Useful in list comprehensions
+results = [y for x in data if (y := expensive(x)) > threshold]`}
+        />
+    </Fragment>
+</Flashcard>
+
+<!-- ========================================== -->
+<!-- Common Pitfalls Quiz                       -->
+<!-- ========================================== -->
+
+<Quiz
+    id="quiz-python-mutable-default"
+    question="What is wrong with this function definition: def add_to(item, lst=[])?"
+    options={[
+        "Python doesn't support default arguments",
+        "The default list is shared across all calls, causing a bug where items accumulate",
+        "Lists cannot be used as function parameters",
+        "Nothing, this is perfectly fine",
+    ]}
+    correctIndex={1}
+    tags={["programming", "python", "pitfalls"]}
+    priority={45}
+    source="python.astro"
+    explanation="Mutable default arguments (like lists and dicts) are created once when the function is defined, not on each call. All calls share the same list object. Use 'lst=None' and create a new list inside the function instead."
+/>
+
+<Quiz
+    id="quiz-python-scope-error"
+    question={`What error does this code produce?
+x = 10
+def foo():
+    print(x)
+    x = 20
+foo()`}
+    options={[
+        "No error, prints 10",
+        "No error, prints 20",
+        "UnboundLocalError: local variable 'x' referenced before assignment",
+        "NameError: name 'x' is not defined",
+    ]}
+    correctIndex={2}
+    tags={["programming", "python", "scope", "pitfalls"]}
+    priority={38}
+    source="python.astro"
+    explanation="Because 'x = 20' exists in the function, Python treats 'x' as a local variable for the entire function. The 'print(x)' on the line before the assignment tries to read the local 'x' before it has been assigned, causing an UnboundLocalError."
+/>
+
+<!-- ========================================== -->
+<!-- Functional Programming in Python           -->
+<!-- ========================================== -->
+
+<Flashcard
+    id="python-fp-first-class"
+    tags={["programming", "python", "functional-programming"]}
+    source="python.astro"
+    priority={48}
+>
+    <Fragment slot="front">
+        <h3>What does it mean that functions are first-class objects in Python?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            Functions can be <strong>assigned to variables</strong>, <strong>passed as arguments</strong>, <strong>returned from other functions</strong>, and <strong>stored in data structures</strong> — just like any other value.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`# Assign to a variable
+greet = print
+greet("Hello")  # Hello
+
+# Store in a data structure
+ops = {"+": lambda a, b: a + b,
+       "-": lambda a, b: a - b}
+ops["+"](3, 4)  # 7
+
+# Pass as an argument
+def apply(func, value):
+    return func(value)
+apply(str.upper, "hello")  # "HELLO"
+
+# Return from a function
+def multiplier(n):
+    return lambda x: x * n
+double = multiplier(2)
+double(5)  # 10`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-python-fp-first-class"
+    question="Which of the following is NOT something you can do with functions in Python because they are first-class objects?"
+    options={[
+        "Assign a function to a variable",
+        "Pass a function as an argument to another function",
+        "Inherit from a function like a class",
+        "Return a function from another function",
+    ]}
+    correctIndex={2}
+    tags={["programming", "python", "functional-programming"]}
+    priority={42}
+    source="python.astro"
+    explanation="Functions are objects, but they are not designed to be used as base classes for inheritance. You can assign, pass, return, and store them — that's what 'first-class' means."
+/>
+
+<Flashcard
+    id="python-fp-higher-order"
+    tags={["programming", "python", "functional-programming"]}
+    source="python.astro"
+    priority={46}
+>
+    <Fragment slot="front">
+        <h3>What is a higher-order function? Give Python examples.</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            A function that <strong>takes a function as an argument</strong> and/or <strong>returns a function</strong>. This is the foundation of functional programming.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`# Takes a function as argument
+sorted(["banana", "apple", "cherry"], key=len)
+# ["apple", "cherry", "banana"]
+
+# Built-in higher-order functions
+list(map(str.upper, ["a", "b"]))     # ["A", "B"]
+list(filter(str.isalpha, ["a", "1"])) # ["a"]
+
+# Returns a function (decorator pattern)
+def logged(func):
+    def wrapper(*args):
+        print(f"Calling {func.__name__}")
+        return func(*args)
+    return wrapper
+
+# Custom higher-order function
+def repeat(n):
+    """Returns a function that repeats its input n times."""
+    def decorator(func):
+        def wrapper(*args):
+            return [func(*args) for _ in range(n)]
+        return wrapper
+    return decorator`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="python-fp-pure-functions"
+    tags={["programming", "python", "functional-programming"]}
+    source="python.astro"
+    priority={44}
+>
+    <Fragment slot="front">
+        <h3>What is a pure function and why does it matter in functional programming?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>A pure function has <strong>two properties</strong>:</p>
+        <ol>
+            <li><strong>Deterministic:</strong> Same inputs always produce the same output.</li>
+            <li><strong>No side effects:</strong> Does not modify external state (no mutating globals, I/O, etc.).</li>
+        </ol>
+        <p><strong>Benefits:</strong> Easier to test, debug, reason about, and parallelize.</p>
+        <CodeBlock
+            lang="python"
+            code={`# PURE — no side effects, same input -> same output
+def add(a, b):
+    return a + b
+
+# IMPURE — modifies external state
+total = 0
+def add_to_total(x):
+    global total
+    total += x      # side effect: mutates global
+    return total
+
+# IMPURE — depends on external state
+import random
+def roll():
+    return random.randint(1, 6)  # non-deterministic
+
+# FP style: prefer transforming data over mutating it
+nums = [3, 1, 2]
+sorted_nums = sorted(nums)  # pure: returns new list
+nums.sort()                  # impure: mutates in place`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-python-fp-pure"
+    question="Which of the following is a pure function?"
+    options={[
+        "def f(x): print(x); return x",
+        "def f(lst): lst.append(1); return lst",
+        "def f(x, y): return x + y",
+        "def f(): return time.time()",
+    ]}
+    correctIndex={2}
+    tags={["programming", "python", "functional-programming"]}
+    priority={40}
+    source="python.astro"
+    explanation="Only 'return x + y' is pure: same inputs always produce the same output, and nothing external is modified. print() is I/O (side effect), .append() mutates the input, and time.time() is non-deterministic."
+/>
+
+<Flashcard
+    id="python-fp-map-filter-reduce"
+    tags={["programming", "python", "functional-programming"]}
+    source="python.astro"
+    priority={46}
+>
+    <Fragment slot="front">
+        <h3>How do <code>map()</code>, <code>filter()</code>, and <code>reduce()</code> work in Python?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>The three classic FP operations for transforming sequences:</p>
+        <CodeBlock
+            lang="python"
+            code={`from functools import reduce
+
+nums = [1, 2, 3, 4, 5]
+
+# map: apply a function to every element
+list(map(lambda x: x ** 2, nums))
+# [1, 4, 9, 16, 25]
+
+# filter: keep elements where function returns True
+list(filter(lambda x: x % 2 == 0, nums))
+# [2, 4]
+
+# reduce: fold list into a single value
+# reduce(func, iterable, initial)
+reduce(lambda acc, x: acc + x, nums, 0)
+# 15  (((((0+1)+2)+3)+4)+5)
+
+reduce(lambda acc, x: acc * x, nums, 1)
+# 120  (1*2*3*4*5)
+
+# Pythonic alternatives (often preferred):
+[x ** 2 for x in nums]           # instead of map
+[x for x in nums if x % 2 == 0]  # instead of filter
+sum(nums)                         # instead of reduce for sums`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-python-fp-reduce"
+    question={`What does this code return?
+from functools import reduce
+reduce(lambda acc, x: acc + x, [1, 2, 3, 4], 10)`}
+    options={[
+        "10",
+        "20",
+        "24",
+        "100",
+    ]}
+    correctIndex={1}
+    tags={["programming", "python", "functional-programming"]}
+    priority={40}
+    source="python.astro"
+    explanation="reduce starts with initial value 10, then folds: 10+1=11, 11+2=13, 13+3=16, 16+4=20. The result is 20."
+/>
+
+<Flashcard
+    id="python-fp-closures"
+    tags={["programming", "python", "functional-programming", "closures"]}
+    source="python.astro"
+    priority={42}
+>
+    <Fragment slot="front">
+        <h3>What is a closure in Python and how is it used in functional programming?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            A closure is a function that <strong>captures and remembers</strong> variables from its enclosing scope, even after that scope has finished executing. This lets you create functions with "baked-in" state.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`# A closure "closes over" the variable 'factor'
+def make_multiplier(factor):
+    def multiply(x):
+        return x * factor  # 'factor' is captured
+    return multiply
+
+double = make_multiplier(2)
+triple = make_multiplier(3)
+double(5)   # 10
+triple(5)   # 15
+
+# Practical: configurable validators
+def make_range_checker(low, high):
+    def check(value):
+        return low <= value <= high
+    return check
+
+is_valid_age = make_range_checker(0, 150)
+is_valid_age(25)   # True
+is_valid_age(200)  # False`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="python-fp-functools"
+    tags={["programming", "python", "functional-programming", "functools"]}
+    source="python.astro"
+    priority={40}
+>
+    <Fragment slot="front">
+        <h3>What are the most useful functions in Python's <code>functools</code> module?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <CodeBlock
+            lang="python"
+            code={`import functools
+
+# partial: "freeze" some arguments of a function
+def power(base, exp):
+    return base ** exp
+
+square = functools.partial(power, exp=2)
+cube = functools.partial(power, exp=3)
+square(5)  # 25
+cube(3)    # 27
+
+# lru_cache: memoize function results (pure functions only!)
+@functools.lru_cache(maxsize=128)
+def fibonacci(n):
+    if n < 2:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+fibonacci(100)  # instant, not exponential
+
+# reduce: fold a sequence into a single value
+functools.reduce(lambda a, b: a + b, [1, 2, 3])  # 6
+
+# wraps: preserve metadata when writing decorators
+def my_decorator(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-python-fp-partial"
+    question={`What does this code produce?
+from functools import partial
+def greet(greeting, name):
+    return f"{greeting}, {name}!"
+say_hello = partial(greet, "Hello")
+say_hello("Alice")`}
+    options={[
+        "\"Hello\"",
+        "\"Alice\"",
+        "\"Hello, Alice!\"",
+        "TypeError: missing argument",
+    ]}
+    correctIndex={2}
+    tags={["programming", "python", "functional-programming", "functools"]}
+    priority={35}
+    source="python.astro"
+    explanation="partial(greet, 'Hello') creates a new function with 'greeting' pre-filled as 'Hello'. Calling say_hello('Alice') is equivalent to greet('Hello', 'Alice'), returning 'Hello, Alice!'."
+/>
+
+<Flashcard
+    id="python-fp-itertools"
+    tags={["programming", "python", "functional-programming", "itertools"]}
+    source="python.astro"
+    priority={36}
+>
+    <Fragment slot="front">
+        <h3>What are the most useful functions in Python's <code>itertools</code> module?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            <code>itertools</code> provides memory-efficient building blocks for working with iterators in a functional style.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`import itertools
+
+# chain: flatten multiple iterables into one
+list(itertools.chain([1, 2], [3, 4], [5]))
+# [1, 2, 3, 4, 5]
+
+# islice: lazy slicing of any iterator
+list(itertools.islice(range(100), 5, 10))
+# [5, 6, 7, 8, 9]
+
+# product: cartesian product (nested loops)
+list(itertools.product("AB", [1, 2]))
+# [("A",1), ("A",2), ("B",1), ("B",2)]
+
+# combinations & permutations
+list(itertools.combinations("ABC", 2))
+# [("A","B"), ("A","C"), ("B","C")]
+
+list(itertools.permutations("AB", 2))
+# [("A","B"), ("B","A")]
+
+# groupby: group consecutive elements by a key
+data = [("a", 1), ("a", 2), ("b", 3)]
+for key, group in itertools.groupby(data, key=lambda x: x[0]):
+    print(key, list(group))
+# a [("a",1), ("a",2)]
+# b [("b",3)]
+
+# starmap: like map() but unpacks argument tuples
+list(itertools.starmap(pow, [(2, 3), (3, 2)]))
+# [8, 9]`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-python-fp-itertools"
+    question="What does list(itertools.chain([1, 2], [3], [4, 5])) return?"
+    options={[
+        "[[1, 2], [3], [4, 5]]",
+        "[1, 2, 3, 4, 5]",
+        "[(1, 3, 4), (2, 3, 5)]",
+        "[1, 2, [3], 4, 5]",
+    ]}
+    correctIndex={1}
+    tags={["programming", "python", "functional-programming", "itertools"]}
+    priority={30}
+    source="python.astro"
+    explanation="itertools.chain flattens multiple iterables into a single iterable, yielding elements one by one from each input in order: 1, 2, 3, 4, 5."
+/>
+
+<Flashcard
+    id="python-fp-composition"
+    tags={["programming", "python", "functional-programming"]}
+    source="python.astro"
+    priority={34}
+>
+    <Fragment slot="front">
+        <h3>How do you compose functions in Python (applying multiple transformations in sequence)?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            Python has no built-in compose operator, but you can build pipelines using <code>reduce</code> or simple helper functions.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`from functools import reduce
+
+# Manual composition
+def compose(*funcs):
+    """Apply functions right-to-left: compose(f, g)(x) = f(g(x))"""
+    return reduce(lambda f, g: lambda *a: f(g(*a)), funcs)
+
+shout = compose(str.upper, str.strip)
+shout("  hello  ")  # "HELLO"
+
+# Pipeline style (left-to-right, more readable)
+def pipe(*funcs):
+    """Apply functions left-to-right: pipe(f, g)(x) = g(f(x))"""
+    return reduce(lambda f, g: lambda *a: g(f(*a)), funcs)
+
+process = pipe(str.strip, str.upper, lambda s: s + "!")
+process("  hello  ")  # "HELLO!"
+
+# Practical: data processing pipeline
+pipeline = pipe(
+    lambda data: [x for x in data if x > 0],   # filter
+    lambda data: [x ** 2 for x in data],         # transform
+    sum                                           # aggregate
+)
+pipeline([-1, 2, -3, 4, 5])  # 4+16+25 = 45`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="python-fp-immutability"
+    tags={["programming", "python", "functional-programming", "immutability"]}
+    source="python.astro"
+    priority={34}
+>
+    <Fragment slot="front">
+        <h3>How do you achieve immutability in Python for functional programming?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            FP favors immutable data — transforming values into <strong>new</strong> values rather than mutating existing ones.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`# Use tuples instead of lists
+point = (3, 4)      # immutable
+# point[0] = 5      # TypeError!
+
+# Use frozenset instead of set
+allowed = frozenset({"read", "write"})
+
+# Use frozen dataclasses
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class User:
+    name: str
+    age: int
+
+u = User("Alice", 30)
+# u.age = 31  # FrozenInstanceError!
+
+# FP pattern: return new objects instead of mutating
+def birthday(user: User) -> User:
+    return User(user.name, user.age + 1)  # new object
+
+# NamedTuple: lightweight immutable data
+from typing import NamedTuple
+
+class Point(NamedTuple):
+    x: float
+    y: float
+
+p = Point(1.0, 2.0)
+p2 = Point(p.x + 1, p.y)  # create new, don't mutate`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-python-fp-immutability"
+    question="Which of these Python types is immutable?"
+    options={[
+        "list",
+        "dict",
+        "set",
+        "tuple",
+    ]}
+    correctIndex={3}
+    tags={["programming", "python", "functional-programming", "immutability"]}
+    priority={40}
+    source="python.astro"
+    explanation="Tuples are immutable — once created, their elements cannot be changed, added, or removed. Lists, dicts, and sets are all mutable."
+/>
+
+<Flashcard
+    id="python-fp-operator-module"
+    tags={["programming", "python", "functional-programming", "operator"]}
+    source="python.astro"
+    priority={28}
+>
+    <Fragment slot="front">
+        <h3>What is the <code>operator</code> module and why is it useful in functional Python?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            The <code>operator</code> module provides function equivalents of Python operators and attribute/item accessors — cleaner and faster than writing lambdas.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`from operator import add, mul, itemgetter, attrgetter
+from functools import reduce
+
+# Replace lambdas with named functions
+reduce(add, [1, 2, 3, 4])  # 10  (instead of lambda a,b: a+b)
+reduce(mul, [1, 2, 3, 4])  # 24  (instead of lambda a,b: a*b)
+
+# itemgetter: access items by index/key
+users = [{"name": "Bob", "age": 25},
+         {"name": "Alice", "age": 30}]
+
+sorted(users, key=itemgetter("age"))
+# [{"name":"Bob",...}, {"name":"Alice",...}]
+
+# vs lambda: sorted(users, key=lambda u: u["age"])
+
+# attrgetter: access object attributes
+from collections import namedtuple
+Point = namedtuple("Point", ["x", "y"])
+points = [Point(3, 1), Point(1, 2)]
+
+sorted(points, key=attrgetter("x"))
+# [Point(x=1, y=2), Point(x=3, y=1)]`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="python-fp-comprehension-vs-fp"
+    tags={["programming", "python", "functional-programming"]}
+    source="python.astro"
+    priority={38}
+>
+    <Fragment slot="front">
+        <h3>When should you use comprehensions vs <code>map()</code>/<code>filter()</code> in Python?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p><strong>Comprehensions</strong> are the Pythonic default. Use <code>map</code>/<code>filter</code> when passing an existing named function.</p>
+        <CodeBlock
+            lang="python"
+            code={`names = ["alice", "bob", "charlie"]
+
+# PREFER comprehension with inline logic
+[n.upper() for n in names if len(n) > 3]
+# ["ALICE", "CHARLIE"]
+
+# PREFER map/filter with existing functions
+list(map(str.upper, names))
+# ["ALICE", "BOB", "CHARLIE"]
+
+# Avoid: lambda + map is worse than a comprehension
+list(map(lambda x: x ** 2, range(5)))  # awkward
+[x ** 2 for x in range(5)]             # cleaner
+
+# Generator expressions for lazy evaluation
+# (round brackets instead of square)
+sum(x ** 2 for x in range(1000000))  # memory-efficient
+
+# Nested comprehensions (use sparingly)
+matrix = [[1, 2], [3, 4], [5, 6]]
+flat = [x for row in matrix for x in row]
+# [1, 2, 3, 4, 5, 6]`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-python-fp-style"
+    question="Which is the most Pythonic way to square all numbers in a list?"
+    options={[
+        "list(map(lambda x: x ** 2, nums))",
+        "[x ** 2 for x in nums]",
+        "for i in range(len(nums)): nums[i] = nums[i] ** 2",
+        "reduce(lambda acc, x: acc + [x**2], nums, [])",
+    ]}
+    correctIndex={1}
+    tags={["programming", "python", "functional-programming"]}
+    priority={42}
+    source="python.astro"
+    explanation="List comprehensions are the Pythonic standard for simple transformations. map+lambda is less readable, the for loop mutates in place, and reduce is overly complex here."
+/>
+
+<Flashcard
+    id="python-fp-gen-expressions"
+    tags={["programming", "python", "functional-programming", "generators"]}
+    source="python.astro"
+    priority={38}
+>
+    <Fragment slot="front">
+        <h3>What are generator expressions and how do they differ from list comprehensions?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            Generator expressions use <strong>parentheses</strong> instead of brackets and produce values <strong>lazily</strong> — one at a time, without building the entire list in memory.
+        </p>
+        <CodeBlock
+            lang="python"
+            code={`# List comprehension: builds entire list in memory
+squares_list = [x**2 for x in range(1000000)]  # ~8MB
+
+# Generator expression: produces values on demand
+squares_gen = (x**2 for x in range(1000000))   # ~0MB
+
+# Use directly in functions that consume iterables
+sum(x**2 for x in range(1000000))  # no extra brackets needed
+max(len(w) for w in words)
+any(x > 100 for x in data)
+
+# Chaining generators for pipeline processing
+import os
+files = (f for f in os.listdir(".") if f.endswith(".py"))
+sizes = (os.path.getsize(f) for f in files)
+total = sum(sizes)  # processes one file at a time`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Quiz
+    id="quiz-python-fp-genexpr"
+    question="What is the key difference between [x for x in range(10)] and (x for x in range(10))?"
+    options={[
+        "They produce different values",
+        "The first creates a list in memory; the second creates a lazy generator",
+        "The first is faster; the second is slower",
+        "The second is invalid Python syntax",
+    ]}
+    correctIndex={1}
+    tags={["programming", "python", "functional-programming", "generators"]}
+    priority={36}
+    source="python.astro"
+    explanation="Square brackets create a list comprehension (all values computed and stored in memory immediately). Parentheses create a generator expression (values produced lazily, one at a time, using minimal memory)."
+/>
