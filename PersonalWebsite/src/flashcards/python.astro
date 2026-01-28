@@ -1,0 +1,116 @@
+---
+import Flashcard from "../components/Flashcard.astro";
+import CodeBlock from "../components/CodeBlock.astro";
+import NotePreview from "../components/NotePreview.svelte";
+import Quiz from "../components/Quiz.astro";
+---
+
+<Flashcard
+    id="python-1"
+    tags={["programming", "python", "OOP"]}
+    source="python.astro"
+    priority={20}
+>
+    <Fragment slot="front">
+        <h3>How do you add fields to a python class?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        Using the constructor method __init__ and self.field
+        <CodeBlock
+            lang="python"
+            code={`class Person(): 
+    def __init__(self, name): 
+        self.name = name`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="python-2"
+    tags={["programming", "python"]}
+    source="python.astro"
+    priority={20}
+>
+    <Fragment slot="front">
+        <h3>How do you format strings in Python?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        We mark a string with `f` as a format string.
+        <CodeBlock lang="python" code={`f'Hello, {friends_name}'`} />
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="python-3"
+    tags={["programming", "python"]}
+    source="python.astro"
+    priority={15}
+>
+    <Fragment slot="front">
+        <h3>How do you add methods to a python class?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        Defining a new function using `def NAME (self):`
+        <CodeBlock
+            lang="python"
+            code={`class Person(): 
+    def SayHello(self, name): 
+        print(f'Hello, my friend: {name})'`}
+        />
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="python-4"
+    tags={["programming", "python"]}
+    source="python.astro"
+    priority={25}
+>
+    <Fragment slot="front">
+        <h3>How do you create a new python project using UV?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <CodeBlock lang="bash" code={`uv init PROJECT_NAME`} />
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="python-5"
+    tags={["programming", "python"]}
+    source="python.astro"
+    priority={25}
+>
+    <Fragment slot="front">
+        <h3>How do add new dependencies to UV?</h3>
+    </Fragment>
+    <Fragment slot="back">
+        <CodeBlock lang="bash" code={`uv add LIBRARY_NAME`} />
+    </Fragment>
+</Flashcard>
+
+<Flashcard
+    id="python-6"
+    tags={["programming", "python"]}
+    source="python.astro"
+    priority={25}
+>
+    <Fragment slot="front">
+        <h3>
+            Imagine this folder structure. How do you import the person class
+            into your main.py?
+        </h3>
+        <CodeBlock
+            code={`project/ 
+    main.py 
+    LIBARY/
+        __init__.py 
+        classes.py
+    
+    LIBARY/__init__.py: 
+        from.classes import Person`}
+        />
+    </Fragment>
+    <Fragment slot="back">
+        <CodeBlock lang="python" code={`from LIBARY import Person`} />
+    </Fragment>
+</Flashcard>
