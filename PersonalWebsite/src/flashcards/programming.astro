@@ -22,8 +22,8 @@ import Quiz from "../components/Quiz.astro";
     </Fragment>
     <Fragment slot="back">
         <p>
-            A <a target="_blank" href="/notes/closures-explained">closure</a> is
-            a function that has access to variables in its outer (enclosing) <a
+            A <a target="_blank" href="/notes/closures-explained">closure</a> is a
+            function that has access to variables in its outer (enclosing) <a
                 target="_blank"
                 href="/notes/lexical-scope">lexical scope</a
             >, even after the outer function has returned.
@@ -412,4 +412,104 @@ What is the final output?`
     priority={10}
     source="c-programming.astro"
     explanation=`The address of 'x' (&x) is passed to the function. The function's 'ptr' parameter holds this address. By dereferencing it (*ptr), the function accesses and modifies the *original* 'x' variable in main() to 100.`
+/>
+
+<!-- Flashcard: Definitions -->
+<Flashcard
+    id="cs-dispatch-definitions"
+    tags={["computer-science", "polymorphism", "dispatch"]}
+    source="programming-concepts.astro"
+    priority={40}
+    references={[
+        "Structure and Interpretation of Computer Programs",
+        "Common Lisp Object System (CLOS) Specification",
+    ]}
+>
+    <Fragment slot="front">
+        <h3>
+            What is the difference between Single Dispatch and Multiple
+            Dispatch?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            The difference lies in <strong
+                >how many objects' runtime types</strong
+            > are used to select which method implementation to execute.
+        </p>
+        <ul>
+            <li>
+                <strong>Single Dispatch</strong> (Java, C++, Python): The decision
+                is based on the runtime type of the <em>receiver</em> only (the object
+                before the dot).
+                <br /><code>x.f(y)</code> selects implementation based on <code
+                    >x</code
+                >.
+            </li>
+            <li>
+                <strong>Multiple Dispatch</strong> (Julia, Common Lisp): The decision
+                is based on the runtime types of <strong>all</strong> arguments involved.
+                <br /><code>f(x, y)</code> selects implementation based on the combination
+                of <code>x</code> AND <code>y</code>.
+            </li>
+        </ul>
+    </Fragment>
+</Flashcard>
+
+<!-- Flashcard: The Problem it Solves -->
+<Flashcard
+    id="cs-dispatch-problem"
+    tags={["computer-science", "design-patterns", "visitor-pattern"]}
+    source="programming-concepts.astro"
+    priority={40}
+>
+    <Fragment slot="front">
+        <h3>
+            What specific problem does Multiple Dispatch solve (often
+            illustrated by the "Collision Problem")?
+        </h3>
+    </Fragment>
+    <Fragment slot="back">
+        <p>
+            It solves the difficulty of defining operations that depend on the
+            concrete types of <strong>two or more interacting objects</strong> without
+            using messy conditional logic.
+        </p>
+        <p><strong>Example:</strong> A game engine handling collisions.</p>
+        <ul>
+            <li>
+                <code>collide(Asteroid, Spaceship)</code> -> Ship takes damage.
+            </li>
+            <li><code>collide(Asteroid, Asteroid)</code> -> Both bounce.</li>
+        </ul>
+        <p>
+            In <strong>Single Dispatch</strong>, <code
+                >asteroid.collide(obj)</code
+            > only knows it hit an "Object". You are forced to use <code
+                >instanceof</code
+            > checks or the <strong>Visitor Pattern</strong> (Double Dispatch) to
+            determine what <code>obj</code> actually is.
+        </p>
+        <p>
+            <strong>Multiple Dispatch</strong> handles this natively by selecting
+            the exact method signature matching both types.
+        </p>
+    </Fragment>
+</Flashcard>
+
+<!-- Quiz: Mechanics -->
+<Quiz
+    id="quiz-dispatch-mechanics"
+    question="In a Single Dispatch language (like Java or Python), if you execute the code 'hero.attack(monster)', the specific implementation of the 'attack' method is chosen based on..."
+    options={[
+        "The runtime types of both 'hero' and 'monster'.",
+        "The runtime type of 'hero' only.",
+        "The runtime type of 'monster' only.",
+        "The static (compile-time) types of both objects.",
+    ]}
+    correctIndex={1}
+    tags={["computer-science", "dispatch", "oop"]}
+    priority={40}
+    source="programming-concepts.astro"
+    explanation="In Single Dispatch, the method is selected based on the polymorphic type of the receiver (the object to the left of the dot, 'hero'). The type of the argument ('monster') is not considered for method selection at runtime; it is merely passed in."
 />
