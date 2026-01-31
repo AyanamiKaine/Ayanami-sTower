@@ -26,6 +26,10 @@
     let scanner; // jscanify instance
     let cropper; // Cropper.js instance
 
+    // Password Modal State
+    let showPasswordModal = false;
+    let passwordInput = "";
+
     // Processing Parameters
     let filters = {
         type: "bw", // 'original', 'gray', 'bw'
@@ -664,14 +668,29 @@
         saveSettings(); // Save checking status
     }
 
+    function openPasswordModal() {
+        passwordInput = "";
+        showPasswordModal = true;
+    }
+
+    function closePasswordModal() {
+        showPasswordModal = false;
+        passwordInput = "";
+    }
+
     async function downloadExcel() {
+        if (!passwordInput) {
+            alert("Please enter a password.");
+            return;
+        }
+
         try {
             const response = await fetch(
                 "https://api.ayanamikaine.com/download",
                 {
                     method: "GET",
                     headers: {
-                        "X-Password": "SecretPassword123",
+                        "X-Password": passwordInput,
                     },
                 },
             );
@@ -686,6 +705,9 @@
                 a.click();
                 a.remove();
                 window.URL.revokeObjectURL(url);
+                closePasswordModal();
+            } else if (response.status === 401 || response.status === 403) {
+                alert("Incorrect password.");
             } else {
                 alert("Download failed: " + response.status);
             }
@@ -710,6 +732,32 @@
 </script>
 
 <div class="camera-app">
+    {#if showPasswordModal}
+        <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+        <div class="modal-overlay" on:click={closePasswordModal} role="presentation">
+            <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+            <div class="modal-content" on:click|stopPropagation role="dialog" aria-modal="true" aria-labelledby="password-modal-title">
+                <h3 id="password-modal-title">Enter Password</h3>
+                <!-- svelte-ignore a11y_autofocus -->
+                <input
+                    type="password"
+                    bind:value={passwordInput}
+                    placeholder="Password"
+                    on:keydown={(e) => e.key === "Enter" && downloadExcel()}
+                    autofocus
+                />
+                <div class="modal-actions">
+                    <button class="btn secondary" on:click={closePasswordModal}>
+                        Cancel
+                    </button>
+                    <button class="btn primary" on:click={downloadExcel}>
+                        Download
+                    </button>
+                </div>
+            </div>
+        </div>
+    {/if}
+
     {#if error}
         <div class="error-message">
             <p>{error}</p>
@@ -755,7 +803,7 @@
             <!-- Left Side: Download -->
             <button
                 class="icon-btn-small"
-                on:click={downloadExcel}
+                on:click={openPasswordModal}
                 title="Download Excel"
                 aria-label="Download Excel"
             >
@@ -1436,5 +1484,67 @@
         gap: 1rem;
         padding: 0 1rem;
         padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* --- Password Modal --- */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+        background: #1a1a1a;
+        padding: 1.5rem;
+        border-radius: 12px;
+        min-width: 280px;
+        max-width: 90%;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-content h3 {
+        margin: 0 0 1rem 0;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+
+    .modal-content input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        font-size: 1rem;
+        box-sizing: border-box;
+    }
+
+    .modal-content input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .modal-content input:focus {
+        outline: none;
+        border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        justify-content: flex-end;
+    }
+
+    .modal-actions .btn {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.9rem;
     }
 </style>
