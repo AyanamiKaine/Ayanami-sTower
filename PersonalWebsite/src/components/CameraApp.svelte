@@ -37,6 +37,274 @@
     let uploadQueue = [];
     let uploadQueueSize = 0;
     let isUploadWorkerRunning = false;
+    let showMetadataPanel = false;
+    let metadataOperateur = "";
+    let metadataNamePatient = "";
+    let metadataGeburtsdatum = "";
+    let metadataKnownFields = [];
+    let metadataExtras = [];
+    let metadataPayload = {};
+    let metadataFieldCount = 0;
+
+    const OPERATEUR_OPTIONS = [
+        "Menzel-Severing",
+        "Steindor",
+        "Borrelli",
+        "Gerling",
+    ];
+
+    const METADATA_FIELD_GROUPS = [
+        {
+            section: "Spender / Präparation",
+            fields: [
+                { key: "sp_nummer", label: "SP-Nummer", type: "string" },
+                {
+                    key: "spender_alter",
+                    label: "Spender Alter",
+                    type: "string",
+                },
+                { key: "alter", label: "Alter", type: "integer" },
+                {
+                    key: "pseudophak_spender",
+                    label: "Pseudophak (Spender)",
+                    type: "string",
+                    options: ["Ja", "Nein"],
+                },
+                {
+                    key: "korneoskleralscheibe_zentriert",
+                    label: "Korneoskleralscheibe zentriert",
+                    type: "string",
+                    options: ["Ja", "Nein"],
+                },
+                {
+                    key: "datum_praeparation",
+                    label: "Datum Präparation",
+                    type: "date",
+                },
+                { key: "dauer_min", label: "Dauer (min)", type: "integer" },
+                {
+                    key: "tmw_pigmentierung",
+                    label: "TMW-Pigmentierung",
+                    type: "string",
+                    options: ["0", "+", "++", "+++"],
+                },
+                {
+                    key: "nach_praep_uhrzeiten",
+                    label: "Nach Präp. Uhrzeiten",
+                    type: "string",
+                },
+                {
+                    key: "dmek_praeparat_durchmesser",
+                    label: "DMEK-Durchmesser",
+                    type: "string",
+                },
+                {
+                    key: "no_touch_technik",
+                    label: "No-touch-Technik",
+                    type: "string",
+                    options: ["Ja", "Nein"],
+                },
+                {
+                    key: "leichtigkeit_praeparation",
+                    label: "Leichtigkeit Präparation",
+                    type: "string",
+                    options: ["Leicht", "Mittel", "Schwer"],
+                },
+                {
+                    key: "grund_schwierigkeit_praep",
+                    label: "Grund Schwierigkeit Präp.",
+                    type: "string",
+                },
+                {
+                    key: "risse_defekte",
+                    label: "Risse/Defekte",
+                    type: "string",
+                },
+                {
+                    key: "faerbung_praeparat",
+                    label: "Färbung Präparat",
+                    type: "string",
+                },
+                {
+                    key: "tx_endotheldefekte",
+                    label: "Tx-Endotheldefekte",
+                    type: "string",
+                    options: ["0", "+", "++", "+++"],
+                },
+                {
+                    key: "streifen_punkte",
+                    label: "Streifen/Punkte",
+                    type: "string",
+                    options: ["Streifen", "Punkte"],
+                },
+                {
+                    key: "dauer_trypanblau_sek",
+                    label: "Dauer Trypanblau (s)",
+                    type: "integer",
+                },
+                {
+                    key: "lagerung_bis_tx",
+                    label: "Lagerung bis Tx",
+                    type: "string",
+                },
+                {
+                    key: "rollung",
+                    label: "Rollung",
+                    type: "string",
+                    options: ["Normal", "Eng", "Kaum"],
+                },
+                { key: "markierung", label: "Markierung", type: "string" },
+            ],
+        },
+        {
+            section: "Empfänger / Operation",
+            fields: [
+                {
+                    key: "op_auge",
+                    label: "Operiertes Auge",
+                    type: "string",
+                    options: ["RA", "LA"],
+                },
+                {
+                    key: "pseudophak_empfaenger",
+                    label: "Pseudophak (Empfänger)",
+                    type: "string",
+                    options: ["Ja", "Nein"],
+                },
+                {
+                    key: "hornhaut_durchmesser.vertikal",
+                    label: "Hornhaut vertikal (mm)",
+                    type: "number",
+                },
+                {
+                    key: "hornhaut_durchmesser.horizontal",
+                    label: "Hornhaut horizontal (mm)",
+                    type: "number",
+                },
+                { key: "datum_op", label: "Datum OP", type: "date" },
+                {
+                    key: "beginn_zeit",
+                    label: "Beginn Uhrzeit",
+                    type: "string",
+                    inputType: "time",
+                },
+                {
+                    key: "gesamtdauer_min",
+                    label: "Gesamtdauer (min)",
+                    type: "integer",
+                },
+                {
+                    key: "abrasio",
+                    label: "Abrasio",
+                    type: "string",
+                    options: ["Ja", "Nein"],
+                },
+                { key: "faerbung_op", label: "Färbung OP", type: "string" },
+                {
+                    key: "descemetorhexis_zentriert",
+                    label: "Descemetorhexis zentriert",
+                    type: "string",
+                    options: ["Ja", "Nein"],
+                },
+                {
+                    key: "trypanblau_applikation_vor_implant",
+                    label: "Trypanblau vor Implant (s)",
+                    type: "integer",
+                },
+                {
+                    key: "implantation_szurmann",
+                    label: "Implantation Szurmann",
+                    type: "string",
+                },
+                {
+                    key: "leichtigkeit_entrollung",
+                    label: "Leichtigkeit Entrollung",
+                    type: "string",
+                    options: ["Leicht", "Mittel", "Schwer"],
+                },
+                {
+                    key: "grund_schwierigkeit_entrollung",
+                    label: "Grund Schwierigkeit Entrollung",
+                    type: "string",
+                },
+                {
+                    key: "entfaltung",
+                    label: "Entfaltung",
+                    type: "string",
+                    options: [
+                        "Spontan",
+                        "Manuelle Hilfe",
+                        "Mit kleiner Luftblase",
+                    ],
+                },
+                {
+                    key: "blutung_in_vk",
+                    label: "Blutung in VK",
+                    type: "string",
+                    options: ["Ja", "Nein"],
+                },
+                {
+                    key: "trypanblau_intraokular_sek",
+                    label: "Trypanblau intraokular (s)",
+                    type: "integer",
+                },
+                {
+                    key: "kat_op",
+                    label: "Katarakt-OP",
+                    type: "string",
+                    options: ["Ja", "Nein"],
+                },
+                {
+                    key: "iridektomie_uhrzeit",
+                    label: "Iridektomie (Uhrzeit)",
+                    type: "string",
+                },
+                {
+                    key: "naehte.typ",
+                    label: "Nähte Typ",
+                    type: "string",
+                    options: ["Keine", "Kreuz", "EKN"],
+                },
+                {
+                    key: "naehte.uhrzeit",
+                    label: "Nähte Uhrzeit",
+                    type: "string",
+                },
+                {
+                    key: "luftblase_prozent",
+                    label: "Luftblase (%)",
+                    type: "integer",
+                },
+                {
+                    key: "gas_luft_typ",
+                    label: "Gas/Luft Typ",
+                    type: "string",
+                    options: ["SF6 20%", "Luft"],
+                },
+                {
+                    key: "komplikationen",
+                    label: "Komplikationen",
+                    type: "string",
+                },
+                { key: "kommentare", label: "Kommentare", type: "string" },
+            ],
+        },
+    ];
+
+    const METADATA_FIELD_CATALOG = METADATA_FIELD_GROUPS.flatMap((group) =>
+        group.fields.map((field) => ({
+            ...field,
+            section: group.section,
+        })),
+    );
+
+    const METADATA_FIELD_BY_KEY = METADATA_FIELD_CATALOG.reduce(
+        (acc, field) => {
+            acc[field.key] = field;
+            return acc;
+        },
+        {},
+    );
 
     // Processing Parameters
     let filters = {
@@ -88,6 +356,247 @@
             console.error("Failed to save settings", e);
         }
     }
+
+    function loadMetadataDraft() {
+        try {
+            const raw = localStorage.getItem("cameraApp_metadataDraft");
+            if (!raw) return;
+            const saved = JSON.parse(raw);
+
+            metadataOperateur =
+                typeof saved.operateur === "string" ? saved.operateur : "";
+            metadataNamePatient =
+                typeof saved.name_patient === "string"
+                    ? saved.name_patient
+                    : "";
+            metadataGeburtsdatum =
+                typeof saved.geburtsdatum === "string"
+                    ? saved.geburtsdatum
+                    : "";
+
+            if (Array.isArray(saved.knownFields)) {
+                metadataKnownFields = saved.knownFields
+                    .filter(
+                        (item) =>
+                            item &&
+                            typeof item.key === "string" &&
+                            typeof item.value === "string",
+                    )
+                    .map((item) => ({ key: item.key, value: item.value }));
+            } else {
+                metadataKnownFields = [];
+            }
+
+            if (Array.isArray(saved.extras)) {
+                metadataExtras = saved.extras
+                    .filter(
+                        (item) =>
+                            item &&
+                            typeof item.key === "string" &&
+                            typeof item.value === "string",
+                    )
+                    .map((item) => ({ key: item.key, value: item.value }));
+            } else {
+                metadataExtras = [];
+            }
+        } catch (e) {
+            console.error("Failed to load metadata draft", e);
+        }
+    }
+
+    function saveMetadataDraft() {
+        try {
+            localStorage.setItem(
+                "cameraApp_metadataDraft",
+                JSON.stringify({
+                    operateur: metadataOperateur,
+                    name_patient: metadataNamePatient,
+                    geburtsdatum: metadataGeburtsdatum,
+                    knownFields: metadataKnownFields,
+                    extras: metadataExtras,
+                }),
+            );
+        } catch (e) {
+            console.error("Failed to save metadata draft", e);
+        }
+    }
+
+    function getMetadataFieldDefinition(key) {
+        return METADATA_FIELD_BY_KEY[key] ?? null;
+    }
+
+    function getMetadataInputType(key) {
+        const definition = getMetadataFieldDefinition(key);
+        if (!definition) return "text";
+        if (definition.inputType) return definition.inputType;
+        if (definition.type === "integer" || definition.type === "number") {
+            return "number";
+        }
+        if (definition.type === "date") return "date";
+        return "text";
+    }
+
+    function getMetadataInputStep(key) {
+        const definition = getMetadataFieldDefinition(key);
+        if (!definition) return null;
+        if (definition.type === "integer") return "1";
+        if (definition.type === "number") return "0.1";
+        return null;
+    }
+
+    function getMetadataInputMode(key) {
+        const definition = getMetadataFieldDefinition(key);
+        if (!definition) return null;
+        if (definition.type === "integer") return "numeric";
+        if (definition.type === "number") return "decimal";
+        return null;
+    }
+
+    function setNestedMetadataValue(target, key, value) {
+        const path = key.split(".");
+        let cursor = target;
+
+        for (let i = 0; i < path.length - 1; i++) {
+            const part = path[i];
+            if (
+                typeof cursor[part] !== "object" ||
+                cursor[part] === null ||
+                Array.isArray(cursor[part])
+            ) {
+                cursor[part] = {};
+            }
+            cursor = cursor[part];
+        }
+
+        cursor[path[path.length - 1]] = value;
+    }
+
+    function normalizeKnownMetadataValue(rawValue, definition) {
+        const rawText = `${rawValue ?? ""}`.trim();
+        if (!rawText) return null;
+
+        if (
+            Array.isArray(definition.options) &&
+            definition.options.length > 0 &&
+            !definition.options.includes(rawText)
+        ) {
+            return null;
+        }
+
+        if (definition.type === "integer") {
+            const parsed = Number.parseInt(rawText, 10);
+            return Number.isNaN(parsed) ? null : parsed;
+        }
+
+        if (definition.type === "number") {
+            const parsed = Number.parseFloat(rawText.replace(",", "."));
+            return Number.isNaN(parsed) ? null : parsed;
+        }
+
+        return rawText;
+    }
+
+    function buildMetadataPayload() {
+        const metadata = {};
+
+        for (const field of metadataKnownFields) {
+            const key = (field.key ?? "").trim();
+            if (!key) continue;
+            const definition = getMetadataFieldDefinition(key);
+            if (!definition) continue;
+
+            const normalized = normalizeKnownMetadataValue(
+                field.value,
+                definition,
+            );
+            if (normalized === null) continue;
+            setNestedMetadataValue(metadata, key, normalized);
+        }
+
+        for (const pair of metadataExtras) {
+            const key = (pair.key ?? "").trim();
+            const value = (pair.value ?? "").trim();
+            if (!key || !value) continue;
+            setNestedMetadataValue(metadata, key, value);
+        }
+
+        // Core fields are quick-access and should win over duplicates.
+        const operateur = metadataOperateur.trim();
+        const namePatient = metadataNamePatient.trim();
+        const geburtsdatum = metadataGeburtsdatum.trim();
+
+        if (operateur) metadata.operateur = operateur;
+        if (namePatient) metadata.name_patient = namePatient;
+        if (geburtsdatum) metadata.geburtsdatum = geburtsdatum;
+
+        return metadata;
+    }
+
+    function openMetadataPanel() {
+        showMetadataPanel = true;
+    }
+
+    function closeMetadataPanel() {
+        showMetadataPanel = false;
+        saveMetadataDraft();
+    }
+
+    function setMetadataField(field, value) {
+        if (field === "operateur") metadataOperateur = value;
+        if (field === "name_patient") metadataNamePatient = value;
+        if (field === "geburtsdatum") metadataGeburtsdatum = value;
+        saveMetadataDraft();
+    }
+
+    function addMetadataExtra() {
+        metadataExtras = [...metadataExtras, { key: "", value: "" }];
+        saveMetadataDraft();
+    }
+
+    function addKnownMetadataField() {
+        metadataKnownFields = [...metadataKnownFields, { key: "", value: "" }];
+        saveMetadataDraft();
+    }
+
+    function updateKnownMetadataField(index, field, value) {
+        metadataKnownFields = metadataKnownFields.map((entry, i) => {
+            if (i !== index) return entry;
+            if (field === "key") {
+                return { key: value, value: "" };
+            }
+            return { ...entry, [field]: value };
+        });
+        saveMetadataDraft();
+    }
+
+    function removeKnownMetadataField(index) {
+        metadataKnownFields = metadataKnownFields.filter((_, i) => i !== index);
+        saveMetadataDraft();
+    }
+
+    function updateMetadataExtra(index, field, value) {
+        metadataExtras = metadataExtras.map((entry, i) =>
+            i === index ? { ...entry, [field]: value } : entry,
+        );
+        saveMetadataDraft();
+    }
+
+    function removeMetadataExtra(index) {
+        metadataExtras = metadataExtras.filter((_, i) => i !== index);
+        saveMetadataDraft();
+    }
+
+    function clearMetadataDraft() {
+        metadataOperateur = "";
+        metadataNamePatient = "";
+        metadataGeburtsdatum = "";
+        metadataKnownFields = [];
+        metadataExtras = [];
+        saveMetadataDraft();
+    }
+
+    $: metadataPayload = buildMetadataPayload();
+    $: metadataFieldCount = Object.keys(metadataPayload).length;
 
     async function loadScript(src, checkVar) {
         return new Promise((resolve, reject) => {
@@ -283,7 +792,7 @@
         return Math.min(delay, MAX_RETRY_DELAY_MS);
     }
 
-    function queueUploadJob(patientInfoBlob, operationBlob) {
+    function queueUploadJob(patientInfoBlob, operationBlob, metadata = null) {
         if (!patientInfoBlob || !operationBlob) {
             error = "Both images are required before upload.";
             return;
@@ -294,6 +803,10 @@
             id: jobId,
             patientInfoBlob,
             operationBlob,
+            metadata:
+                metadata && Object.keys(metadata).length > 0
+                    ? { ...metadata }
+                    : null,
         };
 
         uploadQueue = [...uploadQueue, job];
@@ -318,6 +831,9 @@
             job.operationBlob,
             `operation-${job.id}.jpg`,
         );
+        if (job.metadata && Object.keys(job.metadata).length > 0) {
+            formData.append("metadata", JSON.stringify(job.metadata));
+        }
 
         try {
             const response = await fetch(`${API_BASE_URL}/upload`, {
@@ -783,11 +1299,12 @@
         queuedOperationBlob = processedBlob;
         const patientBlob = queuedPatientInfoBlob;
         const operationBlob = queuedOperationBlob;
+        const metadataSnapshot = JSON.parse(JSON.stringify(metadataPayload));
 
         resetUploadSequence();
         clearCaptureBuffer();
         error = null;
-        queueUploadJob(patientBlob, operationBlob);
+        queueUploadJob(patientBlob, operationBlob, metadataSnapshot);
     }
 
     function cancelReview() {
@@ -847,6 +1364,7 @@
 
     onMount(() => {
         loadSettings();
+        loadMetadataDraft();
         startCamera();
         initLibraries();
     });
@@ -860,6 +1378,220 @@
 </script>
 
 <div class="camera-app">
+    {#if showMetadataPanel}
+        <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+        <div class="metadata-overlay" on:click={closeMetadataPanel} role="presentation">
+            <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+            <div
+                class="metadata-sheet"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="metadata-title"
+                on:click|stopPropagation
+            >
+                <div class="metadata-head">
+                    <h3 id="metadata-title">Upload Metadata</h3>
+                    <span>{metadataFieldCount} fields active</span>
+                </div>
+
+                <div class="metadata-fields">
+                    <label class="metadata-label" for="metadata-operateur"
+                        >Operateur</label
+                    >
+                    <select
+                        id="metadata-operateur"
+                        class="metadata-input"
+                        value={metadataOperateur}
+                        on:change={(e) =>
+                            setMetadataField("operateur", e.target.value)}
+                    >
+                        <option value="">Nicht gesetzt</option>
+                        {#each OPERATEUR_OPTIONS as option}
+                            <option value={option}>{option}</option>
+                        {/each}
+                    </select>
+
+                    <label class="metadata-label" for="metadata-patient"
+                        >Patient Name</label
+                    >
+                    <input
+                        id="metadata-patient"
+                        class="metadata-input"
+                        type="text"
+                        autocomplete="off"
+                        placeholder="Erika Mustermann"
+                        value={metadataNamePatient}
+                        on:input={(e) =>
+                            setMetadataField("name_patient", e.target.value)}
+                    />
+
+                    <label class="metadata-label" for="metadata-birthdate"
+                        >Geburtsdatum</label
+                    >
+                    <input
+                        id="metadata-birthdate"
+                        class="metadata-input"
+                        type="date"
+                        autocomplete="off"
+                        value={metadataGeburtsdatum}
+                        on:input={(e) =>
+                            setMetadataField("geburtsdatum", e.target.value)}
+                    />
+                </div>
+
+                <div class="metadata-extra-header">
+                    <h4>Schema Fields</h4>
+                    <button
+                        class="btn secondary"
+                        on:click={addKnownMetadataField}>Add</button
+                    >
+                </div>
+
+                {#if metadataKnownFields.length === 0}
+                    <p class="metadata-empty">
+                        No schema fields selected yet.
+                    </p>
+                {/if}
+
+                <div class="metadata-extra-list">
+                    {#each metadataKnownFields as pair, index (index)}
+                        <div class="metadata-extra-row">
+                            <select
+                                class="metadata-input"
+                                value={pair.key}
+                                on:change={(e) =>
+                                    updateKnownMetadataField(
+                                        index,
+                                        "key",
+                                        e.target.value,
+                                    )}
+                            >
+                                <option value="">Field auswählen...</option>
+                                {#each METADATA_FIELD_GROUPS as group}
+                                    <optgroup label={group.section}>
+                                        {#each group.fields as field}
+                                            <option value={field.key}
+                                                >{field.label}</option
+                                            >
+                                        {/each}
+                                    </optgroup>
+                                {/each}
+                            </select>
+
+                            {#if getMetadataFieldDefinition(pair.key)?.options}
+                                <select
+                                    class="metadata-input"
+                                    value={pair.value}
+                                    on:change={(e) =>
+                                        updateKnownMetadataField(
+                                            index,
+                                            "value",
+                                            e.target.value,
+                                        )}
+                                >
+                                    <option value="">Wert auswählen...</option>
+                                    {#each getMetadataFieldDefinition(pair.key)
+                                        ?.options ?? [] as option}
+                                        <option value={option}>{option}</option>
+                                    {/each}
+                                </select>
+                            {:else}
+                                <input
+                                    class="metadata-input"
+                                    type={getMetadataInputType(pair.key)}
+                                    step={getMetadataInputStep(pair.key)}
+                                    inputmode={getMetadataInputMode(pair.key)}
+                                    autocomplete="off"
+                                    placeholder="Wert"
+                                    value={pair.value}
+                                    on:input={(e) =>
+                                        updateKnownMetadataField(
+                                            index,
+                                            "value",
+                                            e.target.value,
+                                        )}
+                                />
+                            {/if}
+
+                            <button
+                                class="btn secondary metadata-remove"
+                                on:click={() => removeKnownMetadataField(index)}
+                                aria-label="Remove schema metadata field"
+                                >Remove</button
+                            >
+                        </div>
+                    {/each}
+                </div>
+
+                <div class="metadata-extra-header">
+                    <h4>Custom Fields</h4>
+                    <button class="btn secondary" on:click={addMetadataExtra}
+                        >Add</button
+                    >
+                </div>
+
+                {#if metadataExtras.length === 0}
+                    <p class="metadata-empty">
+                        No custom fields yet. Add only when needed.
+                    </p>
+                {/if}
+
+                <div class="metadata-extra-list">
+                    {#each metadataExtras as pair, index (index)}
+                        <div class="metadata-extra-row">
+                            <input
+                                class="metadata-input"
+                                type="text"
+                                autocomplete="off"
+                                placeholder="field_key"
+                                value={pair.key}
+                                on:input={(e) =>
+                                    updateMetadataExtra(
+                                        index,
+                                        "key",
+                                        e.target.value,
+                                    )}
+                            />
+                            <input
+                                class="metadata-input"
+                                type="text"
+                                autocomplete="off"
+                                placeholder="value"
+                                value={pair.value}
+                                on:input={(e) =>
+                                    updateMetadataExtra(
+                                        index,
+                                        "value",
+                                        e.target.value,
+                                    )}
+                            />
+                            <button
+                                class="btn secondary metadata-remove"
+                                on:click={() => removeMetadataExtra(index)}
+                                aria-label="Remove custom metadata field"
+                                >Remove</button
+                            >
+                        </div>
+                    {/each}
+                </div>
+
+                <p class="metadata-note">
+                    Metadata is optional. Provided values override OCR output.
+                    Unknown keys are ignored by the API.
+                </p>
+
+                <div class="metadata-actions">
+                    <button class="btn secondary" on:click={clearMetadataDraft}
+                        >Clear</button
+                    >
+                    <button class="btn primary" on:click={closeMetadataPanel}
+                        >Done</button
+                    >
+                </div>
+            </div>
+        </div>
+    {/if}
+
     {#if error}
         <div class="error-message">
             <p>{error}</p>
@@ -906,33 +1638,47 @@
 
         <!-- Top Bar -->
         <div class="top-bar">
-            <!-- Left Side: Download -->
-            <button
-                class="icon-btn-small"
-                on:click={downloadExcel}
-                title="Download Excel"
-                aria-label="Download Excel"
-            >
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><path
-                        d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
-                    /><polyline points="7 10 12 15 17 10" /><line
-                        x1="12"
-                        x2="12"
-                        y1="15"
-                        y2="3"
-                    /></svg
+            <div class="top-bar-left">
+                <button
+                    class="meta-btn"
+                    on:click={openMetadataPanel}
+                    title="Edit Metadata"
+                    aria-label="Edit Metadata"
                 >
-            </button>
+                    Meta
+                    {#if metadataFieldCount > 0}
+                        <span class="meta-count">{metadataFieldCount}</span>
+                    {/if}
+                </button>
+
+                <!-- Download -->
+                <button
+                    class="icon-btn-small"
+                    on:click={downloadExcel}
+                    title="Download Excel"
+                    aria-label="Download Excel"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        ><path
+                            d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                        /><polyline points="7 10 12 15 17 10" /><line
+                            x1="12"
+                            x2="12"
+                            y1="15"
+                            y2="3"
+                        /></svg
+                    >
+                </button>
+            </div>
 
             <!-- Right Side: Toggle -->
             <div class="toggle-container">
@@ -955,6 +1701,11 @@
         <div class="capture-step-indicator">
             <strong>{getCaptureStepLabel()}</strong>
             <span>{getCaptureStepHint()}</span>
+            {#if metadataFieldCount > 0}
+                <span class="capture-meta-note"
+                    >Metadata ready: {metadataFieldCount} fields</span
+                >
+            {/if}
         </div>
 
         <div class="controls">
@@ -1274,6 +2025,41 @@
         z-index: 20;
     }
 
+    .top-bar-left {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .meta-btn {
+        border: none;
+        color: white;
+        background: rgba(0, 0, 0, 0.45);
+        border-radius: 999px;
+        padding: 0.45rem 0.75rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+    }
+
+    .meta-count {
+        min-width: 1.25rem;
+        height: 1.25rem;
+        border-radius: 999px;
+        background: #22c55e;
+        color: #052e16;
+        font-size: 0.72rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 0.25rem;
+    }
+
     .capture-step-indicator {
         position: absolute;
         top: calc(env(safe-area-inset-top, 10px) + 72px);
@@ -1301,6 +2087,10 @@
     .capture-step-indicator span {
         font-size: 0.76rem;
         color: #d4d4d8;
+    }
+
+    .capture-meta-note {
+        color: #86efac;
     }
 
     .toggle-container {
@@ -1628,6 +2418,144 @@
         gap: 1rem;
         padding: 0 1rem;
         padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .metadata-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        background: rgba(0, 0, 0, 0.55);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+    }
+
+    .metadata-sheet {
+        width: min(100%, 560px);
+        max-height: 84vh;
+        overflow-y: auto;
+        background: #171717;
+        border-top-left-radius: 18px;
+        border-top-right-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-bottom: none;
+        padding: 1rem;
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+
+    .metadata-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 0.8rem;
+    }
+
+    .metadata-head h3 {
+        margin: 0;
+        font-size: 1rem;
+    }
+
+    .metadata-head span {
+        color: #a3a3a3;
+        font-size: 0.8rem;
+    }
+
+    .metadata-fields {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+    }
+
+    .metadata-label {
+        color: #cbd5e1;
+        font-size: 0.76rem;
+        margin-top: 0.2rem;
+    }
+
+    .metadata-input {
+        width: 100%;
+        box-sizing: border-box;
+        background: #262626;
+        border: 1px solid #3f3f46;
+        color: white;
+        border-radius: 10px;
+        padding: 0.7rem 0.75rem;
+        font-size: 0.92rem;
+    }
+
+    .metadata-input:focus {
+        outline: none;
+        border-color: #60a5fa;
+    }
+
+    .metadata-extra-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .metadata-extra-header h4 {
+        margin: 0;
+        font-size: 0.88rem;
+    }
+
+    .metadata-extra-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .metadata-extra-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.45rem;
+    }
+
+    .metadata-remove {
+        width: 100%;
+    }
+
+    .metadata-empty {
+        margin: 0;
+        color: #a3a3a3;
+        font-size: 0.8rem;
+    }
+
+    .metadata-note {
+        margin: 0.9rem 0 0;
+        color: #a1a1aa;
+        font-size: 0.8rem;
+    }
+
+    .metadata-actions {
+        margin-top: 0.9rem;
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+    }
+
+    @media (min-width: 720px) {
+        .metadata-overlay {
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .metadata-sheet {
+            border-radius: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            max-height: 88vh;
+        }
+
+        .metadata-extra-row {
+            grid-template-columns: 1fr 1fr auto;
+            align-items: center;
+        }
+
+        .metadata-remove {
+            width: auto;
+        }
     }
 
 </style>
