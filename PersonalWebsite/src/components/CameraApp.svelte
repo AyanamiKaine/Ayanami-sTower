@@ -11,6 +11,9 @@
     let pendingUploads = 0;
     let isFlashing = false;
     let lastUploadStatus = "";
+    let nextCaptureField = "patientInfoImage";
+    let queuedPatientInfoBlob = null;
+    let queuedOperationBlob = null;
 
     // OCR & Review Mode State
     let cvLoaded = false;
@@ -26,9 +29,14 @@
     let scanner; // jscanify instance
     let cropper; // Cropper.js instance
 
-    // Password Modal State
-    let showPasswordModal = false;
-    let passwordInput = "";
+    const API_BASE_URL = "https://api.ayanamikaine.com";
+    const API_PASSWORD = "SecretPassword123";
+    const MAX_UPLOAD_ATTEMPTS = 20;
+    const BASE_RETRY_DELAY_MS = 1500;
+    const MAX_RETRY_DELAY_MS = 15000;
+    let uploadQueue = [];
+    let uploadQueueSize = 0;
+    let isUploadWorkerRunning = false;
 
     // Processing Parameters
     let filters = {
@@ -238,52 +246,176 @@
         }
     }
 
-    async function uploadBlob(blob) {
-        pendingUploads++;
-        lastUploadStatus = "Uploading...";
+    function getCaptureStepLabel() {
+        return nextCaptureField === "patientInfoImage"
+            ? "Step 1/2: Patient Info"
+            : "Step 2/2: Operation Details";
+    }
 
-        // If reviewing, exit review mode immediately so user can take next pic
-        if (isReviewing) {
-            cancelReview();
+    function getCaptureStepHint() {
+        return nextCaptureField === "patientInfoImage"
+            ? "Capture name, birth date, and surgeon fields."
+            : "Capture the operation section fields.";
+    }
+
+    function clearCaptureBuffer() {
+        isReviewing = false;
+        isCropping = false;
+        capturedImage = null;
+        originalImage = null;
+        processedBlob = null;
+    }
+
+    function resetUploadSequence() {
+        nextCaptureField = "patientInfoImage";
+        queuedPatientInfoBlob = null;
+        queuedOperationBlob = null;
+    }
+
+    function shouldRetryStatus(status) {
+        if (status === 408 || status === 429) return true;
+        if (status >= 500) return true;
+        return false;
+    }
+
+    function getRetryDelayMs(attempt) {
+        const delay = BASE_RETRY_DELAY_MS * attempt;
+        return Math.min(delay, MAX_RETRY_DELAY_MS);
+    }
+
+    function queueUploadJob(patientInfoBlob, operationBlob) {
+        if (!patientInfoBlob || !operationBlob) {
+            error = "Both images are required before upload.";
+            return;
         }
 
-        const formData = new FormData();
-        formData.append("file", blob, `capture-${Date.now()}.jpg`);
+        const jobId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const job = {
+            id: jobId,
+            patientInfoBlob,
+            operationBlob,
+        };
 
-        const apiUrl = "https://api.ayanamikaine.com/upload";
-        const password = "SecretPassword123";
+        uploadQueue = [...uploadQueue, job];
+        uploadQueueSize = uploadQueue.length;
+        const pendingPairs =
+            uploadQueueSize + pendingUploads + (isUploadWorkerRunning ? 1 : 0);
+        lastUploadStatus = `Queued upload (${pendingPairs} pending).`;
+        processUploadQueue();
+    }
+
+    async function uploadPairOnce(job, attempt) {
+        pendingUploads++;
+
+        const formData = new FormData();
+        formData.append(
+            "patientInfoImage",
+            job.patientInfoBlob,
+            `patient-info-${job.id}.jpg`,
+        );
+        formData.append(
+            "operationImage",
+            job.operationBlob,
+            `operation-${job.id}.jpg`,
+        );
 
         try {
-            const response = await fetch(apiUrl, {
+            const response = await fetch(`${API_BASE_URL}/upload`, {
                 method: "POST",
                 headers: {
-                    "X-Password": password,
+                    "X-Password": API_PASSWORD,
                 },
                 body: formData,
             });
 
             if (response.ok) {
-                lastUploadStatus = "Upload successful";
-                console.log("Image uploaded successfully");
-            } else {
-                console.error(
-                    "Upload failed:",
-                    response.status,
-                    response.statusText,
-                );
-                lastUploadStatus = `Failed: ${response.status}`;
-                error = `Upload failed: ${response.statusText}`;
+                const result = await response.json().catch(() => null);
+                error = null;
+                lastUploadStatus = result?.jobId
+                    ? `Images queued. Job ID: ${result.jobId}`
+                    : "Upload successful";
+                return { success: true, retryable: false };
             }
+
+            console.error(
+                `Upload failed (attempt ${attempt}/${MAX_UPLOAD_ATTEMPTS}):`,
+                response.status,
+                response.statusText,
+            );
+            return {
+                success: false,
+                retryable: shouldRetryStatus(response.status),
+                status: response.status,
+                reason: response.statusText,
+            };
         } catch (err) {
-            console.error("Error uploading:", err);
-            lastUploadStatus = "Network Error";
-            error = "Network error during upload";
+            console.error(
+                `Upload network error (attempt ${attempt}/${MAX_UPLOAD_ATTEMPTS}):`,
+                err,
+            );
+            return {
+                success: false,
+                retryable: true,
+                reason: "Network error",
+            };
         } finally {
             pendingUploads--;
-            if (pendingUploads === 0) {
+        }
+    }
+
+    async function uploadJobWithRetry(job) {
+        for (let attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt++) {
+            const result = await uploadPairOnce(job, attempt);
+            if (result.success) {
+                return true;
+            }
+
+            if (!result.retryable) {
+                error = `Upload rejected (${result.status ?? "unknown"}).`;
+                lastUploadStatus = `Upload rejected (${result.status ?? "unknown"}).`;
+                return false;
+            }
+
+            if (attempt < MAX_UPLOAD_ATTEMPTS) {
+                const delayMs = getRetryDelayMs(attempt);
+                const seconds = Math.ceil(delayMs / 1000);
+                lastUploadStatus = `Upload failed (${attempt}/${MAX_UPLOAD_ATTEMPTS}), retrying in ${seconds}s...`;
+                await wait(delayMs);
+            }
+        }
+
+        error = `Upload failed after ${MAX_UPLOAD_ATTEMPTS} attempts; that pair was skipped.`;
+        lastUploadStatus = `Dropped one upload after ${MAX_UPLOAD_ATTEMPTS} failed attempts.`;
+        return false;
+    }
+
+    async function processUploadQueue() {
+        if (isUploadWorkerRunning) return;
+        isUploadWorkerRunning = true;
+
+        try {
+            while (uploadQueue.length > 0) {
+                const [job, ...remainingJobs] = uploadQueue;
+                uploadQueue = remainingJobs;
+                uploadQueueSize = uploadQueue.length;
+                await uploadJobWithRetry(job);
+            }
+        } finally {
+            isUploadWorkerRunning = false;
+            if (uploadQueue.length > 0) {
+                processUploadQueue();
+                return;
+            }
+            if (pendingUploads === 0 && uploadQueue.length === 0) {
                 setTimeout(() => {
-                    if (pendingUploads === 0) lastUploadStatus = "";
-                }, 2000);
+                    if (
+                        pendingUploads === 0 &&
+                        uploadQueue.length === 0 &&
+                        !isUploadWorkerRunning
+                    ) {
+                        lastUploadStatus = "";
+                    }
+                }, 2500);
             }
         }
     }
@@ -349,7 +481,10 @@
             // Fallback direct upload if libs NOT ready
             canvas.toBlob(
                 (blob) => {
-                    if (blob) uploadBlob(blob);
+                    if (blob) {
+                        processedBlob = blob;
+                        uploadProcessed();
+                    }
                 },
                 "image/jpeg",
                 0.85,
@@ -634,17 +769,29 @@
     }
 
     function uploadProcessed() {
-        if (processedBlob) {
-            uploadBlob(processedBlob);
+        if (!processedBlob) return;
+
+        if (nextCaptureField === "patientInfoImage") {
+            queuedPatientInfoBlob = processedBlob;
+            nextCaptureField = "operationImage";
+            lastUploadStatus = "First image saved. Capture operation image.";
+            error = null;
+            clearCaptureBuffer();
+            return;
         }
+
+        queuedOperationBlob = processedBlob;
+        const patientBlob = queuedPatientInfoBlob;
+        const operationBlob = queuedOperationBlob;
+
+        resetUploadSequence();
+        clearCaptureBuffer();
+        error = null;
+        queueUploadJob(patientBlob, operationBlob);
     }
 
     function cancelReview() {
-        isReviewing = false;
-        isCropping = false;
-        capturedImage = null;
-        originalImage = null;
-        processedBlob = null;
+        clearCaptureBuffer();
     }
 
     // Debounced updater for sliders
@@ -668,32 +815,14 @@
         saveSettings(); // Save checking status
     }
 
-    function openPasswordModal() {
-        passwordInput = "";
-        showPasswordModal = true;
-    }
-
-    function closePasswordModal() {
-        showPasswordModal = false;
-        passwordInput = "";
-    }
-
     async function downloadExcel() {
-        if (!passwordInput) {
-            alert("Please enter a password.");
-            return;
-        }
-
         try {
-            const response = await fetch(
-                "https://api.ayanamikaine.com/download",
-                {
-                    method: "GET",
-                    headers: {
-                        "X-Password": passwordInput,
-                    },
+            const response = await fetch(`${API_BASE_URL}/download`, {
+                method: "GET",
+                headers: {
+                    "X-Password": API_PASSWORD,
                 },
-            );
+            });
 
             if (response.ok) {
                 const blob = await response.blob();
@@ -705,9 +834,8 @@
                 a.click();
                 a.remove();
                 window.URL.revokeObjectURL(url);
-                closePasswordModal();
-            } else if (response.status === 401 || response.status === 403) {
-                alert("Incorrect password.");
+            } else if (response.status === 404) {
+                alert("Excel file not found. Have you uploaded any images yet?");
             } else {
                 alert("Download failed: " + response.status);
             }
@@ -732,32 +860,6 @@
 </script>
 
 <div class="camera-app">
-    {#if showPasswordModal}
-        <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
-        <div class="modal-overlay" on:click={closePasswordModal} role="presentation">
-            <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
-            <div class="modal-content" on:click|stopPropagation role="dialog" aria-modal="true" aria-labelledby="password-modal-title">
-                <h3 id="password-modal-title">Enter Password</h3>
-                <!-- svelte-ignore a11y_autofocus -->
-                <input
-                    type="password"
-                    bind:value={passwordInput}
-                    placeholder="Password"
-                    on:keydown={(e) => e.key === "Enter" && downloadExcel()}
-                    autofocus
-                />
-                <div class="modal-actions">
-                    <button class="btn secondary" on:click={closePasswordModal}>
-                        Cancel
-                    </button>
-                    <button class="btn primary" on:click={downloadExcel}>
-                        Download
-                    </button>
-                </div>
-            </div>
-        </div>
-    {/if}
-
     {#if error}
         <div class="error-message">
             <p>{error}</p>
@@ -784,11 +886,15 @@
             <div class="flash-overlay"></div>
         {/if}
 
-        {#if pendingUploads > 0 || lastUploadStatus || (isProcessing && !isReviewing)}
+        {#if pendingUploads > 0 || uploadQueueSize > 0 || isUploadWorkerRunning || lastUploadStatus || (isProcessing && !isReviewing)}
             <div class="status-indicator">
                 {#if pendingUploads > 0}
                     <span class="spinner"></span>
-                    {pendingUploads} sending...
+                    Uploading... {pendingUploads + uploadQueueSize} pending
+                {:else if isUploadWorkerRunning || uploadQueueSize > 0}
+                    <span class="spinner"></span>
+                    Upload queue active... {uploadQueueSize +
+                        (isUploadWorkerRunning ? 1 : 0)} pending
                 {:else if isProcessing && !isReviewing}
                     <span class="spinner"></span>
                     Processing...
@@ -803,7 +909,7 @@
             <!-- Left Side: Download -->
             <button
                 class="icon-btn-small"
-                on:click={openPasswordModal}
+                on:click={downloadExcel}
                 title="Download Excel"
                 aria-label="Download Excel"
             >
@@ -844,6 +950,11 @@
             {#if !cvLoaded}
                 <span class="loading-badge">Loading AI...</span>
             {/if}
+        </div>
+
+        <div class="capture-step-indicator">
+            <strong>{getCaptureStepLabel()}</strong>
+            <span>{getCaptureStepHint()}</span>
         </div>
 
         <div class="controls">
@@ -925,7 +1036,9 @@
             <button
                 on:click={capturePhoto}
                 class="capture-btn"
-                aria-label="Take Photo"
+                aria-label={nextCaptureField === "patientInfoImage"
+                    ? "Take patient info photo"
+                    : "Take operation photo"}
             ></button>
 
             {#if !torchSupported}
@@ -1045,7 +1158,9 @@
                     >Retake</button
                 >
                 <button class="btn primary" on:click={uploadProcessed}
-                    >Upload</button
+                    >{nextCaptureField === "patientInfoImage"
+                        ? "Save First Image"
+                        : "Upload Both Images"}</button
                 >
             </div>
         </div>
@@ -1157,6 +1272,35 @@
         justify-content: space-between;
         align-items: center;
         z-index: 20;
+    }
+
+    .capture-step-indicator {
+        position: absolute;
+        top: calc(env(safe-area-inset-top, 10px) + 72px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 12px;
+        padding: 0.55rem 0.8rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        text-align: center;
+        max-width: min(92vw, 420px);
+        z-index: 20;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+    }
+
+    .capture-step-indicator strong {
+        font-size: 0.88rem;
+        font-weight: 700;
+    }
+
+    .capture-step-indicator span {
+        font-size: 0.76rem;
+        color: #d4d4d8;
     }
 
     .toggle-container {
@@ -1486,65 +1630,4 @@
         padding-bottom: env(safe-area-inset-bottom);
     }
 
-    /* --- Password Modal --- */
-    .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 100;
-        backdrop-filter: blur(4px);
-    }
-
-    .modal-content {
-        background: #1a1a1a;
-        padding: 1.5rem;
-        border-radius: 12px;
-        min-width: 280px;
-        max-width: 90%;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .modal-content h3 {
-        margin: 0 0 1rem 0;
-        font-size: 1.1rem;
-        font-weight: 500;
-    }
-
-    .modal-content input {
-        width: 100%;
-        padding: 0.75rem;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
-        font-size: 1rem;
-        box-sizing: border-box;
-    }
-
-    .modal-content input::placeholder {
-        color: rgba(255, 255, 255, 0.5);
-    }
-
-    .modal-content input:focus {
-        outline: none;
-        border-color: rgba(255, 255, 255, 0.4);
-    }
-
-    .modal-actions {
-        display: flex;
-        gap: 0.75rem;
-        margin-top: 1rem;
-        justify-content: flex-end;
-    }
-
-    .modal-actions .btn {
-        padding: 0.6rem 1.2rem;
-        font-size: 0.9rem;
-    }
 </style>
