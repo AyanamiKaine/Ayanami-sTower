@@ -1305,6 +1305,8 @@
         clearCaptureBuffer();
         error = null;
         queueUploadJob(patientBlob, operationBlob, metadataSnapshot);
+        clearMetadataDraft();
+        showMetadataPanel = false;
     }
 
     function cancelReview() {
