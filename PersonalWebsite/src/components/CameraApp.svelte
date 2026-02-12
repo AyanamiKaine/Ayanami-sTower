@@ -1309,10 +1309,10 @@
                             processedBlob = blob;
                             processedBlobCaptureId = captureId;
                             processedBlobField = targetField;
+                            isProcessing = false;
                             if (autoUpload) {
                                 uploadProcessed(captureId, targetField);
                             }
-                            isProcessing = false;
                         },
                         "image/jpeg",
                         0.85,
@@ -1405,10 +1405,10 @@
                     processedBlob = blob;
                     processedBlobCaptureId = captureId;
                     processedBlobField = targetField;
+                    isProcessing = false;
                     if (autoUpload) {
                         uploadProcessed(captureId, targetField);
                     }
-                    isProcessing = false;
                 },
                 "image/jpeg",
                 0.85,
