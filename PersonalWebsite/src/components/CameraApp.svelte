@@ -26,6 +26,12 @@
     let capturedImage = null; // Stores the current working image (may be cropped)
     let originalImage = null; // Stores the raw captured image for re-cropping
     let processedBlob = null; // The blob ready to upload
+    let processedBlobCaptureId = 0;
+    let processedBlobField = null;
+    let captureSequence = 0;
+    let activeCaptureId = 0;
+    let activeCaptureField = null;
+    let isCapturing = false;
     let scanner; // jscanify instance
     let cropper; // Cropper.js instance
 
@@ -597,6 +603,16 @@
 
     $: metadataPayload = buildMetadataPayload();
     $: metadataFieldCount = Object.keys(metadataPayload).length;
+    $: captureDisabled =
+        isCapturing ||
+        isProcessing ||
+        isCropping ||
+        isReviewing;
+    $: saveDisabled =
+        isProcessing ||
+        !processedBlob ||
+        processedBlobCaptureId !== activeCaptureId ||
+        processedBlobField !== activeCaptureField;
 
     async function loadScript(src, checkVar) {
         return new Promise((resolve, reject) => {
@@ -767,12 +783,46 @@
             : "Capture the operation section fields.";
     }
 
+    function beginCaptureSession() {
+        if (captureDisabled) return null;
+
+        if (nextCaptureField === "operationImage" && !queuedPatientInfoBlob) {
+            nextCaptureField = "patientInfoImage";
+            error = "First image is missing. Capture and save page 1 first.";
+            return null;
+        }
+
+        captureSequence += 1;
+        activeCaptureId = captureSequence;
+        activeCaptureField = nextCaptureField;
+        processedBlob = null;
+        processedBlobCaptureId = 0;
+        processedBlobField = null;
+        isCapturing = true;
+        error = null;
+
+        return {
+            captureId: activeCaptureId,
+            targetField: activeCaptureField,
+        };
+    }
+
     function clearCaptureBuffer() {
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
         isReviewing = false;
         isCropping = false;
+        isProcessing = false;
+        isCapturing = false;
         capturedImage = null;
         originalImage = null;
         processedBlob = null;
+        processedBlobCaptureId = 0;
+        processedBlobField = null;
+        activeCaptureId = 0;
+        activeCaptureField = null;
     }
 
     function resetUploadSequence() {
@@ -945,31 +995,40 @@
 
     async function capturePhoto() {
         if (!video || !canvas) return;
+        const session = beginCaptureSession();
+        if (!session) return;
+        const { captureId, targetField } = session;
 
         triggerFlash();
 
         // Use Smart Capture (Burst) if OpenCV is available to find the sharpest image
-        if (cvLoaded && cv.Mat && !isReviewing) {
+        if (cvLoaded && cv.Mat) {
             try {
                 isProcessing = true;
-                const bestImage = await captureBurst(3); // Capture 3 frames
+                const bestImage = await captureBurst(3, captureId); // Capture 3 frames
+                if (captureId !== activeCaptureId) return;
                 if (bestImage) {
-                    capturedImage = bestImage;
-                    finalizeCapture(bestImage);
+                    finalizeCapture(bestImage, captureId, targetField);
                 } else {
                     // Fallback to single capture
-                    captureSingleFrame();
+                    captureSingleFrame(captureId, targetField);
                 }
             } catch (e) {
                 console.error("Smart capture failed, falling back", e);
-                captureSingleFrame();
+                if (captureId === activeCaptureId) {
+                    captureSingleFrame(captureId, targetField);
+                }
+            } finally {
+                if (captureId === activeCaptureId) {
+                    isProcessing = false;
+                }
             }
         } else {
-            captureSingleFrame();
+            captureSingleFrame(captureId, targetField);
         }
     }
 
-    function captureSingleFrame() {
+    function captureSingleFrame(captureId, targetField) {
         if (!video || !canvas) return;
         const context = canvas.getContext("2d");
         canvas.width = video.videoWidth;
@@ -977,30 +1036,49 @@
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         const img = new Image();
-        img.onload = () => finalizeCapture(img);
+        img.onload = () => {
+            if (captureId !== activeCaptureId) return;
+            finalizeCapture(img, captureId, targetField);
+        };
         img.src = canvas.toDataURL("image/jpeg");
     }
 
-    function finalizeCapture(img) {
+    function finalizeCapture(img, captureId, targetField) {
+        if (captureId !== activeCaptureId || targetField !== activeCaptureField) {
+            return;
+        }
+
         capturedImage = img;
         originalImage = img; // Save original
 
         // If libraries are ready
         if (cvLoaded && scannerLoaded) {
             if (reviewModeEnabled) {
-                startCrop(); // Go to crop mode first
+                isProcessing = false;
+                startCrop(captureId); // Go to crop mode first
             } else {
                 // Burst mode: skip crop, straight to process
-                processImage(true);
+                processImage(true, captureId, targetField);
             }
         } else {
             // Fallback direct upload if libs NOT ready
-            canvas.toBlob(
+            const fallbackCanvas = document.createElement("canvas");
+            fallbackCanvas.width = img.width;
+            fallbackCanvas.height = img.height;
+            fallbackCanvas.getContext("2d").drawImage(img, 0, 0);
+
+            fallbackCanvas.toBlob(
                 (blob) => {
-                    if (blob) {
-                        processedBlob = blob;
-                        uploadProcessed();
+                    if (captureId !== activeCaptureId) return;
+                    if (!blob) {
+                        error = "Failed to prepare image. Please retake.";
+                        clearCaptureBuffer();
+                        return;
                     }
+                    processedBlob = blob;
+                    processedBlobCaptureId = captureId;
+                    processedBlobField = targetField;
+                    uploadProcessed(captureId, targetField);
                 },
                 "image/jpeg",
                 0.85,
@@ -1014,7 +1092,7 @@
         return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
-    async function captureBurst(frameCount = 3) {
+    async function captureBurst(frameCount = 3, captureId = activeCaptureId) {
         console.log("Starting Smart Burst Capture...");
         let bestScore = -1;
         let bestImg = null;
@@ -1026,6 +1104,7 @@
         const aWidth = 512;
 
         for (let i = 0; i < frameCount; i++) {
+            if (captureId !== activeCaptureId) return null;
             // Capture raw frame
             const frameCanvas = document.createElement("canvas");
             frameCanvas.width = video.videoWidth;
@@ -1106,11 +1185,12 @@
 
     // --- Cropping Logic ---
 
-    function startCrop() {
+    function startCrop(captureId = activeCaptureId) {
         isCropping = true;
         isReviewing = false; // Not in filter review yet
         // Wait for DOM to render the crop image container
         setTimeout(() => {
+            if (captureId !== activeCaptureId || !isCropping) return;
             const imageElement = document.getElementById("crop-image");
             if (imageElement && window.Cropper) {
                 if (cropper) cropper.destroy();
@@ -1132,17 +1212,25 @@
 
     function applyCrop() {
         if (!cropper) return;
+        const captureId = activeCaptureId;
+        const targetField = activeCaptureField;
         const canvas = cropper.getCroppedCanvas();
         if (canvas) {
             // Update capturedImage to the cropped version
             const img = new Image();
             img.onload = () => {
+                if (
+                    captureId !== activeCaptureId ||
+                    targetField !== activeCaptureField
+                ) {
+                    return;
+                }
                 capturedImage = img;
                 isCropping = false;
                 cropper.destroy();
                 cropper = null;
                 isReviewing = true; // Go to filter review
-                processImage(false); // Process but don't auto-upload
+                processImage(false, captureId, targetField); // Process but don't auto-upload
             };
             img.src = canvas.toDataURL("image/jpeg");
         }
@@ -1153,27 +1241,38 @@
             cropper.destroy();
             cropper = null;
         }
-        isCropping = false;
-        isReviewing = false;
-        capturedImage = null;
-        originalImage = null;
+        clearCaptureBuffer();
     }
 
     // --- OCR Processing Logic ---
 
-    function processImage(autoUpload = false) {
+    function processImage(
+        autoUpload = false,
+        captureId = activeCaptureId,
+        targetField = activeCaptureField,
+    ) {
+        if (captureId !== activeCaptureId || targetField !== activeCaptureField) {
+            return;
+        }
         if (!capturedImage) return;
         isProcessing = true;
+        const sourceImage = capturedImage;
 
         // Use requestAnimationFrame to prevent UI freeze
         requestAnimationFrame(() => {
+            if (
+                captureId !== activeCaptureId ||
+                targetField !== activeCaptureField
+            ) {
+                return;
+            }
             try {
                 // 1. Prepare Source
                 const tempCanvas = document.createElement("canvas");
-                tempCanvas.width = capturedImage.width;
-                tempCanvas.height = capturedImage.height;
+                tempCanvas.width = sourceImage.width;
+                tempCanvas.height = sourceImage.height;
                 const tempCtx = tempCanvas.getContext("2d");
-                tempCtx.drawImage(capturedImage, 0, 0);
+                tempCtx.drawImage(sourceImage, 0, 0);
 
                 let srcCanvas = tempCanvas;
 
@@ -1182,7 +1281,7 @@
 
                 // 3. OpenCV Processing
                 if (cvLoaded && cv.Mat) {
-                    executeOpenCV(srcCanvas, autoUpload);
+                    executeOpenCV(srcCanvas, autoUpload, captureId, targetField);
                 } else {
                     // Fallback just draw canvas
                     const ctx = resultCanvas.getContext("2d");
@@ -1193,14 +1292,31 @@
                     // Fallback simple upload for non-OpenCV path
                     resultCanvas.toBlob(
                         (blob) => {
+                            if (
+                                captureId !== activeCaptureId ||
+                                targetField !== activeCaptureField
+                            ) {
+                                return;
+                            }
+                            if (!blob) {
+                                error = "Failed to process image. Please retake.";
+                                if (autoUpload) {
+                                    clearCaptureBuffer();
+                                }
+                                isProcessing = false;
+                                return;
+                            }
                             processedBlob = blob;
-                            if (autoUpload) uploadProcessed();
+                            processedBlobCaptureId = captureId;
+                            processedBlobField = targetField;
+                            if (autoUpload) {
+                                uploadProcessed(captureId, targetField);
+                            }
+                            isProcessing = false;
                         },
                         "image/jpeg",
                         0.85,
                     );
-
-                    isProcessing = false;
                 }
             } catch (e) {
                 console.error("Processing failed", e);
@@ -1210,7 +1326,12 @@
         });
     }
 
-    function executeOpenCV(sourceCanvas, autoUpload = false) {
+    function executeOpenCV(
+        sourceCanvas,
+        autoUpload = false,
+        captureId = activeCaptureId,
+        targetField = activeCaptureField,
+    ) {
         let src = cv.imread(sourceCanvas);
         let dst = new cv.Mat();
 
@@ -1267,31 +1388,69 @@
             // Update the blob for uploading
             resultCanvas.toBlob(
                 (blob) => {
-                    processedBlob = blob;
-                    if (autoUpload) {
-                        uploadProcessed();
+                    if (
+                        captureId !== activeCaptureId ||
+                        targetField !== activeCaptureField
+                    ) {
+                        return;
                     }
+                    if (!blob) {
+                        error = "Failed to process image. Please retake.";
+                        if (autoUpload) {
+                            clearCaptureBuffer();
+                        }
+                        isProcessing = false;
+                        return;
+                    }
+                    processedBlob = blob;
+                    processedBlobCaptureId = captureId;
+                    processedBlobField = targetField;
+                    if (autoUpload) {
+                        uploadProcessed(captureId, targetField);
+                    }
+                    isProcessing = false;
                 },
                 "image/jpeg",
                 0.85,
             );
         } catch (err) {
             console.error("OpenCV error", err);
+            isProcessing = false;
         } finally {
             src.delete();
             dst.delete();
-            isProcessing = false;
         }
     }
 
-    function uploadProcessed() {
+    function uploadProcessed(
+        expectedCaptureId = activeCaptureId,
+        expectedField = activeCaptureField,
+    ) {
+        if (isProcessing) return;
         if (!processedBlob) return;
+        if (expectedCaptureId !== activeCaptureId) return;
+        if (expectedField !== activeCaptureField) return;
+        if (processedBlobCaptureId !== expectedCaptureId) return;
+        if (processedBlobField !== expectedField) return;
 
-        if (nextCaptureField === "patientInfoImage") {
+        if (nextCaptureField !== expectedField) {
+            error = "Capture sequence changed. Please retake the current page.";
+            clearCaptureBuffer();
+            return;
+        }
+
+        if (expectedField === "patientInfoImage") {
             queuedPatientInfoBlob = processedBlob;
             nextCaptureField = "operationImage";
             lastUploadStatus = "First image saved. Capture operation image.";
             error = null;
+            clearCaptureBuffer();
+            return;
+        }
+
+        if (!queuedPatientInfoBlob) {
+            nextCaptureField = "patientInfoImage";
+            error = "First image missing. Capture the first page again.";
             clearCaptureBuffer();
             return;
         }
@@ -1789,6 +1948,7 @@
             <button
                 on:click={capturePhoto}
                 class="capture-btn"
+                disabled={captureDisabled}
                 aria-label={nextCaptureField === "patientInfoImage"
                     ? "Take patient info photo"
                     : "Take operation photo"}
@@ -1910,7 +2070,11 @@
                 <button class="btn secondary" on:click={cancelReview}
                     >Retake</button
                 >
-                <button class="btn primary" on:click={uploadProcessed}
+                <button
+                    class="btn primary"
+                    on:click={uploadProcessed}
+                    disabled={saveDisabled}
+                >
                     >{nextCaptureField === "patientInfoImage"
                         ? "Save First Image"
                         : "Upload Both Images"}</button
@@ -2225,6 +2389,12 @@
         background: rgba(255, 255, 255, 0.3);
     }
 
+    .btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
     .btn.primary {
         background: white;
         color: black;
@@ -2248,6 +2418,11 @@
         position: relative;
         cursor: pointer;
         padding: 0;
+    }
+
+    .capture-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
     }
 
     .capture-btn::after {
