@@ -169,3 +169,5 @@ Most error handling code is verbose. There are cases where the happy path of cod
 Returning errors or throwing exceptions increases the surface of the interface. If a method can throw 5 different exception the caller needs to account for that. The same goes for error codes or returning errors in general. While most people argue either to use exceptions or error codes. The both result in the same problem, the caller needs to handle the errors.
 
 Handling errors is the complex part when dealing with errors not creating errors and giving them to the caller.
+
+Imagine designing an API for file deletion. Now deleting a file that does not exist, should that be an error? If you define the API as deleting a file starts the process of file deletion it probably should report an error as the process could never begin when the file does not exist. But if you say that the file deletion ensures the file does not exist. Then it's not an error when the file we want to delete didn't exist in the first place. 
