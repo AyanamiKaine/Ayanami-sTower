@@ -171,3 +171,5 @@ Returning errors or throwing exceptions increases the surface of the interface. 
 Handling errors is the complex part when dealing with errors not creating errors and giving them to the caller.
 
 Imagine designing an API for file deletion. Now deleting a file that does not exist, should that be an error? If you define the API as deleting a file starts the process of file deletion it probably should report an error as the process could never begin when the file does not exist. But if you say that the file deletion ensures the file does not exist. Then it's not an error when the file we want to delete didn't exist in the first place. 
+
+Maybe **giving the caller any form of errors** he has to handle is a **form of code smell**, but saying would probably mean crucifixion, so I am not doing that.
