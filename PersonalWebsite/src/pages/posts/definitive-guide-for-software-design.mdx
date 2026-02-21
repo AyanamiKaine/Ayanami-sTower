@@ -1,0 +1,159 @@
+---
+title: "Definitive Guide for Software Design"
+date: 2026-02-20
+author: "Ayanami Kaine"
+tags: ["Programming", "Software Design"]
+layout: ../../layouts/PostLayout.astro
+summary: "Software design is far from easy, many things that some say is good practice is often believe not science based. This is my personal guide to software design, based on people smarter than me."
+published: true
+---
+
+**WARNING HIGH RAMBLES INCOMING! YOU HAVE BEEN WARNED! WE WILL GO OFF ON A TANGENT!**
+
+# To Use An IDE Or Not To Use It That Is The Question.
+
+IDEs have grown over the past century to a collection of many tools. The newest craze is adding more and more AI plugins to them. All IDEs suffer from one big problem, showing too much unrelated information.
+
+Autocompletion, doc popups, AI suggestions, best coding practices analysis and more.
+
+I once had a C# library that had zero to non documentation how to use it. Only because of autocompletion I was even able finding out what methods an object has without looking at the source files. But I wondered if this is even good.
+
+When we look at the source files for a method on an object we see the entire picture. Not just a small scope of it. We hide information that will sooner or later be relevant. The big question is if we actually gained something from that. 
+
+IDEs do exactly that, the hide information and show us information in places where they believe it matters, oh you typed `std::str` you probably want to type `std::string`. Oh, you are looking at your source file, let me check if it would even compile like that.
+
+Commonly done things can be done faster using an IDE, searching files, compiling projects, seeing errors and quick fixes for common errors.
+
+On the surface you will encounter at least a handful of features that really helped you. The big question is, did it matter? Writing code, compiling code, searching for something in a codebase, pushing code using git. Are not the main bottlenecks in software development.
+
+An IDE won't make a terrible designed API better to use, it will simply take longer until you notice how bad it really is. The same goes for our own code. The architecture of your software gets influenced by our IDE in subtle ways. As it could mask bad decisions by relying on IDE features, the same would go for AI usage btw.
+
+When you created something complex that could only be understood by another complex tool then we didn't hide the complexity. If we can understand a complex thing by using simple tools we did reduce cognitive load and hide the complexity. 
+
+Unix often exposed rather simple tools, like `grep` to search something. Today I like using `[ripgrep](https://github.com/BurntSushi/ripgrep)` to search something.
+
+## What About Studies?
+
+There aren't that many studies done regarding tool usage and impact on programmers "performance" it simply not an easy number to measure. Regardless you make like a read on:
+- [An empirical study on the impact of IDE tool support in pair and solo programming](https://arxiv.org/abs/1607.05173)
+
+It would be an understatement to say to take these studies with a grain of salt. They are nothing more than a door that opens to further studies related to that topic.
+
+
+# Big Upfront Ideas
+
+Usually big upfront ideas fail, because incrementally working on something shows problems and working solutions much faster. There are many unknown unknowns that only show in an implementation i.e. actually using the solution. 
+
+This also relates to architecture and design. If we design our selves into a corner we are done for. Conceptually we need to be as lean and flexible as possible in our solutions. **Each iteration on a solution exposes new problems with our existing one.** This is the key take way from iteration and design.
+
+# Complexity
+
+You have complexity:
+
+- When you want to change one thing and then need to change 100 other things
+- When you need to have 100 things at the same time in your hand to grasp the solution to a problem. Always having to remember to call another function when calling another.
+- Fewer lines of code do now always mean, less complex code. 10 lines of magic code can be a higher cognitive load then 100 simple ones.
+
+To reduce complexity a system needs to be obvious, see a problem should make it obvious what needs to change in the system to fix it. If it's not obvious what one change will do we have hidden complexity.
+
+# Types do not matter
+
+There are many, many programmers that believe that types, objects, domain models, static analysis matter in design. They may make your program "bug" free but will never produce the best design by simply using them. As said by Ousterhout: "working code isn't good enough"
+
+# Deep Implementation, Small Interface
+
+Ousterhout argues that the most important technique to manage software design is creating modules that have a deep implementation but hide their complexity behind a small interface. We could say that the interface is everything you need to know and use to solve a problem. The less you actually need to know to use that module the better.
+
+The common case should be made as simple as possible when designing the interface, that is our audience, the most common case.
+
+In essence, we want to hide information that is not important to know. Problems arise here usually because we either hide not enough or accidentally hide information that was important to know. *"One of the most important elements of software design is determining who needs to know what, and when."* (p.57)
+
+# Entity Component Systems and Shared Context
+
+Often programs or deep classes need information pass throughout a hierarchy of methods or in the general loop of the program. The easiest and most dangerous way would be using global state. Another way is a context object that is shared between lets say 3 methods or classes. The next choice could be passing through the information via a variable.
+
+This makes things complicated. We need to share some data in multiple places, most often to read them.
+
+The best way would be having an immutable flexible context storage not just a map. Interestingly enough an ECS system can fit this quite nicely. 
+
+An ECS world is nothing more than a shared context. In video games writing a clear data flow from one place to another is hard, as many games are written with the idea of multiple game objects with their own update loop. I.e. their state changing every frame and invoking behavior based on their state possibly mutating/influencing other game objects. Reading/Writing to game objects.
+
+Conceptually you could use an ECS world as a form of shared context.
+
+```C#
+
+public static main(argc, argv)
+{
+    var cert = argc.cert;
+    m1(... cert, ...);
+    m2(... cert, ...);
+    m3(... cert, ...)
+    {
+        openSocket(cert, ...);
+    }
+} 
+
+```
+
+An ECS world could act as a flexible type safe immutable storage. So classes would only need a way to set the shared context.
+
+```C#
+
+public static main(argc, argv)
+{
+    // An ecs world as a shared context   
+    World world = Ecs.CreateWorld();
+
+    // Here we are setting a component our certificate object to to the ecs world.
+    world.Set<Certificate>(argc.cert);    
+
+    m1(...);
+    m2(...);
+    m3(...)
+    {
+        // We could add here specific error handling for when the component was not found.
+        // And can ensure that we could never return null;
+        const var cert =  world.Get<Certificate>();
+        openSocket(cert, ...);
+    }
+} 
+
+```
+
+Adding new data to the context can be done with ease, if just one or two methods new additional context data.
+
+```C#
+
+public static main(argc, argv)
+{
+    World world = Ecs.CreateWorld();
+
+    world.Set<Certificate>(argc.cert);    
+    // Adding additional context data is just adding one line, and one line getting it.
+    world.Set<Timeout>(new(20, "Seconds"));    
+
+    m1(...);
+    m2(...);
+    m3(...)
+    {
+        // We could add here specific error handling for when the component was not found.
+        // And can ensure that we could never return null;
+        const var cert =  world.Get<Certificate>();
+        openSocket(cert, ...);
+    }
+    m4(...)
+    {
+        const var timeout =  world.Get<Timeout>();
+        ...
+    }
+} 
+
+```
+
+Probably the best way of using an ECS world as a shared context is by setting the context data in only one place and then only reading it and keeping it immutable. Context should not be changed in the runtime. Either wise you might be tempted to throw in every argument that functions might get into the context and writing and change the context instead of functions returning something.
+
+# Configure something
+
+I hate it, simple. Every time I see a pick configuration for an object constructor I HAVE TO use I puke. Every time I see a big config object I HAVE TO pass I puke.
+
+For example when using SDL you can configure the window you created with flags. For example `SDL_WINDOW_RESIZABLE` by default an SDL window is not resizable. Every time most users will pass this flag because they didn't have sensible defaults.
