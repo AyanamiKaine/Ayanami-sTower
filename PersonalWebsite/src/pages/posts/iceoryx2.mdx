@@ -1,0 +1,14 @@
+---
+title: "Iceoryx2 IPC Using Shared Memory"
+date: 2026-01-26
+author: "Ayanami Kaine"
+tags: ["Programming", "IPC"]
+layout: ../../layouts/PostLayout.astro
+summary: "Shared memory is by far the fastest way for communcation of processes, its also the hardest to correctly implement."
+published: false
+---
+
+
+Over the months searching for an IPC mechanism that works with high throughput and low latency it became clear that only shared memory would get the crown. Sadly looking deeper at it implementing such a mechanism myself would require a higher skill level I simple do not have. 
+
+Thankfully I stumbled across iceoryx2 a zero copy IPC library that implements it using shared memory. It's written in Rust and exposes a C-FFI. Currently, there are bindings for C, C++, Python and C#.  
