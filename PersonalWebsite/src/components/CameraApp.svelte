@@ -1493,36 +1493,6 @@
         saveSettings(); // Save checking status
     }
 
-    async function downloadExcel() {
-        try {
-            const response = await fetch(`${API_BASE_URL}/download`, {
-                method: "GET",
-                headers: {
-                    "X-Password": API_PASSWORD,
-                },
-            });
-
-            if (response.ok) {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "patient_data.xlsx";
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-            } else if (response.status === 404) {
-                alert("Excel file not found. Have you uploaded any images yet?");
-            } else {
-                alert("Download failed: " + response.status);
-            }
-        } catch (error) {
-            console.error("Error downloading excel:", error);
-            alert("Download failed.");
-        }
-    }
-
     onMount(() => {
         loadSettings();
         loadMetadataDraft();
@@ -1810,34 +1780,6 @@
                     {#if metadataFieldCount > 0}
                         <span class="meta-count">{metadataFieldCount}</span>
                     {/if}
-                </button>
-
-                <!-- Download -->
-                <button
-                    class="icon-btn-small"
-                    on:click={downloadExcel}
-                    title="Download Excel"
-                    aria-label="Download Excel"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        ><path
-                            d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
-                        /><polyline points="7 10 12 15 17 10" /><line
-                            x1="12"
-                            x2="12"
-                            y1="15"
-                            y2="3"
-                        /></svg
-                    >
                 </button>
             </div>
 
