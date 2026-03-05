@@ -53,3 +53,4 @@ We abstract away the actual structure of the data. Often when targeting many dif
 Use Case:
 - You want to say that something exists like a file_handle, shader. But want to abstract how its structure looks like.
 - You want to be able to change the structure of you data without breaking existing user code. Users can depend on the opaque pointer because they dont depend on the underlying structure. Maybe to be more effiecent the data needs to look different for linux instead of windows. Opaque pointers make it easy to implement such thing.
+- FFI? While thinking about pointers and and structs. When we expose a library using an FFI it often quite complex getting the C struct mapping right. If we just have an opaque pointer we dont have to bother with that and can just expose functions.  
