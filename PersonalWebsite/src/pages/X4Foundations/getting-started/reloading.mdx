@@ -1,0 +1,44 @@
+---
+title: "Reloading Mods"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Basics"]
+category: "getting-started"
+order: 5
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "Understanding which mod data can be reloaded without restarting the game."
+---
+
+Some data of mods can be reloaded simply by reloading a save or starting a new game. Some data can only be loaded via a restart of the client.
+
+## What Can Be Reloaded
+
+| Data Type | Reload Method |
+|-----------|---------------|
+| Mission Director (MD) scripts | Save reload / New game |
+| AI Scripts | Save reload / New game |
+| Text/Localization files | Save reload |
+| Construction plans | **New game only** (baked into saves) |
+| Ship/Station macros | Client restart |
+| Wares definitions | Client restart |
+| UI Lua scripts | Client restart |
+
+## Quick Reload Workflow
+
+For MD script development:
+
+1. Make changes to your `.xml` files
+2. Load a save game (or start new game)
+3. Changes take effect immediately
+
+## When You Must Restart
+
+- Adding new ship/station macros
+- Modifying ware definitions
+- Changing UI lua scripts
+- Modifying index files
+
+## Tip
+
+Keep a save game at a convenient location for testing your MD scripts. This allows rapid iteration without waiting for a new game to initialize.

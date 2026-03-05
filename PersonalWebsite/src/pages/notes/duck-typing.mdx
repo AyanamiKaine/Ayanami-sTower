@@ -1,0 +1,43 @@
+---
+title: "Duck Typing"
+created: 2026-1-27
+edited: 2026-1-27
+author: "Ayanami Kaine"
+tags: ["Fundamentals", "Types"]
+layout: ../../layouts/NoteLayout.astro
+published: true
+---
+
+If it quacks like a duck it's a duck. Duck typing is the simple term for when two objects have the same behavior they are in the context the same.
+
+```python
+class Beetle():
+
+    def __init__(self):
+        self.is_driving = False;
+        self.name = "Beetle"
+
+    def drive(self):
+        self.is_driving = True
+
+    def quack(self):
+        print("Brummm Brumm")
+
+class Duck():
+
+    def __init__(self):
+        self.is_driving = False;
+        self.name = "Duck"
+
+    def quack(self):
+        print("Quack")
+
+
+duck = Duck()
+bettle = Beetle()
+
+duck.quack()
+bettle.quack()
+```
+
+It doesn't matter if our Beetle car can drive when it can quack it's a duck.

@@ -1,0 +1,79 @@
+---
+title: "Modifying Ship and Component Hull"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Ships", "Balance"]
+category: "cookbooks"
+order: 52
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to modify the health (hull) of ships and their components using XML patching."
+---
+
+This guide explains how to modify the health (hull) of ships and their components (engines, turrets, shields, etc.) using XML patching.
+
+## 1. Modifying Ships
+
+Ships typically define their hull directly with a `max` value in their macro file.
+
+### Finding the Ship Macro
+Use a search tool to find the macro file for the ship you want to modify.
+Example: searching for "Nova Vanguard" might yield `assets/units/size_s/macros/ship_arg_s_fighter_01_a_macro.xml`.
+
+### Vanilla Example
+In the vanilla file:
+```xml
+<properties>
+  ...
+  <hull max="3100" />
+  ...
+</properties>
+```
+
+### Applying the Patch
+Create a file in your extension folder mirroring the path of the original file.
+**Path:** `extensions/stella_x4/assets/units/size_s/macros/ship_arg_s_fighter_01_a_macro.xml`
+
+**Content:**
+```xml
+<diff>
+  <replace sel="//hull/@max">4500</replace>
+</diff>
+```
+
+## 2. Modifying Components (Engines, Turrets, Shields)
+
+Components often use `integrated="1"`. This means the game calculates the hull value automatically based on the object's physical dimensions (volume). To set a custom, specific hull value, you must **disable integration**.
+
+### Vanilla Example
+In a typical engine macro:
+```xml
+<properties>
+  ...
+  <hull integrated="1" />
+  ...
+</properties>
+```
+
+### Applying the Patch
+You need to change `integrated` to `0` and explicitly add the `max` attribute.
+
+**Path:** `extensions/stella_x4/assets/props/Engines/macros/engine_arg_m_travel_01_mk1_macro.xml`
+
+**Content:**
+```xml
+<diff>
+  <!-- Change from integrated (calculated) to fixed value -->
+  <replace sel="//hull">
+    <hull integrated="0" max="5000" threshold="0.2" />
+  </replace>
+</diff>
+```
+
+### Important Attributes
+
+| Attribute | Description |
+|-----------|-------------|
+| `integrated` | Set to `0` to manually define `max` hull. Set to `1` to let the game calculate it. |
+| `max` | The total hit points of the hull. Ignored if `integrated="1"`. |
+| `threshold` | (Optional) Defines the percentage of hull (0.0 to 1.0) at which the component is considered "critical" or may stop functioning correctly (e.g. `0.2` = 20%). |

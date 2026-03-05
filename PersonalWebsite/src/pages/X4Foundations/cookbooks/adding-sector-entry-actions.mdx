@@ -1,0 +1,137 @@
+---
+title: "Adding Sector Entry Actions"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Sectors", "Cutscenes"]
+category: "cookbooks"
+order: 43
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to trigger actions like notifications or cutscenes when the player enters a sector."
+---
+
+This guide explains how to trigger actions (like notifications or cutscenes) when the player enters a specific sector.
+
+## Part 1: Detecting Sector Entry
+
+### Key Elements
+
+| Element | Purpose |
+|---------|---------|
+| `find_sector` | Finds a sector by macro name |
+| `event_object_changed_sector` | Fires when an object changes sector |
+| `event.param` | The new sector the object entered |
+
+### Finding a Sector by Macro
+
+```xml
+<find_sector name="$TargetSector" macro="macro.cluster_14_sector001_macro" required="true"/>
+```
+
+### Listening for Player Entry
+
+```xml
+<cue name="Player_Entered_Target" instantiate="true">
+    <conditions>
+        <event_object_changed_sector object="player.entity"/>
+        <check_value value="event.param == $TargetSector"/>
+    </conditions>
+    <actions>
+        <!-- Your actions here -->
+        <show_notification text="'Welcome to ' + $TargetSector.knownname" timeout="5s"/>
+    </actions>
+</cue>
+```
+
+### Key Points
+
+- Use `player.entity` to track the player character (works when walking on stations too)
+- Use `player.occupiedship` to track only the player's ship
+- `event.param` contains the **new sector** the object entered
+- Use `instantiate="true"` so the cue can fire multiple times
+
+## Part 2: Playing Cutscenes
+
+### Key Elements
+
+| Element | Purpose |
+|---------|---------|
+| `play_cutscene` | Triggers a cutscene by key |
+| `key` | Name of the cutscene (e.g., `'OrbitParameterized'`) |
+| `cinematicmode` | Enables cinematic letterbox bars |
+| `abortable` | Allows player to skip with ESC |
+| `result` | Save the cutscene ID to a variable |
+
+### Available Built-in Cutscenes
+
+| Cutscene Key | Description | Parameters |
+|--------------|-------------|------------|
+| `OrbitParameterized` | Orbits around an object | `targetobject`, `orbitdist`, `orbitelevation` |
+| `Cutscene_pan_behind` | Pans behind an object | `target_object` |
+| `Lookat_Target_Keyframed_Shot` | Keyframed camera on target | `anchor`, `lookat`, positions |
+
+### Example: Orbit Cutscene
+
+```xml
+<play_cutscene key="'OrbitParameterized'" result="$CutsceneId"
+    cinematicmode="true" abortable="true">
+    <param name="targetobject" object="player.occupiedship"/>
+    <param name="orbitdist" number="500"/>
+    <param name="orbitelevation" number="50"/>
+</play_cutscene>
+<delay exact="6s"/>
+<stop_cutscene cutscene="$CutsceneId"/>
+```
+
+### Parameter Types
+
+Inside `<param>`, use the correct attribute for the data type:
+- `object="..."` - For game objects
+- `number="..."` - For numeric values
+- `string="..."` - For text
+
+## Part 3: Complete Example
+
+```xml
+<cue name="Setup_Monitor">
+    <conditions>
+        <check_any>
+            <event_cue_signalled cue="md.Setup.GameStart"/>
+            <event_game_loaded/>
+        </check_any>
+    </conditions>
+    <actions>
+        <find_sector name="$TargetSector" macro="macro.cluster_14_sector001_macro" required="true"/>
+    </actions>
+    <cues>
+        <cue name="Player_Entered" instantiate="true">
+            <conditions>
+                <event_object_changed_sector object="player.entity"/>
+                <check_value value="event.param == $TargetSector"/>
+            </conditions>
+            <actions>
+                <show_notification text="'Playing cinematic...'" timeout="3s"/>
+                <set_value name="$Target" exact="player.occupiedship"/>
+
+                <play_cutscene key="'OrbitParameterized'" result="$CutsceneId" cinematicmode="true" abortable="true">
+                    <param name="targetobject" object="$Target"/>
+                    <param name="orbitdist" number="$Target.size * 3 + 100"/>
+                    <param name="orbitelevation" number="$Target.size * 0.5"/>
+                </play_cutscene>
+
+                <delay exact="6s"/>
+                <stop_cutscene cutscene="$CutsceneId"/>
+            </actions>
+        </cue>
+    </cues>
+</cue>
+```
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| Cutscene doesn't play | Check `key` uses single quotes inside double quotes: `key="'Name'"` |
+| Cutscene plays forever | Use `<delay>` and `<stop_cutscene>` |
+| Can't skip cutscene | Add `abortable="true"` |
+| Cue only fires once | Add `instantiate="true"` to the cue |

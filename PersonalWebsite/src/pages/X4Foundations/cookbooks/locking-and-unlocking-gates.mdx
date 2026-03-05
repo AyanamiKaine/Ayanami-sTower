@@ -1,0 +1,117 @@
+---
+title: "Locking and Unlocking Gates"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Gates"]
+category: "cookbooks"
+order: 41
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to implement story-locked gates that can be unlocked through missions."
+---
+
+This guide explains how to implement story-locked gates that can be unlocked through missions.
+
+## Overview
+
+Many X4 expansions and mods lock new sectors behind gates that require story progression to unlock. This is implemented using:
+
+1. `set_object_active activate="false"` to disable a gate
+2. `set_object_active activate="true"` to enable it later
+
+## How It Works
+
+When a gate is deactivated:
+- It becomes non-functional (ships cannot pass through)
+- It typically shows a visual indicator that it's inactive
+- The connected destination gate is also affected
+
+## Implementation Pattern
+
+### Step 1: Create a Gate Control Script
+
+Create an MD script that runs at universe generation:
+
+```xml
+<cue name="Gate_Setup" namespace="this">
+    <conditions>
+        <event_universe_generated />
+        <check_value value="player.galaxy.macro == macro.xu_ep2_universe_macro" />
+    </conditions>
+    <actions>
+        <!-- Find the sector containing the gate -->
+        <find_sector name="$MySector" macro="macro.my_sector_macro" required="true" />
+
+        <!-- Find the gate in that sector -->
+        <find_gate name="$MyGate" space="$MySector" required="true" />
+
+        <!-- Store globally for later access -->
+        <set_value name="global.$MyGateUnlocked" exact="false" />
+        <set_value name="global.$MyGate" exact="$MyGate" />
+
+        <!-- Lock the gate -->
+        <set_object_active object="$MyGate" activate="false" />
+    </actions>
+</cue>
+```
+
+### Step 2: Create an Unlock Cue
+
+Add a child cue that can be signalled to unlock the gate:
+
+```xml
+<cue name="Unlock_My_Gate">
+    <conditions>
+        <event_cue_signalled />
+    </conditions>
+    <actions>
+        <do_if value="not global.$MyGateUnlocked">
+            <set_object_active object="global.$MyGate" activate="true" />
+            <set_value name="global.$MyGateUnlocked" exact="true" />
+
+            <!-- Notify the player -->
+            <show_notification text="'Gate Activated'"
+                               subtitle="'A new sector is now accessible!'"
+                               sound="notification_achievement"
+                               timeout="10s" />
+        </do_if>
+    </actions>
+</cue>
+```
+
+### Step 3: Signal from a Mission
+
+In your story mission, signal the unlock cue when appropriate:
+
+```xml
+<cue name="Mission_Complete">
+    <conditions>
+        <!-- Your completion conditions -->
+    </conditions>
+    <actions>
+        <!-- Unlock the gate -->
+        <signal_cue cue="md.My_Gate_Control.Unlock_My_Gate" />
+
+        <!-- Complete the mission -->
+        <complete_mission cue="..." />
+    </actions>
+</cue>
+```
+
+## Important Notes
+
+1. **Both Gates**: When you lock/unlock a gate, it affects travel in both directions. The `find_gate` will find the gate on one side; the game automatically handles the paired gate.
+
+2. **Save Compatibility**: The gate state is persisted in save games. If a player loads a save where the gate was already unlocked, it stays unlocked.
+
+3. **Universe Generation Timing**: Use `event_universe_generated` to set initial gate states. This runs after the galaxy is created but before the player gains control.
+
+4. **Global Variables**: Store gate references and states in `global.$VariableName` so other scripts can access them.
+
+## Check Gate Status
+
+```xml
+<do_if value="global.$StellaHavenGateUnlocked">
+    <!-- Gate is unlocked -->
+</do_if>
+```

@@ -3,6 +3,11 @@
 @plugin '@tailwindcss/typography';
 
 
+.text-justify :is(h1, h2, h3, h4, h5, h6) {                                                                                                                                                                   
+text-align: left;                                                                                                                                                                                           
+}                                                                                                                                                                                                             
+       
+
 .page-title {
     font-size: 2.5rem;
     font-weight: 800;

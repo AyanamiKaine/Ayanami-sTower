@@ -1,0 +1,52 @@
+[project]
+name = "stella-sqlite-vfs"
+version = "1.0.0"
+description = "A production-ready, SQLite-backed virtual file system with layering support for Python applications and game engines"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+    { name = "Ayanami" }
+]
+keywords = [
+    "filesystem",
+    "virtual-filesystem",
+    "sqlite",
+    "vfs",
+    "game-engine",
+    "mod-support",
+    "asset-management",
+    "file-storage",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Filesystems",
+    "Topic :: Games/Entertainment",
+]
+dependencies = [
+    "icontract>=2.7.3",
+    "wrapt>=2.1.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/sqlite-vfs"
+Documentation = "https://github.com/yourusername/sqlite-vfs#readme"
+Repository = "https://github.com/yourusername/sqlite-vfs"
+Issues = "https://github.com/yourusername/sqlite-vfs/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["lib"]

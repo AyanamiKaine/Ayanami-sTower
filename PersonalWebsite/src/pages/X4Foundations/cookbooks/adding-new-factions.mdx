@@ -1,0 +1,169 @@
+---
+title: "Adding New Factions"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Factions"]
+category: "cookbooks"
+order: 30
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to create a custom faction with proper paint themes, relations, and jobs."
+---
+
+This guide explains how to create a custom faction that is fully integrated into X4 Foundations.
+
+## Required Files
+
+| File | Purpose |
+|------|---------|
+| `libraries/factions.xml` | Faction definition (id, name, race, relations) |
+| `libraries/themes.xml` | Ship paint themes (prevents pink checkerboard) |
+| `libraries/jobs.xml` | Ship spawning (optional) |
+| `t/0001.xml` | Text strings for names/descriptions |
+
+## Part 1: Faction Definition (`factions.xml`)
+
+### Required Attributes
+
+| Attribute | Purpose |
+|-----------|---------|
+| `id` | Unique internal ID (e.g., `imperialremnants`) |
+| `name` | Display name `{page,textid}` |
+| `primaryrace` | Race used for NPCs (`argon`, `terran`, `paranid`, etc.) |
+| `behaviourset` | Combat AI (`default`, `xenon`, `khaak`) |
+| `tags` | Behavior flags (see below) |
+
+### Key Tags
+
+```
+economic        - Builds stations, trades
+pirate/plunder  - Attacks traders
+police          - Enforces law
+claimspace      - Claims sectors
+privateloadout  - Uses faction ships/weapons
+hidden          - Internal only
+```
+
+### Example Faction
+
+```xml
+<diff>
+  <add sel="/factions">
+    <faction id="myfaction" name="{pageid,1}"
+             primaryrace="argon" behaviourset="default"
+             tags="economic privateloadout privateship">
+      <color ref="faction_argon"/>
+      <icon active="faction_argon" inactive="faction_argon"/>
+      <licences>
+        <licence type="generaluseequipment" minrelation="-0.01" tags="basic"/>
+        <licence type="generaluseship" minrelation="-0.01" tags="basic"/>
+      </licences>
+      <relations>
+        <relation faction="xenon" relation="-1"/>
+        <relation faction="khaak" relation="-1"/>
+      </relations>
+    </faction>
+  </add>
+</diff>
+```
+
+## Part 2: Paint Themes (`themes.xml`)
+
+> **Caution:** Without this, ships will have a pink checkerboard texture!
+
+The `themes.xml` file maps factions to their default paintmods. Custom factions need an entry here.
+
+```xml
+<diff>
+  <!-- Add to default paint theme -->
+  <add sel="/themes/theme[@id='painttheme_race_default']">
+    <group faction="myfaction" paintmod="paintmod_0002" />
+  </add>
+
+  <!-- Add ship variation theme (optional but recommended) -->
+  <add sel="/themes/theme[@id='painttheme_race_ship']">
+    <group faction="myfaction" selection="random" paintmod="">
+      <select paintmod="paintmod_0002" weight="5" />
+      <select paintmod="paintmod_0024" weight="1" />
+    </group>
+  </add>
+</diff>
+```
+
+### Common Paintmods by Race
+
+| Race | Default | Variations |
+|------|---------|------------|
+| Argon | `paintmod_0002` | `0024`, `0025`, `0026` |
+| Terran | `paintmod_0117` | `0118`, `0119` |
+| Paranid | `paintmod_0009` | `0036`, `0037`, `0038` |
+| Teladi | `paintmod_0004` | `0030`, `0031`, `0032` |
+
+## Part 3: Relations
+
+Relation values range from `-1` (nemesis) to `1` (member).
+
+| Range | Status |
+|-------|--------|
+| `0.5` to `1.0` | Ally |
+| `0.01` to `0.5` | Friend |
+| `-0.01` to `0.01` | Neutral |
+| `-0.32` to `-0.01` | Enemy |
+| `-1.0` | Nemesis |
+
+```xml
+<relations>
+  <relation faction="argon" relation="0.1"/>      <!-- Friendly -->
+  <relation faction="xenon" relation="-1"/>       <!-- Kill on sight -->
+</relations>
+```
+
+## Part 4: Jobs (`jobs.xml`)
+
+Jobs spawn ships that perform tasks.
+
+> **Important:** Custom factions don't have NPC generators. Use `primaryrace` faction for pilots but set `owner` to your faction.
+
+```xml
+<diff>
+  <add sel="/jobs">
+    <job id="myfaction_trader_m" name="{pageid,name}">
+      <orders>
+        <order order="TradeRoutine" default="true"/>
+      </orders>
+      <category faction="myfaction" tags="[factionlogic, freighter, trader]" size="ship_m"/>
+      <quota galaxy="5" cluster="2"/>
+      <location class="galaxy" macro="xu_ep2_universe_macro"
+                faction="myfaction" relation="friend" comparison="ge"/>
+      <environment buildatshipyard="true"/>
+      <ship>
+        <!-- Use primaryrace for ship/pilot selection -->
+        <select faction="argon" tags="[trader, container]" size="ship_m"/>
+        <pilot>
+          <select faction="argon" tags="tag.pilot" />
+        </pilot>
+        <loadout><level min="0.2" max="0.6"/></loadout>
+        <!-- But set owner to your faction -->
+        <owner exact="myfaction" overridenpc="true"/>
+      </ship>
+    </job>
+  </add>
+</diff>
+```
+
+## Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Pink checkerboard texture | Missing paint theme | Add entry to `themes.xml` |
+| Ships don't attack/flee | No pilot spawned | Use `primaryrace` for pilot selection |
+| "NPCGenerator not found" error | Custom faction has no NPCs | Use `primaryrace` faction for pilots |
+| Faction not in diplomacy | Invalid faction definition | Check `factions.xml` syntax |
+
+## Verification
+
+1. Load game with extension enabled.
+2. Open **Map → Diplomacy** menu.
+3. Verify faction appears with correct name and color.
+4. Spawn a ship and verify it has proper paintjob (not pink).
+5. Check relations are as defined.

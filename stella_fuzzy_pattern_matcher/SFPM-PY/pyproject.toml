@@ -1,0 +1,15 @@
+[project]
+name = "sfpm-py"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "icontract>=2.7.3",
+    "wrapt>=2.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

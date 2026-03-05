@@ -1,0 +1,107 @@
+---
+title: "Creating Location-Based Mission Offers"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Missions"]
+category: "cookbooks"
+order: 25
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to make mission offers appear only when the player is in a specific sector."
+---
+
+This guide explains how to make a mission offer appear only when the player is in a specific sector, and disappear when they leave.
+
+## The Challenge
+
+Standard mission offers (`create_offer`) persist until removed or accepted. If you want an offer to be "local" (like a bartender offering a job only when you walk into a bar, or a sector-wide distress signal), you need to actively manage the offer based on the player's location.
+
+## The Solution: Offer Monitor Pattern
+
+We use a "Monitor Cue" that listens for the player changing sectors.
+
+### 1. State Tracking
+
+First, define a variable to track the mission state so you don't offer it if it's already active or completed.
+
+```xml
+<!-- 0: Available, 1: Active, 2: Completed/Failed -->
+<set_value name="$MissionStatus" exact="0" />
+```
+
+### 2. The Monitor Cue
+
+Create a cue that triggers on `event_object_changed_sector` (player) and checks the location.
+
+```xml
+<cue name="Offer_Monitor">
+    <conditions>
+        <check_any>
+            <event_cue_signalled /> <!-- Allow manual kickstart -->
+            <event_object_changed_sector object="player.entity" />
+            <event_game_loaded />
+        </check_any>
+    </conditions>
+    <actions>
+        <!-- Only manage offer if mission is available (Status 0) -->
+        <do_if value="$MissionStatus == 0">
+
+            <!-- Check if Player is in the Target Sector -->
+            <do_if value="player.sector == $TargetSector">
+                <!-- CREATE OFFER -->
+                <create_offer cue="Start_Mission" actor="$MissionContact" ... />
+            </do_if>
+            <do_else>
+                <!-- REMOVE OFFER -->
+                <remove_offer cue="Start_Mission" />
+            </do_else>
+
+        </do_if>
+        <do_else>
+            <!-- Cleanup: Ensure offer is gone if mission is active/done -->
+            <remove_offer cue="Start_Mission" />
+        </do_else>
+
+        <!-- Reset cue to keep monitoring -->
+        <reset_cue cue="this" />
+    </actions>
+</cue>
+```
+
+### 3. Kickstart the Monitor
+
+When your script initializes, signal the monitor once so it checks the *current* location immediately (in case the player spawned there).
+
+```xml
+<signal_cue_instantly cue="Offer_Monitor" />
+```
+
+### 4. Update Status on Acceptance
+
+When the mission is accepted, update the status so the monitor stops re-offering it.
+
+```xml
+<cue name="Mission_Accepted">
+    <conditions>
+        <event_object_signalled object="$MissionContact" param="'accept'" />
+    </conditions>
+    <actions>
+        <set_value name="$MissionStatus" exact="1" />
+        <remove_offer cue="Start_Mission" />
+        <!-- ... Start Mission Logic ... -->
+    </actions>
+</cue>
+```
+
+### 5. Prevent Re-offering on Completion
+
+When the mission ends (success or failure), set status to 2.
+
+```xml
+<set_value name="$MissionStatus" exact="2" />
+<remove_mission cue="Mission_Accepted" />
+```
+
+## Why use events instead of `checkinterval`?
+
+Using `event_object_changed_sector` is much more performance-friendly than checking every few seconds (`checkinterval`). The script only wakes up when the player actually moves, rather than polling constantly.

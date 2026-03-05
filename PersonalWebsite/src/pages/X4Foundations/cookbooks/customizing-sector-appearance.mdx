@@ -1,0 +1,135 @@
+---
+title: "Customizing Sector Appearance"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Sectors", "Visuals"]
+category: "cookbooks"
+order: 42
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to change a sector's visual look including skybox, planets, and lighting."
+---
+
+This guide explains how to change a sector's visual look including skybox, planets, lighting, and music.
+
+## How Sector Visuals Work
+
+In X4, sectors don't directly define their appearance. Instead:
+
+1. **Cluster macros** reference a **content component** that defines visuals
+2. **Content components** are stored in `assets/environments/cluster/`
+3. Each component defines: skybox, planets, moons, nebulae, lights
+
+### Current Stella Cluster Configuration
+
+```xml
+<!-- maps/xu_ep2_universe/stella_cluster.xml -->
+<macro name="Cluster_99_macro" class="cluster">
+    <component ref="standardcluster" />
+    <connections>
+        <connection ref="sectors">
+            <macro ref="Cluster_99_Sector001_macro" connection="cluster" />
+        </connection>
+        <connection ref="content">
+            <macro>
+                <!-- This determines the visual appearance! -->
+                <component connection="space" ref="Cluster_14" />
+            </macro>
+        </connection>
+    </connections>
+</macro>
+```
+
+The `ref="Cluster_14"` means the sector uses the same skybox as Cluster 14 (Argon Prime region).
+
+## Changing Sector Visuals
+
+### Option 1: Use a Different Existing Skybox
+
+Change the `ref` attribute to any existing cluster:
+
+```xml
+<component connection="space" ref="Cluster_XX" />
+```
+
+### Available Vanilla Skyboxes
+
+| Cluster | Visual Style |
+|---------|-------------|
+| `Cluster_01` | Blue nebula, Earth-like planet |
+| `Cluster_14` | Argon Prime - blue/purple |
+| `Cluster_18` | Paranid - orange/red |
+| `Cluster_20` | Teladi - green tones |
+| `Cluster_24` | Xenon - dark, ominous |
+| `Cluster_27` | Split - rocky asteroids |
+| `Cluster_47` | Terran - modern, clean |
+| `Cluster_48` | Terran Sol system |
+
+**Tip**: Browse `assets/environments/cluster/` for all 170+ options.
+
+### Option 2: Create Custom Visuals (Advanced)
+
+For a fully custom look, you can create a custom cluster component with custom lighting colors.
+
+#### 1. File Structure
+```
+extensions/stella_x4/
+└── assets/
+    └── environments/
+        └── cluster/
+            ├── Cluster_99_Frontier.xml       # Your custom XML
+            └── Cluster_99_Frontier_data/     # Folder with mesh files
+```
+
+#### 2. Copying Mesh Files
+You MUST copy mesh files from an existing cluster - they cannot be created from scratch.
+
+#### 3. Customizing Lighting
+```xml
+<lights>
+    <!-- SUN LIGHT -->
+    <omni name="Frontier Sun" shadow="0" r="255" g="140" b="80"
+          range="1E+11" intensity="1.0">
+        <offset>
+            <position x="-3E+07" y="1.5E+08" z="3.9E+08"/>
+        </offset>
+    </omni>
+
+    <!-- AMBIENT LIGHT -->
+    <ambient name="Frontier Ambient" r="20" g="5" b="15"
+             range="1E+11" intensity="0.8">
+    </ambient>
+</lights>
+```
+
+#### 4. Registering the Component (CRITICAL)
+```xml
+<!-- extensions/stella_x4/index/components.xml -->
+<index>
+    <entry name="Cluster_99_Frontier" value="extensions\stella_x4\assets\environments\cluster\Cluster_99_Frontier" />
+</index>
+```
+
+## Quick Reference
+
+### To Change Appearance
+1. Open `maps/xu_ep2_universe/stella_cluster.xml`
+2. Find the `<connection ref="content">` section
+3. Change `ref="Cluster_14"` to another cluster ID
+
+### Example: Make Sector Look Like Xenon Space
+
+```xml
+<connection ref="content">
+    <macro>
+        <component connection="space" ref="Cluster_24" />
+    </macro>
+</connection>
+```
+
+## Limitations
+
+- **No custom skybox textures** without modifying game assets
+- **Music** follows faction rules, not sector definitions
+- **Planet positions** are hardcoded in cluster components
+- Lighting changes require game restart

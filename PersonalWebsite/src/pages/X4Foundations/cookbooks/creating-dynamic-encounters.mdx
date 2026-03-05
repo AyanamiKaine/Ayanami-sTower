@@ -1,0 +1,127 @@
+---
+title: "Creating Dynamic Encounters"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Encounters"]
+category: "cookbooks"
+order: 27
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to create mission-like events that trigger automatically based on player location."
+---
+
+Dynamic encounters are mission-like events that trigger automatically based on the player's location or actions, without requiring the player to accept a mission offer from a station or NPC.
+
+## Concept
+
+Unlike a Plot Mission (which has an offer, acceptance, and structured objective stages), a Dynamic Encounter typically:
+1.  **Auto-Starts**: The cue runs automatically (e.g., on `GameStart` or when entering a sector).
+2.  **Silent Monitoring**: It watches for conditions (like distance to an object) in the background.
+3.  **Instant Reward/Feedback**: When the condition is met, it triggers an event (reward, dialog, spawn) immediately.
+
+## Example: The "Lost Wreck" Encounter
+
+In this example, we spawn a wreck near a specific gate. If the player gets close to it, they receive a credit reward.
+
+### 1. Setup and Location Finding
+
+```xml
+<cue name="Setup_Dynamic_Encounter">
+    <actions>
+        <!-- Find the start sector -->
+        <find_sector name="$StellaSector" macro="macro.Cluster_99_Sector001_macro" required="true"/>
+
+        <!-- Find the destination sector -->
+        <find_sector name="$ArgonPrime" macro="macro.cluster_14_sector001_macro" required="true"/>
+
+        <!-- Find the specific gate connecting them -->
+        <find_gate name="$TargetGate" space="$StellaSector" destination="$ArgonPrime" />
+
+        <do_if value="$TargetGate">
+            <signal_cue cue="Spawn_Wreck"/>
+            <set_value name="this.$TargetGate" exact="$TargetGate"/>
+        </do_if>
+    </actions>
+</cue>
+```
+
+### 2. Spawning a Wreck
+
+To create a wreck, use `<create_ship>` with the `state="wreck"` attribute.
+
+```xml
+<cue name="Spawn_Wreck">
+    <actions>
+        <set_value name="$Gate" exact="parent.$TargetGate"/>
+        <get_safe_pos result="$WreckPos" sector="$Gate.sector" object="$Gate" min="4km" max="8km"/>
+
+        <create_ship name="$MysteriousWreck" macro="macro.ship_arg_s_fighter_02_a_macro" sector="$Gate.sector" state="componentstate.wreck">
+            <owner exact="faction.xenon"/>
+            <safepos value="$WreckPos"/>
+        </create_ship>
+
+        <set_object_name object="$MysteriousWreck" name="'Unknown Wreckage'"/>
+
+        <!-- Start monitoring -->
+        <signal_cue cue="Monitor_Proximity"/>
+        <set_value name="this.$Wreck" exact="$MysteriousWreck"/>
+    </actions>
+</cue>
+```
+
+### 3. Monitoring Proximity
+
+Use a cue with a `checkinterval` to periodically check the distance between the player and the target.
+
+```xml
+<cue name="Monitor_Proximity" checkinterval="2s">
+    <conditions>
+        <check_value value="$Wreck.exists"/>
+        <check_value value="player.entity.distanceto.{$Wreck} lt 2000m"/>
+    </conditions>
+    <actions>
+        <reward_player money="50000Cr"/>
+        <show_notification text="'Salvage recovered!'" />
+        <cancel_cue cue="Monitor_Proximity"/>
+    </actions>
+</cue>
+```
+
+## Common Pitfalls & Troubleshooting
+
+### `find_gate` and `destination`
+
+When searching for a gate that leads to a specific sector, you must identify the destination **sector object** first.
+
+**INCORRECT:**
+```xml
+<find_gate name="$Gate" space="$Sector">
+    <match_destination macro="macro.cluster_14_sector001_macro"/> <!-- ERROR -->
+</find_gate>
+```
+
+**CORRECT:**
+```xml
+<find_sector name="$DestSector" macro="macro.cluster_14_sector001_macro"/>
+<find_gate name="$Gate" space="$Sector" destination="$DestSector"/>
+```
+
+### `signal_cue` Parameters
+
+The `<signal_cue>` action **does not** support the `param` attribute. Use parent variables instead:
+
+```xml
+<!-- Parent Cue -->
+<set_value name="this.$MyData" exact="$SomeValue"/>
+<signal_cue cue="ChildCue"/>
+
+<!-- Child Cue -->
+<actions>
+    <set_value name="$LocalData" exact="parent.$MyData"/>
+</actions>
+```
+
+### `signal_cue_instantly` vs `signal_cue`
+
+*   **`signal_cue_instantly`**: Runs immediately. Be careful with child cues that aren't listening yet.
+*   **`signal_cue`**: Queued for next update cycle. Safer for triggering child cues.

@@ -1,5 +1,5 @@
 ---
-import Layout from "../../layouts/Layout.astro";
+import Layout from "../../../layouts/Layout.astro";
 
 const allPostsGlob = import.meta.glob("./*/*.mdx", { eager: true });
 const allPosts = Object.values(allPostsGlob);
@@ -28,55 +28,58 @@ for (const category in postsByCategory) {
     });
 }
 
-const chapterOrder = ["getting-started", "cookbooks", "references", "advanced"];
+const chapterOrder = ["xml-schemas", "md-scripts", "ai-scripts", "game-systems", "apis"];
 
 const chapterDescriptions = {
-    "getting-started":
-        "Begin your modding journey with setup guides and first mod tutorials",
-    cookbooks:
-        "Step-by-step recipes for common modding tasks, often including a common troubleshooting section",
-    references: "Data reference for ships, DLC, races, factions, and more",
-    advanced:
-        "Complex topics including scripting, AI behavior, and engine deep dives",
+    "xml-schemas": "XML file format documentation for wares, ships, stations, and other game data",
+    "md-scripts": "Mission Director scripting language reference and patterns",
+    "ai-scripts": "AI behavior scripting, commander scripts, and NPC logic",
+    "game-systems": "Core game mechanics: economy, factions, trade, combat, and more",
+    "apis": "Game APIs, Lua interfaces, and extension points",
 };
 
-// We don't filter categories anymore, we want to show all of them
 function formatCategoryName(name) {
-    return name
+    const customNames = {
+        "xml-schemas": "XML Schemas",
+        "md-scripts": "MD Scripts",
+        "ai-scripts": "AI Scripts",
+        "game-systems": "Game Systems",
+        "apis": "APIs",
+    };
+    return customNames[name] || name
         .split("-")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ");
 }
 ---
 
-<Layout title="X4 Foundations Modding Guide">
+<Layout title="X4 Mod Wiki - Technical Reference">
     <div class="max-w-4xl mx-auto px-4">
         <!-- Hero Section -->
         <div class="hero-section text-center py-16">
             <h1
                 class="text-6xl font-black mb-6 tracking-tight text-gray-900 dark:text-white"
             >
-                X4 Modding
+                Mod Wiki
             </h1>
             <p class="text-2xl text-gray-600 dark:text-gray-400 font-light">
-                The comprehensive modding guide for X4: Foundations. (V8.00)
+                Technical reference documentation for X4: Foundations modding.
             </p>
             <a
-                href="/X4Foundations/ModWiki"
-                class="inline-block mt-6 px-6 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+                href="/X4Foundations"
+                class="inline-block mt-6 text-sm text-blue-600 dark:text-blue-400 hover:underline"
             >
-                Mod Wiki &rarr;
+                &larr; Back to Modding Guide
             </a>
         </div>
 
         <!-- Content Sections -->
-
         <div class="grid grid-cols-1 xl:grid-cols-1 gap-x-12 gap-y-16 mb-24">
             {
-                chapterOrder.map((category, index) => (
+                chapterOrder.map((category) => (
                     <section id={category} class="scroll-mt-24">
                         <div class="mb-6 border-b border-gray-200 dark:border-gray-800 pb-4">
-                            <h3 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                                 {formatCategoryName(category)}
                             </h3>
                             {chapterDescriptions[category] && (
@@ -99,15 +102,11 @@ function formatCategoryName(name) {
                                                             href={post.url}
                                                             class="ml-4 font-semibold text-gray-900 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors block leading-tight"
                                                         >
-                                                            {
-                                                                post.frontmatter
-                                                                    .title
-                                                            }
+                                                            {post.frontmatter.title}
                                                         </a>
                                                         <span class="ml-4 text-xs font-mono text-gray-400 dark:text-gray-500 mt-1 block">
                                                             {new Date(
-                                                                post.frontmatter
-                                                                    .created,
+                                                                post.frontmatter.created,
                                                             ).toLocaleDateString(
                                                                 "en-US",
                                                                 {
@@ -119,8 +118,7 @@ function formatCategoryName(name) {
                                                         </span>
                                                     </td>
                                                     <td class="py-3 pl-4 align-top text-gray-600 dark:text-gray-400">
-                                                        {post.frontmatter
-                                                            .description ||
+                                                        {post.frontmatter.description ||
                                                             "No description available."}
                                                     </td>
                                                 </tr>
@@ -146,18 +144,10 @@ function formatCategoryName(name) {
         >
             <p class="text-gray-500 text-sm">
                 Built for the community by <span
-                    class="font-semibold text-gray-900 dark:text-gray-900"
+                    class="font-semibold text-gray-900 dark:text-white"
                     >Ayanami Kaine</span
                 >
             </p>
         </div>
     </div>
 </Layout>
-
-<style>
-    /* 
-       Most styling is handled by Tailwind classes inline. 
-       This keeps the component clean and the styles collocated.
-       Removed custom classes for hero and quick links as they are no longer used.
-    */
-</style>

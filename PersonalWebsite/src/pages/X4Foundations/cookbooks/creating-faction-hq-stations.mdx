@@ -1,0 +1,138 @@
+---
+title: "Creating Faction HQ Stations"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Stations", "Factions"]
+category: "cookbooks"
+order: 33
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to create faction headquarters with administration modules for sector claiming."
+---
+
+This guide explains how to create a faction headquarters with an administration (claim) module for sector claiming in X4 Foundations.
+
+## Key Components
+
+A working faction HQ requires:
+
+1. **Construction Plan** - Defines the physical station layout with proper module positioning
+2. **Station Creation** - MD script that spawns the station
+3. **HQ Registration** - `set_faction_headquarters` call to register as official HQ
+4. **Faction Data** - Registration in `md.$FactionData` for representative logic
+
+## Construction Plans
+
+### Critical Rule: Use Explicit Position Offsets
+
+> **Caution:** Construction plans MUST include explicit `<offset><position>` coordinates for each module. Using only connection snaps without offsets will cause modules to overlap/stack incorrectly.
+
+### Wrong - Connection Snaps Only
+
+```xml
+<plan id="my_station" name="My Station">
+    <entry index="1" macro="struct_arg_base_01_macro" />
+    <entry index="2" macro="dockarea_arg_m_station_01_lowtech_macro" connection="connectionsnap001">
+        <predecessor index="1" connection="connectionsnap001" />
+    </entry>
+</plan>
+```
+
+**Result**: Modules spawn inside each other, dock areas inaccessible.
+
+### Correct - With Position Offsets
+
+```xml
+<plan id="my_station" name="My Station">
+    <entry index="1" macro="dockarea_arg_m_station_01_lowtech_macro">
+        <offset>
+            <position x="-591.321" y="10.879" z="-911.485"/>
+        </offset>
+    </entry>
+    <entry index="2" macro="storage_arg_m_container_01_macro" connection="connectionsnap002">
+        <predecessor index="1" connection="connectionsnap003"/>
+        <offset>
+            <position x="8.723" y="10.879" z="-911.529"/>
+            <rotation yaw="89.99995"/>
+        </offset>
+    </entry>
+</plan>
+```
+
+## Registering a Faction HQ
+
+### Step 1: Create the Station
+
+```xml
+<create_station name="$MyHQ"
+    macro="macro.station_gen_factory_base_01_macro"
+    sector="$TargetSector"
+    owner="faction.myfaction"
+    state="componentstate.operational"
+    constructionplan="'my_hq_plan'">
+    <safepos value="$Position" />
+</create_station>
+```
+
+### Step 2: Register as Faction Headquarters
+
+```xml
+<!-- THIS IS THE KEY STEP -->
+<set_faction_headquarters faction="faction.myfaction" station="$MyHQ"/>
+```
+
+This call:
+- Officially registers the station as the faction's HQ
+- Enables the claim module to claim sectors
+- Allows the game's faction logic system to recognize this station
+
+### Step 3: Register in Faction Data (for Representative Logic)
+
+```xml
+<do_if value="not md.$FactionData?">
+    <set_value name="md.$FactionData" exact="table[]" />
+</do_if>
+<do_if value="not md.$FactionData.{faction.myfaction}?">
+    <set_value name="md.$FactionData.{faction.myfaction}" exact="table[]" />
+</do_if>
+<set_value name="md.$FactionData.{faction.myfaction}.$Headquarters" exact="$MyHQ" />
+```
+
+## Available Claim Modules
+
+Each race has its own claim module macro:
+
+| Race | Macro |
+|------|-------|
+| Argon | `defence_arg_claim_01_macro` |
+| Teladi | `defence_tel_claim_01_macro` |
+| Paranid | `defence_par_claim_01_macro` |
+| Split | `defence_spl_claim_01_macro` |
+| Terran | `defence_ter_claim_01_macro` |
+| Boron | `defence_bor_claim_01_macro` |
+
+## Troubleshooting
+
+### Station spawns but modules are inside each other / can't dock
+
+**Cause**: Construction plan is missing explicit position offsets.
+
+**Solution**:
+1. Add `<offset><position x="" y="" z=""/></offset>` to each entry
+2. Copy position values from a working vanilla plan (e.g., `arg_administration`)
+3. Start a **new game** (construction plans are baked into saves)
+
+### Station spawns but sector is not claimed
+
+**Cause**: Missing `set_faction_headquarters` call.
+
+**Solution**: Add after station creation:
+```xml
+<set_faction_headquarters faction="faction.yourfaction" station="$YourStation"/>
+```
+
+### Changes don't appear after modifying files
+
+**Cause**: Construction plans and station spawns are saved in the game save.
+
+**Solution**: Start a **new game** to test construction plan changes.

@@ -1,0 +1,237 @@
+---
+title: "Ship Orders Reference"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Reference", "Orders"]
+category: "references"
+order: 10
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "Reference list of available ship order types and their parameters."
+---
+
+This document lists the available order types in X4 Foundations that can be assigned to ships via the `create_order` element.
+
+## Basic Syntax
+
+```xml
+<create_order object="$Ship" id="'OrderName'">
+    <param name="paramName" value="paramValue" />
+</create_order>
+```
+
+### Key Attributes
+- **`object`** - The ship that will execute the order
+- **`id`** - The order ID (e.g., `'Attack'`, `'MoveGeneric'`)
+- **`default`** - If `true`, this becomes the ship's default/fallback order
+- **`immediate`** - If `true`, interrupts current order immediately
+
+## Combat Orders
+
+### Attack
+Attack a specific target.
+
+```xml
+<create_order object="$Ship" id="'Attack'">
+    <param name="primarytarget" value="player.occupiedship" />
+    <param name="pursuetargets" value="true" />
+    <param name="allowothertargets" value="false" />
+    <param name="disable" value="false" />
+</create_order>
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `primarytarget` | object | Target to attack (required) |
+| `secondarytargets` | list | Additional targets after primary |
+| `pursuetargets` | bool | Chase target anywhere (default: false for NPCs) |
+| `pursuedistance` | length | Max distance to pursue |
+| `allowothertargets` | bool | Attack other enemies nearby |
+| `disable` | bool | Only disable, don't destroy |
+| `checkrelation` | bool | Only attack hostiles |
+
+### Patrol
+Patrol an area seeking enemies.
+
+```xml
+<create_order object="$Ship" id="'Patrol'" default="true">
+    <param name="space" value="$TargetSector" />
+    <param name="pursuetargets" value="false" />
+    <param name="pursuedistance" value="this.ship.maxradarrange" />
+</create_order>
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `space` | sector | Area to patrol (required) |
+| `pursuetargets` | bool | Chase targets outside patrol area |
+| `pursuedistance` | length | Max distance to pursue |
+| `timeout` | time | Duration before order ends |
+
+### Flee
+Flee from current danger.
+
+```xml
+<create_order object="$Ship" id="'Flee'" immediate="true">
+    <param name="method" value="3" />
+</create_order>
+```
+
+### Escort
+Escort and protect another ship.
+
+```xml
+<create_order object="$Ship" id="'Escort'" default="true" />
+```
+
+### ProtectShip / ProtectStation / ProtectPosition
+Defend a specific target.
+
+```xml
+<create_order object="$Ship" id="'ProtectShip'" default="true">
+    <param name="target" value="$TargetShip" />
+</create_order>
+```
+
+## Movement Orders
+
+### MoveGeneric
+Move to a destination (sector, zone, or position).
+
+```xml
+<create_order object="$Ship" id="'MoveGeneric'">
+    <param name="destination" value="$TargetSector" />
+    <param name="endintargetzone" value="true" />
+</create_order>
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `destination` | space | Target sector/zone |
+| `endintargetzone` | bool | Stop when reaching target zone |
+| `position` | position | Specific position in space |
+
+### MoveWait
+Move to a position and wait.
+
+```xml
+<create_order object="$Ship" id="'MoveWait'">
+    <param name="destination" value="[$TargetSector, $Position]" />
+    <param name="timeout" value="60s" />
+</create_order>
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `destination` | position | [sector, position] tuple |
+| `timeout` | time | How long to wait (0 = infinite) |
+| `withdraw` | bool | Withdraw from battle mode |
+
+### DockAndWait
+Dock at a station and wait.
+
+```xml
+<create_order object="$Ship" id="'DockAndWait'" default="true">
+    <param name="destination" value="$Station" />
+</create_order>
+```
+
+### Undock
+Undock from current location.
+
+```xml
+<create_order object="$Ship" id="'Undock'" immediate="true" />
+```
+
+### MoveDie
+Move away and despawn (for job ships).
+
+```xml
+<create_order object="$Ship" id="'MoveDie'" immediate="true">
+    <param name="byhighway" value="true" />
+    <param name="byhostile" value="true" />
+</create_order>
+```
+
+## Economy Orders
+
+### MiningRoutine
+Automated mining behavior.
+
+```xml
+<create_order object="$Miner" id="'MiningRoutine'" default="true">
+    <param name="warebasket" value="[ware.ore, ware.silicon]" />
+    <param name="range" value="$HomeSector" />
+</create_order>
+```
+
+### TradeRoutine
+Automated trading behavior.
+
+```xml
+<create_order object="$Trader" id="'TradeRoutine'" default="true">
+    <param name="warebasket" value="$Station.resources.list" />
+    <param name="range" value="$HomeSector" />
+</create_order>
+```
+
+### Wait
+Wait in place.
+
+```xml
+<create_order object="$Ship" id="'Wait'" default="true">
+    <param name="allowdocked" value="false" />
+    <param name="timeout" value="120s" />
+</create_order>
+```
+
+## Special Orders
+
+| Order ID | Description |
+|----------|-------------|
+| `AssignCommander` | Assign ship to a commander |
+| `Resupply` | Get supplies/repairs at station |
+| `RecallSubordinates` | Recall all subordinate ships |
+| `Collect` | Collect items in space |
+| `CollectLockbox` | Collect a specific lockbox |
+| `RescueShip` | Rescue an abandoned ship |
+| `Explore` | Explore unknown areas |
+| `Recon` | Reconnaissance mission |
+| `Plunder` | Pirate/plunder targets |
+| `WaitForSignal` | Wait for a specific signal |
+
+## Common Patterns
+
+### Cancel Existing Orders First
+```xml
+<cancel_all_orders object="$Ship" />
+<create_order object="$Ship" id="'Attack'">
+    <param name="primarytarget" value="$Target" />
+</create_order>
+```
+
+### Attack Then Flee
+```xml
+<!-- First order: Attack -->
+<create_order object="$Ship" id="'Attack'">
+    <param name="primarytarget" value="player.occupiedship" />
+</create_order>
+<!-- Second order: Flee (queued after attack) -->
+<create_order object="$Ship" id="'MoveGeneric'">
+    <param name="destination" value="$EscapeSector" />
+</create_order>
+```
+
+### Set Default Patrol Behavior
+```xml
+<create_order object="$Ship" id="'Patrol'" default="true">
+    <param name="space" value="$PatrolSector" />
+</create_order>
+```
+
+## Finding Order Definitions
+
+Order scripts are located in `x4_unpacked/aiscripts/order.*.xml`. Each file contains:
+- Full parameter list with defaults
+- Requirements (what ships can use the order)
+- Implementation details

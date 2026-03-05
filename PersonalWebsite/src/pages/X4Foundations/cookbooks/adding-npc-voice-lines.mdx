@@ -1,0 +1,126 @@
+---
+title: "Adding NPC Voice Lines"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Voice", "Audio"]
+category: "cookbooks"
+order: 51
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "How to add custom voice lines that NPCs speak during missions."
+---
+
+This guide explains how to add custom voice lines that NPCs speak during missions. Voice lines require proper setup in three files: the text file (`t/*.xml`), the sound library, and audio files.
+
+## File Structure
+
+```
+extensions/your_mod/
+├── libraries/
+│   └── sound_library.xml    # Register voice sounds
+├── t/
+│   └── 0001.xml             # Text/subtitles with voice="yes"
+└── voice/
+    └── {pageID}/
+        └── normal/          # Folder for normal voice lines
+            └── {lineID}.ogg # Audio files (OGG format)
+```
+
+## Step 1: Define Text in t-file
+
+Add your page with `voice="yes"` attribute:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<diff>
+    <add sel="/language">
+        <page id="999840" title="My Mod" descr="Voice lines" voice="yes">
+            <t id="601206">Target has escaped!</t>
+            <t id="601207">Target's engines are disabled. Finish them off!</t>
+            <t id="601208">They are engaging travel drive! Don't let them escape!</t>
+        </page>
+    </add>
+</diff>
+```
+
+## Step 2: Register in Sound Library
+
+Add entries to `libraries/sound_library.xml`:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<diff>
+  <add sel="/soundlibrary">
+    <!-- Normal voice lines (in-person conversations) -->
+    <sound id="{pageID}_normal" repeat="1" is3d="1" preload="0">
+      <sample start="extensions\your_mod\voice\{pageID}\normal"/>
+      <volume start="1.212" distance="0.090"/>
+    </sound>
+
+    <!-- Comm voice lines (radio/comms) - optional -->
+    <sound id="{pageID}_comm" description="npc-player comms" repeat="1" is3d="1" preload="0">
+      <sample start="extensions\your_mod\voice\{pageID}\comm"/>
+    </sound>
+  </add>
+</diff>
+```
+
+### Sound ID Variants
+
+| ID Format | Usage |
+|-----------|-------|
+| `{pageID}_normal` | In-person NPC conversations |
+| `{pageID}_normal_npc` | NPC-to-NPC conversations (lower volume) |
+| `{pageID}_comm` | NPC-to-player comms |
+| `{pageID}_comm_broadcast` | Broadcast/announcement comms |
+
+## Step 3: Add Audio Files
+
+Place `.ogg` audio files in the correct folder:
+
+```
+voice/{pageID}/normal/{lineID}.ogg
+```
+
+Example:
+```
+voice/999840/normal/601206.ogg
+voice/999840/normal/601207.ogg
+voice/999840/normal/601208.ogg
+```
+
+**Important**: Files must be in **OGG Vorbis** format, not WAV or MP3.
+
+## Step 4: Use in Script
+
+Use the `speak` element with `page` and `line` attributes:
+
+```xml
+<speak actor="$MissionContact" page="999840" line="601207" priority="90" />
+```
+
+## Troubleshooting
+
+### Error: "Invalid SoundID ... No definition found in SoundLibrary"
+
+**Cause**: The sound library entry is missing or incorrectly formatted.
+
+**Solution**:
+1. Verify `sound_library.xml` has the correct entry
+2. Check the ID format matches `{pageID}_normal`
+3. Ensure the sample path is correct (use backslashes: `\`)
+4. Restart the game after changes
+
+### Voice line doesn't play but no error
+
+**Possible causes**:
+1. Audio file not in OGG format - convert WAV/MP3 to OGG
+2. Wrong folder structure - must be `voice/{pageID}/normal/{lineID}.ogg`
+3. File name doesn't match line ID exactly
+4. Page missing `voice="yes"` attribute
+
+### Voice line plays but no subtitles
+
+**Cause**: Text entry missing in t-file.
+
+**Solution**: Ensure `<t id="{lineID}">Your text</t>` exists in the page.

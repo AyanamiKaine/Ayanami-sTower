@@ -1,0 +1,110 @@
+---
+title: "Gameplay Rebalance Concepts"
+created: 2026-01-25
+author: "Ayanami Kaine"
+tags: ["X4", "Modding", "Advanced", "Balance"]
+category: "advanced"
+order: 10
+layout: ../../../layouts/X4GuideLayout.astro
+published: true
+description: "Conceptual approaches to implementing gameplay rebalances using XML patching and AI scripts."
+---
+
+This document outlines the conceptual and technical approaches to implementing specific gameplay rebalances in X4 Foundations using modding tools (XML patching, AI scripts).
+
+## 1. Fix Low-Attention (OOS) Accuracy
+
+**The Problem:** In Low-Attention (Out-of-Sector/OOS) calculations, primary weapons apply their full DPS if in range, ignoring the target's speed or size. This makes slow, high-damage weapons (Plasma) disproportionately effective against fast fighters.
+
+**Implementation Concepts:**
+
+Since the OOS damage formula is hardcoded in the game engine, we cannot directly change the math. However, we can use **AI Script Interception** to simulate accuracy.
+
+### Approach: Scripted Accuracy Check
+We can patch the attack scripts (e.g., `aiscripts/fight.attack.object.xml`) to add a "Hit Chance" check before an attack run or firing sequence is validated in low attention.
+
+1. **Patch `fight.attack.object.xml`**:
+   - Locate the `<attention min="unknown">` (or low attention specific) blocks where attacks are executed.
+   - Calculate a **Hit Chance** based on:
+     - Attacker Weapon Type (Bullet speed - derived from macro or hardcoded list).
+     - Target Speed (`$target.maxspeed` or `$target.speed`).
+     - Target Size (`$target.size`).
+
+2. **Apply Logic**:
+   - If the check fails (simulating a miss), we can abort the attack run early or force a delay, effectively reducing the DPS applied over time.
+   - **Alternative**: Use a global loop (Mission Director) to restore hull to fast ships being attacked by heavy weapons OOS, simulating "dodges".
+
+## 2. Rebalance Capital Ships (Tanking vs. DPS)
+
+**The Goal:** Shift capitals from "DPS Race" to "Tank/Controller" roles.
+
+### A. Battlefield Control (Area Denial)
+Create new weapon variants or modify existing ones to serve as "Area Denial" tools.
+
+- **XML Path**: `assets/props/WeaponSystems/macros/...` (and `assets/fx/weaponfx/macros/...` for bullets).
+- **Concept**:
+  - Create **High Fire Rate, Low Accuracy** weapons (Flak-style) with large bullet colliders.
+  - Create **AoE (Area of Effect)** weapons similar to the Boron Ray, which create a lingering damage zone.
+
+### B. Shift to Hull Tanking
+Increasing the importance of hull over shields.
+
+#### 1. Reduce Shield Recharge
+Modify the shield generator macros to lower their regeneration rates.
+
+- **XML Path**: `assets/props/SurfaceElements/macros/shield_arg_l_standard_01_mk1_macro.xml`
+- **Attributes**:
+  ```xml
+  <recharge max="..." rate="[LOWER_VALUE]" delay="[HIGHER_VALUE]" />
+  ```
+  - **rate**: Hull points regenerated per second. Decrease this.
+  - **delay**: Seconds before recharge starts after taking damage. Increase this.
+
+#### 2. Increase Raw HP
+Significantly boost hull values for ships and surface elements.
+
+- **XML Path**:
+  - **Ships**: `assets/units/size_l/macros/ship_..._macro.xml`. Update `<hull max="..."/>`.
+  - **Components**: `assets/props/.../macros/..._macro.xml`.
+    - *Critical*: Remember to set `integrated="0"` for components to allow manual `max` and `threshold` overrides.
+
+#### 3. Range-Based Scaling (Static Role Buffs)
+The idea is to give massive HP buffs to "Brawlers" (Short Range) and smaller/no buffs to "Snipers" (Long Range).
+
+- **Implementation**: This is a **Static Balance Decision**. You categorize ships by their intended role and apply different multipliers in your XML patches.
+  - **Brawlers (Xenon K, Syn)**: `Hull x 4.0`
+  - **Mid-Range (Behemoth, Odysseus)**: `Hull x 2.5`
+  - **Snipers (Asgard, Osaka)**: `Hull x 1.0` (Baseline)
+
+## 3. Drone & Repair Adjustments
+
+**The Goal:** Support the "Hull Tank" playstyle by allowing capitals to repair themselves effectively during/after combat.
+
+### A. Drone Capacity
+Increase the storage for defense and repair drones.
+
+- **XML Path**: `assets/units/size_l/macros/ship_..._macro.xml`.
+- **Patch**:
+  ```xml
+  <replace sel="//storage/@unit">100</replace>
+  ```
+
+### B. Hull Repair Rates
+Adjust the speed at which service crew and drones repair the ship.
+
+- **XML Path**: `aiscripts/engineer.ai.xml`.
+- **Variables**:
+  - `$baserepairrate`: The base amount of hull repaired per tick (default is often 50). Increase this.
+  - `$repairfrequency`: How often the repair check runs (default `10s`).
+  - `$repairmodifier`: Derived from crew skill.
+- **Global Parameters**: Check `libraries/parameters.xml` for global caps.
+
+## Summary
+
+These rebalance concepts demonstrate how X4's modding system allows for significant gameplay changes through:
+
+1. **XML Patching** - Direct value modifications
+2. **AI Script Modification** - Behavioral changes
+3. **Mission Director** - Runtime adjustments and monitoring
+
+The key is understanding which systems are moddable and which are hardcoded in the engine.
