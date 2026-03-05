@@ -1,0 +1,55 @@
+---
+title: "Opaque Pointers"
+created: 2026-03-05
+edited: 2026-03-05
+author: "Ayanami Kaine"
+tags: ["Programming"]
+layout: ../../layouts/NoteLayout.astro
+published: true
+---
+
+I usually dont encounter or write opaque pointers myself as I write mostly in C# or JavaScript. I only encounter them when working with some third party library like SDL3.
+
+But now after writing some Odin I thought I should learn more about them.
+
+In essence an opaque pointer is a pointer you cannot refrence as a user.
+
+The workflow would be something like this:
+
+```Odin
+@(private)
+Internal_Context :: struct {
+    secret_value: int,
+    file_descriptor: i32,
+}
+
+Context_Handle :: distinct rawptr
+
+create_context :: proc() -> Context_Handle {
+    internal_data := new(Internal_Context)
+    internal_data.secret_value = 42
+    
+    return cast(Context_Handle)internal_data
+}
+
+do_work :: proc(handle: Context_Handle) {
+    internal_data := cast(^Internal_Context)handle
+    
+    internal_data.secret_value += 1
+}
+
+destroy_context :: proc(handle: Context_Handle) {
+    internal_data := cast(^Internal_Context)handle
+    free(internal_data)
+}
+```
+
+So we as implemtor of the data now its actually layout and structure. As a user you cannot know how the data the pointer points to looks like.
+
+Why would we want that?
+
+We abstract away the actual structure of the data. Often when targeting many different operating systems that let us open a file we can get a file_handle pointer. But how the file_handle is structured is different for each operating system. Instead of writing a file_handle_windows, file_handle_linux. We have one opaque pointer *file_handle.
+
+Use Case:
+- You want to say that something exists like a file_handle, shader. But want to abstract how its structure looks like.
+- You want to be able to change the structure of you data without breaking existing user code. Users can depend on the opaque pointer because they dont depend on the underlying structure. Maybe to be more effiecent the data needs to look different for linux instead of windows. Opaque pointers make it easy to implement such thing.
