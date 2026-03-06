@@ -173,3 +173,15 @@ Handling errors is the complex part when dealing with errors not creating errors
 Imagine designing an API for file deletion. Now deleting a file that does not exist, should that be an error? If you define the API as deleting a file starts the process of file deletion it probably should report an error as the process could never begin when the file does not exist. But if you say that the file deletion ensures the file does not exist. Then it's not an error when the file we want to delete didn't exist in the first place. 
 
 Maybe **giving the caller any form of errors** he has to handle is a **form of code smell**, but saying would probably mean crucifixion, so I am not doing that. That doesn't mean we simply throw away all errors in the bin and go on as nothing has happened. We should take care of them as implementors and have a way to see errors we handled, maybe logging?.
+
+# API Design
+
+API design is not easy, but it does not need to be extremely hard. Eskil Steenberg makes a great point in thinking in primitives and structure. Structure can be seen as what can be done with the primitives.
+
+We need a way to expose what a system CAN do and what a system IS doing. In an orderly and simple way. Imagine writing two classes showing what a system is doing and what is system can do. Giving actions a separate interface and providing a separate interface for the state.
+
+Strictly speaking we wouldn't need to define two classes we could define two interfaces that one class implements in a procedural language we would just implement two structs.
+
+We really don't want to expose underlying dependencies. When we work on something that requires a database we should not expose the underlying primitives of said database. When we use a SQL database and expose that fact, users will either ask for a SQL query API or when already exposed it becomes impossible, really hard to change that database. Exposing SQL makes the overall interface of our system much bigger.
+
+Having to write `getPerson()` is better than writing `SELECT * FROM Person;`. Thinking ohh the user just write the query I won't implement anything else is probably a bad idea in the long term.
