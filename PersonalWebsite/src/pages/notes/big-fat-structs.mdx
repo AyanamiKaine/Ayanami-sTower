@@ -1,0 +1,118 @@
+---
+title: "Big Fat Structs"
+created: 2025-03-07
+edited: 2025-03-07
+author: "Ayanami Kaine"
+tags: ["Programming"]
+layout: ../../layouts/NoteLayout.astro
+published: true
+---
+
+How should data me modeled? This is one of the core question we encounter every time we program. 
+
+We can model data after a domain. Players have health, mana, movement speed, etc. What properties could an object have? It would be turned into a field.
+
+While we could use interfaces for fields for now let's ignore that aspect.
+
+```C#
+
+struct Player 
+{
+    double health;
+    double mana;
+    Vector3D MovementSpeed;
+}
+
+struct Enemy 
+{
+    double health;
+    double mana;
+    Vector3D MovementSpeed;
+    AI AIController;
+}
+
+struct ConstructorEnemy 
+{
+    double health;
+    double mana;
+    Vector3D MovementSpeed;
+    AI AIController;
+    BuildPlan BuildPlan;
+}
+
+```
+
+Or we write every possible field into one struct type. 
+
+```C#
+enum ThingKind
+{
+    PLAYER,
+    ENEMY,
+    CONSTRUCTOR_ENEMY
+}
+
+struct Thing 
+{
+    ThingKind Kind;
+    double health;
+    double mana;
+    Vector3D MovementSpeed;
+
+    AI AIController;
+
+    BuildPlan BuildPlan;
+}
+```
+
+When we want to do something with our `thing` struct that is specific to only one kind we check that kind before. It's important to understand that a kind is not a component. We are not saying that a thing is a velocity component. We are saying that a thing is a bigger concept like a player.
+
+Furthermore, we could add a form of mixing capabilities into a thing using enums.
+
+```C#
+[Flags]
+public enum Capability
+{
+    None          = 0,
+    CanWalk       = 1 << 0,
+    CanSwim       = 1 << 1,
+    CanFly        = 1 << 2,
+    CanCastSpells = 1 << 3,
+    CanOpenDoors  = 1 << 4,
+}
+
+enum ThingKind
+{
+    PLAYER,
+    ENEMY,
+    CONSTRUCTOR_ENEMY
+}
+
+struct Thing 
+{
+    ThingKind Kind;
+    double health;
+    double mana;
+    Vector3D MovementSpeed;
+
+    AI AIController;
+
+    BuildPlan BuildPlan;
+
+    Capability Capabilities;
+
+    bool Has(Capability capability)
+        => (Capabilities & capability) == capability;
+
+    bool HasAny(Capability capability)
+        => (Capabilities & capability) != 0;
+
+    void Add(Capability capability)
+        => Capabilities |= capability;
+
+    void Remove(Capability capability)
+        => Capabilities &= ~capability;
+}
+```
+
+Then we could not dispatch on the `ThingKind` but instead on capabilities add or remove them add runtime. While every `thing` has the required fields we check if they have the capability instead.
