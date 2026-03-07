@@ -1,7 +1,7 @@
 ---
 title: "Big Fat Structs"
-created: 2025-03-07
-edited: 2025-03-07
+created: 2026-03-07
+edited: 2026-03-07
 author: "Ayanami Kaine"
 tags: ["Programming"]
 layout: ../../layouts/NoteLayout.astro
@@ -13,6 +13,46 @@ How should data me modeled? This is one of the core question we encounter every 
 We can model data after a domain. Players have health, mana, movement speed, etc. What properties could an object have? It would be turned into a field.
 
 While we could use interfaces for fields for now let's ignore that aspect.
+
+# Why
+
+But first lets focus on the why. Why would we even do that?
+
+There is one big aspect when creating programming projects. How can we be as lean and flexible as possible? Writing interfaces, creating object hierarchies, abstractions are all good and fine. But what if some abstractions, interfaces, hierarchies are wrong? Objects that should have fields don't have them. Assumptions that where made where flawed.
+
+Having one struct with all fields make it trivial adding new ones or removing them. Because in the end It's nothing more than linear data. When you have a position and velocity field every object COULD be turned into something we can move around in the game world. We get emergent behavior.
+
+Thing about displaying 3D Text in the game world. The primitive looks probably something like:
+
+```C#
+class 3DText
+{
+    Vector3D Position3D;
+    String   Text;
+}
+```
+
+Now how would you add the following capability, a text can be influenced by velocity and moved around that way? Some languages allow for adding new fields to be mixed in existing objects others do not.
+
+Most will create a higher abstraction:
+
+```C#
+/// Thinking exercise for you: "How would you name such an object?"
+class Velocity3DText : 3DText
+{
+    Vector3D Velocity3D;
+
+    void Update(float deltaTime)
+    {
+        Position3D += Velocity3D * deltaTime
+    }
+
+}
+```
+
+The main problem was that our architecture was not flexible enough, we didn't anticipate that users want to add velocity to `3DText`
+
+# How
 
 ```C#
 
