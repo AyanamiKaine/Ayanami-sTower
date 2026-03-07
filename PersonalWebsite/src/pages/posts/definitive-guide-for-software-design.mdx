@@ -185,3 +185,11 @@ Strictly speaking we wouldn't need to define two classes we could define two int
 We really don't want to expose underlying dependencies. When we work on something that requires a database we should not expose the underlying primitives of said database. When we use a SQL database and expose that fact, users will either ask for a SQL query API or when already exposed it becomes impossible, really hard to change that database. Exposing SQL makes the overall interface of our system much bigger.
 
 Having to write `getPerson()` is better than writing `SELECT * FROM Person;`. Thinking ohh the user just write the query I won't implement anything else is probably a bad idea in the long term.
+
+# Abstractions
+
+Abstractions are important to limit dependencies. Because instead of knowing 5 things to set up something correct like opening a file and getting its contents. You can use one abstraction. Just imagine having to write 3 different sets of code just to open a file on three different platforms.
+
+Often on abstraction is never the problem but abstractions interacting with abstractions is. Where components interact with components lies the most friction and errors we encounter.
+
+An abstraction can make it look like 3 things are the same while fundamentally they are not this often results in a common denominator situation where you either ignore more specific features of one platform or try to emulate it for the others.
