@@ -25,7 +25,7 @@ Having one struct with all fields make it trivial adding new ones or removing th
 Thing about displaying 3D Text in the game world. The primitive looks probably something like:
 
 ```cs
-class 3DText
+class Text3D
 {
     Vector3D Position3D;
     String   Text;
@@ -38,7 +38,7 @@ Most will create a higher abstraction:
 
 ```cs
 /// Thinking exercise for you: "How would you name such an object?"
-class Velocity3DText : 3DText
+class Velocity3DText : Text3D
 {
     Vector3D Velocity3D;
 
