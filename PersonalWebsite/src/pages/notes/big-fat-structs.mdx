@@ -24,7 +24,7 @@ Having one struct with all fields make it trivial adding new ones or removing th
 
 Thing about displaying 3D Text in the game world. The primitive looks probably something like:
 
-```C#
+```cs
 class 3DText
 {
     Vector3D Position3D;
@@ -36,7 +36,7 @@ Now how would you add the following capability, a text can be influenced by velo
 
 Most will create a higher abstraction:
 
-```C#
+```cs
 /// Thinking exercise for you: "How would you name such an object?"
 class Velocity3DText : 3DText
 {
@@ -54,7 +54,7 @@ The main problem was that our architecture was not flexible enough, we didn't an
 
 # How
 
-```C#
+```cs
 
 struct Player 
 {
@@ -84,7 +84,7 @@ struct ConstructorEnemy
 
 Or we write every possible field into one struct type. 
 
-```C#
+```cs
 enum ThingKind
 {
     PLAYER,
@@ -109,7 +109,7 @@ When we want to do something with our `thing` struct that is specific to only on
 
 Furthermore, we could add a form of mixing capabilities into a thing using enums.
 
-```C#
+```cs
 [Flags]
 public enum Capability
 {
