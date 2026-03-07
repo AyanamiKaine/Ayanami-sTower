@@ -156,3 +156,7 @@ struct Thing
 ```
 
 Then we could not dispatch on the `ThingKind` but instead on capabilities add or remove them add runtime. While every `thing` has the required fields we check if they have the capability instead.
+
+# Conclusion
+
+So should every program have one type of big-fat-struct? No I generally don't think so. But maybe every module/library should have. Mixing it with [opaque pointers](./opaque-pointers.mdx) and exposing a capability struct could be useful. But I have to do more research on that idea. Also see the [definitive guide for software design](../posts/definitive-guide-for-software-design.mdx) the part about API design.
