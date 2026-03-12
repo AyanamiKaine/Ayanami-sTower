@@ -3,6 +3,7 @@
 
     let video;
     let canvas;
+    let fileInput;
     let stream;
     let facingMode = "environment";
     let error = null;
@@ -37,6 +38,7 @@
 
     const API_BASE_URL = "https://api.ayanamikaine.com";
     const API_PASSWORD = "SecretPassword123";
+    const SUPPORTED_IMAGE_FILE_TYPES = ["image/jpeg", "image/png"];
     const MAX_UPLOAD_ATTEMPTS = 20;
     const BASE_RETRY_DELAY_MS = 1500;
     const MAX_RETRY_DELAY_MS = 15000;
@@ -779,8 +781,20 @@
 
     function getCaptureStepHint() {
         return nextCaptureField === "patientInfoImage"
-            ? "Capture name, birth date, and surgeon fields."
-            : "Capture the operation section fields.";
+            ? "Capture or upload name, birth date, and surgeon fields."
+            : "Capture or upload the operation section fields.";
+    }
+
+    function getUploadButtonLabel() {
+        return nextCaptureField === "patientInfoImage"
+            ? "Upload Page 1"
+            : "Upload Page 2";
+    }
+
+    function openFilePicker() {
+        if (captureDisabled) return;
+        error = null;
+        fileInput?.click();
     }
 
     function beginCaptureSession() {
@@ -1025,6 +1039,64 @@
             }
         } else {
             captureSingleFrame(captureId, targetField);
+        }
+    }
+
+    function isSupportedImageFile(file) {
+        if (!file) return false;
+        if (SUPPORTED_IMAGE_FILE_TYPES.includes(file.type)) return true;
+
+        const lowerName = file.name?.toLowerCase?.() ?? "";
+        return (
+            lowerName.endsWith(".jpg") ||
+            lowerName.endsWith(".jpeg") ||
+            lowerName.endsWith(".png")
+        );
+    }
+
+    function loadImageFromFile(file) {
+        return new Promise((resolve, reject) => {
+            const objectUrl = URL.createObjectURL(file);
+            const img = new Image();
+
+            img.onload = () => {
+                URL.revokeObjectURL(objectUrl);
+                resolve(img);
+            };
+
+            img.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                reject(new Error("Image could not be loaded."));
+            };
+
+            img.src = objectUrl;
+        });
+    }
+
+    async function handleFileSelection(event) {
+        const selectedFile = event.target.files?.[0];
+        event.target.value = "";
+
+        if (!selectedFile) return;
+
+        if (!isSupportedImageFile(selectedFile)) {
+            error = "Only .png, .jpg, and .jpeg image files are supported.";
+            return;
+        }
+
+        const session = beginCaptureSession();
+        if (!session) return;
+
+        const { captureId, targetField } = session;
+
+        try {
+            const img = await loadImageFromFile(selectedFile);
+            if (captureId !== activeCaptureId) return;
+            finalizeCapture(img, captureId, targetField);
+        } catch (err) {
+            console.error("Error loading uploaded image:", err);
+            error = "The selected image could not be loaded.";
+            clearCaptureBuffer();
         }
     }
 
@@ -1509,6 +1581,14 @@
 </script>
 
 <div class="camera-app">
+    <input
+        bind:this={fileInput}
+        type="file"
+        accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+        hidden
+        on:change={handleFileSelection}
+    />
+
     {#if showMetadataPanel}
         <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
         <div class="metadata-overlay" on:click={closeMetadataPanel} role="presentation">
@@ -1730,6 +1810,9 @@
                 <button on:click={() => (error = null)} class="btn secondary"
                     >Dismiss</button
                 >
+                <button on:click={openFilePicker} class="btn secondary"
+                    >Upload Image</button
+                >
                 <button on:click={startCamera} class="btn primary"
                     >Restart Camera</button
                 >
@@ -1780,6 +1863,15 @@
                     {#if metadataFieldCount > 0}
                         <span class="meta-count">{metadataFieldCount}</span>
                     {/if}
+                </button>
+                <button
+                    class="meta-btn"
+                    on:click={openFilePicker}
+                    disabled={captureDisabled}
+                    title={getUploadButtonLabel()}
+                    aria-label={getUploadButtonLabel()}
+                >
+                    Upload
                 </button>
             </div>
 
@@ -1883,9 +1975,32 @@
                         >
                     {/if}
                 </button>
-            {:else}
-                <div class="spacer"></div>
             {/if}
+
+            <button
+                on:click={openFilePicker}
+                class="btn upload-trigger-btn"
+                disabled={captureDisabled}
+                title={getUploadButtonLabel()}
+                aria-label={getUploadButtonLabel()}
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <span>Upload File</span>
+            </button>
 
             <button
                 on:click={capturePhoto}
@@ -1896,9 +2011,6 @@
                     : "Take operation photo"}
             ></button>
 
-            {#if !torchSupported}
-                <div class="spacer"></div>
-            {/if}
         </div>
     </div>
 
@@ -2292,14 +2404,14 @@
         left: 50%;
         transform: translateX(-50%);
         width: calc(100% - 3rem);
-        max-width: 400px;
+        max-width: 560px;
         padding: 1.25rem 1.5rem;
         background: rgba(0, 0, 0, 0.5);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-radius: 2rem;
         display: flex;
-        justify-content: space-around;
+        justify-content: space-between;
         align-items: center;
         gap: 1rem;
         margin-bottom: env(safe-area-inset-bottom, 0px);
@@ -2352,6 +2464,7 @@
     }
 
     .capture-btn {
+        flex: 0 0 auto;
         width: 72px;
         height: 72px;
         border-radius: 50%;
@@ -2385,8 +2498,11 @@
         background: #eee;
     }
 
-    .spacer {
-        width: 40px; /* Balance the layout for icon button */
+    .upload-trigger-btn {
+        gap: 0.6rem;
+        white-space: nowrap;
+        padding-inline: 1.1rem;
+        min-width: 0;
     }
 
     /* --- Editor Styles --- */
@@ -2674,6 +2790,26 @@
 
         .metadata-remove {
             width: auto;
+        }
+
+        .controls {
+            width: min(100% - 3rem, 640px);
+        }
+    }
+
+    @media (max-width: 560px) {
+        .controls {
+            width: calc(100% - 1.5rem);
+            padding: 1rem;
+            gap: 0.75rem;
+        }
+
+        .upload-trigger-btn {
+            padding-inline: 0.9rem;
+        }
+
+        .upload-trigger-btn span {
+            display: none;
         }
     }
 
