@@ -6,6 +6,8 @@ static class Program
 {
     private const int BufferSize = 1024 * 1024;
     private static readonly Lock _consoleLock = new();
+    private static readonly StringComparer _pathComparer =
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
     static void Main(string[] args)
     {
@@ -73,7 +75,7 @@ static class Program
         Console.WriteLine("Phase 1: Indexing files to resolve collisions (Winner-Takes-All)...");
 
         Dictionary<string, (string SourceCat, string Hash, long Size, long Timestamp)> ownershipMap =
-            [];
+            new(_pathComparer);
 
         int indexedFiles = 0;
         foreach (var catPath in catFilesToProcess)
@@ -94,7 +96,7 @@ static class Program
                 if (string.IsNullOrWhiteSpace(line)) continue;
                 if (TryParseCatLine(line, out CatEntry entry))
                 {
-                    string fullPath = Path.Combine(specificOutputDir, entry.FilePath);
+                    string fullPath = BuildOutputPath(specificOutputDir, entry.FilePath);
                     // Last one wins (Load Order). 
                     // If 03.cat has the same file twice, the second one overwrites the entry here.
                     ownershipMap[fullPath] = (catPath, entry.Hash, entry.Size, entry.Timestamp);
@@ -168,7 +170,7 @@ static class Program
                 if (string.IsNullOrWhiteSpace(line)) continue;
                 if (!TryParseCatLine(line, out CatEntry entry)) continue;
 
-                string fullOutputPath = Path.Combine(outputDir, entry.FilePath);
+                string fullOutputPath = BuildOutputPath(outputDir, entry.FilePath);
 
                 bool isOwner = false;
                 if (ownershipMap.TryGetValue(fullOutputPath, out var winner))
@@ -224,6 +226,7 @@ static class Program
                 string? dir = Path.GetDirectoryName(fullOutputPath);
                 if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
+                EnsureWritableDestination(fullOutputPath);
                 ExtractFileChunk(datStream, currentOffset, entry, fullOutputPath, validateHash);
                 extracted++;
                 currentOffset += entry.Size;
@@ -285,6 +288,29 @@ static class Program
             if (bytesRead == 0) break;
             output.Write(buffer, 0, bytesRead);
             bytesToCopy -= bytesRead;
+        }
+    }
+
+    static string BuildOutputPath(string outputDir, string archivePath)
+    {
+        string normalizedRelativePath = archivePath
+            .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)
+            .TrimStart(Path.DirectorySeparatorChar);
+
+        return Path.GetFullPath(Path.Combine(outputDir, normalizedRelativePath));
+    }
+
+    static void EnsureWritableDestination(string destPath)
+    {
+        if (!File.Exists(destPath))
+        {
+            return;
+        }
+
+        FileAttributes attrs = File.GetAttributes(destPath);
+        if ((attrs & FileAttributes.ReadOnly) != 0)
+        {
+            File.SetAttributes(destPath, attrs & ~FileAttributes.ReadOnly);
         }
     }
 
