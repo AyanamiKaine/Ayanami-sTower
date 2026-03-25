@@ -21,7 +21,10 @@
         "title": "X4Unpacker",
         "status": "Completed",
         "description": "A command-line tool written in C# to extract game assets from X4 Foundations .cat and .dat archives. Its a Linux-friendly replacement for the X Compact Tool. Because the compact tool didnt work for me on linux ¯\\_(ツ)_/¯",
-        "technologies": ["C#", ".NET 9.0"],
+        "technologies": [
+            "C#",
+            ".NET 9.0"
+        ],
         "links": [
             {
                 "name": "GitHub",
@@ -45,7 +48,10 @@
         "title": "ImageJ Plugin",
         "status": "Completed",
         "description": "An plugin for automatic picture analysis using ImageJ. Developed for the eye center at the Universitätsklinikum Düsseldorf.",
-        "technologies": ["ImageJ", "Java"],
+        "technologies": [
+            "ImageJ",
+            "Java"
+        ],
         "links": [
             {
                 "name": "Blog Post",
@@ -57,7 +63,11 @@
         "title": "Stella Language",
         "status": "In Progress",
         "description": "A FORTH-like concatenative language interpreter in C# that compiles to WebAssembly, enabling live programming without recompilation. It demonstrates how stack-based languages can be used like Lego blocks.",
-        "technologies": ["C#", "FORTH", "WASM"],
+        "technologies": [
+            "C#",
+            "FORTH",
+            "WASM"
+        ],
         "links": [
             {
                 "name": "GitHub",
@@ -73,7 +83,11 @@
         "title": "Stella Fuzzy Pattern Matcher (SFPM)",
         "status": "Completed",
         "description": "The main problem I wanted to solve is reactivity with changing dynamic contexts. We could rephrase this as branching trees. Imagine a dialog tree that includes many different flags and acknowledges many different variables like how many birds you saw. Conceptually this is nothing more than various deeply nested if else conditions and statements. When those are simple they are simple, when they are complex we have a problem. To solved this I developed a fuzzy pattern matcher that works on a list of rules with various conditions. Both conditions and rules can be changed at runtime.",
-        "technologies": ["C#", "JavaScript", "C++"],
+        "technologies": [
+            "C#",
+            "JavaScript",
+            "C++"
+        ],
         "links": [
             {
                 "name": "GitHub",
@@ -98,10 +112,28 @@
         ]
     },
     {
+        "title": "FsrsSharp",
+        "status": "Completed",
+        "description": "A port of the spaced repetition library py-fsrs to C#.",
+        "technologies": [
+            "C#",
+            ".NET 9.0"
+        ],
+        "links": [
+            {
+                "name": "NuGet",
+                "url": "https://www.nuget.org/packages/FsrsSharp"
+            }
+        ]
+    },
+    {
         "title": "Stella-ECS-JS",
         "status": "Completed",
         "description": "A high-performance, feature-rich Entity-Component-System (ECS) library for JavaScript and TypeScript. Designed with a modern, fluent API, it uses an archetype-based architecture for efficient iteration and includes a relationship graph to model complex connections between entities. It supports dynamic components and full world serialization.",
-        "technologies": ["JavaScript", "ECS"],
+        "technologies": [
+            "JavaScript",
+            "ECS"
+        ],
         "links": [
             {
                 "name": "npm",
@@ -117,7 +149,11 @@
         "title": "Stella-HTN-JS",
         "status": "Completed",
         "description": "A flexible and powerful Hierarchical Task Network (HTN) planner for creating complex and emergent AI behaviors in JavaScript. It allows AI to adapt to a changing world through runtime planning, plan interruption, and replanning. It features a system for context-aware 'Smart Objects'.",
-        "technologies": ["JavaScript", "HTN", "AI"],
+        "technologies": [
+            "JavaScript",
+            "HTN",
+            "AI"
+        ],
         "links": [
             {
                 "name": "npm",
@@ -133,7 +169,12 @@
         "title": "Smart Trash Tray Icon",
         "status": "Completed",
         "description": "A lightweight, cross-platform tray utility for managing your system's trash bin. Built with .NET and Avalonia UI, it provides a simple way to monitor and manage your deleted files on Windows, macOS, and Linux, including real-time size display in the tooltip. All in less than 300 lines of code.",
-        "technologies": ["C#", "Avalonia", "Multiplatform", "Avalonia Flecs"],
+        "technologies": [
+            "C#",
+            "Avalonia",
+            "Multiplatform",
+            "Avalonia Flecs"
+        ],
         "links": [
             {
                 "name": "GitHub",
@@ -145,7 +186,11 @@
         "title": "Avalonia Flecs",
         "status": "In Progress",
         "description": "I really dont like xaml/xml. It always felt like fighting it. I was somewhat spoiled by flutter and modern JavaScript front-end frameworks. What I really wanted was a declarative way to declare a UI in code. So I combined the ECS framework Flecs.Net with Avalonia and wrote my own declarative UI-Builder that I can use like any other code. Its directly used in my Stella Learning app.",
-        "technologies": ["Flecs.Net", "C#", "Avalonia"],
+        "technologies": [
+            "Flecs.Net",
+            "C#",
+            "Avalonia"
+        ],
         "links": [
             {
                 "name": "GitHub",
@@ -161,7 +206,10 @@
         "title": "Dialog Editor",
         "status": "In Progress",
         "description": "While working on some small story projects I had the desire to create a branching narrative. While some tools out there exist to make this easy like articy:draft X. They dont nicely integrate into my own workflow and of course cost some money. The idea is to be able to create a branching dialog and generate something I can use.",
-        "technologies": ["JavaScript", "Svelte"],
+        "technologies": [
+            "JavaScript",
+            "Svelte"
+        ],
         "links": [
             {
                 "name": "Preview",
@@ -173,7 +221,10 @@
         "title": "Email Status Service",
         "status": "Completed",
         "description": "A simple .NET utility class designed to send server status updates and deployment notifications via email. It's configured using environment variables and sends color-coded, formatted HTML emails to report successes, warnings, or errors from any C# application. I created this to be used in my personal website deployment pipeline to notify me of the status of each deployment.",
-        "technologies": ["C#", ".NET"],
+        "technologies": [
+            "C#",
+            ".NET"
+        ],
         "links": [
             {
                 "name": "GitHub",
@@ -217,7 +268,11 @@
         "title": "Project Astra Aeterna",
         "status": "In Progress",
         "description": "As a fan of all grand strategy. It's my personal dream to some day create my own grand strategy game. Currently I'm working on a small prototype using C#, SDL3 and Vulkan. I also created a small wiki to document my progress and ideas on game design.",
-        "technologies": ["C#", "SDL3", "Vulkan"],
+        "technologies": [
+            "C#",
+            "SDL3",
+            "Vulkan"
+        ],
         "links": [
             {
                 "name": "Wiki",
@@ -229,7 +284,11 @@
         "title": "TODO APP",
         "status": "Completed",
         "description": "Everyone loves to write their own TODO app, I wrote the TODO app using Avalonia Flecs (My own builder abstraction for Avalonia) to show how bad MVVM is and how much better a declarative approach is.",
-        "technologies": ["C#", "Avalonia Flecs", "Avalonia"],
+        "technologies": [
+            "C#",
+            "Avalonia Flecs",
+            "Avalonia"
+        ],
         "links": [
             {
                 "name": "GitHub (My Implementation)",
