@@ -3,9 +3,9 @@
 @plugin '@tailwindcss/typography';
 
 
-.text-justify :is(h1, h2, h3, h4, h5, h6) :not(.note-title) {                                                                                                                                                                   
-text-align: left;                                                                                                                                                                                           
-}                                                                                                                                                                                                             
+.text-justify :is(h1, h2, h3, h4, h5, h6):not(.note-title):not(.post-title) {
+    text-align: left;
+}
        
 
 .page-title {
