@@ -42,9 +42,21 @@
         ]
     },
     {
+        "title": "ImageJ Plugin",
+        "status": "Completed",
+        "description": "An plugin for automatic picture analysis using ImageJ. Developed for the eye center at the Universitätsklinikum Düsseldorf.",
+        "technologies": ["ImageJ", "Java"],
+        "links": [
+            {
+                "name": "Blog Post",
+                "url": "/posts/ImageJ-Automatische-Bild-Analyse/"
+            }
+        ]
+    },
+    {
         "title": "Stella Language",
         "status": "In Progress",
-        "description": "A FORTH-like concatenative language interpreter in C# that compiles to WebAssembly, enabling live programming without recompilation. It demonstrates how stack-based languages can be used like Lego blocks",
+        "description": "A FORTH-like concatenative language interpreter in C# that compiles to WebAssembly, enabling live programming without recompilation. It demonstrates how stack-based languages can be used like Lego blocks.",
         "technologies": ["C#", "FORTH", "WASM"],
         "links": [
             {
