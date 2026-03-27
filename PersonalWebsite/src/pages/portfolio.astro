@@ -1,0 +1,476 @@
+---
+export const title = "Lorem Ipsum";
+
+import Layout from "../layouts/Layout.astro";
+import projects from "../../public/projects.json";
+import artworks from "../../public/artworks.json";
+
+const allPosts = Object.values(import.meta.glob("./posts/*.mdx", { eager: true }));
+const publishedPosts = allPosts.filter(
+    (post) => post.frontmatter?.published !== false
+);
+
+const allNotes = Object.values(import.meta.glob("./notes/*.mdx", { eager: true }));
+const publishedNotes = allNotes.filter(
+    (note) => note.frontmatter?.published !== false
+);
+
+const appPages = Object.keys(import.meta.glob("./apps/*.astro"));
+const appCount = appPages.filter((page) => !page.endsWith("/index.astro")).length;
+
+const pickByTitle = (items, titles) =>
+    titles
+        .map((title) =>
+            items.find((item) => item.title === title || item.frontmatter?.title === title)
+        )
+        .filter(Boolean);
+
+const flagshipCases = [
+    {
+        project: projects.find(({ title }) => title === "Stella Language"),
+        category: "Lorem ipsum",
+        problem:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        angle:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    },
+    {
+        project: projects.find(
+            ({ title }) => title === "Stella Fuzzy Pattern Matcher (SFPM)"
+        ),
+        category: "Lorem ipsum",
+        problem:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        angle:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    },
+    {
+        project: projects.find(({ title }) => title === "Stella Learning"),
+        category: "Lorem ipsum",
+        problem:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        angle:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    },
+    {
+        project: projects.find(({ title }) => title === "X4Unpacker"),
+        category: "Lorem ipsum",
+        problem:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        angle:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    },
+    {
+        project: projects.find(({ title }) => title === "Dialog Editor"),
+        category: "Lorem ipsum",
+        problem:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        angle:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    },
+].filter((entry) => entry.project);
+
+const featuredPosts = pickByTitle(publishedPosts, [
+    "Writing a Fuzzy Pattern Matcher in C#",
+    "My Own FORTH Like Interpreter",
+    "Definitive Guide for Software Design",
+    "Intrusive Datastructures Explained",
+]);
+
+const featuredNotes = [
+    {
+        note: pickByTitle(publishedNotes, ["Big Fat Structs"])[0],
+        summary:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    },
+    {
+        note: pickByTitle(publishedNotes, ["Opaque Pointers"])[0],
+        summary:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    },
+    {
+        note: pickByTitle(publishedNotes, ["Source Code Generator "])[0],
+        summary:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    },
+    {
+        note: pickByTitle(publishedNotes, ["Static Compile Time Hierachies are Bad"])[0],
+        summary:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    },
+].filter((entry) => entry.note);
+
+const featuredArt = pickByTitle(artworks, [
+    "Die Gräfin",
+    "Nightmare",
+    "For a Friend, Her Cats",
+]);
+
+const capabilityPillars = [
+    {
+        title: "Lorem ipsum",
+        description:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        evidence: [
+            { label: "Lorem ipsum", href: "/projects" },
+            { label: "Lorem ipsum", href: "/posts/Simulating-Empires/" },
+            { label: "Lorem ipsum", href: "https://stellawiki.com/docs/intro/" },
+        ],
+    },
+    {
+        title: "Lorem ipsum",
+        description:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        evidence: [
+            { label: "Lorem ipsum", href: "/posts/My-Own-Interpreter/" },
+            {
+                label: "Lorem ipsum",
+                href: "/posts/Writing-a-Fuzzy-Pattern-Matcher-In-CSharp",
+            },
+            {
+                label: "Lorem ipsum",
+                href: "/posts/Switch-Statements-as-Interpreter/",
+            },
+        ],
+    },
+    {
+        title: "Lorem ipsum",
+        description:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        evidence: [
+            { label: "Lorem ipsum", href: "/projects" },
+            { label: "Lorem ipsum", href: "/apps/DialogEditor/" },
+            { label: "Lorem ipsum", href: "/projects" },
+        ],
+    },
+    {
+        title: "Lorem ipsum",
+        description:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        evidence: [
+            {
+                label: "Lorem ipsum",
+                href: "/posts/definitive-guide-for-software-design/",
+            },
+            { label: "Lorem ipsum", href: "/notes" },
+            { label: "Lorem ipsum", href: "/artworks" },
+        ],
+    },
+];
+
+const proofStats = [
+    { value: projects.length, label: "Lorem ipsum" },
+    { value: appCount, label: "Lorem ipsum" },
+    { value: publishedPosts.length, label: "Lorem ipsum" },
+    { value: publishedNotes.length, label: "Lorem ipsum" },
+    { value: artworks.length, label: "Lorem ipsum" },
+];
+---
+
+<Layout title={title}>
+    <div class="not-prose mt-10 mb-20 space-y-16">
+        <section class="space-y-6 border-b border-gray-200 pb-10">
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">
+                Lorem ipsum
+            </p>
+            <div class="space-y-4">
+                <h1 class="max-w-3xl text-4xl font-bold tracking-tight text-gray-900 md:text-5xl">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                </h1>
+                <p class="max-w-2xl text-base leading-7 text-gray-700 md:text-lg">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+                    eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
+                    ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+                    aliquip ex ea commodo consequat.
+                </p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <a
+                    href="#selected-work"
+                    class="inline-flex items-center rounded-sm border border-gray-900 bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
+                >
+                    Lorem ipsum
+                </a>
+                <a
+                    href="#writing"
+                    class="inline-flex items-center rounded-sm border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 transition-colors hover:border-gray-400 hover:bg-gray-50"
+                >
+                    Lorem ipsum
+                </a>
+            </div>
+        </section>
+
+        <section
+            aria-label="Portfolio proof points"
+            class="grid grid-cols-2 gap-px border border-gray-200 bg-gray-200 md:grid-cols-5"
+        >
+            {
+                proofStats.map((stat) => (
+                    <div class="bg-white px-4 py-5">
+                        <p class="text-2xl font-bold tracking-tight text-gray-900">
+                            {stat.value}
+                        </p>
+                        <p class="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+                            {stat.label}
+                        </p>
+                    </div>
+                ))
+            }
+        </section>
+
+        <section class="space-y-6">
+            <div class="space-y-2">
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">
+                    Lorem ipsum
+                </p>
+                <h2 class="text-2xl font-bold tracking-tight text-gray-900">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                </h2>
+            </div>
+            <div class="grid gap-px border border-gray-200 bg-gray-200 md:grid-cols-2">
+                {
+                    capabilityPillars.map((pillar) => (
+                        <article class="space-y-4 bg-white p-6">
+                            <div class="space-y-2">
+                                <h3 class="text-lg font-semibold text-gray-900">
+                                    {pillar.title}
+                                </h3>
+                                <p class="text-sm leading-7 text-gray-700">
+                                    {pillar.description}
+                                </p>
+                            </div>
+                            <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                                {pillar.evidence.map((item) => (
+                                    <a
+                                        href={item.href}
+                                        class="font-medium text-gray-900 underline decoration-gray-300 underline-offset-4 transition-colors hover:decoration-gray-900"
+                                    >
+                                        {item.label}
+                                    </a>
+                                ))}
+                            </div>
+                        </article>
+                    ))
+                }
+            </div>
+        </section>
+
+        <section id="selected-work" class="space-y-6">
+            <div class="space-y-2">
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">
+                    Lorem ipsum
+                </p>
+                <h2 class="text-2xl font-bold tracking-tight text-gray-900">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                </h2>
+            </div>
+            <div class="border-y border-gray-200">
+                {
+                    flagshipCases.map(({ project, category, problem, angle }) => (
+                        <article class="grid gap-6 border-b border-gray-200 py-8 last:border-b-0 md:grid-cols-[11rem_minmax(0,1fr)]">
+                            <div class="space-y-2">
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+                                    {category}
+                                </p>
+                                <p class="text-sm text-gray-500">{project.status}</p>
+                            </div>
+                            <div class="space-y-5">
+                                <div class="space-y-3">
+                                    <h3 class="text-xl font-semibold tracking-tight text-gray-900">
+                                        {project.title}
+                                    </h3>
+                                    <p class="text-sm leading-7 text-gray-700">
+                                        {project.description}
+                                    </p>
+                                </div>
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    <div>
+                                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+                                            Lorem ipsum
+                                        </p>
+                                        <p class="mt-2 text-sm leading-7 text-gray-700">
+                                            {problem}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+                                            Lorem ipsum
+                                        </p>
+                                        <p class="mt-2 text-sm leading-7 text-gray-700">
+                                            {angle}
+                                        </p>
+                                    </div>
+                                </div>
+                                {
+                                    project.technologies?.length > 0 && (
+                                        <div class="flex flex-wrap gap-2">
+                                            {project.technologies.map((technology) => (
+                                                <span class="rounded-sm border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700">
+                                                    {technology}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )
+                                }
+                                {
+                                    project.links?.length > 0 && (
+                                        <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                                            {project.links.map((link) => (
+                                                <a
+                                                    href={link.url}
+                                                    target={link.url.startsWith("http")
+                                                        ? "_blank"
+                                                        : undefined}
+                                                    rel={link.url.startsWith("http")
+                                                        ? "noopener noreferrer"
+                                                        : undefined}
+                                                    class="font-medium text-gray-900 underline decoration-gray-300 underline-offset-4 transition-colors hover:decoration-gray-900"
+                                                >
+                                                    {link.name}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )
+                                }
+                            </div>
+                        </article>
+                    ))
+                }
+            </div>
+        </section>
+
+        <section id="writing" class="space-y-6">
+            <div class="space-y-2">
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">
+                    Lorem ipsum
+                </p>
+                <h2 class="text-2xl font-bold tracking-tight text-gray-900">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                </h2>
+            </div>
+            <div class="grid gap-8 md:grid-cols-2">
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Lorem ipsum</h3>
+                    <div class="border-t border-gray-200">
+                        {
+                            featuredPosts.map((post) => (
+                                <article class="border-b border-gray-200 py-4">
+                                    <a href={post.url} class="block space-y-2">
+                                        <h4 class="text-base font-semibold text-gray-900">
+                                            {post.frontmatter.title}
+                                        </h4>
+                                        <p class="text-sm leading-7 text-gray-700">
+                                            {post.frontmatter.summary}
+                                        </p>
+                                    </a>
+                                </article>
+                            ))
+                        }
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        Lorem ipsum
+                    </h3>
+                    <div class="border-t border-gray-200">
+                        {
+                            featuredNotes.map(({ note, summary }) => (
+                                <article class="border-b border-gray-200 py-4">
+                                    <a href={note.url} class="block space-y-2">
+                                        <h4 class="text-base font-semibold text-gray-900">
+                                            {note.frontmatter.title}
+                                        </h4>
+                                        <p class="text-sm leading-7 text-gray-700">
+                                            {summary}
+                                        </p>
+                                    </a>
+                                </article>
+                            ))
+                        }
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="space-y-6 border-t border-gray-200 pt-10">
+            <div class="space-y-2">
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">
+                    Lorem ipsum
+                </p>
+                <h2 class="text-2xl font-bold tracking-tight text-gray-900">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                </h2>
+                <p class="max-w-2xl text-sm leading-7 text-gray-700">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+                    eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                </p>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-3">
+                {
+                    featuredArt.map((art) => (
+                        <figure class="space-y-3">
+                            <img
+                                src={`/art/${art.filename}`}
+                                alt={art.title || "Lorem ipsum"}
+                                class="aspect-[4/5] w-full border border-gray-200 object-cover"
+                                loading="lazy"
+                            />
+                            <figcaption class="text-sm text-gray-600">
+                                {art.title || "Lorem ipsum"}
+                            </figcaption>
+                        </figure>
+                    ))
+                }
+            </div>
+        </section>
+
+        <section class="space-y-6 border-t border-gray-200 pt-10">
+            <div class="space-y-2">
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">
+                    Lorem ipsum
+                </p>
+                <h2 class="text-2xl font-bold tracking-tight text-gray-900">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                </h2>
+            </div>
+            <div class="grid gap-px border border-gray-200 bg-gray-200 md:grid-cols-2">
+                <div class="bg-white p-6">
+                    <h3 class="text-base font-semibold text-gray-900">
+                        Lorem ipsum
+                    </h3>
+                    <p class="mt-2 text-sm leading-7 text-gray-700">
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+                        eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                    </p>
+                </div>
+                <div class="bg-white p-6">
+                    <h3 class="text-base font-semibold text-gray-900">
+                        Lorem ipsum
+                    </h3>
+                    <p class="mt-2 text-sm leading-7 text-gray-700">
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+                        eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                    </p>
+                </div>
+                <div class="bg-white p-6">
+                    <h3 class="text-base font-semibold text-gray-900">
+                        Lorem ipsum
+                    </h3>
+                    <p class="mt-2 text-sm leading-7 text-gray-700">
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+                        eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                    </p>
+                </div>
+                <div class="bg-white p-6">
+                    <h3 class="text-base font-semibold text-gray-900">
+                        Lorem ipsum
+                    </h3>
+                    <p class="mt-2 text-sm leading-7 text-gray-700">
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+                        eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </div>
+</Layout>
