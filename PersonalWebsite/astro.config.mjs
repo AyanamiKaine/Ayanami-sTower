@@ -10,6 +10,7 @@ import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 
 import odin from "@shikijs/langs/odin";
+import cmake from "@shikijs/langs/cmake";
 
 // https://astro.build/config
 export default defineConfig({
@@ -25,9 +26,10 @@ export default defineConfig({
 
     markdown: {
         shikiConfig: {
-            langs: [odin],
+            langs: [odin, cmake],
             langAlias: {
                 odinlang: "odin",
+                cmakelang: "CMake",
             },
         },
     },
