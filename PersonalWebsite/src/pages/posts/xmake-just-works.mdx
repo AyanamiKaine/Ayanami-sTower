@@ -12,7 +12,7 @@ Building C++ projects is a mess. It always boils down to having build generators
 
 ## Hating on CMake
 
-They are all so complicated. The build system I like the most is for dotnet. Being able to say `dotnet run` `dotnet add package` `dotnet build` `dotnet run` is exactly what we want. The most commonly used steps are the simplest one with sane defaults. 
+They are all so complicated. The build system I like the most is dotnet. Being able to say `dotnet run`, `dotnet add package`, `dotnet build` is exactly what we want. The most commonly used steps are the simplest one with sane defaults. 
 
 When a tool asks you for something that should be a default instead, I am going to scream.
 
@@ -23,7 +23,9 @@ cmake -S . -B build
 cmake --build build --config RelWithDebInfo
 ```
 
-We always want to build and run a project. Build and Run should always be one step, one command. Never be two.
+When you don't know CMake already, ask yourself what does `-S` do? Why do we have to say `cmake --build build` instead of `cmake build`?
+
+We always want to build and run a project. Building and running should always be one step, one command. Never be two.
 
 ### Adding Dependencies
 
@@ -59,13 +61,13 @@ add_executable(mygame WIN32 mygame.c)
 target_link_libraries(mygame PRIVATE SDL3::SDL3)
 ```
 
-I understand why it is like that. There is no official build system, there is no official package manager that are many. What I am not understanding is why they just don't copy from tooling that just works. Not onces created the `dotnet` tool system a problem for my project. While most C++ did for me. Simple things are simple hard in most C++ build systems. 
+I understand why it is like that. There is no official build system, there is no official package manager there are many. What I am not understanding is why they just don't copy from tooling that just works. Not onces created the `dotnet` tool system a problem for my project. While most C++ did for me. Simple things are simply hard in most C++ build systems. 
 
-And I can already hear people that can use and understand CMake better than me screaming "Skill Issue not a CMake one". I strongly believe that any tool should be created in such a way that the simple most used actions are the most intuitive ones. If I need a special course or hour long tutorial series just to understand basic actions the tool is simple not good designed.
+And I can already hear people that can use and understand CMake better than me screaming "Skill Issue not a CMake one". I strongly believe that any tool should be created in such a way that the simple most used actions are the most intuitive ones. If I need a special course or hour long tutorial series just to understand basic actions the tool is simply not good designed.
 
 ## Visual Studio
 
-I hate it, because you have to click through so many menus and windows just to link a new shared library. Expose headers etc. If there is no video guide showing me: First open this menu, scroll down to here, click there, add this specific text snippet. Too many menus, too many steps doing the most simple and basic things.
+I hate it, because you have to click through so many menus and windows just to link a new shared library. Expose headers etc. If there is no video guide showing you what to do: First open this menu, scroll down to here, click there, add this specific text snippet. You will feel lost and overwhelmed but your options. Too many menus, too many steps doing the most simple and basic things. Visual Studio is not intuitive.
 
 ## Bazel
 
@@ -74,6 +76,8 @@ I hate it, because you have to click through so many menus and windows just to l
 In Bazel this aspect is easy because it's the most common use case for Google. Sadly It's not really my most common use case. I tried it and it didn't fit nicely. BUT I think it's better than CMake, so that is at least something.
 
 ## Meson
+
+Meson first released around Jun 15, 2014 is also an interesting option. 
 
 Sadly I didn't come around using [Meson](https://mesonbuild.com/) that much. Again I think it's better than CMake because it uses Python. Of course that comes with its own problems like using python and having to learn the DSL for Meson. But I don't think you can avoid using a DSL for any C++ build system. 
 
@@ -111,7 +115,7 @@ Produces the output `hello, world!`.
 
 ### Adding Dependencies
 
-No need to get a package manager running, awkwardly searches for git projects trying to integrate their build system. To my understanding XMake can use basically ever package system you can imagine. Read [here](https://github.com/xmake-io/xmake/wiki/C-and-Cplusplus-build-system,-I-use-xmake#support-package-management-repository) and [this](https://github.com/xmake-io/xmake/wiki/Xmake-and-Cplusplus--Package-Management) more about it.
+No need to get a package manager running, awkwardly searches for git projects trying to integrate their build system. To my understanding XMake can use basically ever package system you can imagine. Read [here](https://github.com/xmake-io/xmake/wiki/C-and-Cplusplus-build-system,-I-use-xmake#support-package-management-repository) and [this](https://github.com/xmake-io/xmake/wiki/Xmake-and-Cplusplus--Package-Management) more about it. But by default you don't have to do anything.
 
 Just use `xmake require --search package_name` to search for the package. Here I am search for joltphysics.
 ```shell
@@ -135,4 +139,4 @@ target("hello_world")
 
 ```
 
-I can't empathize it enough, simple things are simple in XMake and that is the reason why I like it. I can only recommend it.
+I can't empathize it enough, simple things are simple in XMake and that is the reason why I like it. I can only recommend it. XMake does exactly what I want. Having sane defaults for 90% of the use cases, commonly used tasks are one step by default.
