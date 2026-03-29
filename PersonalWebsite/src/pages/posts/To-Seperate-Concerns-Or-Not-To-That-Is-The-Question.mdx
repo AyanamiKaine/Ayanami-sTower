@@ -1,0 +1,25 @@
+---
+title: "To Seperate Concerns Or Not To That Is The Question"
+date: 2026-03-29
+author: "Ayanami Kaine"
+tags: ["Programming"]
+layout: ../../layouts/PostLayout.astro
+summary: "While working on a C++ project and writing some unit tests I also wanted to micro bench some code for fun. While searching for a benchmark library I learned the testing library I use has a benchmark feature built in, a godsend!"
+published: true
+---
+
+People love talking about separating concerns, splitting things apart in modular pieces. But what happens when those drawn boundaries are wrong? The opinion of people seldom changes so overtime dogmas are created. Believes that are set in stone as laws.
+
+I like writing unit tests to improve how the API can be used. But I also like writing some benchmarks for performance critical code to catch regressions or actually measure improvement (I know there are layers of limits and micro optimizing one function or class won't improve the overall system performance that much, but its nice or math heavy operations like vectors.).
+
+And very often you have to add two dependencies. One for your testing framework and one for our benchmarking framework. And again usually you can't write benchmark code in test files because both framework dictate heavily how they need to be setup.
+
+Wouldn't it be nice if both testing and benchmarking framework are part of the same dependency?
+
+Here comes [Catch2](https://github.com/catchorg/Catch2) there you can write unit tests and micro benchmarks.
+
+But that brings the question: should a testing framework have a micro benchmark suit? YES a severe regression in performance is a bug. Something that should be tested for. 
+
+We should not look at the numbers all the time. Do not check for them in conditions or whatsoever. BUT they are incredibly helpful when we later notice a performance regression.
+
+Now I am spoiled and want that every testing framework comes with a good enough benchmarking framework. They truly are meant to be together.
