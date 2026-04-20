@@ -14,7 +14,7 @@ layout: ../layouts/PostLayout.astro
 
 Call me Ayanami (Pronouns: Whatever you use for yourself is fine), or what you like, it's fine. I’m a programmer and artist by heart and name. I love crafting things, think too much about the world while reading a book and occasionally playing with friends pen and paper games like Pathfinder, DnD or [Lancer](https://massifpress.com/) (Check it out, its excellent). Sometimes I even write down my thoughts and publish them on my blog. I love helping people and always have an open ear for others, feel free to contact me at **personal@ayanamikaine.com** for anything business related use **business@ayanamikaine.com**.
 
-My personal laptop a Microsoft Surface Studio laptop runs Fedora Linux KDE, you might think that many features would only work on Windows like the pen, the touch screen, the trackpad but no it all works flawlessly, although some setup is required. I use it mostly for painting and writing.
+My personal laptop a Microsoft Surface Studio laptop runs NixOS, you might think that many features would only work on Windows like the pen, the touch screen, the trackpad but no it all works flawlessly, although some setup is required. I use it mostly for painting and writing.
 
 ## Programming Competencies
 
