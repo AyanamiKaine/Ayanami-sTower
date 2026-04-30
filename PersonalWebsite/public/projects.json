@@ -47,7 +47,7 @@
     {
         "title": "ImageJ Plugin",
         "status": "Completed",
-        "description": "An plugin for automatic picture analysis using ImageJ. Developed for the eye center at the Universitätsklinikum Düsseldorf.",
+        "description": "An plugin for automatic picture analysis using ImageJ. Developed for my self to improve my productivity.",
         "technologies": [
             "ImageJ",
             "Java"
