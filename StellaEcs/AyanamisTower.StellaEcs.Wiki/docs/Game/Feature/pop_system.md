@@ -12,7 +12,7 @@ draft: false
 | **Status**         | <span class="badge badge--planned">Planned</span>                                                                                                      |
 | **Priority**       | <span class="priority-high">High</span>                                                                                                                |
 | **Version Target** | <span class="version-tag">v0.1</span>                                                                                                                  |
-| **Dependencies**   | [Economy](/docs/Game/economy), [Culture](/docs/Game/Feature/culture), [Religion](/docs/Game/Feature/religion), [Politics](/docs/Game/Feature/politics) |
+| **Dependencies**   | [Economy](/docs/Game/economy), Culture, Religion, Politics                                                                                             |
 
 ---
 
