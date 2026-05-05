@@ -1,0 +1,49 @@
+---
+title: "How I Write C++"
+date: 2026-05-5
+author: "Ayanami Kaine"
+tags: ["Programming", "C++"]
+layout: ../../layouts/PostLayout.astro
+summary: "A small personal doc how I write C++"
+published: true
+---
+
+# Build System (Xmake)
+
+Xmake is by far the easiest C++ build system I have every used. It has really good defaults. And that is nothing more I really need.
+
+Here is an example of an xmake project file I usually use.
+
+```lua
+add_rules("mode.debug", "mode.release")
+add_rules("plugin.compile_commands.autoupdate", {outputdir = "."})
+ 
+set_languages("c++latest")
+set_toolchains("clang")
+ 
+add_requires("catch2 3.x")
+add_requires("flecs")
+add_requires("luajit")
+ 
+
+target("core")
+    set_kind("static")
+    add_includedirs("src", {public = true})
+    add_packages("flecs", "luajit", {public = true})
+    add_files("src/core/**.cpp|**.test.cpp")
+ 
+
+target("app")
+    set_kind("binary")
+    add_deps("core")
+    add_files("src/main.cpp")
+ 
+target("tests")
+    set_kind("binary")
+    set_default(false)
+    add_deps("core")
+    add_packages("catch2")
+    add_files("src/**.test.cpp")
+    add_tests("default")
+
+```
