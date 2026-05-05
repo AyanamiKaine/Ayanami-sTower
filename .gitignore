@@ -1,5 +1,8 @@
+# Local planning/spec docs (superpowers brainstorming + writing-plans)
+**/docs/superpowers/
+
 # Bazel
-bazel-*  
+bazel-*
 **/.bazelignore
 
 # C++
@@ -1084,3 +1087,12 @@ stella_invicta_headless/Documentation/Stella-Invicta/.obsidian/workspace.json
 stella_invicta_headless/Documentation/Stella-Invicta/.obsidian/workspace.json
 c_libraries/c_string
 c_libraries/c_string
+
+# Docusaurus build cache (regenerated on every dev/build run)
+.docusaurus/
+
+# Astro build cache (regenerated on every dev/build run)
+.astro/
+
+# OpenAI Codex CLI workspace marker / local state
+.codex
