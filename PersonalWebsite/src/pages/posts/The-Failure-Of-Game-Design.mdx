@@ -1,0 +1,41 @@
+---
+title: "The Biggest Failure In Game Design"
+date: 2026-05-5
+author: "Ayanami Kaine"
+tags: ["Programming", "C++"]
+layout: ../../layouts/PostLayout.astro
+summary: "There is one failure in game design I think is the biggest."
+published: true
+---
+
+There is one mistake I see every time a game grows and grows in features and mechanics, specifically with grand strategy games. Features are being added that do not fit into other features.
+
+Instead of interacting with existing resources, the new feature has its own one.
+
+# The Core of the Problem
+
+In essence, every new feature is an abstraction over an idea. Players can build buildings and pay for it using the national currency of the nation they play.
+
+In Hearts of Iron 4 there does not exist a currency system. The idea was that nations can trade with each other by exchanging production capacity that is used to build buildings. It was effectively used as a currency. In the beginning this was not really a problem; it was a simple solution for a rather complex problem.
+
+But now, after many updates, the usage grew. Now you can sell and buy weapon equipment on a global market. Again, by selling and getting production capacity. The abstraction starts to slowly break. The result is often balancing issues, where you now can get or lose important production capacity in many different ways.
+
+# The Reverse Problem
+
+The other problem occurs when the abstraction becomes decoupled from existing game mechanics. In the previous example, an existing mechanic (production capacity as currency) was used to interact with the new one. But what happens when instead we don't use any previous mechanic and create an entirely new one?
+
+Games like Stellaris often add new gimmick mechanics and currencies to interact with them. There is no real flow between the interactions; instead, it feels like having a new toy to play with. A new minigame besides the main game. It does not integrate well into the main game loop and instead creates a smaller new loop.
+
+It starts to feel like you play a slightly different game from everybody else. This brings up the question: why should I buy a DLC that changes the game in such a way that it's not the same game loop anymore?
+
+In Hearts of Iron 4 there was added a new game mechanic in a DLC called [border war](https://hoi4.paradoxwikis.com/Border_war). It's a rather bad mechanic. You would assume that you as a player can simply use your own units to initiate a border war with any country. But no, you can't. It's limited to specific events and decisions you have to take. You as the USA cannot have a border war with Mexico.
+
+Border wars were implemented not as a generalized feature but as a specific one for a small area, to sell it as a feature/content. But the result is that it feels misplaced and not part of the overall game.
+
+This is what I mean by "does not integrate into the main game loop." Border wars are effectively their own small minigame, with assumptions and mechanics not matching the overall ones. To fully understand it, you have to read the wiki.
+
+I strongly believe that every feature should reinforce the main game loop. In this case, the player should be able to use their units directly to initiate a border war, no need to press a decision first.
+
+# Why It's Not Done
+
+The obvious answer is velocity. Adding a feature that impacts only a small area of the game will not impact the entire game. Duuuh. So it does not need to be balanced around that fact. EU4 added the ability to develop provinces, so becoming stronger without the need to expand became an option. In another world, this feature to develop provinces would only be accessible for Native Americans as a special feature.
