@@ -1,0 +1,109 @@
+---
+title: "Dispatch Table"
+date: 2026-05-08
+created: 2026-05-08
+edited: 2026-05-08
+author: "Ayanami Kaine"
+tags: ["Programming", "Patterns"]
+layout: ../../layouts/PostLayout.astro
+summary: "When we dont work direclty with a OOP language a good alternative for a big switch/if-else chain to dispatch behavior is a dispatch table."
+published: false
+---
+
+```python
+def run_command(cmd, *args):
+    if cmd == "add":
+        return args[0] + args[1]
+    elif cmd == "sub":
+        return args[0] - args[1]
+    elif cmd == "mul":
+        return args[0] * args[1]
+    else:
+        raise ValueError(f"unknown command: {cmd}")
+```
+
+A dispatch table is a good idea when we have functions that share the same shape/signature but only differ in actual behavior. And a switch or if-else chain becomes huge.
+
+```python
+COMMANDS = {
+    "add": lambda a, b: a + b,
+    "sub": lambda a, b: a - b,
+    "mul": lambda a, b: a * b,
+}
+
+def run_command(cmd, *args):
+    handler = COMMANDS.get(cmd)
+    if handler is None:
+        raise ValueError(f"unknown command: {cmd}")
+    return handler(*args)
+```
+
+# Entity-Component-System Frameworks
+
+There is an interesting example regarding ECS and dispatching behavior based on components. In [Flecs](https://github.com/SanderMertens/flecs) ECS framework components are just entities with an ID. We can use that ID as a key for a dispatch table where the value is the method. 
+
+## Why Even Doing It?
+
+Sometimes we want to create declarative components. Take this as an example.
+
+```c++
+auto Befriend = world.entity("Befriend")
+    .add<Action>()
+    .set<Pre_Condition_SameLocation>({})
+    .set<Effect_StressDelta>({+5, Actor});
+```
+
+Here we have two components a precondition and an effect. What does the effect do? It depends on the dispatch. The arguments for the dispatch function are the component fields.
+
+## Example
+
+```C++
+#include <flecs.h>
+#include <unordered_map>
+#include <functional>
+
+class Inspector {
+    using InspectFn = std::function<void(const void*)>;
+    std::unordered_map<flecs::entity_t, InspectFn> handlers_;
+
+public:
+    template<typename T, typename F>
+    void register_for(flecs::world& world, F&& fn) {
+        flecs::entity_t id = world.component<T>().id();
+
+        handlers_[id] = [fn = std::forward<F>(fn)](const void* ptr) {
+            fn(*static_cast<const T*>(ptr));
+        };
+    }
+
+    void inspect(flecs::entity e) const {
+        e.each([&](flecs::id component_id) {
+            auto it = handlers_.find(component_id);
+            if (it == handlers_.end()) return;
+            const void* data = e.get(component_id);
+            if (data) it->second(data);
+        });
+    }
+};
+```
+
+```c++
+struct Position { float x, y; };
+struct Health   { int hp; };
+
+flecs::world world;
+Inspector inspector;
+
+inspector.register_for<Position>(world, [](const Position& p) {
+    std::cout << "Position(" << p.x << ", " << p.y << ")\n";
+});
+inspector.register_for<Health>(world, [](const Health& h) {
+    std::cout << "Health(" << h.hp << ")\n";
+});
+
+auto e = world.entity()
+    .set<Position>({1.0f, 2.0f})
+    .set<Health>({100});
+
+inspector.inspect(e);
+```

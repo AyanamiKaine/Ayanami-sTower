@@ -1,0 +1,109 @@
+---
+title: "Ring Buffer"
+date: 2026-05-06
+created: 2026-05-06
+edited: 2026-05-06
+author: "Ayanami Kaine"
+tags: ["Programming", "Datastructures"]
+layout: ../../layouts/PostLayout.astro
+published: false
+---
+
+(This post is rather bad, full of wrong things.)
+
+(For example when the ring buffer is full it does not automatically replace the elements the user needs to care for it)
+```c++
+if (event_buffer_.full()) {
+    if (auto overwritten = event_buffer_.pop()) {
+        last_overwritten_ = *overwritten;
+        append_log("overwrote " + *overwritten);
+    }
+}
+event_buffer_.push(message);
+```
+
+We assume we overwrite existing data at the beginning when the writer is at the end of the ring buffer and would write to `size + 1`.
+
+In simple terms a ring buffer is nothing more as a list with a size `X` where when you write at position `X + 1` it writes at the first position instead `[-1]`.
+
+## Use Cases
+
+What are some use cases for a ring buffer? A big use cases is for message/event queues. Someone writes messages to the ring buffer and someone reads/consumes it.
+
+
+### Why Not A Queue?
+
+Why would we choose a ring buffer when we can use a queue instead? 
+
+A ring buffer is fixed in size and does not grow the more message get written to it. A ring buffer with the size of 1000 for type `event` can hold 1000 events. A queue would grow indefinitely as messages are being written to it. While a ring buffer can easily drop the messages instead.
+
+A ring buffer gets completely allocated at construction. It does not allocate as messages are being pushed to it.
+
+When we have the requirement of low latency and want to easily handle back pressure by dropping/overwriting previous messages a ring buffer is a natural choice.
+
+## Example
+
+```c++
+#include <array>
+#include <cstddef>
+#include <optional>
+
+/*
+Why do we write head_ % Capacity and tail_ % Capacity ? Because we increment head and tail
+indenfinitly we can use it as a wrapped value that will always result in the values 0..Capacity
+
+With this a we can simply overwrite existing values.
+*/
+
+template <typename T, size_t Capacity>
+class RingBuffer {
+public:
+    std::optional<T> pop() {
+        if (empty()) {
+            return {};
+        }
+
+        // For non trivial types we move it instead of copying it for performance reasons
+        T result = std::move(data_[head_ % Capacity]);
+        head_ += 1;
+        return result;
+    }
+
+    bool push(T element) {
+        if (full()) {
+            return false;
+        }
+
+        // For non trivial types we move it instead of copying it for performance reasons
+        data_[tail_ % Capacity] = std::move(element);
+        tail_ += 1;
+        return true;
+    }
+
+    size_t capacity() const { return Capacity; }
+
+    // The size of the ring buffer is the amount of not yet consumed elements
+    bool full() const { return tail_ - head_ == Capacity; }
+
+    bool empty() const { return tail_ == head_; }
+
+    size_t size() const { return tail_ - head_; }
+
+    // To clear the ring buffer we simply set head_ and tail_ to 0
+    void clear() {
+        tail_ = 0;
+        head_ = 0;
+    }
+
+private:
+    // Currently when we initalize the ring buffer we initalize the entire array for big many
+    // elements this COULD be a problem memory wise. I think practically we wont notice it.
+    // To fix this we would need to work with unitialized memory, increasing the complexity of the
+    // implementation ten fold.
+    std::array<T, Capacity> data_{};
+    // Consumes read from the head_ index, advance them
+    size_t head_{0};
+    // Produces read from the tail_ index, advance them
+    size_t tail_{0};
+};
+```
