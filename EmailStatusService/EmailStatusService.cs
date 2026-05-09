@@ -12,24 +12,34 @@ public class EmailStatusService
 {
     private readonly string _smtpServer;
     private readonly int _smtpPort;
-    private readonly string _fromEmail;
-    private readonly string _fromPassword;
-    private readonly string _toEmail;
+    private readonly string? _fromEmail;
+    private readonly string? _fromPassword;
+    private readonly string? _toEmail;
+
+    public bool IsDisabled { get; }
 
     public EmailStatusService()
     {
-        // Load from environment variables
         _smtpServer = Environment.GetEnvironmentVariable("EMAIL_SMTP_SERVER") ?? "smtp.gmail.com";
-        _smtpPort = int.Parse(Environment.GetEnvironmentVariable("EMAIL_SMTP_PORT") ?? "587");
-        _fromEmail = Environment.GetEnvironmentVariable("EMAIL_FROM") ??
-            throw new InvalidOperationException("EMAIL_FROM environment variable is required");
-        _fromPassword = Environment.GetEnvironmentVariable("EMAIL_PASSWORD") ??
-            throw new InvalidOperationException("EMAIL_PASSWORD environment variable is required");
+        _smtpPort = int.TryParse(Environment.GetEnvironmentVariable("EMAIL_SMTP_PORT"), out var p) ? p : 587;
+        _fromEmail = Environment.GetEnvironmentVariable("EMAIL_FROM");
+        _fromPassword = Environment.GetEnvironmentVariable("EMAIL_PASSWORD");
         _toEmail = Environment.GetEnvironmentVariable("EMAIL_TO") ?? _fromEmail;
+
+        if (string.IsNullOrEmpty(_fromEmail) || string.IsNullOrEmpty(_fromPassword))
+        {
+            IsDisabled = true;
+            Console.Error.WriteLine("[EmailStatusService] EMAIL_FROM/EMAIL_PASSWORD not set; email notifications disabled.");
+        }
     }
 
     public async Task SendStatusUpdateAsync(string subject, string message, StatusLevel level = StatusLevel.Info)
     {
+        if (IsDisabled || _fromEmail is null || _fromPassword is null || _toEmail is null)
+        {
+            return;
+        }
+
         try
         {
             using var smtpClient = new SmtpClient(_smtpServer, _smtpPort)

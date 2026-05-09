@@ -216,6 +216,11 @@ static class DeploymentService
     // --- Global Configuration ---
     private const string RepoPath = "/home/ayanami/Ayanami-sTower/";
     private const string LogDirectory = "/home/ayanami/deployment_logs/";
+    // Log retention: keep at most this many days, and never more than this many files.
+    // Why: a previous crash-loop in a duplicate systemd unit produced ~875k logs in 4 months.
+    // Hardcoded rotation keeps the directory bounded even if a similar bug recurs.
+    private static readonly TimeSpan LogRetention = TimeSpan.FromDays(7);
+    private const int LogMaxFiles = 5000;
     private static readonly EmailStatusService _emailService = new();
     private static DeploymentLogger _logger = null!;
     // The current HEAD commit hash after pulling (used to compare against last deployed commit)
@@ -307,6 +312,8 @@ static class DeploymentService
                 Environment.Exit(1);
                 return;
             }
+
+            PruneOldLogs(LogDirectory, LogRetention, LogMaxFiles);
 
             using var logger = new DeploymentLogger(LogDirectory);
             _logger = logger;
@@ -640,6 +647,55 @@ static class DeploymentService
             _logger.LogException(ex, "TriggerDeploymentForApp", app.Name);
             _logger.Log($"Deployment failed after {deploymentStopwatch.Elapsed.TotalSeconds:F2}s", app.Name, LogLevel.Error);
             await SendNotificationAsync(StatusLevel.Error, $"[{app.Name}] Deployment FAILED", errorMsg);
+        }
+    }
+
+    /// <summary>
+    /// Deletes deployment logs older than <paramref name="maxAge"/>, then enforces a hard cap
+    /// of <paramref name="maxCount"/> files (oldest first). Failures are swallowed so a hostile
+    /// log directory can never block a deployment. Runs before the logger is created so it can
+    /// also clean up after itself.
+    /// </summary>
+    private static void PruneOldLogs(string directory, TimeSpan maxAge, int maxCount)
+    {
+        try
+        {
+            if (!Directory.Exists(directory)) return;
+
+            var cutoff = DateTime.UtcNow - maxAge;
+            var files = new DirectoryInfo(directory)
+                .EnumerateFiles("deployment_*.log")
+                .ToList();
+
+            int deleted = 0;
+            foreach (var file in files)
+            {
+                if (file.LastWriteTimeUtc < cutoff)
+                {
+                    try { file.Delete(); deleted++; } catch { /* ignore individual failures */ }
+                }
+            }
+
+            // Hard cap as a safety net: if rotation is dropped or a future bug spams logs,
+            // we still bound the directory size.
+            var remaining = new DirectoryInfo(directory)
+                .EnumerateFiles("deployment_*.log")
+                .OrderBy(f => f.LastWriteTimeUtc)
+                .ToList();
+            int overflow = remaining.Count - maxCount;
+            for (int i = 0; i < overflow; i++)
+            {
+                try { remaining[i].Delete(); deleted++; } catch { /* ignore */ }
+            }
+
+            if (deleted > 0)
+            {
+                Console.WriteLine($"PruneOldLogs: deleted {deleted} old log file(s) from {directory}.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"PruneOldLogs: ignored error: {ex.Message}");
         }
     }
 
