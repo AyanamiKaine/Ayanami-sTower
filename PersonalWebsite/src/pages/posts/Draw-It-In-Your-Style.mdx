@@ -16,7 +16,7 @@ import ClickableImage from "../../components/ClickableImage.astro";
 <section className="not-prose mx-[calc(50%-50vw+1rem)] my-10 sm:mx-[calc(50%-50vw+2rem)] lg:mx-[calc(50%-42vw)]">
     <div className="mx-auto max-w-6xl">
         <div className="mb-5">
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">The finished artwork, the time-lapse, and a filtered version with Floyd-Steinberg dithering.</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">The original artwork, my finished version, the time-lapse, and a filtered version with Floyd-Steinberg dithering.</p>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">This was inspired by a Draw This In Your Style from <a className="font-medium text-zinc-950 underline underline-offset-4" href="https://www.instagram.com/hitodama_stories_art/">Hitodama Stories Art</a>. Please follow her not me.</p>
             <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-zinc-600">
                 <span className="font-medium text-zinc-900">Tools</span>
@@ -25,7 +25,18 @@ import ClickableImage from "../../components/ClickableImage.astro";
             </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+            <figure className="m-0">
+                <div className="aspect-[2480/3508] overflow-hidden border border-zinc-200 bg-zinc-100">
+                    <ClickableImage
+                        class="h-full w-full object-contain !h-full !rounded-none"
+                        src="/art/Draw-This-In-My-Style.png"
+                        alt="Original Draw This In Your Style prompt artwork by Hitodama Stories Art"
+                    />
+                </div>
+                <figcaption className="mt-2 text-sm text-zinc-600">Original artwork</figcaption>
+            </figure>
+
             <figure className="m-0">
                 <div className="aspect-[2480/3508] overflow-hidden border border-zinc-200 bg-zinc-100">
                     <ClickableImage
