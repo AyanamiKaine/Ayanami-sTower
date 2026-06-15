@@ -5,34 +5,34 @@
         "description": ""
     },
     {
-      "filename": "Charlemagne-1.webp",
-      "title": "Charlemagne the Great",
-      "description": "A journey through a swirling nebula of colors and light."
+        "filename": "Charlemagne-1.webp",
+        "title": "Charlemagne the Great",
+        "description": "A journey through a swirling nebula of colors and light."
     },
     {
-      "filename": "die_grafin-951x1536.webp",
-      "title": "Die Gräfin",
-      "description": "The quiet stillness of a city street after midnight."
+        "filename": "die_grafin-951x1536.webp",
+        "title": "Die Gräfin",
+        "description": "The quiet stillness of a city street after midnight."
     },
     {
-      "filename": "GIRLKopie-1097x1536.webp",
-      "title": "Iconoclast",
-      "description": "An ancient entity awakens within the heart of the woods."
+        "filename": "GIRLKopie-1097x1536.webp",
+        "title": "Iconoclast",
+        "description": "An ancient entity awakens within the heart of the woods."
     },
     {
-      "filename": "Illustration-55-1418x1536.webp",
-      "title": "Lost",
-      "description": "The secrets of the deep blue, captured in a single moment."
+        "filename": "Illustration-55-1418x1536.webp",
+        "title": "Lost",
+        "description": "The secrets of the deep blue, captured in a single moment."
     },
     {
-      "filename": "Portrait-study-1536x1436.webp",
-      "title": "Portrait Study",
-      "description": "A visualization of data flowing through a network."
+        "filename": "Portrait-study-1536x1436.webp",
+        "title": "Portrait Study",
+        "description": "A visualization of data flowing through a network."
     },
     {
-      "filename": "study-painting-1422x1536.webp",
-      "title": "Painting Study",
-      "description": "A portrait of something beautiful, just as it begins to fade."
+        "filename": "study-painting-1422x1536.webp",
+        "title": "Painting Study",
+        "description": "A portrait of something beautiful, just as it begins to fade."
     },
     {
         "filename": "3-1380x1536.webp",
@@ -124,7 +124,7 @@
         "title": "",
         "description": "A portrait of something beautiful, just as it begins to fade."
     },
-        {
+    {
         "filename": "Nightmare.webp",
         "title": "Nightmare",
         "description": "Some nightmares watch over us."
@@ -133,6 +133,10 @@
         "filename": "for_a_friend_her_cats.webp",
         "title": "For a Friend, Her Cats",
         "description": "A tribute to the companionship of feline friends."
+    },
+    {
+        "filename": "good_better_draw_it.png",
+        "title": "迷う",
+        "description": "To be lost"
     }
 ]
-  
