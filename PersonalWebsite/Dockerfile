@@ -1,15 +1,15 @@
 # Stage 1: Build the Astro.js application using Bun
-FROM oven/bun:1-alpine AS builder
+FROM docker.io/oven/bun:1-alpine AS builder
 
 # Set the working directory
 WORKDIR /app
 
-# Copy package.json, bun.lockb, and tsconfig.json
+# Copy package.json, bun.lock, and tsconfig.json
 # Copying these specific files first leverages Docker's layer caching.
-COPY package.json bun.lockb* tsconfig.json ./
+COPY package.json bun.lock tsconfig.json ./
 
 # Install dependencies using Bun
-# --frozen-lockfile ensures the exact versions from bun.lockb are used.
+# --frozen-lockfile ensures the exact versions from bun.lock are used.
 RUN bun install --frozen-lockfile
 
 # Copy the rest of the application source code
@@ -19,7 +19,7 @@ COPY . .
 RUN bun run build
 
 # Stage 2: Create the final, small image with a web server
-FROM nginx:1.25-alpine
+FROM docker.io/library/nginx:1.25-alpine
 
 # Copy the built application from the builder stage
 # The output directory for Astro's build is 'dist' by default.
