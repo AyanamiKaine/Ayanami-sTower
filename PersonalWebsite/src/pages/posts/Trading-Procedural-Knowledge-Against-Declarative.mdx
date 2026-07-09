@@ -1,0 +1,35 @@
+---
+title: "Trading Procedural Knowledge Against Declarative - Or How Using Agents Impacts Memory"
+date: 2026-07-09
+author: "Ayanami Kaine"
+tags: ["LLM", "Learning"]
+layout: ../../layouts/PostLayout.astro
+summary: "Active recall is the way we actually get retention from learning something, but what happens when its missing?"
+published: true
+---
+
+If we want to remember something we need to active recall it, otherwise we will just forget it. When you need to write how to traverse a c-array in reverse then you recall it, if you don't know how to do it you look it up otherwise you just write it like:
+```c
+for(size_t i = items->size; i-- > 0)
+{
+    items[i] ...;
+}
+```
+
+If we know how to do something like this we call it procedural knowledge.
+1. Defining a `for` statement
+2. Setting `i` to the size of the array
+3. Checking if `i` it large then 0 then decrementing `i` by 1;
+4. Using `i` as the index into the array.
+
+If you don't have the procedural knowledge, you sit at a blank screen not knowing what to do. This is the biggest give away you are missing procedural knowledge if you sit there not knowing how to do something even though you know what to do. 
+
+Declarative knowledge on the other hand would be *"To get the items in the array from right to left we need to reverse traverse it"*. This is the **"what"** we are doing part while the above procedural knowledge part is the **"how"**.
+
+But what does this all have to do with large language models and agents like **Codex** and **Claude Code**? To do something with agents you only need **declarative knowledge**.
+
+You use declarative knowledge to describe what you want to implement. People argue this is a higher level approach, I disagree. It's a fact that if you don't active recall memory you will forget it, or not even learn it in the first place. If you only use AI agents for procedural task like coding, and you simply review the code you will lose the ability to code because you will just stare at a page not knowing how to implement something.
+
+And no this is not the same as an IDE, giving suggestions and without it, you couldn't code. If you can't code without an IDE, the AI agent will take the rest of your ability, then you CAN'T EVEN CODE WITH AN IDE!
+
+I believe it's a real danger.
