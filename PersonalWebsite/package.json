@@ -6,7 +6,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test:camera": "vitest run src/lib/cameraUploadStore.test.js"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.13",
@@ -35,6 +36,8 @@
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.19",
     "@types/react": "^19.2.9",
-    "@types/react-dom": "^19.2.3"
+    "@types/react-dom": "^19.2.3",
+    "fake-indexeddb": "^6.2.5",
+    "vitest": "^4.1.10"
   }
 }

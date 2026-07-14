@@ -1,5 +1,17 @@
 <script>
     import { onMount, onDestroy } from "svelte";
+    import {
+        clearActiveCaptureDraft,
+        consumeMetadataClearMarker,
+        createUploadJobFromDraft,
+        deleteUploadJob,
+        getActiveCaptureDraft,
+        listUploadJobs,
+        makeAllUploadsDueNow,
+        resetInterruptedUploads,
+        saveActiveCaptureDraft,
+        updateUploadJob,
+    } from "../lib/cameraUploadStore.js";
 
     let video;
     let canvas;
@@ -14,7 +26,6 @@
     let lastUploadStatus = "";
     let nextCaptureField = "patientInfoImage";
     let queuedPatientInfoBlob = null;
-    let queuedOperationBlob = null;
 
     // OCR & Review Mode State
     let cvLoaded = false;
@@ -39,12 +50,16 @@
     const API_BASE_URL = "https://api.ayanamikaine.com";
     const API_PASSWORD = "SecretPassword123";
     const SUPPORTED_IMAGE_FILE_TYPES = ["image/jpeg", "image/png"];
-    const MAX_UPLOAD_ATTEMPTS = 20;
     const BASE_RETRY_DELAY_MS = 1500;
-    const MAX_RETRY_DELAY_MS = 15000;
-    let uploadQueue = [];
+    const MAX_RETRY_DELAY_MS = 5 * 60 * 1000;
+    const UPLOAD_TIMEOUT_MS = 60 * 1000;
+    let uploadJobs = [];
     let uploadQueueSize = 0;
     let isUploadWorkerRunning = false;
+    let uploadWakeTimer = null;
+    let componentDestroyed = false;
+    let showUploadQueuePanel = false;
+    let storagePersistenceRequested = false;
     let showMetadataPanel = false;
     let metadataOperateur = "";
     let metadataNamePatient = "";
@@ -427,6 +442,33 @@
         } catch (e) {
             console.error("Failed to save metadata draft", e);
         }
+    }
+
+    function getMetadataDraftSnapshot() {
+        return {
+            operateur: metadataOperateur,
+            name_patient: metadataNamePatient,
+            geburtsdatum: metadataGeburtsdatum,
+            knownFields: metadataKnownFields.map((field) => ({ ...field })),
+            extras: metadataExtras.map((field) => ({ ...field })),
+        };
+    }
+
+    function restoreMetadataDraft(saved) {
+        if (!saved || typeof saved !== "object") return;
+        metadataOperateur =
+            typeof saved.operateur === "string" ? saved.operateur : "";
+        metadataNamePatient =
+            typeof saved.name_patient === "string" ? saved.name_patient : "";
+        metadataGeburtsdatum =
+            typeof saved.geburtsdatum === "string" ? saved.geburtsdatum : "";
+        metadataKnownFields = Array.isArray(saved.knownFields)
+            ? saved.knownFields.map((field) => ({ ...field }))
+            : [];
+        metadataExtras = Array.isArray(saved.extras)
+            ? saved.extras.map((field) => ({ ...field }))
+            : [];
+        saveMetadataDraft();
     }
 
     function getMetadataFieldDefinition(key) {
@@ -823,7 +865,11 @@
 
     function clearCaptureBuffer() {
         if (cropper) {
-            cropper.destroy();
+            try {
+                cropper.destroy();
+            } catch (cropError) {
+                console.warn("Could not destroy crop tool", cropError);
+            }
             cropper = null;
         }
         isReviewing = false;
@@ -839,46 +885,78 @@
         activeCaptureField = null;
     }
 
+    function failCapture(message, captureId = activeCaptureId, keepProcessed = false) {
+        if (captureId && captureId !== activeCaptureId) return;
+
+        const retryBlob = keepProcessed ? processedBlob : null;
+        const retryBlobCaptureId = keepProcessed ? processedBlobCaptureId : 0;
+        const retryBlobField = keepProcessed ? processedBlobField : null;
+        clearCaptureBuffer();
+        error = message;
+
+        if (retryBlob) {
+            processedBlob = retryBlob;
+            processedBlobCaptureId = retryBlobCaptureId;
+            processedBlobField = retryBlobField;
+            activeCaptureId = retryBlobCaptureId;
+            activeCaptureField = retryBlobField;
+            isReviewing = true;
+        }
+    }
+
     function resetUploadSequence() {
         nextCaptureField = "patientInfoImage";
         queuedPatientInfoBlob = null;
-        queuedOperationBlob = null;
-    }
-
-    function shouldRetryStatus(status) {
-        if (status === 408 || status === 429) return true;
-        if (status >= 500) return true;
-        return false;
     }
 
     function getRetryDelayMs(attempt) {
-        const delay = BASE_RETRY_DELAY_MS * attempt;
-        return Math.min(delay, MAX_RETRY_DELAY_MS);
+        const exponent = Math.min(Math.max(attempt - 1, 0), 20);
+        const cappedDelay = Math.min(
+            BASE_RETRY_DELAY_MS * 2 ** exponent,
+            MAX_RETRY_DELAY_MS,
+        );
+        return Math.round(cappedDelay * (1 + Math.random() * 0.2));
     }
 
-    function queueUploadJob(patientInfoBlob, operationBlob, metadata = null) {
-        if (!patientInfoBlob || !operationBlob) {
-            error = "Both images are required before upload.";
-            return;
+    function createClientJobId() {
+        if (crypto.randomUUID) {
+            return crypto.randomUUID().replaceAll("-", "").toLowerCase();
         }
 
-        const jobId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        const job = {
-            id: jobId,
-            patientInfoBlob,
-            operationBlob,
-            metadata:
-                metadata && Object.keys(metadata).length > 0
-                    ? { ...metadata }
-                    : null,
-        };
+        const bytes = crypto.getRandomValues(new Uint8Array(16));
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+    }
 
-        uploadQueue = [...uploadQueue, job];
-        uploadQueueSize = uploadQueue.length;
-        const pendingPairs =
-            uploadQueueSize + pendingUploads + (isUploadWorkerRunning ? 1 : 0);
-        lastUploadStatus = `Queued upload (${pendingPairs} pending).`;
-        processUploadQueue();
+    async function requestPersistentStorage() {
+        if (storagePersistenceRequested) return;
+        storagePersistenceRequested = true;
+        if (!navigator.storage?.persist) return;
+
+        try {
+            const persisted = await navigator.storage.persist();
+            if (!persisted) {
+                lastUploadStatus =
+                    "Captures are saved locally, but browser storage may be cleared under pressure.";
+            }
+        } catch (storageError) {
+            console.warn("Could not request persistent camera storage", storageError);
+        }
+    }
+
+    async function refreshUploadJobs() {
+        uploadJobs = await listUploadJobs();
+        uploadQueueSize = uploadJobs.length;
+    }
+
+    function wakeUploadWorker(delayMs = 0) {
+        if (componentDestroyed) return;
+        if (uploadWakeTimer) clearTimeout(uploadWakeTimer);
+        uploadWakeTimer = setTimeout(() => {
+            uploadWakeTimer = null;
+            processUploadQueue();
+        }, Math.max(0, delayMs));
     }
 
     async function uploadPairOnce(job, attempt) {
@@ -899,98 +977,151 @@
             formData.append("metadata", JSON.stringify(job.metadata));
         }
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
+
         try {
             const response = await fetch(`${API_BASE_URL}/upload`, {
                 method: "POST",
                 headers: {
                     "X-Password": API_PASSWORD,
+                    "Idempotency-Key": job.id,
                 },
                 body: formData,
+                signal: controller.signal,
             });
 
             if (response.ok) {
                 const result = await response.json().catch(() => null);
+                if (result?.jobId !== job.id) {
+                    return {
+                        success: false,
+                        reason: "Server acknowledgement did not match the saved capture.",
+                    };
+                }
                 error = null;
-                lastUploadStatus = result?.jobId
-                    ? `Images queued. Job ID: ${result.jobId}`
-                    : "Upload successful";
-                return { success: true, retryable: false };
+                lastUploadStatus = `Images saved. Job ID: ${result.jobId}`;
+                return { success: true };
             }
 
+            const responseMessage = await response.text().catch(() => "");
             console.error(
-                `Upload failed (attempt ${attempt}/${MAX_UPLOAD_ATTEMPTS}):`,
+                `Upload failed (attempt ${attempt}):`,
                 response.status,
                 response.statusText,
             );
             return {
                 success: false,
-                retryable: shouldRetryStatus(response.status),
                 status: response.status,
-                reason: response.statusText,
+                reason:
+                    responseMessage ||
+                    response.statusText ||
+                    `HTTP ${response.status}`,
             };
         } catch (err) {
-            console.error(
-                `Upload network error (attempt ${attempt}/${MAX_UPLOAD_ATTEMPTS}):`,
-                err,
-            );
+            console.error(`Upload network error (attempt ${attempt}):`, err);
             return {
                 success: false,
-                retryable: true,
-                reason: "Network error",
+                reason:
+                    err?.name === "AbortError"
+                        ? "Upload timed out"
+                        : "Network error",
             };
         } finally {
+            clearTimeout(timeoutId);
             pendingUploads--;
         }
     }
 
-    async function uploadJobWithRetry(job) {
-        for (let attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt++) {
-            const result = await uploadPairOnce(job, attempt);
-            if (result.success) {
-                return true;
-            }
+    async function retryUploadNow(jobId) {
+        await updateUploadJob(jobId, {
+            status: "pending",
+            nextAttemptAt: Date.now(),
+        });
+        await refreshUploadJobs();
+        wakeUploadWorker();
+    }
 
-            if (!result.retryable) {
-                error = `Upload rejected (${result.status ?? "unknown"}).`;
-                lastUploadStatus = `Upload rejected (${result.status ?? "unknown"}).`;
-                return false;
-            }
+    async function retryAllUploadsNow() {
+        await makeAllUploadsDueNow();
+        await refreshUploadJobs();
+        wakeUploadWorker();
+    }
 
-            if (attempt < MAX_UPLOAD_ATTEMPTS) {
-                const delayMs = getRetryDelayMs(attempt);
-                const seconds = Math.ceil(delayMs / 1000);
-                lastUploadStatus = `Upload failed (${attempt}/${MAX_UPLOAD_ATTEMPTS}), retrying in ${seconds}s...`;
-                await wait(delayMs);
-            }
-        }
+    async function discardUpload(jobId) {
+        if (!window.confirm("Permanently discard this saved capture pair?")) return;
+        await deleteUploadJob(jobId);
+        await refreshUploadJobs();
+        lastUploadStatus = "Saved upload discarded.";
+    }
 
-        error = `Upload failed after ${MAX_UPLOAD_ATTEMPTS} attempts; that pair was skipped.`;
-        lastUploadStatus = `Dropped one upload after ${MAX_UPLOAD_ATTEMPTS} failed attempts.`;
-        return false;
+    function formatUploadTime(timestamp) {
+        return new Date(timestamp).toLocaleString([], {
+            dateStyle: "short",
+            timeStyle: "short",
+        });
     }
 
     async function processUploadQueue() {
-        if (isUploadWorkerRunning) return;
+        if (isUploadWorkerRunning || componentDestroyed) return;
         isUploadWorkerRunning = true;
 
         try {
-            while (uploadQueue.length > 0) {
-                const [job, ...remainingJobs] = uploadQueue;
-                uploadQueue = remainingJobs;
-                uploadQueueSize = uploadQueue.length;
-                await uploadJobWithRetry(job);
+            while (!componentDestroyed) {
+                await refreshUploadJobs();
+                const now = Date.now();
+                const job = uploadJobs
+                    .filter((candidate) => candidate.nextAttemptAt <= now)
+                    .sort((left, right) =>
+                        left.nextAttemptAt === right.nextAttemptAt
+                            ? left.createdAt - right.createdAt
+                            : left.nextAttemptAt - right.nextAttemptAt,
+                    )[0];
+
+                if (!job) break;
+
+                const attempt = job.attemptCount + 1;
+                await updateUploadJob(job.id, {
+                    status: "uploading",
+                    attemptCount: attempt,
+                });
+                await refreshUploadJobs();
+                const result = await uploadPairOnce(job, attempt);
+
+                if (result.success) {
+                    await deleteUploadJob(job.id);
+                } else {
+                    const delayMs = getRetryDelayMs(attempt);
+                    await updateUploadJob(job.id, {
+                        status: "pending",
+                        nextAttemptAt: Date.now() + delayMs,
+                        lastError: result.reason,
+                    });
+                    lastUploadStatus = `Upload attempt ${attempt} failed. Saved for retry.`;
+                }
             }
+        } catch (workerError) {
+            console.error("Durable upload worker failed", workerError);
+            error = "Saved uploads could not be read. They have not been deleted.";
         } finally {
             isUploadWorkerRunning = false;
-            if (uploadQueue.length > 0) {
-                processUploadQueue();
-                return;
+            try {
+                await refreshUploadJobs();
+            } catch (refreshError) {
+                console.error("Could not refresh upload queue", refreshError);
             }
-            if (pendingUploads === 0 && uploadQueue.length === 0) {
+
+            const nextAttemptAt = uploadJobs.reduce(
+                (earliest, job) => Math.min(earliest, job.nextAttemptAt),
+                Number.POSITIVE_INFINITY,
+            );
+            if (Number.isFinite(nextAttemptAt)) {
+                wakeUploadWorker(Math.max(0, nextAttemptAt - Date.now()));
+            } else if (pendingUploads === 0) {
                 setTimeout(() => {
                     if (
                         pendingUploads === 0 &&
-                        uploadQueue.length === 0 &&
+                        uploadQueueSize === 0 &&
                         !isUploadWorkerRunning
                     ) {
                         lastUploadStatus = "";
@@ -1101,18 +1232,28 @@
     }
 
     function captureSingleFrame(captureId, targetField) {
-        if (!video || !canvas) return;
-        const context = canvas.getContext("2d");
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        try {
+            if (!video || !canvas || !video.videoWidth || !video.videoHeight) {
+                throw new Error("Camera frame is not ready.");
+            }
+            const context = canvas.getContext("2d");
+            if (!context) throw new Error("Canvas is not available.");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const img = new Image();
-        img.onload = () => {
-            if (captureId !== activeCaptureId) return;
-            finalizeCapture(img, captureId, targetField);
-        };
-        img.src = canvas.toDataURL("image/jpeg");
+            const img = new Image();
+            img.onload = () => {
+                if (captureId !== activeCaptureId) return;
+                finalizeCapture(img, captureId, targetField);
+            };
+            img.onerror = () =>
+                failCapture("Captured image could not be decoded. Please retake.", captureId);
+            img.src = canvas.toDataURL("image/jpeg");
+        } catch (captureError) {
+            console.error("Single frame capture failed", captureError);
+            failCapture("Camera capture failed. Please retake.", captureId);
+        }
     }
 
     function finalizeCapture(img, captureId, targetField) {
@@ -1120,41 +1261,50 @@
             return;
         }
 
-        capturedImage = img;
-        originalImage = img; // Save original
+        try {
+            capturedImage = img;
+            originalImage = img; // Save original
 
-        // If libraries are ready
-        if (cvLoaded && scannerLoaded) {
-            if (reviewModeEnabled) {
-                isProcessing = false;
-                startCrop(captureId); // Go to crop mode first
+            // If libraries are ready
+            if (cvLoaded && scannerLoaded) {
+                if (reviewModeEnabled) {
+                    isProcessing = false;
+                    startCrop(captureId); // Go to crop mode first
+                } else {
+                    // Burst mode: skip crop, straight to process
+                    processImage(true, captureId, targetField);
+                }
             } else {
-                // Burst mode: skip crop, straight to process
-                processImage(true, captureId, targetField);
-            }
-        } else {
-            // Fallback direct upload if libs NOT ready
-            const fallbackCanvas = document.createElement("canvas");
-            fallbackCanvas.width = img.width;
-            fallbackCanvas.height = img.height;
-            fallbackCanvas.getContext("2d").drawImage(img, 0, 0);
+                // Fallback direct upload if libs NOT ready
+                const fallbackCanvas = document.createElement("canvas");
+                fallbackCanvas.width = img.width;
+                fallbackCanvas.height = img.height;
+                const fallbackContext = fallbackCanvas.getContext("2d");
+                if (!fallbackContext) throw new Error("Canvas is unavailable.");
+                fallbackContext.drawImage(img, 0, 0);
 
-            fallbackCanvas.toBlob(
-                (blob) => {
-                    if (captureId !== activeCaptureId) return;
-                    if (!blob) {
-                        error = "Failed to prepare image. Please retake.";
-                        clearCaptureBuffer();
-                        return;
-                    }
-                    processedBlob = blob;
-                    processedBlobCaptureId = captureId;
-                    processedBlobField = targetField;
-                    uploadProcessed(captureId, targetField);
-                },
-                "image/jpeg",
-                0.85,
-            );
+                fallbackCanvas.toBlob(
+                    (blob) => {
+                        if (captureId !== activeCaptureId) return;
+                        if (!blob) {
+                            failCapture(
+                                "Failed to prepare image. Please retake.",
+                                captureId,
+                            );
+                            return;
+                        }
+                        processedBlob = blob;
+                        processedBlobCaptureId = captureId;
+                        processedBlobField = targetField;
+                        uploadProcessed(captureId, targetField);
+                    },
+                    "image/jpeg",
+                    0.85,
+                );
+            }
+        } catch (captureError) {
+            console.error("Captured image preparation failed", captureError);
+            failCapture("Failed to prepare image. Please retake.", captureId);
         }
     }
 
@@ -1211,6 +1361,8 @@
                 bestImg = await new Promise((resolve) => {
                     const img = new Image();
                     img.onload = () => resolve(img);
+                    img.onerror = () =>
+                        resolve(null);
                     img.src = frameCanvas.toDataURL("image/jpeg");
                 });
             }
@@ -1265,28 +1417,45 @@
             if (captureId !== activeCaptureId || !isCropping) return;
             const imageElement = document.getElementById("crop-image");
             if (imageElement && window.Cropper) {
-                if (cropper) cropper.destroy();
-                cropper = new Cropper(imageElement, {
-                    viewMode: 1,
-                    dragMode: "move",
-                    autoCropArea: 0.8,
-                    restore: false,
-                    guides: true,
-                    center: true,
-                    highlight: false,
-                    cropBoxMovable: true,
-                    cropBoxResizable: true,
-                    toggleDragModeOnDblclick: false,
-                });
+                try {
+                    if (cropper) cropper.destroy();
+                    cropper = new Cropper(imageElement, {
+                        viewMode: 1,
+                        dragMode: "move",
+                        autoCropArea: 0.8,
+                        restore: false,
+                        guides: true,
+                        center: true,
+                        highlight: false,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        toggleDragModeOnDblclick: false,
+                    });
+                } catch (cropError) {
+                    console.error("Crop tool failed to start", cropError);
+                    failCapture("Crop tool failed to start. Please retake.", captureId);
+                }
+            } else {
+                failCapture("Crop tool is unavailable. Please retake.", captureId);
             }
         }, 100);
     }
 
     function applyCrop() {
-        if (!cropper) return;
+        if (!cropper) {
+            failCapture("Crop tool is unavailable. Please retake.");
+            return;
+        }
         const captureId = activeCaptureId;
         const targetField = activeCaptureField;
-        const canvas = cropper.getCroppedCanvas();
+        let canvas;
+        try {
+            canvas = cropper.getCroppedCanvas();
+        } catch (cropError) {
+            console.error("Cropping failed", cropError);
+            failCapture("Cropping failed. Please retake.", captureId);
+            return;
+        }
         if (canvas) {
             // Update capturedImage to the cropped version
             const img = new Image();
@@ -1304,15 +1473,20 @@
                 isReviewing = true; // Go to filter review
                 processImage(false, captureId, targetField); // Process but don't auto-upload
             };
-            img.src = canvas.toDataURL("image/jpeg");
+            img.onerror = () =>
+                failCapture("Cropped image could not be decoded. Please retake.", captureId);
+            try {
+                img.src = canvas.toDataURL("image/jpeg");
+            } catch (cropError) {
+                console.error("Could not encode cropped image", cropError);
+                failCapture("Cropped image could not be prepared. Please retake.", captureId);
+            }
+        } else {
+            failCapture("Cropping failed. Please retake.", captureId);
         }
     }
 
     function cancelCrop() {
-        if (cropper) {
-            cropper.destroy();
-            cropper = null;
-        }
         clearCaptureBuffer();
     }
 
@@ -1326,7 +1500,10 @@
         if (captureId !== activeCaptureId || targetField !== activeCaptureField) {
             return;
         }
-        if (!capturedImage) return;
+        if (!capturedImage) {
+            failCapture("Captured image is missing. Please retake.", captureId);
+            return;
+        }
         isProcessing = true;
         const sourceImage = capturedImage;
 
@@ -1371,11 +1548,10 @@
                                 return;
                             }
                             if (!blob) {
-                                error = "Failed to process image. Please retake.";
-                                if (autoUpload) {
-                                    clearCaptureBuffer();
-                                }
-                                isProcessing = false;
+                                failCapture(
+                                    "Failed to process image. Please retake.",
+                                    captureId,
+                                );
                                 return;
                             }
                             processedBlob = blob;
@@ -1392,8 +1568,10 @@
                 }
             } catch (e) {
                 console.error("Processing failed", e);
-                isProcessing = false;
-                error = "Image processing failed. Try again/Turn off filters.";
+                failCapture(
+                    "Image processing failed. Try again/Turn off filters.",
+                    captureId,
+                );
             }
         });
     }
@@ -1404,10 +1582,12 @@
         captureId = activeCaptureId,
         targetField = activeCaptureField,
     ) {
-        let src = cv.imread(sourceCanvas);
-        let dst = new cv.Mat();
+        let src = null;
+        let dst = null;
 
         try {
+            src = cv.imread(sourceCanvas);
+            dst = new cv.Mat();
             // Brightness & Contrast
             // dst = alpha * src + beta
             const alpha = parseFloat(filters.contrast);
@@ -1467,11 +1647,10 @@
                         return;
                     }
                     if (!blob) {
-                        error = "Failed to process image. Please retake.";
-                        if (autoUpload) {
-                            clearCaptureBuffer();
-                        }
-                        isProcessing = false;
+                        failCapture(
+                            "Failed to process image. Please retake.",
+                            captureId,
+                        );
                         return;
                     }
                     processedBlob = blob;
@@ -1487,14 +1666,17 @@
             );
         } catch (err) {
             console.error("OpenCV error", err);
-            isProcessing = false;
+            failCapture(
+                "Image processing failed. Try again/Turn off filters.",
+                captureId,
+            );
         } finally {
-            src.delete();
-            dst.delete();
+            src?.delete();
+            dst?.delete();
         }
     }
 
-    function uploadProcessed(
+    async function uploadProcessed(
         expectedCaptureId = activeCaptureId,
         expectedField = activeCaptureField,
     ) {
@@ -1512,11 +1694,26 @@
         }
 
         if (expectedField === "patientInfoImage") {
-            queuedPatientInfoBlob = processedBlob;
-            nextCaptureField = "operationImage";
-            lastUploadStatus = "First image saved. Capture operation image.";
-            error = null;
-            clearCaptureBuffer();
+            const patientBlob = processedBlob;
+            try {
+                await requestPersistentStorage();
+                await saveActiveCaptureDraft(
+                    patientBlob,
+                    getMetadataDraftSnapshot(),
+                );
+                queuedPatientInfoBlob = patientBlob;
+                nextCaptureField = "operationImage";
+                lastUploadStatus = "First image saved. Capture operation image.";
+                error = null;
+                clearCaptureBuffer();
+            } catch (storageError) {
+                console.error("Could not save first image", storageError);
+                failCapture(
+                    "The first image could not be saved locally. Free storage and try Save again.",
+                    expectedCaptureId,
+                    true,
+                );
+            }
             return;
         }
 
@@ -1527,17 +1724,38 @@
             return;
         }
 
-        queuedOperationBlob = processedBlob;
-        const patientBlob = queuedPatientInfoBlob;
-        const operationBlob = queuedOperationBlob;
+        const operationBlob = processedBlob;
         const metadataSnapshot = JSON.parse(JSON.stringify(metadataPayload));
+        const jobId = createClientJobId();
 
-        resetUploadSequence();
-        clearCaptureBuffer();
-        error = null;
-        queueUploadJob(patientBlob, operationBlob, metadataSnapshot);
-        clearMetadataDraft();
-        showMetadataPanel = false;
+        try {
+            await requestPersistentStorage();
+            await createUploadJobFromDraft({
+                id: jobId,
+                operationBlob,
+                metadata:
+                    Object.keys(metadataSnapshot).length > 0
+                        ? metadataSnapshot
+                        : null,
+                createdAt: Date.now(),
+            });
+            resetUploadSequence();
+            clearCaptureBuffer();
+            error = null;
+            clearMetadataDraft();
+            await consumeMetadataClearMarker();
+            showMetadataPanel = false;
+            await refreshUploadJobs();
+            lastUploadStatus = `Saved upload (${uploadQueueSize} pending).`;
+            wakeUploadWorker();
+        } catch (storageError) {
+            console.error("Could not save upload pair", storageError);
+            failCapture(
+                "The image pair could not be saved locally. Free storage and try Save again.",
+                expectedCaptureId,
+                true,
+            );
+        }
     }
 
     function cancelReview() {
@@ -1565,14 +1783,70 @@
         saveSettings(); // Save checking status
     }
 
+    async function restartCapturePair() {
+        if (!window.confirm("Discard the saved first image and restart this pair?")) {
+            return;
+        }
+
+        try {
+            await clearActiveCaptureDraft();
+            resetUploadSequence();
+            clearCaptureBuffer();
+            error = null;
+            lastUploadStatus = "Saved first image discarded.";
+        } catch (storageError) {
+            console.error("Could not clear saved first image", storageError);
+            error = "The saved first image could not be removed.";
+        }
+    }
+
+    async function initializeDurableCaptureState() {
+        try {
+            await resetInterruptedUploads();
+            const shouldClearMetadata = await consumeMetadataClearMarker();
+            if (shouldClearMetadata) clearMetadataDraft();
+            const draft = await getActiveCaptureDraft();
+            if (draft?.patientInfoBlob) {
+                queuedPatientInfoBlob = draft.patientInfoBlob;
+                nextCaptureField = "operationImage";
+                if (!localStorage.getItem("cameraApp_metadataDraft")) {
+                    restoreMetadataDraft(draft.metadataDraft);
+                }
+                lastUploadStatus = "First image restored. Capture operation image.";
+            }
+
+            await refreshUploadJobs();
+            if (uploadQueueSize > 0) wakeUploadWorker();
+        } catch (storageError) {
+            console.error("Could not restore durable camera state", storageError);
+            error = "Saved camera uploads could not be opened. Existing data was not cleared.";
+        }
+    }
+
+    async function handleOnline() {
+        try {
+            await makeAllUploadsDueNow();
+            await refreshUploadJobs();
+            wakeUploadWorker();
+        } catch (storageError) {
+            console.error("Could not resume uploads", storageError);
+        }
+    }
+
     onMount(() => {
+        componentDestroyed = false;
         loadSettings();
         loadMetadataDraft();
         startCamera();
         initLibraries();
+        initializeDurableCaptureState();
+        window.addEventListener("online", handleOnline);
     });
 
     onDestroy(() => {
+        componentDestroyed = true;
+        window.removeEventListener("online", handleOnline);
+        if (uploadWakeTimer) clearTimeout(uploadWakeTimer);
         if (cropper) cropper.destroy();
         if (stream) {
             stream.getTracks().forEach((track) => track.stop());
@@ -1598,6 +1872,7 @@
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="metadata-title"
+                tabindex="-1"
                 on:click|stopPropagation
             >
                 <div class="metadata-head">
@@ -1803,6 +2078,76 @@
         </div>
     {/if}
 
+    {#if showUploadQueuePanel}
+        <div
+            class="metadata-overlay"
+            on:click={() => (showUploadQueuePanel = false)}
+            role="presentation"
+        >
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <div
+                class="metadata-sheet upload-queue-sheet"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="upload-queue-title"
+                tabindex="-1"
+                on:click|stopPropagation
+            >
+                <div class="metadata-head">
+                    <h3 id="upload-queue-title">Saved uploads</h3>
+                    <span>{uploadQueueSize} pending</span>
+                </div>
+
+                {#if uploadJobs.length === 0}
+                    <p class="metadata-empty">No saved uploads.</p>
+                {:else}
+                    <div class="upload-job-list">
+                        {#each uploadJobs as job (job.id)}
+                            <div class="upload-job">
+                                <div class="upload-job-details">
+                                    <strong>{formatUploadTime(job.createdAt)}</strong>
+                                    <span>
+                                        {job.status === "uploading"
+                                            ? "Uploading"
+                                            : "Waiting to retry"}
+                                        · Attempt {job.attemptCount}
+                                    </span>
+                                    {#if job.lastError}
+                                        <span class="upload-job-error">{job.lastError}</span>
+                                    {/if}
+                                </div>
+                                <div class="upload-job-actions">
+                                    <button
+                                        class="btn secondary"
+                                        on:click={() => retryUploadNow(job.id)}
+                                        disabled={job.status === "uploading"}
+                                    >Retry now</button>
+                                    <button
+                                        class="btn danger"
+                                        on:click={() => discardUpload(job.id)}
+                                        disabled={job.status === "uploading"}
+                                    >Discard</button>
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                {/if}
+
+                <div class="metadata-actions">
+                    {#if uploadJobs.length > 0}
+                        <button class="btn secondary" on:click={retryAllUploadsNow}
+                            >Retry all</button
+                        >
+                    {/if}
+                    <button
+                        class="btn primary"
+                        on:click={() => (showUploadQueuePanel = false)}>Done</button
+                    >
+                </div>
+            </div>
+        </div>
+    {/if}
+
     {#if error}
         <div class="error-message">
             <p>{error}</p>
@@ -1833,7 +2178,14 @@
         {/if}
 
         {#if pendingUploads > 0 || uploadQueueSize > 0 || isUploadWorkerRunning || lastUploadStatus || (isProcessing && !isReviewing)}
-            <div class="status-indicator">
+            <button
+                class="status-indicator"
+                class:interactive-status={uploadQueueSize > 0}
+                on:click={() =>
+                    uploadQueueSize > 0 && (showUploadQueuePanel = true)}
+                disabled={uploadQueueSize === 0}
+                aria-label="Open saved upload queue"
+            >
                 {#if pendingUploads > 0}
                     <span class="spinner"></span>
                     Uploading... {pendingUploads + uploadQueueSize} pending
@@ -1847,7 +2199,7 @@
                 {:else}
                     {lastUploadStatus}
                 {/if}
-            </div>
+            </button>
         {/if}
 
         <!-- Top Bar -->
@@ -1899,6 +2251,11 @@
             {#if metadataFieldCount > 0}
                 <span class="capture-meta-note"
                     >Metadata ready: {metadataFieldCount} fields</span
+                >
+            {/if}
+            {#if nextCaptureField === "operationImage"}
+                <button class="restart-pair" on:click={restartCapturePair}
+                    >Restart pair</button
                 >
             {/if}
         </div>
@@ -2230,6 +2587,17 @@
         gap: 0.6rem;
         backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
+        border: 1px solid transparent;
+        font-family: inherit;
+    }
+
+    .status-indicator:disabled {
+        opacity: 1;
+    }
+
+    .status-indicator.interactive-status {
+        cursor: pointer;
+        border-color: rgba(255, 255, 255, 0.2);
     }
 
     /* Top Bar for Review Mode Toggle */
@@ -2313,6 +2681,16 @@
         color: #86efac;
     }
 
+    .restart-pair {
+        border: 0;
+        background: transparent;
+        color: #fca5a5;
+        padding: 0.2rem;
+        font: inherit;
+        font-size: 0.76rem;
+        cursor: pointer;
+    }
+
     .toggle-container {
         background: rgba(0, 0, 0, 0.5);
         backdrop-filter: blur(10px);
@@ -2359,19 +2737,6 @@
 
     .switch-label input:checked + .switch::after {
         transform: translateX(18px);
-    }
-
-    .icon-btn-small {
-        background: rgba(0, 0, 0, 0.4);
-        border: none;
-        color: white;
-        padding: 8px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        backdrop-filter: blur(5px);
     }
 
     .loading-badge {
@@ -2769,6 +3134,59 @@
         display: flex;
         gap: 0.75rem;
         justify-content: flex-end;
+    }
+
+    .upload-job-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+    }
+
+    .upload-job {
+        border: 1px solid #3f3f46;
+        border-radius: 8px;
+        padding: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .upload-job-details {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+
+    .upload-job-details strong {
+        font-size: 0.88rem;
+    }
+
+    .upload-job-details span {
+        color: #a3a3a3;
+        font-size: 0.78rem;
+        overflow-wrap: anywhere;
+    }
+
+    .upload-job-details .upload-job-error {
+        color: #fca5a5;
+    }
+
+    .upload-job-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .upload-job-actions .btn {
+        flex: 1;
+        padding: 0.55rem 0.7rem;
+        border-radius: 8px;
+        font-size: 0.82rem;
+    }
+
+    .btn.danger {
+        background: #7f1d1d;
+        color: white;
     }
 
     @media (min-width: 720px) {
