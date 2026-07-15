@@ -2483,10 +2483,10 @@
                 >
                 <button
                     class="btn primary"
-                    on:click={uploadProcessed}
+                    on:click={() => uploadProcessed()}
                     disabled={saveDisabled}
                 >
-                    >{nextCaptureField === "patientInfoImage"
+                    {nextCaptureField === "patientInfoImage"
                         ? "Save First Image"
                         : "Upload Both Images"}</button
                 >
