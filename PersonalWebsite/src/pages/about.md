@@ -51,3 +51,6 @@ My personal laptop a Microsoft Surface Studio laptop runs NixOS, you might think
 ## Social Media
 
 - [HackerNews](https://news.ycombinator.com/user?id=AyanamiKaine)
+
+
+  
